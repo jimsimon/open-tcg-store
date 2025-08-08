@@ -1,0 +1,52 @@
+{
+  "name": "tcg-store",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development tsx --conditions=development src/server.ts",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "npx @biomejs/biome lint --write",
+    "format": "npx @biomejs/biome check --fix --linter-enabled=false && prettier . --write",
+    "db:update-better-auth-schema": "npx @better-auth/cli generate -y --output ./src/db/auth-schema.ts",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@better-auth/cli": "^1.2.7",
+    "@electric-sql/pglite": "^0.2.17",
+    "@fontsource/lato": "^5.2.5",
+    "@graphql-tools/schema": "^10.0.23",
+    "@koa/bodyparser": "^5.1.1",
+    "@koa/router": "^13.1.0",
+    "@lit-labs/ssr": "^3.3.1",
+    "@material/web": "^2.3.0",
+    "better-auth": "^1.2.7",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.42.0",
+    "glob": "^11.0.1",
+    "graphql-http": "^1.22.4",
+    "graphql-scalars": "^1.24.2",
+    "koa": "^2.16.1",
+    "koa-connect": "^2.1.0",
+    "koa-mount": "^4.2.0",
+    "koa-router": "^13.0.1",
+    "lit": "^3.3.0",
+    "ruru": "^2.0.0-beta.22",
+    "tsx": "^4.19.3"
+  },
+  "devDependencies": {
+    "@0no-co/graphqlsp": "^1.12.16",
+    "@biomejs/biome": "1.9.4",
+    "@eddeee888/gcg-typescript-resolver-files": "^0.12.0",
+    "@graphql-codegen/cli": "^5.0.5",
+    "@types/koa": "^2.15.0",
+    "@types/koa__router": "^12.0.4",
+    "@types/koa-bodyparser": "^4.3.12",
+    "@types/koa-mount": "^4.0.5",
+    "drizzle-kit": "^0.31.0",
+    "prettier": "3.5.3",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.2"
+  }
+}

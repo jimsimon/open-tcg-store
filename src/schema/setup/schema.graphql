@@ -1,0 +1,18 @@
+input UserDetails {
+  email: String!
+  firstName: String!
+  password: String!
+}
+
+input Settings {
+  country: String!
+  state: String!
+}
+
+extend type Mutation {
+  firstTimeSetup(userDetails: UserDetails!, settings: Settings!): String!
+}
+
+extend type Query {
+    isSetupPending: Boolean!
+}
