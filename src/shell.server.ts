@@ -17,17 +17,10 @@ export function render(pageDirectory: string, pageContent: unknown) {
             font-family: "Lato";
           }
         </style>
+        <link rel="stylesheet" href="node_modules/@fontsource/lato/index.css"/>
         <link
           rel="stylesheet"
-          media="(prefers-color-scheme:light)"
-          href="/src/themes/light.css"
-          onload="document.documentElement.classList.add('light');"
-        />
-        <link
-          rel="stylesheet"
-          media="(prefers-color-scheme:dark)"
-          href="/src/themes/dark.css"
-          onload="document.documentElement.classList.add('dark');"
+          href="/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css"
         />
         <script type="module" src="/@vite/client"></script>
       </head>

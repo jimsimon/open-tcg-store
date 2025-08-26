@@ -23,10 +23,10 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
       })
       .where(eq(user.id, data?.user.id));
     if (affectedRows === 1) {
-      console.log("Default admin user has been created successfully.");
+      console.log("Initial admin user has been created successfully.");
       return data.user.id;
     }
-    throw new Error("Failed to set the admin role for the default Admin user.");
+    throw new Error("Failed to set the admin role for the initial Admin user.");
   }
 
   throw new Error(

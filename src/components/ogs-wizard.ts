@@ -5,10 +5,9 @@ import {
   queryAssignedElements,
   state,
 } from "lit/decorators.js";
-import "@material/web/button/filled-button.js";
-import "@material/web/button/filled-tonal-button.js";
-import "@material/web/button/outlined-button.js";
-import "@material/web/elevation/elevation.js";
+
+import '@awesome.me/webawesome/dist/components/button/button.js';
+
 import { when } from "lit/directives/when.js";
 
 @customElement("ogs-wizard")
@@ -22,7 +21,7 @@ export class OgsWizard extends LitElement {
       color: var(--md-sys-color-primary);
       background-color: var(--md-sys-color-surface-container);
       padding: 0 2rem 1rem 2rem;
-      --md-elevation-level: 3;
+      box-shadow: var(--wa-shadow-l);
     }
 
     section {
@@ -35,7 +34,7 @@ export class OgsWizard extends LitElement {
       padding-top: 1rem;
     }
 
-    md-filled-tonal-button {
+    wa-button[variant="brand"] {
       margin-left: auto;
     }
   `;
@@ -52,7 +51,6 @@ export class OgsWizard extends LitElement {
 
   render() {
     return html`
-      <md-elevation></md-elevation>
       <section>
         <slot></slot>
       </section>
@@ -60,23 +58,23 @@ export class OgsWizard extends LitElement {
         ${when(
           this.shouldShowPrevious(),
           () => html`
-            <md-outlined-button @click="${this.previous}">
+            <wa-button appearance="outlined" variant="neutral" @click="${this.previous}">
               Previous
-            </md-outlined-button>
+            </wa-button>
           `,
         )}
         ${when(
           this.shouldShowNext(),
           () => html`
-            <md-filled-tonal-button @click="${this.next}">
+            <wa-button variant="brand" @click="${this.next}">
               Next
-            </md-filled-tonal-button>
+            </wa-button>
           `,
         )}
         ${when(
           this.shouldShowSave(),
           () => html`
-            <md-filled-button @click="${this.save}"> Save </md-filled-button>
+            <wa-button variant="success" @click="${this.save}"> Save </wa-button>
           `,
         )}
       </nav>

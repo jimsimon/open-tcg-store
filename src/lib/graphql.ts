@@ -2,7 +2,7 @@ import type { TypedDocumentString } from "../graphql/graphql";
 
 interface ExecutionResult<T> {
   data: T;
-  errors: ExecutionError[];
+  errors?: ExecutionError[];
 }
 
 interface ExecutionError {

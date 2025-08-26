@@ -1,2 +1,3 @@
 import "@lit-labs/ssr-client/lit-element-hydrate-support.js";
-import "@fontsource/lato/index.css"; // Defaults to weight 400
+// import { setBasePath } from '@awesome.me/webawesome';
+// setBasePath(import.meta.resolve('@awesome.me/webawesome'));

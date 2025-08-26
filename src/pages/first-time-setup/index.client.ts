@@ -3,7 +3,7 @@ import { customElement, state } from "lit/decorators.js";
 import "../../components/ogs-page.ts";
 import "../../components/ogs-wizard.ts";
 import "../../components/ogs-two-pane-panel.ts";
-import "@material/web/textfield/filled-text-field.js";
+import '@awesome.me/webawesome/dist/components/input/input.js';
 import { graphql } from "../../graphql/gql.ts";
 import { execute } from "../../lib/graphql.ts";
 
@@ -64,20 +64,21 @@ export class FirstTimeSetupPage extends LitElement {
               initial setup process is complete.
             </p>
             <form slot="end">
-              <md-filled-text-field
+              <wa-input
                 label="First Name"
                 @input="${this.handleFirstNameChange}"
-              ></md-filled-text-field>
-              <md-filled-text-field
+              ></wa-input>
+              <wa-input
                 type="email"
                 label="E-mail Address"
                 @input="${this.handleEmailChange}"
-              ></md-filled-text-field>
-              <md-filled-text-field
+              ></wa-input>
+              <wa-input
                 type="password"
                 label="Password"
+                password-toggle
                 @input="${this.handlePasswordChange}"
-              ></md-filled-text-field>
+              ></wa-input>
             </form>
           </ogs-two-pane-panel>
         </ogs-wizard-item>
@@ -116,7 +117,6 @@ export class FirstTimeSetupPage extends LitElement {
   }
 
   async handleSaveClick() {
-    console.log(this.user);
     const FirstTimeSetupMutation = graphql(`
       mutation FirstTimeSetupMutation(
         $userDetails: UserDetails!
@@ -138,7 +138,12 @@ export class FirstTimeSetupPage extends LitElement {
           state: "MI",
         },
       });
-      console.log({ result });
+
+      if (result?.errors?.length) {
+        console.log({ result });
+      } else {
+        window.location.href = '/'
+      }
     }
   }
 }
