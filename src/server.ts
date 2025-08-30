@@ -126,10 +126,10 @@ app
 
 async function renderPage(ctx: RouterContext, pageDirectory: string) {
   const { render: renderShellTemplate } = await vite.ssrLoadModule(
-    "/src/shell.server.ts",
+    "/src/shell.ts",
   );
   const { render: pageTemplate } = await vite.ssrLoadModule(
-    `/src/pages/${pageDirectory}/index.server.ts`,
+    `/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
   );
   ctx.type = "html";
   ctx.body = new RenderResultReadable(

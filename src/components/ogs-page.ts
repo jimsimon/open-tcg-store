@@ -9,6 +9,7 @@ export class OgsPage extends LitElement {
       display: block;
       width: 100%;
       padding: 2rem;
+      box-sizing: border-box;
     }
 
     nav {

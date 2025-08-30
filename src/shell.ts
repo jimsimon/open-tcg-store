@@ -1,7 +1,5 @@
 import { html } from "lit";
 
-import "./shell.client.ts";
-
 export function render(pageDirectory: string, pageContent: unknown) {
   return html`
     <!doctype html>
@@ -33,10 +31,14 @@ export function render(pageDirectory: string, pageContent: unknown) {
             ? "development/"
             : ""}lit-element-hydrate-support.js"
         ></script>
-        <script type="module" src="/src/shell.client.ts"></script>
+        <script type="module" src="/node_modules/@lit-labs/ssr-client/lit-element-hydrate-support.js"></script>
+        <script type="module">
+          import { setBasePath } from '@awesome.me/webawesome';
+          setBasePath(import.meta.resolve('@awesome.me/webawesome'));
+        </script>
         <script
           type="module"
-          src="/src/pages/${pageDirectory}/index.client.ts"
+          src="/src/pages/${pageDirectory}/${pageDirectory}.client.ts"
         ></script>
       </body>
     </html>
