@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import {
   customElement,
   property,
@@ -7,6 +7,7 @@ import {
 } from "lit/decorators.js";
 
 import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
 
 import { when } from "lit/directives/when.js";
 
@@ -15,23 +16,19 @@ export class OgsWizard extends LitElement {
   static styles = css`
     :host {
       display: block;
-      position: relative;
-      border: 1px solid;
-      border-radius: 16px;
-      color: var(--md-sys-color-primary);
-      background-color: var(--md-sys-color-surface-container);
-      padding: 0 2rem 1rem 2rem;
-      box-shadow: var(--wa-shadow-l);
     }
 
     section {
       display: flex;
     }
 
+    h1 {
+      margin: 0;
+    }
+
     nav {
       display: flex;
       justify-content: space-between;
-      padding-top: 1rem;
     }
 
     wa-button[variant="brand"] {
@@ -51,33 +48,36 @@ export class OgsWizard extends LitElement {
 
   render() {
     return html`
+    <wa-card appearance="filled">
+      <h1 slot="header">${this.firstUpdateCompleted && this.items.length > 0 ? this.items[this.activeIndex].heading : nothing}</h1>
       <section>
         <slot></slot>
       </section>
-      <nav>
+      <nav slot="footer">
         ${when(
           this.shouldShowPrevious(),
-          () => html`
-            <wa-button appearance="outlined" variant="neutral" @click="${this.previous}">
-              Previous
-            </wa-button>
-          `,
+        () => html`
+              <wa-button appearance="outlined" variant="neutral" @click="${this.previous}">
+                Previous
+              </wa-button>
+            `,
         )}
         ${when(
           this.shouldShowNext(),
           () => html`
-            <wa-button variant="brand" @click="${this.next}">
-              Next
-            </wa-button>
-          `,
+                <wa-button variant="brand" @click="${this.next}">
+                  Next
+                </wa-button>
+              `,
         )}
         ${when(
           this.shouldShowSave(),
           () => html`
-            <wa-button variant="success" @click="${this.save}"> Save </wa-button>
-          `,
+                <wa-button variant="success" @click="${this.save}"> Save </wa-button>
+              `,
         )}
-      </nav>
+        </nav>
+      </wa-card>
     `;
   }
 
@@ -144,6 +144,9 @@ export class OgsWizardItem extends LitElement {
       display: none;
     }
   `;
+
+  @property()
+  heading: string = '';
 
   render() {
     return html`<slot></slot>`;

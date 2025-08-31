@@ -38,7 +38,6 @@ const vite = await createViteServer({
   build: {
     rollupOptions: {
       input: {
-        shell: "./shell.client.ts",
         ...Object.fromEntries(
           globSync("pages/**/*.client.ts").map((file) => [
             // This removes `src/` as well as the file extension from each
@@ -69,7 +68,6 @@ const vite = await createViteServer({
 app.use(koaConnect(vite.middlewares));
 app.use(async (ctx, next) => {
   if (ctx.URL.pathname.startsWith("/api/auth")) {
-    console.log("captured");
     await toNodeHandler(auth)(ctx.req, ctx.res);
   } else {
     return next();
@@ -132,7 +130,8 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
     `/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
   );
   ctx.type = "html";
-  ctx.body = new RenderResultReadable(
-    ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
-  );
+  // ctx.body = new RenderResultReadable(
+  //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
+  // );
+  ctx.body = renderShellTemplate(pageDirectory, pageTemplate(ctx))
 }

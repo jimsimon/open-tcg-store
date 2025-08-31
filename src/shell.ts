@@ -1,9 +1,9 @@
 import { html } from "lit";
 
 export function render(pageDirectory: string, pageContent: unknown) {
-  return html`
+  return `
     <!doctype html>
-    <html lang="en">
+    <html lang="en" class="wa-theme-default wa-palette-default wa-brand-blue">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,11 +15,12 @@ export function render(pageDirectory: string, pageContent: unknown) {
             font-family: "Lato";
           }
         </style>
-        <link rel="stylesheet" href="node_modules/@fontsource/lato/index.css"/>
+        <link rel="stylesheet" href="/node_modules/@fontsource/lato/index.css"/>
         <link
           rel="stylesheet"
-          href="/node_modules/@awesome.me/webawesome/dist/styles/themes/default.css"
+          href="/node_modules/@awesome.me/webawesome/dist/styles/webawesome.css"
         />
+        <link rel="stylesheet" href="/node_modules/@awesome.me/webawesome/dist/styles/themes/awesome.css" />
         <script type="module" src="/@vite/client"></script>
       </head>
       <body>
@@ -31,10 +32,9 @@ export function render(pageDirectory: string, pageContent: unknown) {
             ? "development/"
             : ""}lit-element-hydrate-support.js"
         ></script>
-        <script type="module" src="/node_modules/@lit-labs/ssr-client/lit-element-hydrate-support.js"></script>
         <script type="module">
-          import { setBasePath } from '@awesome.me/webawesome';
-          setBasePath(import.meta.resolve('@awesome.me/webawesome'));
+          import { setBasePath } from '/node_modules/@awesome.me/webawesome';
+          setBasePath(import.meta.resolve('/node_modules/@awesome.me/webawesome'));
         </script>
         <script
           type="module"
