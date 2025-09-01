@@ -6,7 +6,14 @@ import "../../components/ogs-page.ts";
 
 @customElement('ogs-home-page')
 export class HomePage extends LitElement {
-  static styles = css`${unsafeCSS(utilityStyles)}`
+  static styles = [
+    css`${unsafeCSS(utilityStyles)}`,
+    css`
+      :host {
+        box-sizing: border-box;
+      }
+    `
+  ]
 
   render() {
     return html`

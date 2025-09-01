@@ -11,8 +11,8 @@ export function render(pageDirectory: string, pageContent: unknown) {
         <style>
           body {
             margin: 0;
-            background-color: var(--md-sys-color-surface-variant);
-            font-family: "Lato";
+            font-family: "Lato", sans-serif;
+            box-sizing: border-box;
           }
         </style>
         <link rel="stylesheet" href="/node_modules/@fontsource/lato/index.css"/>

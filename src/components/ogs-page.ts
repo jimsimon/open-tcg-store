@@ -16,21 +16,48 @@ export class OgsPage extends LitElement {
     css`
       :host {
         display: block;
-        width: 100%;
-        padding: 2rem;
+        height: 100vh;
         box-sizing: border-box;
       }
 
+      :root {
+        height: 100%;
+      }
+
+      #page {
+        display: flex;
+        height: calc(100% - 84px);
+      }
+
+      header {
+        box-sizing: border-box;
+        border-bottom: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
+        padding-inline: var(--wa-space-xl);
+        padding-inline-end: var(--wa-space-s);
+        block-size: 84px;
+      }
+
       nav {
-        width: 100%;
-        border-bottom: 1px solid var(--md-sys-color-outline);
-        background-color: var(--md-sys-color-surface-container);
+        display: flex;
+        flex-direction: column;
+        column-gap: 1rem;
+        overflow: auto;
+        height: 100%;
+        max-height: 100%;
+        min-width: 300px;
+        max-width: 300px;
+        box-sizing: border-box;
+        border-right: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
+        overflow-x: auto;
+        overflow-y: auto;
       }
 
       ul {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         margin: 0;
+        padding: 0;
       }
 
       li {
@@ -48,8 +75,10 @@ export class OgsPage extends LitElement {
       }
 
       section {
+        box-sizing: border-box;
+        margin-inline: auto;
         max-width: 1200px;
-        margin: 0 auto;
+        flex: 1
       }
 
       [hidden] {
@@ -76,7 +105,7 @@ export class OgsPage extends LitElement {
   render() {
     return html`
       <header class="wa-split">
-        <div>OpenTCGS</div>
+        <h1>OpenTCGS</h1>
         <div>
           <wa-select class="color-scheme-selector" appearance="filled" size="small" value="${this.themePreference}" title="Press \ to toggle" placement="bottom" @change="${this.handleThemePreferenceChange}">
             <wa-icon class="only-light" slot="start" name="sun" variant="regular" .hidden="${this.themeColor === 'dark'}"></wa-icon>
@@ -98,27 +127,24 @@ export class OgsPage extends LitElement {
           </wa-select>
         </div>
       </header>
-      ${when(
-        !this.hideNav,
-        () =>
-          html` <nav>
-            <ul>
-              <li>${this.renderAnchor("/", "Dashboard")}</li>
-              <li>${this.renderAnchor("/inventory", "Inventory")}</li>
-              <li>${this.renderAnchor("/sales", "Sales")}</li>
-              <li>${this.renderAnchor("/settings", "Settings")}</li>
-            </ul>
-          </nav>`,
-        () => nothing,
-      )}
-      ${when(
-        !this.hideNav,
-        () => html`<slot name="side-nav"></slot>`,
-        () => nothing,
-      )}
-      <section>
-        <slot></slot>
-      </section>
+      <div id="page">
+        ${when(
+          !this.hideNav,
+          () =>
+            html` <nav>
+              <ul>
+                <li>${this.renderAnchor("/", "Dashboard")}</li>
+                <li>${this.renderAnchor("/inventory", "Inventory")}</li>
+                <li>${this.renderAnchor("/sales", "Sales")}</li>
+                <li>${this.renderAnchor("/settings", "Settings")}</li>
+              </ul>
+            </nav>`,
+          () => nothing,
+        )}
+        <section>
+          <slot></slot>
+        </section>
+      </div>
     `;
   }
 
