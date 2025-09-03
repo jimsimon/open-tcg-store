@@ -66,12 +66,12 @@ export class OgsPage extends LitElement {
       }
 
       a {
-        height: 100%;
-        width: 100%;
+        color: var(--wa-color-text-link);
+        text-decoration: none;
       }
 
       a[current] {
-        color: red;
+        text-decoration: underline;
       }
 
       section {
