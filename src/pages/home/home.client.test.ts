@@ -11,9 +11,9 @@ describe('ogs-home-page', () => {
     document.body.appendChild(element)
 
     // Wait for the component to render
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await element.updateComplete;
   })
-
+  
   afterEach(() => {
     element.remove();
   })
