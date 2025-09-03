@@ -108,6 +108,7 @@ export class OgsPage extends LitElement {
         <h1>OpenTCGS</h1>
         <div>
           <wa-select class="color-scheme-selector" appearance="filled" size="small" value="${this.themePreference}" title="Press \ to toggle" placement="bottom" @change="${this.handleThemePreferenceChange}">
+            <span slot="label" class="wa-visually-hidden">Choose Theme</span>
             <wa-icon class="only-light" slot="start" name="sun" variant="regular" .hidden="${this.themeColor === 'dark'}"></wa-icon>
             <wa-icon class="only-dark" slot="start" name="moon" variant="regular" .hidden="${this.themeColor === 'light'}"></wa-icon>
             <wa-option value="light">

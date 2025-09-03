@@ -1,13 +1,8 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { bodyParser } from "@koa/bodyparser";
 import Router from "@koa/router";
 import type { RouterContext } from "@koa/router";
-import { render as ssrRender } from "@lit-labs/ssr/index.js";
-import { RenderResultReadable } from "@lit-labs/ssr/lib/render-result-readable.js";
 import { toNodeHandler } from "better-auth/node";
 import { count } from "drizzle-orm";
-import { globSync } from "glob";
 import Koa, { type Next } from "koa";
 import koaConnect from "koa-connect";
 import { createServer as createViteServer } from "vite";
@@ -21,6 +16,7 @@ import { resolvers } from "./schema/resolvers.generated.ts";
 import type { Resolvers } from "./schema/types.generated.ts";
 import { typeDefs } from "./schema/typeDefs.generated.ts";
 import { ruruHTML } from "ruru/server";
+import viteConfig from '../vite.config.ts'
 
 const app = new Koa();
 const schema = makeExecutableSchema({
@@ -32,32 +28,7 @@ app.use(mount("/graphql", createHandler({ schema })));
 // Create Vite server in middleware mode and configure the app type as
 // 'custom', disabling Vite's own HTML serving logic so parent server
 // can take control
-const vite = await createViteServer({
-  server: { middlewareMode: true },
-  appType: "custom",
-  build: {
-    rollupOptions: {
-      input: {
-        ...Object.fromEntries(
-          globSync("pages/**/*.client.ts").map((file) => [
-            // This removes `src/` as well as the file extension from each
-            // file, so e.g. src/nested/foo.js becomes nested/foo
-            path.relative(
-              "src",
-              file.slice(0, file.length - path.extname(file).length),
-            ),
-            // This expands the relative paths to absolute paths, so e.g.
-            // src/nested/foo becomes /project/src/nested/foo.js
-            fileURLToPath(new URL(file, import.meta.url)),
-          ]),
-        ),
-      },
-    },
-  },
-  optimizeDeps: {
-    exclude: ["lit", "lit-html"],
-  },
-});
+const vite = await createViteServer(viteConfig);
 
 // Use vite's connect instance as middleware. If you use your own
 // express router (express.Router()), you should use router.use
