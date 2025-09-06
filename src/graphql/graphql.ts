@@ -18,15 +18,16 @@ export type Scalars = {
 
 export type Card = {
   __typename?: 'Card';
-  avatar?: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
-  inventory: Array<Maybe<Inventory>>;
+  inventory: Array<Inventory>;
   name: Scalars['String']['output'];
+  thumbnail?: Maybe<Scalars['String']['output']>;
 };
 
 export type Inventory = {
   __typename?: 'Inventory';
   condition: Scalars['String']['output'];
+  price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -43,8 +44,13 @@ export type MutationFirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  getSingleCardInventory: Array<Maybe<Card>>;
+  getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+};
+
+
+export type QueryGetSingleCardInventoryArgs = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Settings = {
@@ -65,6 +71,13 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
+
+export type GetSingleCardInventoryQueryQueryVariables = Exact<{
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', thumbnail?: string | null, id: string, name: string, inventory: Array<{ __typename?: 'Inventory', condition: string, quantity: number, price: string }> }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -90,3 +103,17 @@ export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
   firstTimeSetup(userDetails: $userDetails, settings: $settings)
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
+export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
+    query GetSingleCardInventoryQuery($searchTerm: String) {
+  getSingleCardInventory(searchTerm: $searchTerm) {
+    thumbnail
+    id
+    inventory {
+      condition
+      quantity
+      price
+    }
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<GetSingleCardInventoryQueryQuery, GetSingleCardInventoryQueryQueryVariables>;

@@ -16,15 +16,21 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
+    "\n      query GetSingleCardInventoryQuery($searchTerm: String) {\n        getSingleCardInventory(searchTerm: $searchTerm) {\n          thumbnail\n          id\n          inventory {\n            condition\n            quantity\n            price\n          }\n          name\n        }\n      }\n    ": typeof types.GetSingleCardInventoryQueryDocument,
 };
 const documents: Documents = {
     "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": types.FirstTimeSetupMutationDocument,
+    "\n      query GetSingleCardInventoryQuery($searchTerm: String) {\n        getSingleCardInventory(searchTerm: $searchTerm) {\n          thumbnail\n          id\n          inventory {\n            condition\n            quantity\n            price\n          }\n          name\n        }\n      }\n    ": types.GetSingleCardInventoryQueryDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      query GetSingleCardInventoryQuery($searchTerm: String) {\n        getSingleCardInventory(searchTerm: $searchTerm) {\n          thumbnail\n          id\n          inventory {\n            condition\n            quantity\n            price\n          }\n          name\n        }\n      }\n    "): typeof import('./graphql').GetSingleCardInventoryQueryDocument;
 
 
 export function graphql(source: string) {

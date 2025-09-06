@@ -1,12 +1,13 @@
 type Card {
-  avatar: String
   id: String!
-  inventory: [Inventory]!
+  inventory: [Inventory!]!
   name: String!
+  thumbnail: String
 }
 
 type Inventory {
   condition: String!
+  price: String!
   quantity: Int!
 }
 
@@ -15,7 +16,7 @@ type Mutation {
 }
 
 type Query {
-  getSingleCardInventory: [Card]!
+  getSingleCardInventory(searchTerm: String): [Card!]!
   isSetupPending: Boolean!
 }
 

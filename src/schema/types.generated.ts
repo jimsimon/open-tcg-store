@@ -18,15 +18,16 @@ export type Scalars = {
 
 export type Card = {
   __typename?: 'Card';
-  avatar?: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
-  inventory: Array<Maybe<Inventory>>;
+  inventory: Array<Inventory>;
   name: Scalars['String']['output'];
+  thumbnail?: Maybe<Scalars['String']['output']>;
 };
 
 export type Inventory = {
   __typename?: 'Inventory';
   condition: Scalars['String']['output'];
+  price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -43,8 +44,13 @@ export type MutationfirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  getSingleCardInventory: Array<Maybe<Card>>;
+  getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+};
+
+
+export type QuerygetSingleCardInventoryArgs = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Settings = {
@@ -154,15 +160,16 @@ export type ResolversParentTypes = {
 };
 
 export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
-  avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  inventory?: Resolver<Array<Maybe<ResolversTypes['Inventory']>>, ParentType, ContextType>;
+  inventory?: Resolver<Array<ResolversTypes['Inventory']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  thumbnail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type InventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Inventory'] = ResolversParentTypes['Inventory']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  price?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -172,7 +179,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  getSingleCardInventory?: Resolver<Array<Maybe<ResolversTypes['Card']>>, ParentType, ContextType>;
+  getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, Partial<QuerygetSingleCardInventoryArgs>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 

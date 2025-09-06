@@ -12,13 +12,14 @@ input Settings {
 type Inventory {
   condition: String!
   quantity: Int!
+  price: String!
 }
 
 type Card {
   id: String!
   name: String!
-  avatar: String
-  inventory: [Inventory]!
+  thumbnail: String
+  inventory: [Inventory!]!
 }
 
 extend type Mutation {
@@ -26,6 +27,6 @@ extend type Mutation {
 }
 
 extend type Query {
-    isSetupPending: Boolean!
-    getSingleCardInventory: [Card]!
+  isSetupPending: Boolean!
+  getSingleCardInventory(searchTerm: String): [Card!]!
 }

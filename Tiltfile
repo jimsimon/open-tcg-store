@@ -6,7 +6,7 @@ local_resource(
 
 local_resource(
     "Database",
-    cmd="[ ! -f sqlite-data/mtg.sqlite ] && tilt trigger 'Download MTG Data'"
+    cmd="[ ! -f sqlite-data/mtg.sqlite ] && tilt trigger 'Download MTG Data' || true"
 )
 
 local_resource(
