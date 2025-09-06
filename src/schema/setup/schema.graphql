@@ -9,10 +9,23 @@ input Settings {
   state: String!
 }
 
+type Inventory {
+  condition: String!
+  quantity: Int!
+}
+
+type Card {
+  id: String!
+  name: String!
+  avatar: String
+  inventory: [Inventory]!
+}
+
 extend type Mutation {
   firstTimeSetup(userDetails: UserDetails!, settings: Settings!): String!
 }
 
 extend type Query {
     isSetupPending: Boolean!
+    getSingleCardInventory: [Card]!
 }

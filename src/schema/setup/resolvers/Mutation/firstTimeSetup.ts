@@ -1,7 +1,7 @@
 import type { MutationResolvers } from "./../../../types.generated";
 import { eq } from "drizzle-orm";
 import { authClient } from "../../../../auth-client.ts";
-import { user } from "../../../../db/auth-schema.ts";
+import { user } from "../../../../db/otcgs/auth-schema.ts";
 import { otcgs } from "../../../../db/index.ts";
 
 export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (_parent, { userDetails }, _ctx) => {

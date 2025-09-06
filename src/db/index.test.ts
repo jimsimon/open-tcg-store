@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { otcgs } from './index'
-import { user } from './auth-schema'
+import { user } from './otcgs/auth-schema'
 
 test('database connection is established', async () => {
   // Test that we can execute a simple query

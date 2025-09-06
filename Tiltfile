@@ -6,7 +6,7 @@ local_resource(
 
 local_resource(
     "Database",
-    cmd="[ ! -f src/db/data/mtg.sqlite ] && tilt trigger 'Download MTG Data'"
+    cmd="[ ! -f sqlite-data/mtg.sqlite ] && tilt trigger 'Download MTG Data'"
 )
 
 local_resource(
@@ -14,5 +14,5 @@ local_resource(
     trigger_mode=TRIGGER_MODE_MANUAL,
     auto_init=False,
     resource_deps=["Database"],
-    cmd="wget -O src/db/data/mtg.sqlite https://mtgjson.com/api/v5/AllPrintings.sqlite"
+    cmd="wget -O sqlite-data/mtg.sqlite https://mtgjson.com/api/v5/AllPrintings.sqlite"
 )

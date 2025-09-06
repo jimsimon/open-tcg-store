@@ -1,8 +1,21 @@
+type Card {
+  avatar: String
+  id: String!
+  inventory: [Inventory]!
+  name: String!
+}
+
+type Inventory {
+  condition: String!
+  quantity: Int!
+}
+
 type Mutation {
   firstTimeSetup(settings: Settings!, userDetails: UserDetails!): String!
 }
 
 type Query {
+  getSingleCardInventory: [Card]!
   isSetupPending: Boolean!
 }
 

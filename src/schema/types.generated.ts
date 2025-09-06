@@ -16,6 +16,20 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type Card = {
+  __typename?: 'Card';
+  avatar?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  inventory: Array<Maybe<Inventory>>;
+  name: Scalars['String']['output'];
+};
+
+export type Inventory = {
+  __typename?: 'Inventory';
+  condition: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   firstTimeSetup: Scalars['String']['output'];
@@ -29,6 +43,7 @@ export type MutationfirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getSingleCardInventory: Array<Maybe<Card>>;
   isSetupPending: Scalars['Boolean']['output'];
 };
 
@@ -114,8 +129,11 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  Mutation: ResolverTypeWrapper<{}>;
+  Card: ResolverTypeWrapper<Card>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  Inventory: ResolverTypeWrapper<Inventory>;
+  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Settings: Settings;
@@ -124,12 +142,29 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  Mutation: {};
+  Card: Card;
   String: Scalars['String']['output'];
+  Inventory: Inventory;
+  Int: Scalars['Int']['output'];
+  Mutation: {};
   Query: {};
   Boolean: Scalars['Boolean']['output'];
   Settings: Settings;
   UserDetails: UserDetails;
+};
+
+export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
+  avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  inventory?: Resolver<Array<Maybe<ResolversTypes['Inventory']>>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type InventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Inventory'] = ResolversParentTypes['Inventory']> = {
+  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
@@ -137,10 +172,13 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  getSingleCardInventory?: Resolver<Array<Maybe<ResolversTypes['Card']>>, ParentType, ContextType>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
 export type Resolvers<ContextType = any> = {
+  Card?: CardResolvers<ContextType>;
+  Inventory?: InventoryResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
 };

@@ -6,7 +6,7 @@ import { count } from "drizzle-orm";
 import Koa, { type Next } from "koa";
 import koaConnect from "koa-connect";
 import { createServer as createViteServer } from "vite";
-import { user } from "../src/db/auth-schema.ts";
+import { user } from "../src/db/otcgs/schema.ts";
 import { otcgs } from "../src/db/index.ts";
 import { auth } from "./auth";
 import mount from "koa-mount";
