@@ -2,7 +2,7 @@ import type { MutationResolvers } from "./../../../types.generated";
 import { eq } from "drizzle-orm";
 import { authClient } from "../../../../auth-client.ts";
 import { user } from "../../../../db/auth-schema.ts";
-import { db } from "../../../../db/index.ts";
+import { otcgs } from "../../../../db/index.ts";
 
 export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (_parent, { userDetails }, _ctx) => {
   const { data, error } = await authClient.signUp.email({
@@ -16,13 +16,13 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
   }
 
   if (data) {
-    const { affectedRows } = await db
+    const { rowsAffected } = await otcgs
       .update(user)
       .set({
         role: "admin",
       })
       .where(eq(user.id, data?.user.id));
-    if (affectedRows === 1) {
+    if (rowsAffected === 1) {
       console.log("Initial admin user has been created successfully.");
       return data.user.id;
     }

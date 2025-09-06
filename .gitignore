@@ -25,3 +25,6 @@ dist-ssr
 
 # Drizzle
 pgdata
+
+# App Files
+src/db/data

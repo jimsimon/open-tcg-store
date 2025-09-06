@@ -1,0 +1,18 @@
+local_resource(
+    "App Server",
+    serve_cmd="npm run dev",
+    resource_deps=["Database"]
+)
+
+local_resource(
+    "Database",
+    cmd="[ ! -f src/db/data/mtg.sqlite ] && tilt trigger 'Download MTG Data'"
+)
+
+local_resource(
+    "Download MTG Data",
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    auto_init=False,
+    resource_deps=["Database"],
+    cmd="wget -O src/db/data/mtg.sqlite https://mtgjson.com/api/v5/AllPrintings.sqlite"
+)

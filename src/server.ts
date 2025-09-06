@@ -7,7 +7,7 @@ import Koa, { type Next } from "koa";
 import koaConnect from "koa-connect";
 import { createServer as createViteServer } from "vite";
 import { user } from "../src/db/auth-schema.ts";
-import { db } from "../src/db/index.ts";
+import { otcgs } from "../src/db/index.ts";
 import { auth } from "./auth";
 import mount from "koa-mount";
 import { createHandler } from "graphql-http/lib/use/koa";
@@ -48,7 +48,7 @@ app.use(bodyParser());
 
 const router = new Router()
   .use(async (ctx: RouterContext, next: Next) => {
-    const [{ count: userCount }] = await db
+    const [{ count: userCount }] = await otcgs
       .select({ count: count() })
       .from(user);
     if (userCount === 0 && ctx._matchedRouteName !== "first-time-setup") {

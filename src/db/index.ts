@@ -1,4 +1,5 @@
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
-const client = new PGlite("./src/db/pgdata");
-export const db = drizzle({ client });
+import { drizzle } from "drizzle-orm/libsql";
+import { otcgsDatabaseFile, mtgDatabaseFile } from '../../drizzle.config';
+
+export const mtg = drizzle(mtgDatabaseFile)
+export const otcgs = drizzle(otcgsDatabaseFile)
