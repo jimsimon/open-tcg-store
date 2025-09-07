@@ -18,15 +18,25 @@ export type Scalars = {
 
 export type Card = {
   __typename?: 'Card';
+  finishes: Array<Scalars['String']['output']>;
   id: Scalars['String']['output'];
-  inventory: Array<Inventory>;
+  inventory: ConditionInventories;
   name: Scalars['String']['output'];
+  setName: Scalars['String']['output'];
   thumbnail?: Maybe<Scalars['String']['output']>;
 };
 
-export type Inventory = {
-  __typename?: 'Inventory';
-  condition: Scalars['String']['output'];
+export type ConditionInventories = {
+  __typename?: 'ConditionInventories';
+  D?: Maybe<ConditionInventory>;
+  HP?: Maybe<ConditionInventory>;
+  LP: ConditionInventory;
+  MP: ConditionInventory;
+  NM: ConditionInventory;
+};
+
+export type ConditionInventory = {
+  __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
 };
@@ -44,18 +54,39 @@ export type MutationfirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getSets: Array<Set>;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
 };
 
 
+export type QuerygetSetsArgs = {
+  filters?: InputMaybe<SetFilters>;
+};
+
+
 export type QuerygetSingleCardInventoryArgs = {
+  filters?: InputMaybe<SingleCardFilters>;
+};
+
+export type Set = {
+  __typename?: 'Set';
+  code: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type SetFilters = {
   searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Settings = {
   country: Scalars['String']['input'];
   state: Scalars['String']['input'];
+};
+
+export type SingleCardFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UserDetails = {
@@ -137,12 +168,16 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type ResolversTypes = {
   Card: ResolverTypeWrapper<Card>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
-  Inventory: ResolverTypeWrapper<Inventory>;
+  ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
+  ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  Set: ResolverTypeWrapper<Set>;
+  SetFilters: SetFilters;
   Settings: Settings;
+  SingleCardFilters: SingleCardFilters;
   UserDetails: UserDetails;
 };
 
@@ -150,25 +185,39 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   Card: Card;
   String: Scalars['String']['output'];
-  Inventory: Inventory;
+  ConditionInventories: ConditionInventories;
+  ConditionInventory: ConditionInventory;
   Int: Scalars['Int']['output'];
   Mutation: {};
   Query: {};
   Boolean: Scalars['Boolean']['output'];
+  Set: Set;
+  SetFilters: SetFilters;
   Settings: Settings;
+  SingleCardFilters: SingleCardFilters;
   UserDetails: UserDetails;
 };
 
 export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
+  finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  inventory?: Resolver<Array<ResolversTypes['Inventory']>, ParentType, ContextType>;
+  inventory?: Resolver<ResolversTypes['ConditionInventories'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   thumbnail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type InventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Inventory'] = ResolversParentTypes['Inventory']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+export type ConditionInventoriesResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventories'] = ResolversParentTypes['ConditionInventories']> = {
+  D?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
+  HP?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
+  LP?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
+  MP?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
+  NM?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ConditionInventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventory'] = ResolversParentTypes['ConditionInventory']> = {
   price?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -179,14 +228,23 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, Partial<QuerygetSetsArgs>>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, Partial<QuerygetSingleCardInventoryArgs>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
+export type SetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Set'] = ResolversParentTypes['Set']> = {
+  code?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   Card?: CardResolvers<ContextType>;
-  Inventory?: InventoryResolvers<ContextType>;
+  ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
+  ConditionInventory?: ConditionInventoryResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  Set?: SetResolvers<ContextType>;
 };
 

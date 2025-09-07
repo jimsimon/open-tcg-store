@@ -1,62 +1,64 @@
-import { eq, like, sql } from "drizzle-orm";
+import { eq, like, sql, and } from "drizzle-orm";
 import { mtg } from "../../../../db";
-import { cardIdentifiers, cards } from "../../../../db/mtg/schema";
+import { cardIdentifiers, cards, sets } from "../../../../db/mtg/schema";
 import { Card, type QueryResolvers } from "./../../../types.generated";
 
-export const getSingleCardInventory: NonNullable<
-  QueryResolvers["getSingleCardInventory"]
-> = async (_parent, { searchTerm }, _ctx) => {
+export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (_parent, { filters }, _ctx) => {
   const result = await mtg
     .select({
       uuid: cards.uuid,
       name: cards.name,
+      finishes: cards.finishes,
+      setName: sets.name,
       scryfallId: cardIdentifiers.scryfallId,
       multiverseId: cardIdentifiers.multiverseId,
     })
     .from(cards)
     .innerJoin(cardIdentifiers, eq(cards.uuid, cardIdentifiers.uuid))
+    .innerJoin(sets, eq(cards.setCode, sets.code))
     .where(
-      searchTerm && searchTerm.trim().length > 0
-        ? like(sql`lower(${cards.name})`, `%${searchTerm.toLowerCase()}%`)
-        : undefined,
+      and(
+        filters?.searchTerm && filters.searchTerm.trim().length > 0
+          ? like(sql`lower(${cards.name})`, `%${filters.searchTerm.toLowerCase()}%`)
+          : undefined,
+        filters?.setCode ? eq(sets.code, filters.setCode) : undefined
+      )
     )
+    .orderBy(cards.name)
     .limit(20);
 
   return result.map<Card>((card) => ({
     id: card.uuid,
     name: card.name ?? "Unknown Card",
+    finishes: card.finishes?.split(", ") ?? [],
+    setName: card.setName ?? "Unknown Set",
     thumbnail: card.scryfallId
       ? buildScryfallImageUrl(card.scryfallId)
       : card.multiverseId
         ? buildGathererImageUrl(card.multiverseId)
         : null,
-    inventory: [
-      {
-        condition: "Near Mint",
+    inventory: {
+      NM: {
         quantity: Math.floor(Math.random() * 101),
         price: getRandomDollarAmount(1.0, 100.0),
       },
-      {
-        condition: "Lightly Played",
+      LP: {
         quantity: Math.floor(Math.random() * 101),
         price: getRandomDollarAmount(1.0, 100.0),
       },
-      {
-        condition: "Moderately Played",
+      MP: {
         quantity: Math.floor(Math.random() * 101),
         price: getRandomDollarAmount(1.0, 100.0),
       },
-      {
-        condition: "Heavily Played",
+      HP: {
         quantity: Math.floor(Math.random() * 101),
         price: getRandomDollarAmount(1.0, 100.0),
       },
-      {
-        condition: "Damaged",
+      D: {
         quantity: Math.floor(Math.random() * 101),
         price: getRandomDollarAmount(1.0, 100.0),
       },
-    ],
+    },
   }));
 };
 

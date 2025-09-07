@@ -9,17 +9,40 @@ input Settings {
   state: String!
 }
 
-type Inventory {
-  condition: String!
+type Card {
+  id: String!
+  name: String!
+  setName: String!
+  finishes: [String!]!
+  thumbnail: String
+  inventory: ConditionInventories!
+}
+
+type ConditionInventories {
+  NM: ConditionInventory!
+  LP: ConditionInventory!
+  MP: ConditionInventory!
+  HP: ConditionInventory
+  D: ConditionInventory
+}
+
+type ConditionInventory {
   quantity: Int!
   price: String!
 }
 
-type Card {
-  id: String!
+type Set {
+  code: String!
   name: String!
-  thumbnail: String
-  inventory: [Inventory!]!
+}
+
+input SingleCardFilters {
+  searchTerm: String
+  setCode: String
+}
+
+input SetFilters {
+  searchTerm: String
 }
 
 extend type Mutation {
@@ -28,5 +51,6 @@ extend type Mutation {
 
 extend type Query {
   isSetupPending: Boolean!
-  getSingleCardInventory(searchTerm: String): [Card!]!
+  getSingleCardInventory(filters: SingleCardFilters): [Card!]!
+  getSets(filters: SetFilters): [Set!]!
 }

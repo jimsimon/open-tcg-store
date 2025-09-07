@@ -1,12 +1,21 @@
 type Card {
+  finishes: [String!]!
   id: String!
-  inventory: [Inventory!]!
+  inventory: ConditionInventories!
   name: String!
+  setName: String!
   thumbnail: String
 }
 
-type Inventory {
-  condition: String!
+type ConditionInventories {
+  D: ConditionInventory
+  HP: ConditionInventory
+  LP: ConditionInventory!
+  MP: ConditionInventory!
+  NM: ConditionInventory!
+}
+
+type ConditionInventory {
   price: String!
   quantity: Int!
 }
@@ -16,13 +25,28 @@ type Mutation {
 }
 
 type Query {
-  getSingleCardInventory(searchTerm: String): [Card!]!
+  getSets(filters: SetFilters): [Set!]!
+  getSingleCardInventory(filters: SingleCardFilters): [Card!]!
   isSetupPending: Boolean!
+}
+
+type Set {
+  code: String!
+  name: String!
+}
+
+input SetFilters {
+  searchTerm: String
 }
 
 input Settings {
   country: String!
   state: String!
+}
+
+input SingleCardFilters {
+  searchTerm: String
+  setCode: String
 }
 
 input UserDetails {

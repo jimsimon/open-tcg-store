@@ -18,15 +18,25 @@ export type Scalars = {
 
 export type Card = {
   __typename?: 'Card';
+  finishes: Array<Scalars['String']['output']>;
   id: Scalars['String']['output'];
-  inventory: Array<Inventory>;
+  inventory: ConditionInventories;
   name: Scalars['String']['output'];
+  setName: Scalars['String']['output'];
   thumbnail?: Maybe<Scalars['String']['output']>;
 };
 
-export type Inventory = {
-  __typename?: 'Inventory';
-  condition: Scalars['String']['output'];
+export type ConditionInventories = {
+  __typename?: 'ConditionInventories';
+  D?: Maybe<ConditionInventory>;
+  HP?: Maybe<ConditionInventory>;
+  LP: ConditionInventory;
+  MP: ConditionInventory;
+  NM: ConditionInventory;
+};
+
+export type ConditionInventory = {
+  __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
 };
@@ -44,18 +54,39 @@ export type MutationFirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getSets: Array<Set>;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
 };
 
 
+export type QueryGetSetsArgs = {
+  filters?: InputMaybe<SetFilters>;
+};
+
+
 export type QueryGetSingleCardInventoryArgs = {
+  filters?: InputMaybe<SingleCardFilters>;
+};
+
+export type Set = {
+  __typename?: 'Set';
+  code: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+};
+
+export type SetFilters = {
   searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Settings = {
   country: Scalars['String']['input'];
   state: Scalars['String']['input'];
+};
+
+export type SingleCardFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UserDetails = {
@@ -72,12 +103,19 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
-export type GetSingleCardInventoryQueryQueryVariables = Exact<{
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
+export type GetSetsQueryQueryVariables = Exact<{
+  filters?: InputMaybe<SetFilters>;
 }>;
 
 
-export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', thumbnail?: string | null, id: string, name: string, inventory: Array<{ __typename?: 'Inventory', condition: string, quantity: number, price: string }> }> };
+export type GetSetsQueryQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
+
+export type GetSingleCardInventoryQueryQueryVariables = Exact<{
+  filters?: InputMaybe<SingleCardFilters>;
+}>;
+
+
+export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', thumbnail?: string | null, id: string, name: string, setName: string, finishes: Array<string>, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string } } }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -103,17 +141,36 @@ export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
   firstTimeSetup(userDetails: $userDetails, settings: $settings)
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
+export const GetSetsQueryDocument = new TypedDocumentString(`
+    query GetSetsQuery($filters: SetFilters) {
+  getSets(filters: $filters) {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<GetSetsQueryQuery, GetSetsQueryQueryVariables>;
 export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
-    query GetSingleCardInventoryQuery($searchTerm: String) {
-  getSingleCardInventory(searchTerm: $searchTerm) {
+    query GetSingleCardInventoryQuery($filters: SingleCardFilters) {
+  getSingleCardInventory(filters: $filters) {
     thumbnail
     id
-    inventory {
-      condition
-      quantity
-      price
-    }
     name
+    setName
+    finishes
+    inventory {
+      NM {
+        quantity
+        price
+      }
+      LP {
+        quantity
+        price
+      }
+      MP {
+        quantity
+        price
+      }
+    }
   }
 }
     `) as unknown as TypedDocumentString<GetSingleCardInventoryQueryQuery, GetSingleCardInventoryQueryQueryVariables>;
