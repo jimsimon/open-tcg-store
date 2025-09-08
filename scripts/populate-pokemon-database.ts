@@ -560,4 +560,4 @@ async function processDecks() {
   console.log(`Processed ${totalDecks} decks`);
 }
 
-main().catch(console.error);
+await main();
