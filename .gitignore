@@ -27,4 +27,4 @@ dist-ssr
 pgdata
 
 # App Files
-*.sqlite*
+sqlite-data
