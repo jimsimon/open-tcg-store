@@ -200,7 +200,9 @@ async function processCards() {
         })
         .returning();
 
-      if (!insertedCard) continue;
+      if (!insertedCard) {
+        throw new Error(`Failed to insert card:\n${JSON.stringify(cardData)}`);
+      };
 
       totalCards++;
 
@@ -513,7 +515,9 @@ async function processDecks() {
       })
       .returning();
 
-    if (!insertedDeck) continue;
+    if (!insertedDeck) {
+      throw new Error(`Failed to insert deck:\n${JSON.stringify(deckData)}`);
+    };
 
     totalDecks++;
 
