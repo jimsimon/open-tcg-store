@@ -76,18 +76,16 @@ async function processSets() {
   // Prepare batch data
   for (const setData of setsData) {
     // Insert set
-    await pokemon
-      .insert(sets)
-      .values({
-        id: setData.id,
-        name: setData.name,
-        series: setData.series,
-        printedTotal: setData.printedTotal,
-        total: setData.total,
-        ptcgoCode: setData.ptcgoCode,
-        releaseDate: setData.releaseDate,
-        updatedAt: setData.updatedAt,
-      });
+    await pokemon.insert(sets).values({
+      id: setData.id,
+      name: setData.name,
+      series: setData.series,
+      printedTotal: setData.printedTotal,
+      total: setData.total,
+      ptcgoCode: setData.ptcgoCode,
+      releaseDate: setData.releaseDate,
+      updatedAt: setData.updatedAt,
+    });
 
     // Collect set legalities for batch insert
     if (setData.legalities) {
@@ -114,16 +112,12 @@ async function processSets() {
 
   // Batch insert set legalities
   if (setLegalitiesData.length > 0) {
-    await pokemon
-      .insert(setLegalities)
-      .values(setLegalitiesData);
+    await pokemon.insert(setLegalities).values(setLegalitiesData);
   }
 
   // Batch insert set images
   if (setImagesData.length > 0) {
-    await pokemon
-      .insert(setImages)
-      .values(setImagesData);
+    await pokemon.insert(setImages).values(setImagesData);
   }
 
   console.log(`Processed ${setsData.length} sets`);
@@ -173,10 +167,10 @@ async function processCards() {
   await Promise.all(readPromises);
 
   // Process all cards in batches
-  const batchSize = 1000;
+  const batchSize = 2000;
   for (let i = 0; i < allCards.length; i += batchSize) {
     const batch = allCards.slice(i, i + batchSize);
-    
+
     // Process batch of cards
     for (const cardData of batch) {
       // Insert card first (no foreign key dependencies)
@@ -202,7 +196,7 @@ async function processCards() {
 
       if (!insertedCard) {
         throw new Error(`Failed to insert card:\n${JSON.stringify(cardData)}`);
-      };
+      }
 
       totalCards++;
 
@@ -350,24 +344,18 @@ async function processCards() {
     }
 
     // Batch insert all related data for this batch of cards in dependency order
-    
+
     // 1. Direct card dependencies (reference cards.id)
     if (cardSubtypesData.length > 0) {
-      await pokemon
-        .insert(cardSubtypes)
-        .values(cardSubtypesData.splice(0, cardSubtypesData.length));
+      await pokemon.insert(cardSubtypes).values(cardSubtypesData.splice(0, cardSubtypesData.length));
     }
 
     if (cardTypesData.length > 0) {
-      await pokemon
-        .insert(cardTypes)
-        .values(cardTypesData.splice(0, cardTypesData.length));
+      await pokemon.insert(cardTypes).values(cardTypesData.splice(0, cardTypesData.length));
     }
 
     if (cardEvolvesToData.length > 0) {
-      await pokemon
-        .insert(cardEvolvesTo)
-        .values(cardEvolvesToData.splice(0, cardEvolvesToData.length));
+      await pokemon.insert(cardEvolvesTo).values(cardEvolvesToData.splice(0, cardEvolvesToData.length));
     }
 
     if (cardNationalPokedexNumbersData.length > 0) {
@@ -377,59 +365,41 @@ async function processCards() {
     }
 
     if (cardLegalitiesData.length > 0) {
-      await pokemon
-        .insert(cardLegalities)
-        .values(cardLegalitiesData.splice(0, cardLegalitiesData.length));
+      await pokemon.insert(cardLegalities).values(cardLegalitiesData.splice(0, cardLegalitiesData.length));
     }
 
     if (cardImagesData.length > 0) {
-      await pokemon
-        .insert(cardImages)
-        .values(cardImagesData.splice(0, cardImagesData.length));
+      await pokemon.insert(cardImages).values(cardImagesData.splice(0, cardImagesData.length));
     }
 
     if (cardRulesData.length > 0) {
-      await pokemon
-        .insert(cardRules)
-        .values(cardRulesData.splice(0, cardRulesData.length));
+      await pokemon.insert(cardRules).values(cardRulesData.splice(0, cardRulesData.length));
     }
 
     if (cardAbilitiesData.length > 0) {
-      await pokemon
-        .insert(cardAbilities)
-        .values(cardAbilitiesData.splice(0, cardAbilitiesData.length));
+      await pokemon.insert(cardAbilities).values(cardAbilitiesData.splice(0, cardAbilitiesData.length));
     }
 
     if (cardWeaknessesData.length > 0) {
-      await pokemon
-        .insert(cardWeaknesses)
-        .values(cardWeaknessesData.splice(0, cardWeaknessesData.length));
+      await pokemon.insert(cardWeaknesses).values(cardWeaknessesData.splice(0, cardWeaknessesData.length));
     }
 
     if (cardResistancesData.length > 0) {
-      await pokemon
-        .insert(cardResistances)
-        .values(cardResistancesData.splice(0, cardResistancesData.length));
+      await pokemon.insert(cardResistances).values(cardResistancesData.splice(0, cardResistancesData.length));
     }
 
     if (cardRetreatCostsData.length > 0) {
-      await pokemon
-        .insert(cardRetreatCosts)
-        .values(cardRetreatCostsData.splice(0, cardRetreatCostsData.length));
+      await pokemon.insert(cardRetreatCosts).values(cardRetreatCostsData.splice(0, cardRetreatCostsData.length));
     }
 
     // 2. Attack dependencies (reference cardAttacks.id)
     if (cardAttacksData.length > 0) {
-      await pokemon
-        .insert(cardAttacks)
-        .values(cardAttacksData.splice(0, cardAttacksData.length));
+      await pokemon.insert(cardAttacks).values(cardAttacksData.splice(0, cardAttacksData.length));
     }
 
     // 3. Attack cost dependencies (reference cardAttacks.id)
     if (cardAttackCostsData.length > 0) {
-      await pokemon
-        .insert(cardAttackCosts)
-        .values(cardAttackCostsData.splice(0, cardAttackCostsData.length));
+      await pokemon.insert(cardAttackCosts).values(cardAttackCostsData.splice(0, cardAttackCostsData.length));
     }
 
     console.log(`Processed ${totalCards} cards`);
@@ -445,14 +415,14 @@ async function processDecks() {
   const allDecks: any[] = [];
   const deckTypesData: any[] = [];
   const deckCardsData: any[] = [];
-  
+
   // Create a card lookup map to avoid repeated file searches
   const cardDetailsMap = new Map<string, any>();
 
   // First, build a comprehensive card lookup map
   console.log("Building card lookup map...");
   const cardDirs = await fs.readdir(cardsDir);
-  
+
   const cardMapPromises = cardDirs.map(async (langDir) => {
     const langPath = join(cardsDir, langDir);
     const stats = await fs.stat(langPath);
@@ -469,7 +439,7 @@ async function processDecks() {
         for (const card of cardsData) {
           cardDetailsMap.set(card.id, {
             name: card.name,
-            rarity: card.rarity || "Unknown"
+            rarity: card.rarity || "Unknown",
           });
         }
       }
@@ -517,7 +487,7 @@ async function processDecks() {
 
     if (!insertedDeck) {
       throw new Error(`Failed to insert deck:\n${JSON.stringify(deckData)}`);
-    };
+    }
 
     totalDecks++;
 
@@ -535,7 +505,7 @@ async function processDecks() {
     if (deckData.cards && Array.isArray(deckData.cards)) {
       for (const deckCard of deckData.cards) {
         const cardDetails = cardDetailsMap.get(deckCard.id);
-        
+
         deckCardsData.push({
           deckId: insertedDeck.id,
           cardId: deckCard.id,
@@ -549,16 +519,12 @@ async function processDecks() {
 
   // Batch insert deck types (depends on decks.id)
   if (deckTypesData.length > 0) {
-    await pokemon
-      .insert(deckTypes)
-      .values(deckTypesData);
+    await pokemon.insert(deckTypes).values(deckTypesData);
   }
 
   // Batch insert deck cards (depends on decks.id and cards.id)
   if (deckCardsData.length > 0) {
-    await pokemon
-      .insert(deckCards)
-      .values(deckCardsData);
+    await pokemon.insert(deckCards).values(deckCardsData);
   }
 
   console.log(`Processed ${totalDecks} decks`);
