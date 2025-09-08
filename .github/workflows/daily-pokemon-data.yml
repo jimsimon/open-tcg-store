@@ -40,14 +40,18 @@ jobs:
           path: ./sqlite-data/pokemon.sqlite
           retention-days: 1
           
+      - name: Generate Date
+        id: date
+        run: echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: pokemon-data-$(date +%Y%m%d)
+          tag_name: pokemon-data-${{ steps.date.outputs.date }}
           name: Pokemon Data Update - ${{ github.run_number }}
           body: |
             Daily Pokemon TCG data update
-            - Generated on: ${{ github.run_date }}
+            - Generated on: ${{ steps.date.outputs.date }}
             - Run number: ${{ github.run_number }}
             
             This release contains the latest Pokemon TCG database in SQLite format.
