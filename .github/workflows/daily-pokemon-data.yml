@@ -7,6 +7,9 @@ on:
     - cron: '0 10 * * *'
   workflow_dispatch: # Allow manual triggering
 
+permissions:
+  contents: write # Grants write permission to the workflow for creating a release
+
 jobs:
   update-pokemon-data:
     runs-on: ubuntu-latest
