@@ -204,5 +204,5 @@ export const deckCards = sqliteTable('deck_cards', {
 }, (table) => [
   index('deck_cards_deck_idx').on(table.deckId),
   index('deck_cards_card_idx').on(table.cardId),
-  uniqueIndex('deck_cards_deck_card_idx').on(table.deckId, table.cardId),
+  index('deck_cards_deck_card_idx').on(table.deckId, table.cardId),
 ]);
