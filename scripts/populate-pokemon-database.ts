@@ -43,7 +43,7 @@ async function main() {
   console.log("Processing cards...");
   await processCards();
 
-  // Process decks
+  // Process decks last as they reference cards
   console.log("Processing decks...");
   await processDecks();
 
@@ -87,8 +87,7 @@ async function processSets() {
         ptcgoCode: setData.ptcgoCode,
         releaseDate: setData.releaseDate,
         updatedAt: setData.updatedAt,
-      })
-      .onConflictDoNothing();
+      });
 
     // Collect set legalities for batch insert
     if (setData.legalities) {
@@ -117,16 +116,14 @@ async function processSets() {
   if (setLegalitiesData.length > 0) {
     await pokemon
       .insert(setLegalities)
-      .values(setLegalitiesData)
-      .onConflictDoNothing();
+      .values(setLegalitiesData);
   }
 
   // Batch insert set images
   if (setImagesData.length > 0) {
     await pokemon
       .insert(setImages)
-      .values(setImagesData)
-      .onConflictDoNothing();
+      .values(setImagesData);
   }
 
   console.log(`Processed ${setsData.length} sets`);
@@ -176,13 +173,13 @@ async function processCards() {
   await Promise.all(readPromises);
 
   // Process all cards in batches
-  const batchSize = 100;
+  const batchSize = 1000;
   for (let i = 0; i < allCards.length; i += batchSize) {
     const batch = allCards.slice(i, i + batchSize);
     
     // Process batch of cards
     for (const cardData of batch) {
-      // Insert card
+      // Insert card first (no foreign key dependencies)
       const cardId = cardData.id;
       const setPrefix = cardId.split("-")[0];
       const [insertedCard] = await pokemon
@@ -201,7 +198,6 @@ async function processCards() {
           flavorText: cardData.flavorText,
           setId: setPrefix,
         })
-        .onConflictDoNothing()
         .returning();
 
       if (!insertedCard) continue;
@@ -289,7 +285,6 @@ async function processCards() {
               text: attack.text,
               attackIndex: index,
             })
-            .onConflictDoNothing()
             .returning();
 
           // Collect attack costs
@@ -352,96 +347,87 @@ async function processCards() {
       }
     }
 
-    // Batch insert all related data for this batch of cards
+    // Batch insert all related data for this batch of cards in dependency order
+    
+    // 1. Direct card dependencies (reference cards.id)
     if (cardSubtypesData.length > 0) {
       await pokemon
         .insert(cardSubtypes)
-        .values(cardSubtypesData.splice(0, cardSubtypesData.length))
-        .onConflictDoNothing();
+        .values(cardSubtypesData.splice(0, cardSubtypesData.length));
     }
 
     if (cardTypesData.length > 0) {
       await pokemon
         .insert(cardTypes)
-        .values(cardTypesData.splice(0, cardTypesData.length))
-        .onConflictDoNothing();
+        .values(cardTypesData.splice(0, cardTypesData.length));
     }
 
     if (cardEvolvesToData.length > 0) {
       await pokemon
         .insert(cardEvolvesTo)
-        .values(cardEvolvesToData.splice(0, cardEvolvesToData.length))
-        .onConflictDoNothing();
+        .values(cardEvolvesToData.splice(0, cardEvolvesToData.length));
     }
 
     if (cardNationalPokedexNumbersData.length > 0) {
       await pokemon
         .insert(cardNationalPokedexNumbers)
-        .values(cardNationalPokedexNumbersData.splice(0, cardNationalPokedexNumbersData.length))
-        .onConflictDoNothing();
+        .values(cardNationalPokedexNumbersData.splice(0, cardNationalPokedexNumbersData.length));
     }
 
     if (cardLegalitiesData.length > 0) {
       await pokemon
         .insert(cardLegalities)
-        .values(cardLegalitiesData.splice(0, cardLegalitiesData.length))
-        .onConflictDoNothing();
+        .values(cardLegalitiesData.splice(0, cardLegalitiesData.length));
     }
 
     if (cardImagesData.length > 0) {
       await pokemon
         .insert(cardImages)
-        .values(cardImagesData.splice(0, cardImagesData.length))
-        .onConflictDoNothing();
+        .values(cardImagesData.splice(0, cardImagesData.length));
     }
 
     if (cardRulesData.length > 0) {
       await pokemon
         .insert(cardRules)
-        .values(cardRulesData.splice(0, cardRulesData.length))
-        .onConflictDoNothing();
-    }
-
-    if (cardAttacksData.length > 0) {
-      await pokemon
-        .insert(cardAttacks)
-        .values(cardAttacksData.splice(0, cardAttacksData.length))
-        .onConflictDoNothing();
-    }
-
-    if (cardAttackCostsData.length > 0) {
-      await pokemon
-        .insert(cardAttackCosts)
-        .values(cardAttackCostsData.splice(0, cardAttackCostsData.length))
-        .onConflictDoNothing();
+        .values(cardRulesData.splice(0, cardRulesData.length));
     }
 
     if (cardAbilitiesData.length > 0) {
       await pokemon
         .insert(cardAbilities)
-        .values(cardAbilitiesData.splice(0, cardAbilitiesData.length))
-        .onConflictDoNothing();
+        .values(cardAbilitiesData.splice(0, cardAbilitiesData.length));
     }
 
     if (cardWeaknessesData.length > 0) {
       await pokemon
         .insert(cardWeaknesses)
-        .values(cardWeaknessesData.splice(0, cardWeaknessesData.length))
-        .onConflictDoNothing();
+        .values(cardWeaknessesData.splice(0, cardWeaknessesData.length));
     }
 
     if (cardResistancesData.length > 0) {
       await pokemon
         .insert(cardResistances)
-        .values(cardResistancesData.splice(0, cardResistancesData.length))
-        .onConflictDoNothing();
+        .values(cardResistancesData.splice(0, cardResistancesData.length));
     }
 
     if (cardRetreatCostsData.length > 0) {
       await pokemon
         .insert(cardRetreatCosts)
-        .values(cardRetreatCostsData.splice(0, cardRetreatCostsData.length))
-        .onConflictDoNothing();
+        .values(cardRetreatCostsData.splice(0, cardRetreatCostsData.length));
+    }
+
+    // 2. Attack dependencies (reference cardAttacks.id)
+    if (cardAttacksData.length > 0) {
+      await pokemon
+        .insert(cardAttacks)
+        .values(cardAttacksData.splice(0, cardAttacksData.length));
+    }
+
+    // 3. Attack cost dependencies (reference cardAttacks.id)
+    if (cardAttackCostsData.length > 0) {
+      await pokemon
+        .insert(cardAttackCosts)
+        .values(cardAttackCostsData.splice(0, cardAttackCostsData.length));
     }
 
     console.log(`Processed ${totalCards} cards`);
@@ -518,14 +504,13 @@ async function processDecks() {
 
   // Process all decks
   for (const deckData of allDecks) {
-    // Insert deck
+    // Insert deck first (no foreign key dependencies)
     const [insertedDeck] = await pokemon
       .insert(decks)
       .values({
         id: deckData.id,
         name: deckData.name,
       })
-      .onConflictDoNothing()
       .returning();
 
     if (!insertedDeck) continue;
@@ -558,23 +543,18 @@ async function processDecks() {
     }
   }
 
-  // Batch insert deck types
+  // Batch insert deck types (depends on decks.id)
   if (deckTypesData.length > 0) {
     await pokemon
       .insert(deckTypes)
-      .values(deckTypesData)
-      .onConflictDoNothing();
+      .values(deckTypesData);
   }
 
-  // Batch insert deck cards with conflict update
+  // Batch insert deck cards (depends on decks.id and cards.id)
   if (deckCardsData.length > 0) {
     await pokemon
       .insert(deckCards)
-      .values(deckCardsData)
-      .onConflictDoUpdate({
-        target: [deckCards.deckId, deckCards.cardId],
-        set: { count: deckCardsData[0].count },
-      });
+      .values(deckCardsData);
   }
 
   console.log(`Processed ${totalDecks} decks`);
