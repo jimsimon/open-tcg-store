@@ -199,7 +199,7 @@ export const deckCards = sqliteTable('deck_cards', {
   deckId: text('deck_id').notNull().references(() => decks.id, { onDelete: 'cascade' }),
   cardId: text('card_id').notNull().references(() => cards.id, { onDelete: 'cascade' }),
   cardName: text('card_name').notNull(), // Stored for reference since card may not exist in cards table
-  rarity: text('rarity').notNull(),
+  rarity: text('rarity'), // Allow null for cases where rarity is unknown
   count: integer('count').notNull(),
 }, (table) => [
   index('deck_cards_deck_idx').on(table.deckId),

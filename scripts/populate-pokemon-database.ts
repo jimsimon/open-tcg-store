@@ -509,8 +509,8 @@ async function processDecks() {
         deckCardsData.push({
           deckId: insertedDeck.id,
           cardId: deckCard.id,
-          cardName: cardDetails?.name || deckCard.id,
-          rarity: cardDetails?.rarity || "Unknown",
+          cardName: deckCard.name || cardDetails?.name || 'Unknown Card',
+          rarity: deckCard.rarity || cardDetails?.rarity,
           count: deckCard.count,
         });
       }
