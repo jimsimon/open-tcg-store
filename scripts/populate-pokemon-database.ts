@@ -506,13 +506,18 @@ async function processDecks() {
       for (const deckCard of deckData.cards) {
         const cardDetails = cardDetailsMap.get(deckCard.id);
 
-        deckCardsData.push({
-          deckId: insertedDeck.id,
-          cardId: deckCard.id,
-          cardName: deckCard.name || cardDetails?.name || 'Unknown Card',
-          rarity: deckCard.rarity || cardDetails?.rarity,
-          count: deckCard.count,
-        });
+        // Only add deck cards for cards that exist in our database
+        if (cardDetails) {
+          deckCardsData.push({
+            deckId: insertedDeck.id,
+            cardId: deckCard.id,
+            cardName: deckCard.name || cardDetails.name || 'Unknown Card',
+            rarity: deckCard.rarity || cardDetails.rarity,
+            count: deckCard.count,
+          });
+        } else {
+          console.warn(`Skipping deck card ${deckCard.id} (${deckCard.name}) - card not found in database`);
+        }
       }
     }
   }
