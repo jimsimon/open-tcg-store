@@ -3,6 +3,7 @@
 import fs from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { eq } from "drizzle-orm";
 import { pokemon } from "../src/db/index.js";
 import {
   sets,
@@ -176,6 +177,9 @@ async function processCards() {
       // Insert card first (no foreign key dependencies)
       const cardId = cardData.id;
       const setPrefix = cardId.split("-")[0];
+      
+      console.log(`Inserting card ${cardId} with setId ${setPrefix}`);
+      
       const [insertedCard] = await pokemon
         .insert(cards)
         .values({
@@ -198,6 +202,7 @@ async function processCards() {
         throw new Error(`Failed to insert card:\n${JSON.stringify(cardData)}`);
       }
 
+      console.log(`✓ Successfully inserted card ${insertedCard.id}`);
       totalCards++;
 
       // Collect related data for batch insert
@@ -506,13 +511,18 @@ async function processDecks() {
       for (const deckCard of deckData.cards) {
         const cardDetails = cardDetailsMap.get(deckCard.id);
 
-        deckCardsData.push({
-          deckId: insertedDeck.id,
-          cardId: deckCard.id,
-          cardName: deckCard.name || cardDetails?.name || 'Unknown Card',
-          rarity: deckCard.rarity || cardDetails?.rarity,
-          count: deckCard.count,
-        });
+        // Only add deck cards for cards that exist in our database
+        if (cardDetails) {
+          deckCardsData.push({
+            deckId: insertedDeck.id,
+            cardId: deckCard.id,
+            cardName: deckCard.name || cardDetails.name || 'Unknown Card',
+            rarity: deckCard.rarity || cardDetails.rarity,
+            count: deckCard.count,
+          });
+        } else {
+          console.warn(`Skipping deck card ${deckCard.id} (${deckCard.name}) - card not found in database`);
+        }
       }
     }
   }
@@ -524,7 +534,39 @@ async function processDecks() {
 
   // Batch insert deck cards (depends on decks.id and cards.id)
   if (deckCardsData.length > 0) {
-    await pokemon.insert(deckCards).values(deckCardsData);
+    console.log(`Attempting to insert ${deckCardsData.length} deck cards...`);
+    
+    // Verify that referenced cards actually exist in the database
+    const uniqueCardIds = [...new Set(deckCardsData.map(dc => dc.cardId))];
+    console.log(`Verifying ${uniqueCardIds.length} unique card IDs exist in database...`);
+    
+    for (const cardId of uniqueCardIds.slice(0, 5)) { // Check first 5 as sample
+      const existingCard = await pokemon.select().from(cards).where(eq(cards.id, cardId)).limit(1);
+      if (existingCard.length === 0) {
+        console.error(`Card ${cardId} does not exist in database but is referenced in deck cards`);
+      } else {
+        console.log(`✓ Card ${cardId} exists in database`);
+      }
+    }
+    
+    try {
+      await pokemon.insert(deckCards).values(deckCardsData);
+      console.log(`Successfully inserted ${deckCardsData.length} deck cards`);
+    } catch (error) {
+      console.error('Failed to insert deck cards:', error);
+      
+      // Try inserting one by one to identify problematic records
+      console.log('Attempting individual inserts to identify problematic records...');
+      for (let i = 0; i < Math.min(10, deckCardsData.length); i++) {
+        try {
+          await pokemon.insert(deckCards).values([deckCardsData[i]]);
+          console.log(`✓ Inserted deck card for ${deckCardsData[i].cardId}`);
+        } catch (individualError) {
+          console.error(`✗ Failed to insert deck card for ${deckCardsData[i].cardId}:`, individualError);
+        }
+      }
+      throw error;
+    }
   }
 
   console.log(`Processed ${totalDecks} decks`);
