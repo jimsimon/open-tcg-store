@@ -30,27 +30,50 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dataDir = join(__dirname, "../sqlite-data/pokemon-data/PokemonTCG-pokemon-tcg-data-a6a5579");
+async function findPokemonDataDir(): Promise<string> {
+  const pokemonDataBaseDir = join(__dirname, "../sqlite-data/pokemon-data");
+  
+  try {
+    const entries = await fs.readdir(pokemonDataBaseDir, { withFileTypes: true });
+    const directories = entries.filter(entry => entry.isDirectory());
+    
+    if (directories.length === 0) {
+      throw new Error("No directories found in sqlite-data/pokemon-data/. Please run fetch-and-extract-pokemon-data.ts first.");
+    }
+    
+    if (directories.length > 1) {
+      console.warn(`Multiple directories found in pokemon-data: ${directories.map(d => d.name).join(", ")}. Using the first one: ${directories[0].name}`);
+    }
+    
+    const dataDir = join(pokemonDataBaseDir, directories[0].name);
+    console.log(`Using Pokemon data directory: ${dataDir}`);
+    return dataDir;
+  } catch (error) {
+    throw new Error(`Failed to find Pokemon data directory: ${error}`);
+  }
+}
 
 async function main() {
   console.log("Starting Pokemon database population...");
+  
+  const dataDir = await findPokemonDataDir();
 
   // Process sets first as they're referenced by cards
   console.log("Processing sets...");
-  await processSets();
+  await processSets(dataDir);
 
   // Process cards
   console.log("Processing cards...");
-  await processCards();
+  await processCards(dataDir);
 
   // Process decks last as they reference cards
   console.log("Processing decks...");
-  await processDecks();
+  await processDecks(dataDir);
 
   console.log("Database population completed!");
 }
 
-async function processSets() {
+async function processSets(dataDir: string) {
   const setsDir = join(dataDir, "sets");
   const setsFiles = (await fs.readdir(setsDir)).filter((file) => file.endsWith(".json"));
 
@@ -123,7 +146,7 @@ async function processSets() {
   console.log(`Processed ${setsData.length} sets`);
 }
 
-async function processCards() {
+async function processCards(dataDir: string) {
   const cardsDir = join(dataDir, "cards");
   const languageDirs = await fs.readdir(cardsDir);
 
@@ -406,7 +429,7 @@ async function processCards() {
   }
 }
 
-async function processDecks() {
+async function processDecks(dataDir: string) {
   const decksDir = join(dataDir, "decks");
   const cardsDir = join(dataDir, "cards");
   const languageDirs = await fs.readdir(decksDir);
