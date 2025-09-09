@@ -1,18 +1,20 @@
 import { LitElement, PropertyValues, css, html, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline'
-import '@awesome.me/webawesome/dist/components/select/select.js'
-import '@awesome.me/webawesome/dist/components/option/option.js'
-import '@awesome.me/webawesome/dist/components/icon/icon.js'
-import '@awesome.me/webawesome/dist/components/divider/divider.js'
+import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
+import "@awesome.me/webawesome/dist/components/select/select.js";
+import "@awesome.me/webawesome/dist/components/option/option.js";
+import "@awesome.me/webawesome/dist/components/icon/icon.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
-import Cookies from 'js-cookie'
+import Cookies from "js-cookie";
 
 @customElement("ogs-page")
 export class OgsPage extends LitElement {
   static styles = [
-    css`${unsafeCSS(utilityStyles)}`,
+    css`
+      ${unsafeCSS(utilityStyles)}
+    `,
     css`
       :host {
         display: block;
@@ -78,13 +80,14 @@ export class OgsPage extends LitElement {
         box-sizing: border-box;
         margin-inline: auto;
         max-width: 1200px;
-        flex: 1
+        flex: 1;
       }
 
       [hidden] {
         display: none;
       }
-  `];
+    `,
+  ];
 
   @property({ type: String })
   activePage?: string;
@@ -93,7 +96,7 @@ export class OgsPage extends LitElement {
   hideNav = false;
 
   @state()
-  themePreference = Cookies.get('ogs-theme-preference') || 'auto';
+  themePreference = Cookies.get("ogs-theme-preference") || "auto";
 
   @state()
   themeColor = this.determineThemeColor();
@@ -107,10 +110,30 @@ export class OgsPage extends LitElement {
       <header class="wa-split">
         <h1>OpenTCGS</h1>
         <div>
-          <wa-select class="color-scheme-selector" appearance="filled" size="small" value="${this.themePreference}" title="Press \ to toggle" placement="bottom" @change="${this.handleThemePreferenceChange}">
+          <wa-select
+            class="color-scheme-selector"
+            appearance="filled"
+            size="small"
+            value="${this.themePreference}"
+            title="Press  to toggle"
+            placement="bottom"
+            @change="${this.handleThemePreferenceChange}"
+          >
             <span slot="label" class="wa-visually-hidden">Choose Theme</span>
-            <wa-icon class="only-light" slot="start" name="sun" variant="regular" .hidden="${this.themeColor === 'dark'}"></wa-icon>
-            <wa-icon class="only-dark" slot="start" name="moon" variant="regular" .hidden="${this.themeColor === 'light'}"></wa-icon>
+            <wa-icon
+              class="only-light"
+              slot="start"
+              name="sun"
+              variant="regular"
+              .hidden="${this.themeColor === "dark"}"
+            ></wa-icon>
+            <wa-icon
+              class="only-dark"
+              slot="start"
+              name="moon"
+              variant="regular"
+              .hidden="${this.themeColor === "light"}"
+            ></wa-icon>
             <wa-option value="light">
               <wa-icon slot="start" name="sun" variant="regular"></wa-icon>
               Light
@@ -131,15 +154,18 @@ export class OgsPage extends LitElement {
       <div id="page">
         ${when(
           !this.hideNav,
-          () =>
-            html` <nav>
+          () => html`
+            <nav>
+              <h2>${this.renderAnchor("/", "Dashboard", "Dashboard")}</h2>
+              <h2>Inventory</h2>
               <ul>
-                <li>${this.renderAnchor("/", "Dashboard")}</li>
-                <li>${this.renderAnchor("/inventory", "Inventory")}</li>
-                <li>${this.renderAnchor("/sales", "Sales")}</li>
-                <li>${this.renderAnchor("/settings", "Settings")}</li>
+                <li>${this.renderAnchor("/inventory/magic", "Magic", "inventory/magic")}</li>
+                <li>${this.renderAnchor("/inventory/pokemon", "Pokemon", "inventory/pokemon")}</li>
               </ul>
-            </nav>`,
+              <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
+              <h2>${this.renderAnchor("/settings", "Settings", "Settings")}</h2>
+            </nav>
+          `,
           () => nothing,
         )}
         <section>
@@ -151,8 +177,8 @@ export class OgsPage extends LitElement {
 
   handleThemePreferenceChange(event: Event) {
     const { value } = event.target as WaSelect;
-    if (value && typeof value === 'string') {
-      Cookies.set('ogs-theme-preference', value)
+    if (value && typeof value === "string") {
+      Cookies.set("ogs-theme-preference", value);
       this.themePreference = value;
     }
 
@@ -161,30 +187,28 @@ export class OgsPage extends LitElement {
   }
 
   determineThemeColor() {
-    if (this.themePreference === 'auto') {
-      const prefersDarkColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    if (this.themePreference === "auto") {
+      const prefersDarkColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
       if (prefersDarkColorScheme.matches) {
-        document.querySelector('html')?.classList.add('wa-dark')
-        return 'dark';
+        document.querySelector("html")?.classList.add("wa-dark");
+        return "dark";
       } else {
-        document.querySelector('html')?.classList.remove('wa-dark')
-        return 'light';
+        document.querySelector("html")?.classList.remove("wa-dark");
+        return "light";
       }
     }
-    return this.themePreference
+    return this.themePreference;
   }
 
   updateThemeClass() {
-    if (this.themeColor === 'light') {
-      document.querySelector('html')?.classList.remove('wa-dark')
+    if (this.themeColor === "light") {
+      document.querySelector("html")?.classList.remove("wa-dark");
     } else {
-      document.querySelector('html')?.classList.add('wa-dark')
+      document.querySelector("html")?.classList.add("wa-dark");
     }
   }
 
-  renderAnchor(href: string, label: string) {
-    return html`<a href="${href}" ?current="${this.activePage === label}"
-      >${label}</a
-    >`;
+  renderAnchor(href: string, label: string, activationKey: string) {
+    return html`<a href="${href}" ?current="${this.activePage === activationKey}">${label}</a>`;
   }
 }

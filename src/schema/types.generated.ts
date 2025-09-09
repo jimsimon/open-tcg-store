@@ -20,10 +20,16 @@ export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
   id: Scalars['String']['output'];
+  images?: Maybe<CardImages>;
   inventory: ConditionInventories;
   name: Scalars['String']['output'];
   setName: Scalars['String']['output'];
-  thumbnail?: Maybe<Scalars['String']['output']>;
+};
+
+export type CardImages = {
+  __typename?: 'CardImages';
+  large?: Maybe<Scalars['String']['output']>;
+  small?: Maybe<Scalars['String']['output']>;
 };
 
 export type ConditionInventories = {
@@ -62,11 +68,13 @@ export type Query = {
 
 export type QuerygetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
+  game: Scalars['String']['input'];
 };
 
 
 export type QuerygetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
+  game: Scalars['String']['input'];
 };
 
 export type Set = {
@@ -168,6 +176,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type ResolversTypes = {
   Card: ResolverTypeWrapper<Card>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  CardImages: ResolverTypeWrapper<CardImages>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -185,6 +194,7 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   Card: Card;
   String: Scalars['String']['output'];
+  CardImages: CardImages;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
   Int: Scalars['Int']['output'];
@@ -201,10 +211,16 @@ export type ResolversParentTypes = {
 export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  images?: Resolver<Maybe<ResolversTypes['CardImages']>, ParentType, ContextType>;
   inventory?: Resolver<ResolversTypes['ConditionInventories'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  thumbnail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CardImagesResolvers<ContextType = any, ParentType extends ResolversParentTypes['CardImages'] = ResolversParentTypes['CardImages']> = {
+  large?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  small?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -228,8 +244,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, Partial<QuerygetSetsArgs>>;
-  getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, Partial<QuerygetSingleCardInventoryArgs>>;
+  getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
+  getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
@@ -241,6 +257,7 @@ export type SetResolvers<ContextType = any, ParentType extends ResolversParentTy
 
 export type Resolvers<ContextType = any> = {
   Card?: CardResolvers<ContextType>;
+  CardImages?: CardImagesResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;

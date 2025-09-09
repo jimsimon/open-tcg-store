@@ -20,10 +20,16 @@ export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
   id: Scalars['String']['output'];
+  images?: Maybe<CardImages>;
   inventory: ConditionInventories;
   name: Scalars['String']['output'];
   setName: Scalars['String']['output'];
-  thumbnail?: Maybe<Scalars['String']['output']>;
+};
+
+export type CardImages = {
+  __typename?: 'CardImages';
+  large?: Maybe<Scalars['String']['output']>;
+  small?: Maybe<Scalars['String']['output']>;
 };
 
 export type ConditionInventories = {
@@ -62,11 +68,13 @@ export type Query = {
 
 export type QueryGetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
+  game: Scalars['String']['input'];
 };
 
 
 export type QueryGetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
+  game: Scalars['String']['input'];
 };
 
 export type Set = {
@@ -104,6 +112,7 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
 export type GetSetsQueryQueryVariables = Exact<{
+  game: Scalars['String']['input'];
   filters?: InputMaybe<SetFilters>;
 }>;
 
@@ -111,11 +120,12 @@ export type GetSetsQueryQueryVariables = Exact<{
 export type GetSetsQueryQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
 
 export type GetSingleCardInventoryQueryQueryVariables = Exact<{
+  game: Scalars['String']['input'];
   filters?: InputMaybe<SingleCardFilters>;
 }>;
 
 
-export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', thumbnail?: string | null, id: string, name: string, setName: string, finishes: Array<string>, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string } } }> };
+export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string } } }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -142,21 +152,24 @@ export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const GetSetsQueryDocument = new TypedDocumentString(`
-    query GetSetsQuery($filters: SetFilters) {
-  getSets(filters: $filters) {
+    query GetSetsQuery($game: String!, $filters: SetFilters) {
+  getSets(game: $game, filters: $filters) {
     code
     name
   }
 }
     `) as unknown as TypedDocumentString<GetSetsQueryQuery, GetSetsQueryQueryVariables>;
 export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
-    query GetSingleCardInventoryQuery($filters: SingleCardFilters) {
-  getSingleCardInventory(filters: $filters) {
-    thumbnail
+    query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {
+  getSingleCardInventory(game: $game, filters: $filters) {
     id
     name
     setName
     finishes
+    images {
+      small
+      large
+    }
     inventory {
       NM {
         quantity

@@ -16,7 +16,7 @@ import { resolvers } from "./schema/resolvers.generated.ts";
 import type { Resolvers } from "./schema/types.generated.ts";
 import { typeDefs } from "./schema/typeDefs.generated.ts";
 import { ruruHTML } from "ruru/server";
-import viteConfig from '../vite.config.ts'
+import viteConfig from "../vite.config.ts";
 
 const app = new Koa();
 const schema = makeExecutableSchema({
@@ -48,9 +48,7 @@ app.use(bodyParser());
 
 const router = new Router()
   .use(async (ctx: RouterContext, next: Next) => {
-    const [{ count: userCount }] = await otcgs
-      .select({ count: count() })
-      .from(user);
+    const [{ count: userCount }] = await otcgs.select({ count: count() }).from(user);
     if (userCount === 0 && ctx._matchedRouteName !== "first-time-setup") {
       const redirectUrlOrError = router.url("first-time-setup");
       if (redirectUrlOrError instanceof Error) {
@@ -73,7 +71,7 @@ const router = new Router()
   .get("first-time-setup", "/first-time-setup", async (ctx) => {
     return renderPage(ctx, "first-time-setup");
   })
-  .get("inventory", "/inventory", async (ctx) => {
+  .get("inventory", "/inventory/:game", async (ctx) => {
     return renderPage(ctx, "inventory");
   })
   .get("sales", "/sales", async (ctx) => {
@@ -81,7 +79,7 @@ const router = new Router()
   })
   .get("settings", "/settings", async (ctx) => {
     return renderPage(ctx, "settings");
-  })
+  });
 
 const port = 5173;
 app
@@ -94,15 +92,11 @@ app
   });
 
 async function renderPage(ctx: RouterContext, pageDirectory: string) {
-  const { render: renderShellTemplate } = await vite.ssrLoadModule(
-    "/src/shell.ts",
-  );
-  const { render: pageTemplate } = await vite.ssrLoadModule(
-    `/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
-  );
+  const { render: renderShellTemplate } = await vite.ssrLoadModule("/src/shell.ts");
+  const { render: pageTemplate } = await vite.ssrLoadModule(`/src/pages/${pageDirectory}/${pageDirectory}.server.ts`);
   ctx.type = "html";
   // ctx.body = new RenderResultReadable(
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );
-  ctx.body = renderShellTemplate(pageDirectory, pageTemplate(ctx))
+  ctx.body = renderShellTemplate(pageDirectory, pageTemplate(ctx));
 }

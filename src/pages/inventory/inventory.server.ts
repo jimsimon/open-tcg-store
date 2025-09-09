@@ -4,6 +4,6 @@ import type { RouterContext } from "@koa/router";
 
 export function render(ctx: RouterContext) {
   return `
-    <ogs-inventory-page></ogs-inventory-page>
+    <ogs-inventory-page game="${ctx.params.game}"></ogs-inventory-page>
   `;
 }

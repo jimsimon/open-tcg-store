@@ -14,8 +14,13 @@ type Card {
   name: String!
   setName: String!
   finishes: [String!]!
-  thumbnail: String
+  images: CardImages
   inventory: ConditionInventories!
+}
+
+type CardImages {
+  small: String
+  large: String
 }
 
 type ConditionInventories {
@@ -51,6 +56,6 @@ extend type Mutation {
 
 extend type Query {
   isSetupPending: Boolean!
-  getSingleCardInventory(filters: SingleCardFilters): [Card!]!
-  getSets(filters: SetFilters): [Set!]!
+  getSingleCardInventory(game: String!, filters: SingleCardFilters): [Card!]!
+  getSets(game: String!, filters: SetFilters): [Set!]!
 }

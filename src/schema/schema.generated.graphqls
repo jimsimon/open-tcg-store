@@ -1,10 +1,15 @@
 type Card {
   finishes: [String!]!
   id: String!
+  images: CardImages
   inventory: ConditionInventories!
   name: String!
   setName: String!
-  thumbnail: String
+}
+
+type CardImages {
+  large: String
+  small: String
 }
 
 type ConditionInventories {
@@ -25,8 +30,8 @@ type Mutation {
 }
 
 type Query {
-  getSets(filters: SetFilters): [Set!]!
-  getSingleCardInventory(filters: SingleCardFilters): [Card!]!
+  getSets(filters: SetFilters, game: String!): [Set!]!
+  getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   isSetupPending: Boolean!
 }
 
