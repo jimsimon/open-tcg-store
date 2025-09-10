@@ -13,6 +13,7 @@ export function render(pageDirectory: string, pageContent: unknown) {
             margin: 0;
             font-family: "Lato", sans-serif;
             box-sizing: border-box;
+            background-color: var(--wa-color-surface-lowered);
           }
         </style>
         <link rel="stylesheet" href="/node_modules/@fontsource/lato/index.css"/>
@@ -27,10 +28,9 @@ export function render(pageDirectory: string, pageContent: unknown) {
         ${pageContent}
         <script
           type="module"
-          src="/node_modules/@lit-labs/ssr-client/${process.env.NODE_ENV ===
-          "development"
-            ? "development/"
-            : ""}lit-element-hydrate-support.js"
+          src="/node_modules/@lit-labs/ssr-client/${
+            process.env.NODE_ENV === "development" ? "development/" : ""
+          }lit-element-hydrate-support.js"
         ></script>
         <script type="module">
           import { setBasePath } from '/node_modules/@awesome.me/webawesome';

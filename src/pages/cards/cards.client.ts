@@ -18,8 +18,8 @@ import { Card, Set } from "../../schema/types.generated.ts";
 import { ConditionInventory } from "../../graphql/graphql.ts";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 
-@customElement("ogs-inventory-page")
-export class InventoryPage extends LitElement {
+@customElement("ogs-cards-page")
+export class CardsPage extends LitElement {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -251,9 +251,9 @@ export class InventoryPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="inventory/${this.game}">
+      <ogs-page activePage="games/${this.game}/cards">
         <div class="inventory-header">
-          <h1>Inventory</h1>
+          <h1>Cards</h1>
           <div class="header-controls">
             <div class="add-button">
               <wa-button appearance="filled" href="/inventory/add">
@@ -313,17 +313,15 @@ export class InventoryPage extends LitElement {
                           : html`<wa-icon name="id-card" variant="regular" class="card-thumbnail"></wa-icon>`}
                       </td>
                       <td>
-                        <a href="/inventory/${card.id}" class="card-name-link">
+                        <a href="/games/${this.game}/cards/${card.id}" class="card-name-link">
                           ${card.name.length > 31 ? card.name.substring(0, 31) + "..." : card.name}
                         </a>
                         <span class="finishes">
-                          ${card.finishes?.map((f) =>
-                            f !== "nonfoil"
-                              ? html`
-                                  <wa-badge id="uuid-${card.id}-${f}"> ${f.charAt(0).toUpperCase()} </wa-badge>
-                                  <wa-tooltip for="uuid-${card.id}-${f}"> ${f} </wa-tooltip>
-                                `
-                              : nothing,
+                          ${card.finishes?.map(
+                            (f) => html`
+                              <wa-badge id="uuid-${card.id}-${f}"> ${f.charAt(0).toUpperCase()} </wa-badge>
+                              <wa-tooltip for="uuid-${card.id}-${f}"> ${f} </wa-tooltip>
+                            `,
                           )}
                         </span>
                       </td>

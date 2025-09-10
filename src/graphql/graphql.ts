@@ -60,9 +60,16 @@ export type MutationFirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getCard: Card;
   getSets: Array<Set>;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+};
+
+
+export type QueryGetCardArgs = {
+  cardId: Scalars['String']['input'];
+  game: Scalars['String']['input'];
 };
 
 
@@ -103,13 +110,13 @@ export type UserDetails = {
   password: Scalars['String']['input'];
 };
 
-export type FirstTimeSetupMutationMutationVariables = Exact<{
-  userDetails: UserDetails;
-  settings: Settings;
+export type GetCardQueryQueryVariables = Exact<{
+  game: Scalars['String']['input'];
+  cardId: Scalars['String']['input'];
 }>;
 
 
-export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
+export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } } };
 
 export type GetSetsQueryQueryVariables = Exact<{
   game: Scalars['String']['input'];
@@ -126,6 +133,14 @@ export type GetSingleCardInventoryQueryQueryVariables = Exact<{
 
 
 export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string } } }> };
+
+export type FirstTimeSetupMutationMutationVariables = Exact<{
+  userDetails: UserDetails;
+  settings: Settings;
+}>;
+
+
+export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -146,11 +161,42 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
-    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
-  firstTimeSetup(userDetails: $userDetails, settings: $settings)
+export const GetCardQueryDocument = new TypedDocumentString(`
+    query GetCardQuery($game: String!, $cardId: String!) {
+  getCard(game: $game, cardId: $cardId) {
+    id
+    name
+    setName
+    finishes
+    images {
+      small
+      large
+    }
+    inventory {
+      NM {
+        quantity
+        price
+      }
+      LP {
+        quantity
+        price
+      }
+      MP {
+        quantity
+        price
+      }
+      HP {
+        quantity
+        price
+      }
+      D {
+        quantity
+        price
+      }
+    }
+  }
 }
-    `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
+    `) as unknown as TypedDocumentString<GetCardQueryQuery, GetCardQueryQueryVariables>;
 export const GetSetsQueryDocument = new TypedDocumentString(`
     query GetSetsQuery($game: String!, $filters: SetFilters) {
   getSets(game: $game, filters: $filters) {
@@ -187,3 +233,8 @@ export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetSingleCardInventoryQueryQuery, GetSingleCardInventoryQueryQueryVariables>;
+export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
+    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
+  firstTimeSetup(userDetails: $userDetails, settings: $settings)
+}
+    `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;

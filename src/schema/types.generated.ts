@@ -60,9 +60,16 @@ export type MutationfirstTimeSetupArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  getCard: Card;
   getSets: Array<Set>;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+};
+
+
+export type QuerygetCardArgs = {
+  cardId: Scalars['String']['input'];
+  game: Scalars['String']['input'];
 };
 
 
@@ -244,6 +251,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;

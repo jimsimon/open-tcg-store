@@ -15,20 +15,22 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
+    "\n      query GetCardQuery($game: String!, $cardId: String!) {\n        getCard(game: $game, cardId: $cardId) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": typeof types.GetCardQueryDocument,
     "\n      query GetSetsQuery($game: String!, $filters: SetFilters) {\n        getSets(game: $game, filters: $filters) {\n          code\n          name\n        }\n      }\n    ": typeof types.GetSetsQueryDocument,
     "\n      query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {\n        getSingleCardInventory(game: $game, filters: $filters) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": typeof types.GetSingleCardInventoryQueryDocument,
+    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
 };
 const documents: Documents = {
-    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": types.FirstTimeSetupMutationDocument,
+    "\n      query GetCardQuery($game: String!, $cardId: String!) {\n        getCard(game: $game, cardId: $cardId) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": types.GetCardQueryDocument,
     "\n      query GetSetsQuery($game: String!, $filters: SetFilters) {\n        getSets(game: $game, filters: $filters) {\n          code\n          name\n        }\n      }\n    ": types.GetSetsQueryDocument,
     "\n      query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {\n        getSingleCardInventory(game: $game, filters: $filters) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": types.GetSingleCardInventoryQueryDocument,
+    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": types.FirstTimeSetupMutationDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
+export function graphql(source: "\n      query GetCardQuery($game: String!, $cardId: String!) {\n        getCard(game: $game, cardId: $cardId) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    "): typeof import('./graphql').GetCardQueryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -37,6 +39,10 @@ export function graphql(source: "\n      query GetSetsQuery($game: String!, $fil
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n      query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {\n        getSingleCardInventory(game: $game, filters: $filters) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    "): typeof import('./graphql').GetSingleCardInventoryQueryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $settings: Settings!\n      ) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
 
 
 export function graphql(source: string) {

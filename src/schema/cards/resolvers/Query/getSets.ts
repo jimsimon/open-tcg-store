@@ -1,10 +1,10 @@
-import type { QueryResolvers } from "./../../../types.generated";
+import type { QueryResolvers } from "../../../types.generated";
 import { magic, pokemon } from "../../../../db";
 import { sets as magicSets } from "../../../../db/mtg/schema";
 import { sets as pokemonSets } from "../../../../db/pokemon/schema";
 import { like, sql } from "drizzle-orm";
 
-export const getSets: NonNullable<QueryResolvers['getSets']> = async (_parent, { game, filters }, _ctx) => {
+export const getSets: NonNullable<QueryResolvers["getSets"]> = async (_parent, { game, filters }, _ctx) => {
   if (game === "magic") {
     const result = await magic
       .select({ code: magicSets.code, name: magicSets.name })

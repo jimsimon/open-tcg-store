@@ -9,53 +9,10 @@ input Settings {
   state: String!
 }
 
-type Card {
-  id: String!
-  name: String!
-  setName: String!
-  finishes: [String!]!
-  images: CardImages
-  inventory: ConditionInventories!
-}
-
-type CardImages {
-  small: String
-  large: String
-}
-
-type ConditionInventories {
-  NM: ConditionInventory!
-  LP: ConditionInventory!
-  MP: ConditionInventory!
-  HP: ConditionInventory
-  D: ConditionInventory
-}
-
-type ConditionInventory {
-  quantity: Int!
-  price: String!
-}
-
-type Set {
-  code: String!
-  name: String!
-}
-
-input SingleCardFilters {
-  searchTerm: String
-  setCode: String
-}
-
-input SetFilters {
-  searchTerm: String
-}
-
 extend type Mutation {
   firstTimeSetup(userDetails: UserDetails!, settings: Settings!): String!
 }
 
 extend type Query {
   isSetupPending: Boolean!
-  getSingleCardInventory(game: String!, filters: SingleCardFilters): [Card!]!
-  getSets(game: String!, filters: SetFilters): [Set!]!
 }

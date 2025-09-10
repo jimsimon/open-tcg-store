@@ -30,6 +30,7 @@ type Mutation {
 }
 
 type Query {
+  getCard(cardId: String!, game: String!): Card!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   isSetupPending: Boolean!

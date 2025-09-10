@@ -157,10 +157,10 @@ export class OgsPage extends LitElement {
           () => html`
             <nav>
               <h2>${this.renderAnchor("/", "Dashboard", "Dashboard")}</h2>
-              <h2>Inventory</h2>
+              <h2>Cards</h2>
               <ul>
-                <li>${this.renderAnchor("/inventory/magic", "Magic", "inventory/magic")}</li>
-                <li>${this.renderAnchor("/inventory/pokemon", "Pokemon", "inventory/pokemon")}</li>
+                <li>${this.renderAnchor("/games/magic/cards", "Magic", "games/magic/cards")}</li>
+                <li>${this.renderAnchor("/games/pokemon/cards", "Pokemon", "games/pokemon/cards")}</li>
               </ul>
               <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
               <h2>${this.renderAnchor("/settings", "Settings", "Settings")}</h2>

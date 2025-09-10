@@ -71,8 +71,11 @@ const router = new Router()
   .get("first-time-setup", "/first-time-setup", async (ctx) => {
     return renderPage(ctx, "first-time-setup");
   })
-  .get("inventory", "/inventory/:game", async (ctx) => {
-    return renderPage(ctx, "inventory");
+  .get("inventory", "/games/:game/cards", async (ctx) => {
+    return renderPage(ctx, "cards");
+  })
+  .get("card-details", "/games/:game/cards/:cardId", async (ctx) => {
+    return renderPage(ctx, "card-details");
   })
   .get("sales", "/sales", async (ctx) => {
     return renderPage(ctx, "sales");
