@@ -6,6 +6,7 @@ import "@awesome.me/webawesome/dist/components/select/select.js";
 import "@awesome.me/webawesome/dist/components/option/option.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
+import "@awesome.me/webawesome/dist/components/avatar/avatar.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import Cookies from "js-cookie";
 
@@ -85,6 +86,10 @@ export class OgsPage extends LitElement {
       [hidden] {
         display: none;
       }
+
+      wa-button.avatar-button::part(base) {
+        border-radius: 100%;
+      }
     `,
   ];
 
@@ -108,11 +113,10 @@ export class OgsPage extends LitElement {
     return html`
       <header class="wa-split">
         <h1>OpenTCGS</h1>
-        <div>
+        <div class="wa-cluster">
           <wa-select
             class="color-scheme-selector"
             appearance="filled"
-            size="small"
             value="${this.themePreference}"
             title="Press  to toggle"
             placement="bottom"
@@ -148,6 +152,13 @@ export class OgsPage extends LitElement {
               System
             </wa-option>
           </wa-select>
+          <wa-button appearance="filled">
+            <wa-icon name="shopping-cart"></wa-icon>
+          </wa-button>
+          <wa-divider orientation="vertical"></wa-divider>
+          <wa-button class="avatar-button" appearance="filled">
+            <wa-icon name="user" variant="solid"></wa-icon>
+          </wa-button>
         </div>
       </header>
       <div id="page">
@@ -162,7 +173,6 @@ export class OgsPage extends LitElement {
                 <li>${this.renderAnchor("/games/pokemon/cards", "Pokemon", "games/pokemon/cards")}</li>
               </ul>
               <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
-              <h2>${this.renderAnchor("/settings", "Settings", "Settings")}</h2>
             </nav>
           `,
           () => nothing,

@@ -5,7 +5,7 @@ import { cards as pokemonCards, sets as pokemonSets, cardImages } from "../../..
 import { Card, CardImages, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
 import { buildMagicImages, createFakeInventory } from "./utils";
 
-export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
+export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
   _parent,
   { game, filters },
   _ctx,
@@ -45,7 +45,7 @@ async function getMagicInventory(filters: InputMaybe<SingleCardFilters>) {
       ),
     )
     .orderBy(mtgCards.name)
-    .limit(20);
+    .limit(10);
 
   return result.map<Card>((card) => ({
     id: card.uuid,
@@ -85,7 +85,7 @@ async function getPokemonInventory(filters: InputMaybe<SingleCardFilters>) {
         filters?.setCode ? eq(cards.setId, filters.setCode) : undefined,
       ),
     orderBy: (cards, { asc }) => asc(cards.name),
-    limit: 20,
+    limit: 10,
   });
 
   return result.map<Card>((card) => ({

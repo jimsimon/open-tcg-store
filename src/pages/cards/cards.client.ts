@@ -140,6 +140,9 @@ export class CardsPage extends LitElement {
   @state()
   private setsLoading = true;
 
+  @state()
+  private selectedConditionMap: Record<string, number> = {};
+
   @property()
   game: string = "";
 
@@ -257,18 +260,6 @@ export class CardsPage extends LitElement {
   render() {
     return html`
       <ogs-page activePage="games/${this.game}/cards">
-        <div class="inventory-header">
-          <h1>Cards</h1>
-          <div class="header-controls">
-            <div class="add-button">
-              <wa-button appearance="filled" href="/inventory/add">
-                <wa-icon slot="start" name="plus"></wa-icon>
-                Add Inventory
-              </wa-button>
-            </div>
-          </div>
-        </div>
-
         <div class="search-container">
           <div class="filter-button">
             <wa-select
@@ -298,7 +289,7 @@ export class CardsPage extends LitElement {
             <table class="wa-table wa-zebra-rows wa-hover-rows">
               <thead>
                 <tr>
-                  <th></th>
+                  <th class="wa-visually-hidden">Thumbnail</th>
                   <th>Name</th>
                   <th>Set</th>
                   <th>Condition</th>
@@ -333,7 +324,11 @@ export class CardsPage extends LitElement {
                       <td>${card.setName.length > 20 ? card.setName.substring(0, 20) + "..." : card.setName}</td>
                       <td>
                         <div style="display: flex; justify-content: end;"></div>
-                        <wa-select id=${card.id} style="width: unset; max-width: 100px;">
+                        <wa-select
+                          id=${card.id}
+                          style="width: unset; max-width: 100px;"
+                          @change="${this.handleConditionSelection}"
+                        >
                           <span slot="label" class="wa-visually-hidden">Condition</span>
                           ${Object.keys(card.inventory).map(
                             (condition, index) => html`
@@ -342,7 +337,7 @@ export class CardsPage extends LitElement {
                           )}
                         </wa-select>
                       </td>
-                      <td>${Object.values(card.inventory)[0].price}</td>
+                      <td>$${Object.values(card.inventory)[this.selectedConditionMap[card.id] || 0].price}</td>
                       <td>
                         <div class="cart-controls">
                           <wa-input
@@ -380,5 +375,13 @@ export class CardsPage extends LitElement {
         `,
       )}
     `;
+  }
+
+  handleConditionSelection(event: Event) {
+    const select = event.target as WaSelect;
+    this.selectedConditionMap = {
+      ...this.selectedConditionMap,
+      [select.id]: select.getAllOptions().indexOf(select.selectedOptions[0]),
+    };
   }
 }

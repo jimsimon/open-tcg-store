@@ -11,9 +11,13 @@ export function render(pageDirectory: string, pageContent: unknown) {
         <style>
           body {
             margin: 0;
-            font-family: "Inconsolata", monospace;
             box-sizing: border-box;
             background-color: var(--wa-color-surface-lowered);
+            color: var(--wa-color-text-normal);
+            font-family: "Inconsolata", monospace;
+            font-size: var(--wa-font-size-m);
+            font-weight: var(--wa-font-weight-body);
+            line-height: var(--wa-line-height-normal);
           }
         </style>
         <link rel="stylesheet" href="/node_modules/@fontsource/inconsolata/index.css"/>
