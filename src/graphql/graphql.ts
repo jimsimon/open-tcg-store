@@ -132,7 +132,7 @@ export type GetSingleCardInventoryQueryQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string } } }> };
+export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } }> };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
@@ -226,6 +226,14 @@ export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
         price
       }
       MP {
+        quantity
+        price
+      }
+      HP {
+        quantity
+        price
+      }
+      D {
         quantity
         price
       }

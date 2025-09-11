@@ -5,7 +5,7 @@ import { cards as pokemonCards, sets as pokemonSets, cardImages } from "../../..
 import { Card, CardImages, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
 import { buildMagicImages, createFakeInventory } from "./utils";
 
-export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
+export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
   _parent,
   { game, filters },
   _ctx,

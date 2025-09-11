@@ -1,10 +1,11 @@
+import type   { QueryResolvers } from './../../../types.generated';
 import { eq } from "drizzle-orm";
 import { magic, pokemon } from "../../../../db";
 import { cardIdentifiers, cards as mtgCards, sets as mtgSets } from "../../../../db/mtg/schema";
 import type { Card } from "./../../../types.generated";
 import { buildMagicImages, createFakeInventory } from "./utils";
 
-export const getCard = async (_parent, { game, cardId }, _ctx) => {
+export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, _ctx) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }

@@ -18,7 +18,6 @@ export class OgsPage extends LitElement {
     css`
       :host {
         display: block;
-        height: 100vh;
         box-sizing: border-box;
       }
 

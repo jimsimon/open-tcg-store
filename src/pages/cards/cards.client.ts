@@ -9,13 +9,14 @@ import "@awesome.me/webawesome/dist/components/select/select.js";
 import "@awesome.me/webawesome/dist/components/badge/badge.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
+import "@awesome.me/webawesome/dist/components/details/details.js";
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
 import "../../components/ogs-page.ts";
 import { graphql } from "../../graphql/gql.ts";
 import { execute } from "../../lib/graphql.ts";
 import { Card, Set } from "../../schema/types.generated.ts";
-import { ConditionInventory } from "../../graphql/graphql.ts";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 
 @customElement("ogs-cards-page")
@@ -117,10 +118,6 @@ export class CardsPage extends LitElement {
         flex-wrap: wrap;
         justify-content: flex-end;
         width: 100%;
-      }
-
-      .cart-controls {
-        align-items: end;
       }
 
       .add-to-cart {
@@ -229,6 +226,14 @@ export class CardsPage extends LitElement {
               quantity
               price
             }
+            HP {
+              quantity
+              price
+            }
+            D {
+              quantity
+              price
+            }
           }
         }
       }
@@ -288,8 +293,7 @@ export class CardsPage extends LitElement {
             </wa-input>
           </div>
         </div>
-
-        <wa-card appearance="filled">
+        <wa-card appearance="outline">
           <div class="table-container">
             <table class="wa-table wa-zebra-rows wa-hover-rows">
               <thead>
@@ -297,8 +301,9 @@ export class CardsPage extends LitElement {
                   <th></th>
                   <th>Name</th>
                   <th>Set</th>
-                  <th>Availability</th>
-                  <th></th>
+                  <th>Condition</th>
+                  <th>Price</th>
+                  <th class="wa-visually-hidden">Add to Cart</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,31 +332,29 @@ export class CardsPage extends LitElement {
                       </td>
                       <td>${card.setName.length > 20 ? card.setName.substring(0, 20) + "..." : card.setName}</td>
                       <td>
-                        ${Object.entries(card.inventory as unknown as Record<string, ConditionInventory>).map(
-                          ([condition, { quantity, price }]) => html`
-                            <div>${condition}: ${quantity} × $${price}</div>
-                          `,
-                        )}
-                      </td>
-                      <td>
                         <div style="display: flex; justify-content: end;"></div>
+                        <wa-select id=${card.id} style="width: unset; max-width: 100px;">
+                          <span slot="label" class="wa-visually-hidden">Condition</span>
+                          ${Object.keys(card.inventory).map(
+                            (condition, index) => html`
+                              <wa-option ?selected="${index === 0}" value="${condition}">${condition}</wa-option>
+                            `,
+                          )}
+                        </wa-select>
+                      </td>
+                      <td>${Object.values(card.inventory)[0].price}</td>
+                      <td>
                         <div class="cart-controls">
-                          <wa-select id=${card.id} label="Condition" style="width: unset; max-width: 120px;">
-                            ${Object.keys(card.inventory).map(
-                              (condition, index) => html`
-                                <wa-option ?selected="${index === 0}" value="${condition}">${condition}</wa-option>
-                              `,
-                            )}
-                          </wa-select>
                           <wa-input
-                            label="Quantity"
                             type="number"
                             min="1"
                             max="99"
-                            placeholder="Qty"
+                            placeholder="Quantity"
                             value="1"
-                            style="width: 60px;"
-                          ></wa-input>
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
                           <wa-button appearance="filled" class="add-to-cart">
                             <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                           </wa-button>

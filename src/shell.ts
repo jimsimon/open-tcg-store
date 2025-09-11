@@ -11,12 +11,12 @@ export function render(pageDirectory: string, pageContent: unknown) {
         <style>
           body {
             margin: 0;
-            font-family: "Lato", sans-serif;
+            font-family: "Inconsolata", monospace;
             box-sizing: border-box;
             background-color: var(--wa-color-surface-lowered);
           }
         </style>
-        <link rel="stylesheet" href="/node_modules/@fontsource/lato/index.css"/>
+        <link rel="stylesheet" href="/node_modules/@fontsource/inconsolata/index.css"/>
         <link
           rel="stylesheet"
           href="/node_modules/@awesome.me/webawesome/dist/styles/webawesome.css"
