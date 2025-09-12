@@ -1,5 +1,5 @@
 {
-  "name": "tcg-store",
+  "name": "@open-tcgs/workspace",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -26,6 +26,7 @@
     "@fontsource/inconsolata": "5.2.7",
     "@graphql-tools/schema": "^10.0.25",
     "@koa/bodyparser": "^6.0.0",
+    "@koa/cors": "5.0.0",
     "@koa/router": "^14.0.0",
     "@libsql/client": "^0.15.14",
     "@lit-labs/ssr": "^3.3.1",
@@ -42,7 +43,8 @@
     "lit": "^3.3.1",
     "pg": "8.16.3",
     "ruru": "^2.0.0-beta.29",
-    "tsx": "^4.20.4"
+    "tsx": "^4.20.4",
+    "workspace-root": "3.3.1"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.0",
@@ -54,6 +56,7 @@
     "@types/koa": "^3.0.0",
     "@types/koa__router": "^12.0.4",
     "@types/koa-bodyparser": "^4.3.12",
+    "@types/koa__cors": "5.0.0",
     "@types/koa-mount": "^4.0.5",
     "@types/pg": "8.15.5",
     "@vitest/browser": "^3.2.4",

@@ -1,6 +1,12 @@
 local_resource(
-    "App Server",
-    serve_cmd="npm run dev",
+    "UI Server",
+    serve_cmd="pnpm --filter @open-tcgs/ui run dev",
+    resource_deps=["Database"]
+)
+
+local_resource(
+    "API Server",
+    serve_cmd="pnpm --filter @open-tcgs/api run dev",
     resource_deps=["Database"]
 )
 

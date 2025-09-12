@@ -1,0 +1,27 @@
+{
+  "name": "@open-tcgs/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development tsx --conditions=development,browser src/server.ts",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "npx @biomejs/biome lint --write",
+    "format": "npx @biomejs/biome check --fix --linter-enabled=false && prettier . --write",
+    "db:update-better-auth-schema": "npx @better-auth/cli generate -y --output ./src/db/otcgs/auth-schema.ts",
+    "db:push": "drizzle-kit push --config ./src/db/otcgs/drizzle.config.ts",
+    "db:pull:mtg": "drizzle-kit pull --config ./src/db/mtg/drizzle.config.ts",
+    "graphql:generate": "graphql-codegen",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:browser": "vitest --browser",
+    "test:browser:run": "vitest run --browser"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
