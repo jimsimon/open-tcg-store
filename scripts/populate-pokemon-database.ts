@@ -3,7 +3,7 @@
 import fs from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { pokemon } from "../src/db/index.js";
+import { pokemon } from "../packages/api/src/db/index.js";
 import {
   sets,
   setLegalities,
@@ -25,26 +25,30 @@ import {
   decks,
   deckTypes,
   deckCards,
-} from "../src/db/pokemon/schema.js";
+} from "../packages/api/src/db/pokemon/schema.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function findPokemonDataDir(): Promise<string> {
   const pokemonDataBaseDir = join(__dirname, "../sqlite-data/pokemon-data");
-  
+
   try {
     const entries = await fs.readdir(pokemonDataBaseDir, { withFileTypes: true });
-    const directories = entries.filter(entry => entry.isDirectory());
-    
+    const directories = entries.filter((entry) => entry.isDirectory());
+
     if (directories.length === 0) {
-      throw new Error("No directories found in sqlite-data/pokemon-data/. Please run fetch-and-extract-pokemon-data.ts first.");
+      throw new Error(
+        "No directories found in sqlite-data/pokemon-data/. Please run fetch-and-extract-pokemon-data.ts first.",
+      );
     }
-    
+
     if (directories.length > 1) {
-      console.warn(`Multiple directories found in pokemon-data: ${directories.map(d => d.name).join(", ")}. Using the first one: ${directories[0].name}`);
+      console.warn(
+        `Multiple directories found in pokemon-data: ${directories.map((d) => d.name).join(", ")}. Using the first one: ${directories[0].name}`,
+      );
     }
-    
+
     const dataDir = join(pokemonDataBaseDir, directories[0].name);
     console.log(`Using Pokemon data directory: ${dataDir}`);
     return dataDir;
@@ -55,7 +59,7 @@ async function findPokemonDataDir(): Promise<string> {
 
 async function main() {
   console.log("Starting Pokemon database population...");
-  
+
   const dataDir = await findPokemonDataDir();
 
   // Process sets first as they're referenced by cards
@@ -534,7 +538,7 @@ async function processDecks(dataDir: string) {
           deckCardsData.push({
             deckId: insertedDeck.id,
             cardId: deckCard.id,
-            cardName: deckCard.name || cardDetails.name || 'Unknown Card',
+            cardName: deckCard.name || cardDetails.name || "Unknown Card",
             rarity: deckCard.rarity || cardDetails.rarity,
             count: deckCard.count,
           });
