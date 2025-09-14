@@ -337,7 +337,9 @@ export class CardsPage extends LitElement {
                           )}
                         </wa-select>
                       </td>
-                      <td>$${Object.values(card.inventory)[this.selectedConditionMap[card.id] || 0].price}</td>
+                      <td>
+                        $${Object.values(card.inventory)[this.selectedConditionMap[card.id] || 0].price.toFixed(2)}
+                      </td>
                       <td>
                         <div class="cart-controls">
                           <wa-input

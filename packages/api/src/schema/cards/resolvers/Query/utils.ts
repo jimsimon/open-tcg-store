@@ -55,5 +55,5 @@ function getRandomDollarAmount(min: number, max: number) {
   // Generate a random number between min and max
   let randomNumber = Math.random() * (max - min) + min;
   // Round to two decimal places and convert to a fixed-point string
-  return randomNumber.toFixed(2);
+  return Number(randomNumber.toFixed(2));
 }

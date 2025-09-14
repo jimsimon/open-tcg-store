@@ -43,7 +43,7 @@ export type ConditionInventories = {
 
 export type ConditionInventory = {
   __typename?: 'ConditionInventory';
-  price: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -186,6 +186,7 @@ export type ResolversTypes = {
   CardImages: ResolverTypeWrapper<CardImages>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
+  Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
@@ -204,6 +205,7 @@ export type ResolversParentTypes = {
   CardImages: CardImages;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
+  Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
   Mutation: {};
   Query: {};
@@ -241,7 +243,7 @@ export type ConditionInventoriesResolvers<ContextType = any, ParentType extends 
 };
 
 export type ConditionInventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventory'] = ResolversParentTypes['ConditionInventory']> = {
-  price?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

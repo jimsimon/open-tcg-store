@@ -43,7 +43,7 @@ export type ConditionInventories = {
 
 export type ConditionInventory = {
   __typename?: 'ConditionInventory';
-  price: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -116,7 +116,7 @@ export type GetCardQueryQueryVariables = Exact<{
 }>;
 
 
-export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } } };
+export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: number }, LP: { __typename?: 'ConditionInventory', quantity: number, price: number }, MP: { __typename?: 'ConditionInventory', quantity: number, price: number }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: number } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: number } | null } } };
 
 export type GetSetsQueryQueryVariables = Exact<{
   game: Scalars['String']['input'];
@@ -132,7 +132,7 @@ export type GetSingleCardInventoryQueryQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } }> };
+export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: { __typename?: 'ConditionInventories', NM: { __typename?: 'ConditionInventory', quantity: number, price: number }, LP: { __typename?: 'ConditionInventory', quantity: number, price: number }, MP: { __typename?: 'ConditionInventory', quantity: number, price: number }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: number } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: number } | null } }> };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;

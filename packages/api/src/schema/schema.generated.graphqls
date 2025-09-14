@@ -21,7 +21,7 @@ type ConditionInventories {
 }
 
 type ConditionInventory {
-  price: String!
+  price: Float!
   quantity: Int!
 }
 

@@ -1,11 +1,36 @@
-import { eq, like, sql, and, inArray } from "drizzle-orm";
+import { eq, like, sql, and } from "drizzle-orm";
 import { magic, pokemon } from "../../../../db";
 import { cardIdentifiers, cards as mtgCards, sets as mtgSets } from "../../../../db/mtg/schema";
-import { cards as pokemonCards, sets as pokemonSets, cardImages } from "../../../../db/pokemon/schema";
-import { Card, CardImages, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
+import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
 import { buildMagicImages, createFakeInventory } from "./utils";
+import { normalize } from "better-auth";
 
-export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
+interface MtgCardPricing {
+  meta: {
+    date: string;
+    version: string;
+  };
+  data: Record<string, PriceFormats>;
+}
+
+interface PriceFormats {
+  mtgo?: Record<"cardhoarder", PriceList>;
+  paper?: Record<"cardkingdom" | "cardmarket" | "cardsphere" | "tcgplayer", PriceList>;
+}
+
+interface PriceList {
+  buylist?: PricePoints;
+  currency: string;
+  retail?: PricePoints;
+}
+
+interface PricePoints {
+  etched?: Record<string, number>;
+  foil?: Record<string, number>;
+  normal?: Record<string, number>;
+}
+
+export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
   _parent,
   { game, filters },
   _ctx,
@@ -47,14 +72,20 @@ async function getMagicInventory(filters: InputMaybe<SingleCardFilters>) {
     .orderBy(mtgCards.name)
     .limit(10);
 
-  return result.map<Card>((card) => ({
-    id: card.uuid,
-    name: card.name || "Unknown Card",
-    finishes: card.finishes?.split(", ") ?? [],
-    setName: card.setName || "Unknown Set",
-    images: buildMagicImages(card.scryfallId, card.multiverseId),
-    inventory: createFakeInventory(),
-  }));
+  const cards = [];
+  for (const card of result) {
+    for (const finish of (card.finishes || "nonfoil").split(", ")) {
+      cards.push({
+        id: card.uuid,
+        name: card.name || "Unknown Card",
+        finishes: [finish],
+        setName: card.setName || "Unknown Set",
+        images: buildMagicImages(card.scryfallId, card.multiverseId),
+        inventory: await createFakeMtgInventory(card.uuid, finish),
+      });
+    }
+  }
+  return cards;
 }
 
 async function getPokemonInventory(filters: InputMaybe<SingleCardFilters>) {
@@ -93,10 +124,58 @@ async function getPokemonInventory(filters: InputMaybe<SingleCardFilters>) {
     name: card.name,
     setName: card.set?.name ?? "Unknown Set",
     finishes: card.rarity === "Rare Holo" ? ["holo"] : [],
-    images: card.images.reduce((map, { imageType, url }) => {
-      map[imageType] = url;
-      return map;
-    }, {}),
+    images: card.images.reduce(
+      (map, { imageType, url }) => {
+        map[imageType] = url;
+        return map;
+      },
+      {} as Record<string, string>,
+    ),
     inventory: createFakeInventory(),
   }));
+}
+
+async function createFakeMtgInventory(cardId: string, finish: string) {
+  const type = finish === "nonfoil" ? "normal" : finish;
+  const price = await getPriceForIso8601Date(cardId, type);
+  return {
+    NM: {
+      quantity: Math.floor(Math.random() * 101),
+      price,
+    },
+    LP: {
+      quantity: Math.floor(Math.random() * 101),
+      price: 0,
+    },
+    MP: {
+      quantity: Math.floor(Math.random() * 101),
+      price: 0,
+    },
+    HP: {
+      quantity: Math.floor(Math.random() * 101),
+      price: 0,
+    },
+    D: {
+      quantity: Math.floor(Math.random() * 101),
+      price: 0,
+    },
+  };
+}
+
+async function getPriceForIso8601Date(cardId: string, type: string, date?: string) {
+  if (type !== "normal" && type !== "foil" && type !== "etched") {
+    return 0;
+  }
+
+  const cardPricing = (
+    await import("../../../../../../../sqlite-data/mtg-prices-daily.json", {
+      with: { type: "json" },
+    })
+  ).default as MtgCardPricing;
+
+  const retailTypePricing = cardPricing?.data?.[cardId]?.paper?.tcgplayer?.retail?.[type];
+  const latestDate = Object.keys(retailTypePricing || {})?.[0];
+  const dateToUse = date ?? latestDate;
+  const price = retailTypePricing?.[dateToUse] || 0;
+  return price;
 }

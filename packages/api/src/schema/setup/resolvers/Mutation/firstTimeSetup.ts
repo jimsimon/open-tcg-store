@@ -4,7 +4,7 @@ import { authClient } from "../../../../auth-client.ts";
 import { user } from "../../../../db/otcgs/auth-schema.ts";
 import { otcgs } from "../../../../db/index.ts";
 
-export const firstTimeSetup: NonNullable<MutationResolvers["firstTimeSetup"]> = async (
+export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
   _parent,
   { userDetails },
   _ctx,
