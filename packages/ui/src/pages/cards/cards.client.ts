@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from "lit";
+import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
