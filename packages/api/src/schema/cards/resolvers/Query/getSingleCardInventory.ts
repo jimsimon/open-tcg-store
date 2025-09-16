@@ -1,34 +1,7 @@
-import { eq, like, sql, and } from "drizzle-orm";
-import { magic, pokemon } from "../../../../db";
-import { cardIdentifiers, cards as mtgCards, sets as mtgSets } from "../../../../db/mtg/schema";
+import { sql } from "drizzle-orm";
+import { otcgs } from "../../../../db";
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
-import { buildMagicImages, createFakeInventory } from "./utils";
-import { normalize } from "better-auth";
-
-interface MtgCardPricing {
-  meta: {
-    date: string;
-    version: string;
-  };
-  data: Record<string, PriceFormats>;
-}
-
-interface PriceFormats {
-  mtgo?: Record<"cardhoarder", PriceList>;
-  paper?: Record<"cardkingdom" | "cardmarket" | "cardsphere" | "tcgplayer", PriceList>;
-}
-
-interface PriceList {
-  buylist?: PricePoints;
-  currency: string;
-  retail?: PricePoints;
-}
-
-interface PricePoints {
-  etched?: Record<string, number>;
-  foil?: Record<string, number>;
-  normal?: Record<string, number>;
-}
+import { createFakeInventory } from "./utils";
 
 export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
   _parent,
@@ -37,9 +10,9 @@ export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardIn
 ) => {
   try {
     if (game === "magic") {
-      return await getMagicInventory(filters);
+      return await getInventory(1, filters);
     } else if (game === "pokemon") {
-      return await getPokemonInventory(filters);
+      return await getInventory(2, filters);
     }
   } catch (e) {
     console.error(e);
@@ -48,134 +21,54 @@ export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardIn
   throw new Error(`Unsupported game: ${game}`);
 };
 
-async function getMagicInventory(filters: InputMaybe<SingleCardFilters>) {
-  const result = await magic
-    .select({
-      uuid: mtgCards.uuid,
-      name: mtgCards.name,
-      finishes: mtgCards.finishes,
-      setName: mtgSets.name,
-      scryfallId: cardIdentifiers.scryfallId,
-      multiverseId: cardIdentifiers.multiverseId,
-    })
-    .from(mtgCards)
-    .innerJoin(cardIdentifiers, eq(mtgCards.uuid, cardIdentifiers.uuid))
-    .innerJoin(mtgSets, eq(mtgCards.setCode, mtgSets.code))
-    .where(
-      and(
-        filters?.searchTerm && filters.searchTerm.trim().length > 0
-          ? like(sql`lower(${mtgCards.name})`, `%${filters.searchTerm.toLowerCase()}%`)
-          : undefined,
-        filters?.setCode ? eq(mtgSets.code, filters.setCode) : undefined,
-      ),
-    )
-    .orderBy(mtgCards.name)
-    .limit(10);
-
-  const cards = [];
-  for (const card of result) {
-    for (const finish of (card.finishes || "nonfoil").split(", ")) {
-      cards.push({
-        id: card.uuid,
-        name: card.name || "Unknown Card",
-        finishes: [finish],
-        setName: card.setName || "Unknown Set",
-        images: buildMagicImages(card.scryfallId, card.multiverseId),
-        inventory: await createFakeMtgInventory(card.uuid, finish),
-      });
-    }
-  }
-  return cards;
-}
-
-async function getPokemonInventory(filters: InputMaybe<SingleCardFilters>) {
-  const result = await pokemon.query.cards.findMany({
+async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFilters>) {
+  const results = await otcgs.query.product.findMany({
     columns: {
       id: true,
       name: true,
-      rarity: true,
+      imageUrl: true,
     },
     with: {
-      set: {
+      category: {
         columns: {
           name: true,
         },
       },
-      images: {
+      prices: {
         columns: {
-          imageType: true,
-          url: true,
+          marketPrice: true,
+          midPrice: true,
+          subTypeName: true,
         },
       },
     },
-    where: (cards, { and, like, eq }) =>
+    where: (product, { and, like, eq }) =>
       and(
+        eq(product.categoryId, categoryId),
         filters?.searchTerm && filters.searchTerm.trim().length > 0
-          ? like(sql`lower(${cards.name})`, `%${filters.searchTerm.toLowerCase()}%`)
+          ? like(sql`lower(${product.name})`, `%${filters.searchTerm.toLowerCase()}%`)
           : undefined,
-        filters?.setCode ? eq(cards.setId, filters.setCode) : undefined,
+        filters?.setCode ? eq(product.groupId, parseInt(filters.setCode, 10)) : undefined,
       ),
-    orderBy: (cards, { asc }) => asc(cards.name),
+    orderBy: (product, { asc }) => asc(product.name),
     limit: 10,
   });
 
-  return result.map<Card>((card) => ({
-    id: card.id,
-    name: card.name,
-    setName: card.set?.name ?? "Unknown Set",
-    finishes: card.rarity === "Rare Holo" ? ["holo"] : [],
-    images: card.images.reduce(
-      (map, { imageType, url }) => {
-        map[imageType] = url;
-        return map;
-      },
-      {} as Record<string, string>,
-    ),
-    inventory: createFakeInventory(),
-  }));
-}
-
-async function createFakeMtgInventory(cardId: string, finish: string) {
-  const type = finish === "nonfoil" ? "normal" : finish;
-  const price = await getPriceForIso8601Date(cardId, type);
-  return {
-    NM: {
-      quantity: Math.floor(Math.random() * 101),
-      price,
-    },
-    LP: {
-      quantity: Math.floor(Math.random() * 101),
-      price: 0,
-    },
-    MP: {
-      quantity: Math.floor(Math.random() * 101),
-      price: 0,
-    },
-    HP: {
-      quantity: Math.floor(Math.random() * 101),
-      price: 0,
-    },
-    D: {
-      quantity: Math.floor(Math.random() * 101),
-      price: 0,
-    },
-  };
-}
-
-async function getPriceForIso8601Date(cardId: string, type: string, date?: string) {
-  if (type !== "normal" && type !== "foil" && type !== "etched") {
-    return 0;
+  const cards: Card[] = [];
+  for (const result of results) {
+    for (const { marketPrice, midPrice, subTypeName } of result.prices) {
+      cards.push({
+        id: result.id.toString(),
+        name: result.name,
+        finishes: [subTypeName],
+        setName: result.category?.name || "Unknown Set",
+        images: {
+          small: result.imageUrl,
+          large: result.imageUrl,
+        },
+        inventory: await createFakeInventory(marketPrice, midPrice),
+      });
+    }
   }
-
-  const cardPricing = (
-    await import("../../../../../../../sqlite-data/mtg-prices-daily.json", {
-      with: { type: "json" },
-    })
-  ).default as MtgCardPricing;
-
-  const retailTypePricing = cardPricing?.data?.[cardId]?.paper?.tcgplayer?.retail?.[type];
-  const latestDate = Object.keys(retailTypePricing || {})?.[0];
-  const dateToUse = date ?? latestDate;
-  const price = retailTypePricing?.[dateToUse] || 0;
-  return price;
+  return cards;
 }

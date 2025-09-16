@@ -1,20 +1,15 @@
 import type { QueryResolvers } from "../../../types.generated";
-import { eq } from "drizzle-orm";
-import { magic, pokemon } from "../../../../db";
-import { cardIdentifiers, cards as mtgCards, sets as mtgSets } from "../../../../db/mtg/schema";
-import type { Card } from "../../../types.generated";
-import { buildMagicImages, createFakeInventory } from "./utils";
+import { otcgs } from "../../../../db";
+import { createFakeInventory } from "./utils";
 
-export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, _ctx) => {
+export const getCard: NonNullable<QueryResolvers["getCard"]> = async (_parent, { game, cardId }, _ctx) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }
 
   try {
-    if (game === "magic") {
-      return await getMagicCard(cardId);
-    } else if (game === "pokemon") {
-      return await getPokemonCard(cardId);
+    if (game === "magic" || game === "pokemon") {
+      return await getCardFromDb(parseInt(cardId, 10));
     }
   } catch (e) {
     console.error(e);
@@ -24,69 +19,40 @@ export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, {
   throw new Error(`Unsupported game: ${game}`);
 };
 
-async function getMagicCard(cardId: string): Promise<Card> {
-  const cards = await magic
-    .select({
-      uuid: mtgCards.uuid,
-      name: mtgCards.name,
-      finishes: mtgCards.finishes,
-      setName: mtgSets.name,
-      scryfallId: cardIdentifiers.scryfallId,
-      multiverseId: cardIdentifiers.multiverseId,
-    })
-    .from(mtgCards)
-    .innerJoin(cardIdentifiers, eq(mtgCards.uuid, cardIdentifiers.uuid))
-    .innerJoin(mtgSets, eq(mtgCards.setCode, mtgSets.code))
-    .where(eq(mtgCards.uuid, cardId));
-
-  if (cards.length > 0) {
-    const card = cards[0];
-    return {
-      id: card.uuid,
-      name: card.name || "Unknown Card",
-      finishes: card.finishes?.split(", ") ?? [],
-      setName: card.setName || "Unknown Set",
-      images: buildMagicImages(card.scryfallId, card.multiverseId),
-      inventory: createFakeInventory(),
-    };
-  }
-  throw new Error(`Unable to find card with id: ${cardId}`);
-}
-
-async function getPokemonCard(cardId: string): Promise<Card> {
-  const card = await pokemon.query.cards.findFirst({
+async function getCardFromDb(cardId: number) {
+  const result = await otcgs.query.product.findFirst({
     columns: {
       id: true,
       name: true,
-      rarity: true,
+      imageUrl: true,
     },
     with: {
-      set: {
+      category: {
         columns: {
           name: true,
         },
       },
-      images: {
+      prices: {
         columns: {
-          imageType: true,
-          url: true,
+          marketPrice: true,
+          subTypeName: true,
         },
       },
     },
-    where: (pokemonCards, { eq }) => eq(pokemonCards.id, cardId),
+    where: (product, { eq }) => eq(product.id, cardId),
   });
 
-  if (card) {
+  if (result) {
     return {
-      id: card.id,
-      name: card.name,
-      setName: card.set?.name ?? "Unknown Set",
-      finishes: card.rarity === "Rare Holo" ? ["holo"] : [],
-      images: card.images.reduce((map, { imageType, url }) => {
-        map[imageType] = url;
-        return map;
-      }, {}),
-      inventory: createFakeInventory(),
+      id: result.id.toString(),
+      name: result.name,
+      finishes: [result.prices[0].subTypeName],
+      setName: result.category?.name || "Unknown Set",
+      images: {
+        small: result.imageUrl,
+        large: result.imageUrl,
+      },
+      inventory: await createFakeInventory(result.prices[0].marketPrice),
     };
   }
   throw new Error(`Unable to find card with id: ${cardId}`);
