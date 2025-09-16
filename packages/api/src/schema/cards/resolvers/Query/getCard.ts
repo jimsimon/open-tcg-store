@@ -27,7 +27,7 @@ async function getCardFromDb(cardId: number) {
       tcgpProductId: true,
     },
     with: {
-      category: {
+      group: {
         columns: {
           name: true,
         },
@@ -48,11 +48,11 @@ async function getCardFromDb(cardId: number) {
       id: result.id.toString(),
       name: result.name,
       finishes: [result.prices[0].subTypeName],
-      setName: result.category?.name || "Unknown Set",
+      setName: result.group?.name || "Unknown Set",
       images: {
-          small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
-          large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
-        },
+        small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
+        large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
+      },
       inventory: createFakeInventory(result.prices[0].marketPrice, result.prices[0].midPrice),
     };
   }
