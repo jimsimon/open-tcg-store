@@ -12,7 +12,7 @@ import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "../../../components/ogs-page.ts";
+import "../../components/ogs-page.ts";
 import { execute } from "../../lib/graphql.ts";
 import { Card } from "../../graphql/graphql.ts";
 import { graphql } from "../../graphql/gql.ts";
