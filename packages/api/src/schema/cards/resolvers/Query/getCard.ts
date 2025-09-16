@@ -24,7 +24,7 @@ async function getCardFromDb(cardId: number) {
     columns: {
       id: true,
       name: true,
-      imageUrl: true,
+      tcgpProductId: true,
     },
     with: {
       category: {
@@ -35,6 +35,7 @@ async function getCardFromDb(cardId: number) {
       prices: {
         columns: {
           marketPrice: true,
+          midPrice: true,
           subTypeName: true,
         },
       },
@@ -49,10 +50,10 @@ async function getCardFromDb(cardId: number) {
       finishes: [result.prices[0].subTypeName],
       setName: result.category?.name || "Unknown Set",
       images: {
-        small: result.imageUrl,
-        large: result.imageUrl,
-      },
-      inventory: await createFakeInventory(result.prices[0].marketPrice),
+          small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
+          large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
+        },
+      inventory: createFakeInventory(result.prices[0].marketPrice, result.prices[0].midPrice),
     };
   }
   throw new Error(`Unable to find card with id: ${cardId}`);

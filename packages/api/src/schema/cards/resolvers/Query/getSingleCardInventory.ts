@@ -26,10 +26,10 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
     columns: {
       id: true,
       name: true,
-      imageUrl: true,
+      tcgpProductId: true,
     },
     with: {
-      category: {
+      group: {
         columns: {
           name: true,
         },
@@ -61,10 +61,10 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
         id: result.id.toString(),
         name: result.name,
         finishes: [subTypeName],
-        setName: result.category?.name || "Unknown Set",
+        setName: result.group?.name || "Unknown Set",
         images: {
-          small: result.imageUrl,
-          large: result.imageUrl,
+          small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
+          large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
         },
         inventory: await createFakeInventory(marketPrice, midPrice),
       });
