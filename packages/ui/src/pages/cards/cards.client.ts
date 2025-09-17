@@ -17,7 +17,7 @@ import "../../components/ogs-page.ts";
 import { graphql } from "../../graphql/index.ts";
 import { execute } from "../../lib/graphql.ts";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
-import { Card, Set } from "../../graphql/graphql.ts";
+import { Card, Set, ConditionInventories, ConditionInventory } from "../../graphql/graphql.ts";
 
 @customElement("ogs-cards-page")
 export class CardsPage extends LitElement {
@@ -217,6 +217,7 @@ export class CardsPage extends LitElement {
             large
           }
           inventory {
+            type
             NM {
               quantity
               price
@@ -330,15 +331,21 @@ export class CardsPage extends LitElement {
                           @change="${this.handleConditionSelection}"
                         >
                           <span slot="label" class="wa-visually-hidden">Condition</span>
-                          ${Object.keys(card.inventory).map(
-                            (condition, index) => html`
-                              <wa-option ?selected="${index === 0}" value="${condition}">${condition}</wa-option>
-                            `,
-                          )}
+                          ${Object.entries(card.inventory[0] || {})
+                            .filter(([key, value]) => typeof value !== "string")
+                            .map(
+                              ([condition], index) => html`
+                                <wa-option ?selected="${index === 0}" value="${condition}">${condition}</wa-option>
+                              `,
+                            )}
                         </wa-select>
                       </td>
                       <td>
-                        $${Object.values(card.inventory)[this.selectedConditionMap[card.id] || 0].price.toFixed(2)}
+                        $${(
+                          Object.values(card.inventory[0] || {}).filter((value) => typeof value !== "string")[
+                            this.selectedConditionMap[card.id] || 0
+                          ] as ConditionInventory
+                        ).price}
                       </td>
                       <td>
                         <div class="cart-controls">

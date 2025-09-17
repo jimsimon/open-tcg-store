@@ -66,7 +66,12 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
           small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
           large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
         },
-        inventory: await createFakeInventory(marketPrice, midPrice),
+        inventory: [
+          {
+            type: subTypeName,
+            ...createFakeInventory(marketPrice, midPrice),
+          },
+        ],
       });
     }
   }

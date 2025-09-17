@@ -1,7 +1,7 @@
 import { otcgs } from "../../../../db";
 import type { QueryResolvers } from "../../../types.generated";
 
-export const getSets: NonNullable<QueryResolvers["getSets"]> = async (_parent, { game, filters }, _ctx) => {
+export const getSets: NonNullable<QueryResolvers['getSets']> = async (_parent, { game, filters }, _ctx) => {
   let categoryId;
   if (game === "magic") {
     categoryId = 1;

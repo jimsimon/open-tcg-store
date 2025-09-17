@@ -1,4 +1,4 @@
-import { css, html, LitElement, unsafeCSS } from "lit";
+import { css, html, LitElement, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
@@ -26,6 +26,27 @@ export class CardDetailsPage extends LitElement {
     css`
       ${unsafeCSS(utilityStyles)}
     `,
+    css`
+      caption {
+        text-align: left;
+        font-size: var(--wa-font-size-xl);
+        font-family: var(--wa-font-family-heading);
+        font-weight: var(--wa-font-weight-heading);
+        line-height: var(--wa-line-height-condensed);
+        color: var(--wa-color-text-normal);
+        text-wrap: balance;
+      }
+
+      .cart-controls {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        width: 100%;
+      }
+    `,
   ];
 
   @property()
@@ -48,6 +69,10 @@ export class CardDetailsPage extends LitElement {
         getCard(game: $game, cardId: $cardId) {
           id
           name
+          rarity
+          type
+          text
+          flavorText
           setName
           finishes
           images {
@@ -55,6 +80,7 @@ export class CardDetailsPage extends LitElement {
             large
           }
           inventory {
+            type
             NM {
               quantity
               price
@@ -111,15 +137,23 @@ export class CardDetailsPage extends LitElement {
                   </tr>
                   <tr>
                     <th>Type</th>
-                    <td>Coming Soon!</td>
+                    <td>${this.card?.type}</td>
                   </tr>
                   <tr>
                     <th>Rarity</th>
+                    <td>${this.card?.rarity}</td>
+                  </tr>
+                  <tr>
+                    <th>Printings</th>
                     <td>${this.card?.finishes?.map((f) => html` <wa-badge> ${f.toUpperCase()} </wa-badge> `)}</td>
                   </tr>
                   <tr>
                     <th>Text</th>
-                    <td>Coming Soon!</td>
+                    <td>${this.card?.text}</td>
+                  </tr>
+                  <tr>
+                    <th>Flavor Text</th>
+                    <td>${this.card?.flavorText ?? "N/A"}</td>
                   </tr>
                 </tbody>
               </table>
@@ -127,42 +161,138 @@ export class CardDetailsPage extends LitElement {
           </wa-card>
           <wa-card appearance="outlined">
             <h2 slot="header">Pricing</h2>
-            <table class="wa-table wa-zebra-rows wa-hover-rows">
-              <thead>
-                <tr>
-                  <th>Condition</th>
-                  <th>Price</th>
-                  <th>Quantity</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Near Mint</td>
-                  <td>${this.card?.inventory.NM.price}</td>
-                  <td>${this.card?.inventory.NM.quantity}</td>
-                </tr>
-                <tr>
-                  <td>Lightly Played</td>
-                  <td>${this.card?.inventory.LP.price}</td>
-                  <td>${this.card?.inventory.LP.quantity}</td>
-                </tr>
-                <tr>
-                  <td>Moderately Played</td>
-                  <td>${this.card?.inventory.MP.price}</td>
-                  <td>${this.card?.inventory.MP.quantity}</td>
-                </tr>
-                <tr>
-                  <td>Heavily Played</td>
-                  <td>${this.card?.inventory.HP?.price}</td>
-                  <td>${this.card?.inventory.HP?.quantity}</td>
-                </tr>
-                <tr>
-                  <td>Damaged</td>
-                  <td>${this.card?.inventory.D?.price}</td>
-                  <td>${this.card?.inventory.D?.quantity}</td>
-                </tr>
-              </tbody>
-            </table>
+            ${this.card?.inventory.map((i, index) => {
+              return html`
+                <table class="wa-table wa-zebra-rows wa-hover-rows">
+                  <caption>
+                    ${i?.type}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>Condition</th>
+                      <th>Price</th>
+                      <th>Quantity</th>
+                      <th class="wa-visually-hidden">Add to cart</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Near Mint</td>
+                      <td>${i?.NM.price}</td>
+                      <td>${i?.NM.quantity}</td>
+                      <td>
+                        <div class="cart-controls">
+                          <wa-input
+                            type="number"
+                            min="1"
+                            max="99"
+                            placeholder="Quantity"
+                            value="1"
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button appearance="filled" class="add-to-cart">
+                            <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Lightly Played</td>
+                      <td>${i?.LP.price}</td>
+                      <td>${i?.LP.quantity}</td>
+                      <td>
+                        <div class="cart-controls">
+                          <wa-input
+                            type="number"
+                            min="1"
+                            max="99"
+                            placeholder="Quantity"
+                            value="1"
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button appearance="filled" class="add-to-cart">
+                            <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Moderately Played</td>
+                      <td>${i?.MP.price}</td>
+                      <td>${i?.MP.quantity}</td>
+                      <td>
+                        <div class="cart-controls">
+                          <wa-input
+                            type="number"
+                            min="1"
+                            max="99"
+                            placeholder="Quantity"
+                            value="1"
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button appearance="filled" class="add-to-cart">
+                            <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Heavily Played</td>
+                      <td>${i?.HP?.price}</td>
+                      <td>${i?.HP?.quantity}</td>
+                      <td>
+                        <div class="cart-controls">
+                          <wa-input
+                            type="number"
+                            min="1"
+                            max="99"
+                            placeholder="Quantity"
+                            value="1"
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button appearance="filled" class="add-to-cart">
+                            <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Damaged</td>
+                      <td>${i?.D?.price}</td>
+                      <td>${i?.D?.quantity}</td>
+                      <td>
+                        <div class="cart-controls">
+                          <wa-input
+                            type="number"
+                            min="1"
+                            max="99"
+                            placeholder="Quantity"
+                            value="1"
+                            style="width: 100px;"
+                          >
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button appearance="filled" class="add-to-cart">
+                            <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                ${index < (this.card?.inventory.length ?? 0) - 1
+                  ? html`<wa-divider><wa-divier></wa-divier></wa-divider>`
+                  : nothing}
+              `;
+            })}
           </wa-card>
         </div>
       </ogs-page>

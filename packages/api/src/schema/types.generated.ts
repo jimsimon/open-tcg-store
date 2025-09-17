@@ -19,11 +19,15 @@ export type Scalars = {
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
+  flavorText?: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
   images?: Maybe<CardImages>;
-  inventory: ConditionInventories;
+  inventory: Array<Maybe<ConditionInventories>>;
   name: Scalars['String']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
   setName: Scalars['String']['output'];
+  text?: Maybe<Scalars['String']['output']>;
+  type?: Maybe<Scalars['String']['output']>;
 };
 
 export type CardImages = {
@@ -39,11 +43,12 @@ export type ConditionInventories = {
   LP: ConditionInventory;
   MP: ConditionInventory;
   NM: ConditionInventory;
+  type: Scalars['String']['output'];
 };
 
 export type ConditionInventory = {
   __typename?: 'ConditionInventory';
-  price: Scalars['Float']['output'];
+  price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -186,7 +191,6 @@ export type ResolversTypes = {
   CardImages: ResolverTypeWrapper<CardImages>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
-  Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
@@ -205,7 +209,6 @@ export type ResolversParentTypes = {
   CardImages: CardImages;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
-  Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
   Mutation: {};
   Query: {};
@@ -219,11 +222,15 @@ export type ResolversParentTypes = {
 
 export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  flavorText?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   images?: Resolver<Maybe<ResolversTypes['CardImages']>, ParentType, ContextType>;
-  inventory?: Resolver<ResolversTypes['ConditionInventories'], ParentType, ContextType>;
+  inventory?: Resolver<Array<Maybe<ResolversTypes['ConditionInventories']>>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  text?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -239,11 +246,12 @@ export type ConditionInventoriesResolvers<ContextType = any, ParentType extends 
   LP?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
   MP?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
   NM?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ConditionInventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventory'] = ResolversParentTypes['ConditionInventory']> = {
-  price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  price?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

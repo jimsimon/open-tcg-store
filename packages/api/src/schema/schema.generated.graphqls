@@ -1,10 +1,14 @@
 type Card {
   finishes: [String!]!
+  flavorText: String
   id: String!
   images: CardImages
-  inventory: ConditionInventories!
+  inventory: [ConditionInventories]!
   name: String!
+  rarity: String
   setName: String!
+  text: String
+  type: String
 }
 
 type CardImages {
@@ -18,10 +22,11 @@ type ConditionInventories {
   LP: ConditionInventory!
   MP: ConditionInventory!
   NM: ConditionInventory!
+  type: String!
 }
 
 type ConditionInventory {
-  price: Float!
+  price: String!
   quantity: Int!
 }
 
