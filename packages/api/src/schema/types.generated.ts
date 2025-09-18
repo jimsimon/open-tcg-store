@@ -36,6 +36,18 @@ export type CardImages = {
   small?: Maybe<Scalars['String']['output']>;
 };
 
+export type CartItemInput = {
+  productId: Scalars['Float']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type CartItemOutput = {
+  __typename?: 'CartItemOutput';
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type ConditionInventories = {
   __typename?: 'ConditionInventories';
   D?: Maybe<ConditionInventory>;
@@ -54,7 +66,17 @@ export type ConditionInventory = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  addToCart: ShoppingCart;
+  checkoutWithCart: ShoppingCart;
+  clearCart: ShoppingCart;
   firstTimeSetup: Scalars['String']['output'];
+  removeFromCart: ShoppingCart;
+  updateItemInCart: ShoppingCart;
+};
+
+
+export type MutationaddToCartArgs = {
+  cartItem: CartItemInput;
 };
 
 
@@ -63,10 +85,21 @@ export type MutationfirstTimeSetupArgs = {
   userDetails: UserDetails;
 };
 
+
+export type MutationremoveFromCartArgs = {
+  cartItem: CartItemInput;
+};
+
+
+export type MutationupdateItemInCartArgs = {
+  cartItem: CartItemInput;
+};
+
 export type Query = {
   __typename?: 'Query';
   getCard: Card;
   getSets: Array<Set>;
+  getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
 };
@@ -102,6 +135,11 @@ export type SetFilters = {
 export type Settings = {
   country: Scalars['String']['input'];
   state: Scalars['String']['input'];
+};
+
+export type ShoppingCart = {
+  __typename?: 'ShoppingCart';
+  items: Array<CartItemOutput>;
 };
 
 export type SingleCardFilters = {
@@ -189,15 +227,19 @@ export type ResolversTypes = {
   Card: ResolverTypeWrapper<Card>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   CardImages: ResolverTypeWrapper<CardImages>;
+  CartItemInput: CartItemInput;
+  Float: ResolverTypeWrapper<Scalars['Float']['output']>;
+  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  CartItemOutput: ResolverTypeWrapper<CartItemOutput>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
-  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
   Settings: Settings;
+  ShoppingCart: ResolverTypeWrapper<ShoppingCart>;
   SingleCardFilters: SingleCardFilters;
   UserDetails: UserDetails;
 };
@@ -207,15 +249,19 @@ export type ResolversParentTypes = {
   Card: Card;
   String: Scalars['String']['output'];
   CardImages: CardImages;
+  CartItemInput: CartItemInput;
+  Float: Scalars['Float']['output'];
+  Int: Scalars['Int']['output'];
+  CartItemOutput: CartItemOutput;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
-  Int: Scalars['Int']['output'];
   Mutation: {};
   Query: {};
   Boolean: Scalars['Boolean']['output'];
   Set: Set;
   SetFilters: SetFilters;
   Settings: Settings;
+  ShoppingCart: ShoppingCart;
   SingleCardFilters: SingleCardFilters;
   UserDetails: UserDetails;
 };
@@ -240,6 +286,13 @@ export type CardImagesResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CartItemOutputResolvers<ContextType = any, ParentType extends ResolversParentTypes['CartItemOutput'] = ResolversParentTypes['CartItemOutput']> = {
+  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ConditionInventoriesResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventories'] = ResolversParentTypes['ConditionInventories']> = {
   D?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
   HP?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
@@ -257,12 +310,18 @@ export type ConditionInventoryResolvers<ContextType = any, ParentType extends Re
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
+  checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
+  clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'settings' | 'userDetails'>>;
+  removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
+  updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
+  getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
@@ -273,13 +332,20 @@ export type SetResolvers<ContextType = any, ParentType extends ResolversParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ShoppingCartResolvers<ContextType = any, ParentType extends ResolversParentTypes['ShoppingCart'] = ResolversParentTypes['ShoppingCart']> = {
+  items?: Resolver<Array<ResolversTypes['CartItemOutput']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   Card?: CardResolvers<ContextType>;
   CardImages?: CardImagesResolvers<ContextType>;
+  CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Set?: SetResolvers<ContextType>;
+  ShoppingCart?: ShoppingCartResolvers<ContextType>;
 };
 

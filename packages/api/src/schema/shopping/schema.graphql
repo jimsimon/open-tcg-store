@@ -1,0 +1,26 @@
+input CartItemInput {
+  productId: Float!
+  quantity: Int!
+}
+
+type CartItemOutput {
+  productId: Int!
+  productName: String!
+  quantity: Int!
+}
+
+type ShoppingCart {
+  items: [CartItemOutput!]!
+}
+
+extend type Mutation {
+  addToCart(cartItem: CartItemInput!): ShoppingCart!
+  removeFromCart(cartItem: CartItemInput!): ShoppingCart!
+  updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
+  clearCart: ShoppingCart!
+  checkoutWithCart: ShoppingCart!
+}
+
+extend type Query {
+  getShoppingCart: ShoppingCart!
+}

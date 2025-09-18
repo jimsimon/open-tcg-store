@@ -36,6 +36,18 @@ export type CardImages = {
   small?: Maybe<Scalars['String']['output']>;
 };
 
+export type CartItemInput = {
+  productId: Scalars['Float']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type CartItemOutput = {
+  __typename?: 'CartItemOutput';
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type ConditionInventories = {
   __typename?: 'ConditionInventories';
   D?: Maybe<ConditionInventory>;
@@ -54,7 +66,17 @@ export type ConditionInventory = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  addToCart: ShoppingCart;
+  checkoutWithCart: ShoppingCart;
+  clearCart: ShoppingCart;
   firstTimeSetup: Scalars['String']['output'];
+  removeFromCart: ShoppingCart;
+  updateItemInCart: ShoppingCart;
+};
+
+
+export type MutationAddToCartArgs = {
+  cartItem: CartItemInput;
 };
 
 
@@ -63,10 +85,21 @@ export type MutationFirstTimeSetupArgs = {
   userDetails: UserDetails;
 };
 
+
+export type MutationRemoveFromCartArgs = {
+  cartItem: CartItemInput;
+};
+
+
+export type MutationUpdateItemInCartArgs = {
+  cartItem: CartItemInput;
+};
+
 export type Query = {
   __typename?: 'Query';
   getCard: Card;
   getSets: Array<Set>;
+  getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
 };
@@ -104,6 +137,11 @@ export type Settings = {
   state: Scalars['String']['input'];
 };
 
+export type ShoppingCart = {
+  __typename?: 'ShoppingCart';
+  items: Array<CartItemOutput>;
+};
+
 export type SingleCardFilters = {
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   setCode?: InputMaybe<Scalars['String']['input']>;
@@ -114,6 +152,11 @@ export type UserDetails = {
   firstName: Scalars['String']['input'];
   password: Scalars['String']['input'];
 };
+
+export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', quantity: number, productId: number, productName: string }> } };
 
 export type GetCardQueryQueryVariables = Exact<{
   game: Scalars['String']['input'];
@@ -171,6 +214,17 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const GetShoppingCartQueryDocument = new TypedDocumentString(`
+    query GetShoppingCartQuery {
+  getShoppingCart {
+    items {
+      quantity
+      productId
+      productName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
 export const GetCardQueryDocument = new TypedDocumentString(`
     query GetCardQuery($game: String!, $cardId: String!) {
   getCard(game: $game, cardId: $cardId) {

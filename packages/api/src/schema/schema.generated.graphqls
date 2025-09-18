@@ -16,6 +16,17 @@ type CardImages {
   small: String
 }
 
+input CartItemInput {
+  productId: Float!
+  quantity: Int!
+}
+
+type CartItemOutput {
+  productId: Int!
+  productName: String!
+  quantity: Int!
+}
+
 type ConditionInventories {
   D: ConditionInventory
   HP: ConditionInventory
@@ -31,12 +42,18 @@ type ConditionInventory {
 }
 
 type Mutation {
+  addToCart(cartItem: CartItemInput!): ShoppingCart!
+  checkoutWithCart: ShoppingCart!
+  clearCart: ShoppingCart!
   firstTimeSetup(settings: Settings!, userDetails: UserDetails!): String!
+  removeFromCart(cartItem: CartItemInput!): ShoppingCart!
+  updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
 }
 
 type Query {
   getCard(cardId: String!, game: String!): Card!
   getSets(filters: SetFilters, game: String!): [Set!]!
+  getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   isSetupPending: Boolean!
 }
@@ -53,6 +70,10 @@ input SetFilters {
 input Settings {
   country: String!
   state: String!
+}
+
+type ShoppingCart {
+  items: [CartItemOutput!]!
 }
 
 input SingleCardFilters {

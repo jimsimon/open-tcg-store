@@ -15,6 +15,7 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            quantity\n            productId\n            productName\n          }\n        }\n      }\n    ": typeof types.GetShoppingCartQueryDocument,
     "\n      query GetCardQuery($game: String!, $cardId: String!) {\n        getCard(game: $game, cardId: $cardId) {\n          id\n          name\n          rarity\n          type\n          text\n          flavorText\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            type\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": typeof types.GetCardQueryDocument,
     "\n      query GetSetsQuery($game: String!, $filters: SetFilters) {\n        getSets(game: $game, filters: $filters) {\n          code\n          name\n        }\n      }\n    ": typeof types.GetSetsQueryDocument,
     "\n      query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {\n        getSingleCardInventory(game: $game, filters: $filters) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            type\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": typeof types.GetSingleCardInventoryQueryDocument,
@@ -22,6 +23,7 @@ type Documents = {
     "\n    query IsSetupPending {\n      isSetupPending\n    }\n  ": typeof types.IsSetupPendingDocument,
 };
 const documents: Documents = {
+    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            quantity\n            productId\n            productName\n          }\n        }\n      }\n    ": types.GetShoppingCartQueryDocument,
     "\n      query GetCardQuery($game: String!, $cardId: String!) {\n        getCard(game: $game, cardId: $cardId) {\n          id\n          name\n          rarity\n          type\n          text\n          flavorText\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            type\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": types.GetCardQueryDocument,
     "\n      query GetSetsQuery($game: String!, $filters: SetFilters) {\n        getSets(game: $game, filters: $filters) {\n          code\n          name\n        }\n      }\n    ": types.GetSetsQueryDocument,
     "\n      query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {\n        getSingleCardInventory(game: $game, filters: $filters) {\n          id\n          name\n          setName\n          finishes\n          images {\n            small\n            large\n          }\n          inventory {\n            type\n            NM {\n              quantity\n              price\n            }\n            LP {\n              quantity\n              price\n            }\n            MP {\n              quantity\n              price\n            }\n            HP {\n              quantity\n              price\n            }\n            D {\n              quantity\n              price\n            }\n          }\n        }\n      }\n    ": types.GetSingleCardInventoryQueryDocument,
@@ -29,6 +31,10 @@ const documents: Documents = {
     "\n    query IsSetupPending {\n      isSetupPending\n    }\n  ": types.IsSetupPendingDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            quantity\n            productId\n            productName\n          }\n        }\n      }\n    "): typeof import('./graphql').GetShoppingCartQueryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

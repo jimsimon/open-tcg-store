@@ -9,6 +9,10 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/avatar/avatar.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import Cookies from "js-cookie";
+import { graphql } from "../graphql";
+import { execute } from "../lib/graphql";
+import { ShoppingCart } from "../graphql/graphql";
+import { number } from "better-auth";
 
 @customElement("ogs-page")
 export class OgsPage extends LitElement {
@@ -105,8 +109,38 @@ export class OgsPage extends LitElement {
   @state()
   themeColor = this.determineThemeColor();
 
+  @state()
+  cart?: ShoppingCart;
+
   protected firstUpdated(_changedProperties: PropertyValues): void {
     this.updateThemeClass();
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.fetchCart();
+  }
+
+  async fetchCart() {
+    const GetShoppingCartQuery = graphql(`
+      query GetShoppingCartQuery {
+        getShoppingCart {
+          items {
+            quantity
+            productId
+            productName
+          }
+        }
+      }
+    `);
+
+    const result = await execute(GetShoppingCartQuery);
+
+    if (result?.errors?.length) {
+      console.log({ result });
+    } else {
+      this.cart = result.data.getShoppingCart;
+    }
   }
 
   render() {
@@ -154,6 +188,7 @@ export class OgsPage extends LitElement {
           </wa-select>
           <wa-button appearance="filled">
             <wa-icon name="shopping-cart"></wa-icon>
+            <wa-badge pill>${this.cart?.items.reduce<number>((total, item) => (total += item.quantity), 0) ?? 0}</wa-badge>
           </wa-button>
           <wa-divider orientation="vertical"></wa-divider>
           <wa-button class="avatar-button" appearance="filled">
