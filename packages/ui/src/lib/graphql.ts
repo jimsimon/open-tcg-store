@@ -19,10 +19,15 @@ interface ExecutionError {
 
 export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
-  ...[variables]: TVariables extends Exact<{ [key: string]: never; }> ? [] : TVariables extends Record<string, never> ? [] : [TVariables]
+  ...[variables]: TVariables extends Exact<{ [key: string]: never }>
+    ? []
+    : TVariables extends Record<string, never>
+      ? []
+      : [TVariables]
 ) {
   const response = await fetch("http://localhost:5174/graphql", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/graphql-response+json",

@@ -1,37 +1,29 @@
 import type { MutationResolvers } from "../../../types.generated.ts";
-import { eq } from "drizzle-orm";
-import { authClient } from "../../../../auth-client.ts";
-import { user } from "../../../../db/otcgs/auth-schema.ts";
-import { otcgs } from "../../../../db/index.ts";
+import { auth } from "../../../../auth.ts";
+import { fromNodeHeaders } from "better-auth/node";
+import { GraphqlContext } from "../../../../server.ts";
 
-export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
+export const firstTimeSetup: NonNullable<MutationResolvers["firstTimeSetup"]> = async (
   _parent,
   { userDetails },
-  _ctx,
+  ctx: GraphqlContext,
 ) => {
-  const { data, error } = await authClient.signUp.email({
-    email: userDetails.email,
-    password: userDetails.password,
-    name: userDetails.firstName,
+  const { user } = await auth.api.signUpEmail({
+    body: {
+      email: userDetails.email,
+      password: userDetails.password,
+      name: userDetails.firstName,
+    },
   });
 
-  if (error) {
-    throw error;
-  }
+  await auth.api.setRole({
+    body: {
+      userId: user.id,
+      role: "admin",
+    },
+    headers: fromNodeHeaders(ctx.req.headers),
+  });
 
-  if (data) {
-    const { rowsAffected } = await otcgs
-      .update(user)
-      .set({
-        role: "admin",
-      })
-      .where(eq(user.id, data?.user.id));
-    if (rowsAffected === 1) {
-      console.log("Initial admin user has been created successfully.");
-      return data.user.id;
-    }
-    throw new Error("Failed to set the admin role for the initial Admin user.");
-  }
-
-  throw new Error("An unknown error occurred when attempting to complete the first time setup.");
+  console.log("Initial admin user has been created successfully.");
+  return user.id;
 };

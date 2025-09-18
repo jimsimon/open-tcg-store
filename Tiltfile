@@ -1,7 +1,7 @@
 local_resource(
     "UI Server",
     serve_cmd="pnpm --filter @open-tcgs/ui run dev",
-    resource_deps=[]
+    resource_deps=['API Server']
 )
 
 local_resource(

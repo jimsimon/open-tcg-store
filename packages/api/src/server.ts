@@ -5,25 +5,40 @@ import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import Koa from "koa";
 import mount from "koa-mount";
 import koaCors from "@koa/cors";
-import { createHandler } from "graphql-http/lib/use/koa";
+import { createHandler, RequestContext } from "graphql-http/lib/use/koa";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { resolvers } from "./schema/resolvers.generated.ts";
 import type { Resolvers } from "./schema/types.generated.ts";
 import { typeDefs } from "./schema/typeDefs.generated.ts";
 import { ruruHTML } from "ruru/server";
 import { auth } from "./auth.ts";
+import type { IncomingMessage } from "node:http";
 
 export type GraphqlContext = {
   auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+  req: IncomingMessage;
 };
 
 const app = new Koa();
-app.use(koaCors());
+app.use(
+  koaCors({
+    credentials: true,
+    origin: "http://localhost:5173",
+  }),
+);
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers: resolvers as Resolvers,
 });
 
+app.use(async (ctx, next) => {
+  if (ctx.URL.pathname.startsWith("/api/auth")) {
+    await toNodeHandler(auth)(ctx.req, ctx.res);
+  } else {
+    return next();
+  }
+});
+app.use(bodyParser());
 app.use(
   mount(
     "/graphql",
@@ -34,19 +49,12 @@ app.use(
           auth: await auth.api.getSession({
             headers: fromNodeHeaders(req.raw.headers),
           }),
+          req: req.raw,
         } as GraphqlContext;
       },
     }),
   ),
 );
-app.use(async (ctx, next) => {
-  if (ctx.URL.pathname.startsWith("/api/auth")) {
-    await toNodeHandler(auth)(ctx.req, ctx.res);
-  } else {
-    return next();
-  }
-});
-app.use(bodyParser());
 
 const router = new Router().get("/graphiql", (ctx: RouterContext) => {
   ctx.status = 200;
