@@ -16,8 +16,9 @@
 - **Drizzle ORM**: TypeScript-first ORM for PostgreSQL
 
 ### Database
-- **PostgreSQL**: Primary database (via PGlite)
-- **PGlite**: File-based PostgreSQL for development (similar to SQLite)
+- **PostgreSQL**: Primary database for production
+- **libsql**: SQLite-compatible database for development
+- **Drizzle ORM**: TypeScript-first ORM with comprehensive relations
 - **Drizzle Kit**: Database schema management and migrations
 
 ### Development Tools
@@ -64,24 +65,20 @@
 
 ## Key Dependencies
 
-### Frontend Dependencies
+### Monorepo Dependencies
 ```json
 {
   "lit": "^3.3.1",
-  "@awesome.me/webawesome": "3.0.0-beta.4",
+  "@awesome.me/webawesome": "3.0.0-beta.5",
   "@lit-labs/ssr": "^3.3.1",
-  "vite": "^7.1.3"
-}
-```
-
-### Backend Dependencies
-```json
-{
+  "vite": "^7.1.3",
   "koa": "^3.0.1",
-  "better-auth": "^1.3.7",
+  "better-auth": "^1.3.11",
   "drizzle-orm": "^0.44.4",
-  "@electric-sql/pglite": "^0.3.7",
-  "graphql-http": "^1.22.4"
+  "@libsql/client": "^0.15.14",
+  "graphql-http": "^1.22.4",
+  "@graphql-tools/schema": "^10.0.25",
+  "graphql-scalars": "^1.24.2"
 }
 ```
 
@@ -115,5 +112,7 @@
 ## Environment Setup
 - **Node.js**: Version specified in `.nvmrc`
 - **TypeScript**: Strict mode enabled
-- **PostgreSQL**: Via PGlite for development
+- **Database**: libsql (SQLite-compatible) for development
 - **Hot Module Replacement**: Enabled for development
+- **Development Orchestration**: Tilt for multi-service development
+- **Package Management**: pnpm with workspace support
