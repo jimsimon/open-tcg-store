@@ -3,8 +3,8 @@ name: Daily Initial Database Creation
 on:
   schedule:
     # Run daily at 6 AM Eastern Time (UTC-4)
-    # 6 AM Eastern = 10 AM UTC
-    - cron: '0 10 * * *'
+    # 9 PM Eastern = 21 PM UTC
+    - cron: '0 21 * * *'
   workflow_dispatch: # Allow manual triggering
 
 permissions:
