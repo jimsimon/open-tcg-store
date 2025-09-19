@@ -1,6 +1,6 @@
 import { cartItem, otcgs } from "../../../../db";
 import { GraphqlContext } from "../../../../server";
-import { getOrCreateShoppingCart } from "../../../../services/shopping-cart-service";
+import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
 import type { CartItemOutput, MutationResolvers } from "./../../../types.generated";
 
 export const addToCart: NonNullable<MutationResolvers["addToCart"]> = async (_parent, arg, ctx: GraphqlContext) => {
@@ -22,16 +22,5 @@ export const addToCart: NonNullable<MutationResolvers["addToCart"]> = async (_pa
   }
 
   const cartResult = await getOrCreateShoppingCart(ctx.auth.user.id);
-  return {
-    items: cartResult.cartItems.reduce<CartItemOutput[]>((list, ci) => {
-      if (ci.product) {
-        list.push({
-          productId: ci.product.id,
-          productName: ci.product.name,
-          quantity: ci.quantity,
-        });
-      }
-      return list;
-    }, []),
-  };
+  return mapToGraphqlShoppingCart(cartResult);
 };
