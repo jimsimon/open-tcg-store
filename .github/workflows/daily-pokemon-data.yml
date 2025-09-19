@@ -1,4 +1,4 @@
-name: Daily Pokemon Data Update
+name: Daily Initial Database Creation
 
 on:
   schedule:
@@ -25,26 +25,23 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm install
+        run: corepack enable pnpm && pnpm install
 
-      - name: Create database
-        run: mkdir ./sqlite-data && touch ./sqlite-data/pokemon.sqlite
+      - name: Create empty database file
+        run: mkdir ./sqlite-data && touch ./sqlite-data/otcgs.sqlite
         
       - name: Push database schema
-        run: npx drizzle-kit push --config src/db/pokemon/drizzle.config.ts
+        run: pnpm run --filter=api db:push
         
-      - name: Fetch and extract Pokemon data
-        run: ./scripts/fetch-and-extract-pokemon-data.ts
+      - name: Populate database
+        run: ./scripts/populate-tcg-data.ts
         
-      - name: Populate Pokemon database
-        run: ./scripts/populate-pokemon-database.ts
-        
-      - name: Upload SQLite file
-        uses: actions/upload-artifact@v4
-        with:
-          name: pokemon-sqlite
-          path: ./sqlite-data/pokemon.sqlite
-          retention-days: 1
+      # - name: Upload SQLite file
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: otcgs-sqlite
+      #     path: ./sqlite-data/otcgs.sqlite
+      #     retention-days: 1
           
       - name: Generate Date
         id: date
@@ -53,15 +50,15 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: pokemon-data-${{ steps.date.outputs.date }}
-          name: Pokemon Data Update - ${{ github.run_number }}
+          tag_name: initial-db-${{ steps.date.outputs.date }}
+          name: Initial Database - ${{ github.run_number }}
           body: |
-            Daily Pokemon TCG data update
+            Daily initial database update
             - Generated on: ${{ steps.date.outputs.date }}
             - Run number: ${{ github.run_number }}
             
-            This release contains the latest Pokemon TCG database in SQLite format.
-          files: ./sqlite-data/pokemon.sqlite
+            This release contains the latest database schema preloaded with all TCG data in SQLite format.
+          files: ./sqlite-data/otcgs.sqlite
           draft: false
           prerelease: false
           generate_release_notes: true
