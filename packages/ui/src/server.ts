@@ -9,9 +9,6 @@ import { execute } from "./lib/graphql.ts";
 import { graphql } from "./graphql/index.ts";
 import { authClient } from "./auth-client.ts";
 
-type GetSessionReturnType = ReturnType<typeof authClient.getSession>;
-type GetSessionResponse = Awaited<ReturnType<typeof authClient.getSession>>;
-
 type AppState = {
   auth: typeof authClient.$Infer.Session;
 };
