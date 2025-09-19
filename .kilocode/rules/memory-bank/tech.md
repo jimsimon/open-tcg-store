@@ -100,6 +100,7 @@
 - **Modern JavaScript**: ES2022 target with ESNext modules
 - **Component-based architecture**: All UI elements are Lit custom elements
 - **GraphQL-first**: All API communication through GraphQL endpoints
+- **Service Layer Pattern**: Business logic abstracted from GraphQL resolvers
 - **Testing**: Vitest for both browser and Node.js environments
 
 ## Build System
@@ -108,6 +109,7 @@
 - **Code Generation**: GraphQL codegen for types and resolvers
 - **Database**: Drizzle Kit for schema migrations
 - **Testing**: Vitest with browser and Node.js environments
+- **Development Orchestration**: Tilt for coordinated multi-service development
 
 ## Environment Setup
 - **Node.js**: Version specified in `.nvmrc`
@@ -116,3 +118,11 @@
 - **Hot Module Replacement**: Enabled for development
 - **Development Orchestration**: Tilt for multi-service development
 - **Package Management**: pnpm with workspace support
+
+## GraphQL Architecture
+- **Schema-First Design**: GraphQL schemas define API contracts
+- **Type Generation**: Automatic TypeScript type generation from schemas
+- **Resolver Pattern**: Clean separation of concerns in resolvers
+- **Service Layer**: Business logic abstracted into service classes
+- **Error Handling**: Standardized error responses across all operations
+- **Authentication Context**: User context passed through GraphQL execution context
