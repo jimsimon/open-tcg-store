@@ -11,7 +11,7 @@ permissions:
   contents: write # Grants write permission to the workflow for creating a release
 
 jobs:
-  update-pokemon-data:
+  create-initial-database:
     runs-on: ubuntu-latest
     
     steps:
