@@ -1,4 +1,4 @@
-name: Daily Initial Database Creation
+name: Daily Release Management - Initial Database
 
 on:
   schedule:
@@ -8,7 +8,8 @@ on:
   workflow_dispatch: # Allow manual triggering
 
 permissions:
-  contents: write # Grants write permission to the workflow for creating a release
+  contents: write # Grants write permission to the workflow for creating/updating releases
+  actions: read   # Allows reading workflow run information
 
 jobs:
   create-initial-database:
@@ -38,13 +39,6 @@ jobs:
         
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts
-        
-      # - name: Upload SQLite file
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: otcgs-sqlite
-      #     path: ./sqlite-data/otcgs.sqlite
-      #     retention-days: 1
           
       - name: Generate Date
         id: date
@@ -54,7 +48,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: initial-db-${{ steps.date.outputs.date }}
-          name: Initial Database - ${{ github.run_number }}
+          name: Initial Database ${{ steps.date.outputs.date }}
           body: |
             Daily initial database update
             - Generated on: ${{ steps.date.outputs.date }}
@@ -64,6 +58,6 @@ jobs:
           files: ./sqlite-data/otcgs.sqlite
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
