@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "^pnpm@10.15.1",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx --conditions=development src/server.ts",
     "build": "tsc && vite build",
