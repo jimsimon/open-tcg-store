@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, real, foreignKey, index } from "drizzle-orm/sqlite-core";
+export * from "./relations"
 
 export const category = sqliteTable(
   "category",

@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm/relations";
 import { cart, cartItem } from "./shopping-schema";
 import { user } from "./auth-schema";
-import { product } from "./tcg-schema";
+import { product } from "../tcg-data/schema";
 
 export const cartRelations = relations(cart, ({ one, many }) => ({
   user: one(user, {

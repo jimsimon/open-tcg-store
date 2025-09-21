@@ -1,5 +1,4 @@
-import { InferSelectModel } from "drizzle-orm";
-import { cart, cartItem, otcgs, product } from "../db";
+import { cart, otcgs } from "../db";
 import { CartItemOutput } from "../schema/types.generated";
 
 export async function getOrCreateShoppingCart(userId: string) {

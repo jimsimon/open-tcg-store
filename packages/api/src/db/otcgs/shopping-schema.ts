@@ -2,13 +2,15 @@ import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, foreignKey, index } from "drizzle-orm/sqlite-core";
 import { user } from "./auth-schema";
 
+export * from "./shopping-relations";
+
 export const cartItem = sqliteTable(
   "cartItem",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     cartId: integer("cart_id").notNull(),
     productId: integer("product_id").notNull().unique(),
-    quantity: integer("tcgp_group_id").notNull(),
+    quantity: integer("quantity").notNull(),
   },
   (table) => [
     foreignKey({
@@ -29,8 +31,12 @@ export const cart = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" })
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),
-    lastUpdatedAt: integer("last_updated_at", { mode: "timestamp" }).default(sql`(CURRENT_TIMESTAMP)`).notNull(),
-    lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }).default(sql`(CURRENT_TIMESTAMP)`).notNull(),
+    lastUpdatedAt: integer("last_updated_at", { mode: "timestamp" })
+      .default(sql`(CURRENT_TIMESTAMP)`)
+      .notNull(),
+    lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" })
+      .default(sql`(CURRENT_TIMESTAMP)`)
+      .notNull(),
   },
   (table) => [
     foreignKey({

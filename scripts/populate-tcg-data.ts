@@ -1,14 +1,14 @@
 #!/usr/bin/env -S npx tsx
 
+import { tcgData } from "../packages/api/src/db/tcg-data/index";
 import {
-  otcgs,
   category as dbCategory,
   group as dbGroup,
   product as dbProduct,
   productPresaleInfo,
   productExtendedData,
   price,
-} from "../packages/api/src/db/index";
+} from "../packages/api/src/db/tcg-data/schema";
 
 // Types for the API responses
 interface Category {
@@ -107,7 +107,7 @@ async function fetchTcgData() {
     for (const category of categoriesToProcess) {
       const { categoryId } = category;
       console.log(`Creating category for: ${category.name}`);
-      const [{ insertedCategoryId }] = await otcgs
+      const [{ insertedCategoryId }] = await tcgData
         .insert(dbCategory)
         .values({
           tcgpCategoryId: category.categoryId,
@@ -143,7 +143,7 @@ async function fetchTcgData() {
         const groupId = group.groupId;
 
         console.log(`Creating group: ${group.name}`);
-        const [{ insertedGroupId }] = await otcgs
+        const [{ insertedGroupId }] = await tcgData
           .insert(dbGroup)
           .values({
             tcgpGroupId: group.groupId,
@@ -198,7 +198,7 @@ async function fetchTcgData() {
         let insertedProductCount = 0;
         while (insertedProductCount < insertableProducts.length) {
           const insertableProductBatch = insertableProducts.slice(insertedProductCount, insertedProductCount + 1000);
-          const insertedProductDetails = await otcgs.insert(dbProduct).values(insertableProductBatch).returning({
+          const insertedProductDetails = await tcgData.insert(dbProduct).values(insertableProductBatch).returning({
             insertedProductId: dbProduct.id,
             tcgpProductId: dbProduct.tcgpProductId,
           });
@@ -217,7 +217,7 @@ async function fetchTcgData() {
             note: p.presaleInfo.note,
           };
         });
-        await otcgs.insert(productPresaleInfo).values(insertablePresaleInfo);
+        await tcgData.insert(productPresaleInfo).values(insertablePresaleInfo);
 
         const insertableExtendedData = products.reduce(
           (array, product) => {
@@ -241,7 +241,7 @@ async function fetchTcgData() {
             insertedExtendedDataCount,
             insertedExtendedDataCount + 1000,
           );
-          await otcgs.insert(productExtendedData).values(insertableExtendedDataBatch);
+          await tcgData.insert(productExtendedData).values(insertableExtendedDataBatch);
           insertedExtendedDataCount += insertableExtendedDataBatch.length;
         }
 
@@ -275,7 +275,7 @@ async function fetchTcgData() {
           let insertedPricesCount = 0;
           while (insertedPricesCount < insertablePrices.length) {
             const insertablePricesBatch = insertablePrices.slice(insertedPricesCount, insertedPricesCount + 1000);
-            await otcgs.insert(price).values(insertablePricesBatch);
+            await tcgData.insert(price).values(insertablePricesBatch);
             insertedPricesCount += insertablePricesBatch.length;
           }
         } else {
