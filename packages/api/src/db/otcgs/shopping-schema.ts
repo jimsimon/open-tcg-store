@@ -2,8 +2,6 @@ import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, foreignKey, index } from "drizzle-orm/sqlite-core";
 import { user } from "./auth-schema";
 
-export * from "./shopping-relations";
-
 export const cartItem = sqliteTable(
   "cartItem",
   {
