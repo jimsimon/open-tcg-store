@@ -55,7 +55,7 @@ jobs:
             - Run number: ${{ github.run_number }}
 
             This release contains the latest database schema preloaded with all TCG data in SQLite format.
-          files: ./sqlite-data/otcgs.sqlite
+          files: ./sqlite-data/tcg-data.sqlite
           draft: false
           prerelease: false
           generate_release_notes: false
