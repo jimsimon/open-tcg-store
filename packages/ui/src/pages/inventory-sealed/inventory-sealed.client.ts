@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -13,445 +13,33 @@ import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/callout/callout.js";
 import "@awesome.me/webawesome/dist/components/textarea/textarea.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
 import "../../components/ogs-page.ts";
 import { execute } from "../../lib/graphql.ts";
-import {
-  type InventoryItem,
-  type ProductSearchResult,
-  type ProductPrice,
-  TypedDocumentString,
-} from "../../graphql/graphql.ts";
 import type WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
-
-// --- GraphQL Operations ---
-
-const GetInventoryQuery = new TypedDocumentString(`
-  query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
-    getInventory(filters: $filters, pagination: $pagination) {
-      items {
-        id
-        productId
-        productName
-        gameName
-        setName
-        rarity
-        isSingle
-        isSealed
-        condition
-        quantity
-        price
-        costBasis
-        acquisitionDate
-        notes
-        createdAt
-        updatedAt
-      }
-      totalCount
-      page
-      pageSize
-      totalPages
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    getInventory: {
-      items: InventoryItem[];
-      totalCount: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  },
-  {
-    filters?: {
-      gameName?: string | null;
-      setName?: string | null;
-      rarity?: string | null;
-      condition?: string | null;
-      searchTerm?: string | null;
-      includeSingles?: boolean | null;
-      includeSealed?: boolean | null;
-    } | null;
-    pagination?: { page?: number | null; pageSize?: number | null } | null;
-  }
->;
-
-const SearchProductsQuery = new TypedDocumentString(`
-  query SearchProducts($searchTerm: String!, $game: String) {
-    searchProducts(searchTerm: $searchTerm, game: $game) {
-      id
-      name
-      gameName
-      setName
-      rarity
-      imageUrl
-      isSingle
-      isSealed
-      prices {
-        subTypeName
-        lowPrice
-        midPrice
-        highPrice
-        marketPrice
-        directLowPrice
-      }
-    }
-  }
-`) as unknown as TypedDocumentString<
-  { searchProducts: ProductSearchResult[] },
-  { searchTerm: string; game?: string | null }
->;
-
-const AddInventoryItemMutation = new TypedDocumentString(`
-  mutation AddInventoryItem($input: AddInventoryItemInput!) {
-    addInventoryItem(input: $input) {
-      id
-      productId
-      productName
-      gameName
-      setName
-      rarity
-      condition
-      quantity
-      price
-      costBasis
-      acquisitionDate
-      notes
-    }
-  }
-`) as unknown as TypedDocumentString<
-  { addInventoryItem: InventoryItem },
-  {
-    input: {
-      productId: number;
-      condition: string;
-      quantity: number;
-      price: number;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
-    };
-  }
->;
-
-const UpdateInventoryItemMutation = new TypedDocumentString(`
-  mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {
-    updateInventoryItem(input: $input) {
-      id
-      productId
-      productName
-      gameName
-      setName
-      rarity
-      condition
-      quantity
-      price
-      costBasis
-      acquisitionDate
-      notes
-    }
-  }
-`) as unknown as TypedDocumentString<
-  { updateInventoryItem: InventoryItem },
-  {
-    input: {
-      id: number;
-      condition?: string | null;
-      quantity?: number | null;
-      price?: number | null;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
-    };
-  }
->;
-
-const DeleteInventoryItemMutation = new TypedDocumentString(`
-  mutation DeleteInventoryItem($id: Int!) {
-    deleteInventoryItem(id: $id)
-  }
-`) as unknown as TypedDocumentString<{ deleteInventoryItem: boolean }, { id: number }>;
-
-const BulkUpdateInventoryMutation = new TypedDocumentString(`
-  mutation BulkUpdateInventory($input: BulkUpdateInventoryInput!) {
-    bulkUpdateInventory(input: $input) {
-      id
-    }
-  }
-`) as unknown as TypedDocumentString<
-  { bulkUpdateInventory: { id: number }[] },
-  {
-    input: {
-      ids: number[];
-      condition?: string | null;
-      quantity?: number | null;
-      price?: number | null;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
-    };
-  }
->;
-
-const BulkDeleteInventoryMutation = new TypedDocumentString(`
-  mutation BulkDeleteInventory($input: BulkDeleteInventoryInput!) {
-    bulkDeleteInventory(input: $input)
-  }
-`) as unknown as TypedDocumentString<{ bulkDeleteInventory: boolean }, { input: { ids: number[] } }>;
-
-// --- Interfaces ---
-
-interface AddForm {
-  quantity: number;
-  condition: string;
-  price: number;
-  costBasis: number;
-  acquisitionDate: string;
-  notes: string;
-}
-
-interface BulkEditForm {
-  condition: string;
-  quantity: number | null;
-  price: number | null;
-  costBasis: number | null;
-  acquisitionDate: string;
-  notes: string;
-}
-
-// --- Debounce utility ---
-
-// biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  // biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-  return ((...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
-}
+import {
+  type AddForm,
+  type BulkEditForm,
+  type InventoryItem,
+  type ProductSearchResult,
+  GetInventoryQuery,
+  SearchProductsQuery,
+  AddInventoryItemMutation,
+  UpdateInventoryItemMutation,
+  DeleteInventoryItemMutation,
+  BulkUpdateInventoryMutation,
+  BulkDeleteInventoryMutation,
+  debounce,
+  sharedInventoryStyles,
+  renderProfitSummary,
+  renderMarketPrices,
+} from "../inventory/inventory-shared.ts";
 
 // --- Component ---
 
-@customElement("ogs-inventory-page")
-export class OgsInventoryPage extends LitElement {
-  static styles = [
-    css`
-      ${unsafeCSS(nativeStyle)}
-    `,
-    css`
-      ${unsafeCSS(utilityStyles)}
-    `,
-    css`
-      :host {
-        box-sizing: border-box;
-      }
-
-      .filter-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        align-items: flex-end;
-      }
-
-      .filter-bar wa-input {
-        flex: 1;
-        min-width: 200px;
-      }
-
-      .filter-bar wa-select {
-        min-width: 150px;
-      }
-
-      .action-bar {
-        display: flex;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-
-      .table-container {
-        overflow-x: auto;
-      }
-
-      .wa-table th,
-      .wa-table td {
-        vertical-align: middle;
-      }
-
-      .price-cell {
-        text-align: right;
-        white-space: nowrap;
-      }
-
-      .quantity-cell {
-        text-align: center;
-      }
-
-      .actions-cell {
-        white-space: nowrap;
-      }
-
-      .pagination {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 1rem;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      .pagination-info {
-        color: var(--wa-color-text-secondary);
-        font-size: var(--wa-font-size-s);
-      }
-
-      .pagination-buttons {
-        display: flex;
-        gap: 0.25rem;
-        align-items: center;
-      }
-
-      .pagination-buttons wa-button[data-current] {
-        font-weight: bold;
-        text-decoration: underline;
-      }
-
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        padding: 3rem;
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: var(--wa-color-text-secondary);
-      }
-
-      /* Add Dialog Styles */
-      .search-results {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-m);
-        margin-top: 0.5rem;
-      }
-
-      .search-result-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.5rem 0.75rem;
-        cursor: pointer;
-        transition: background-color 0.15s;
-      }
-
-      .search-result-item:hover {
-        background-color: var(--wa-color-surface-alt);
-      }
-
-      .search-result-item img {
-        width: 40px;
-        height: 56px;
-        object-fit: contain;
-        border-radius: var(--wa-border-radius-s);
-      }
-
-      .search-result-item .result-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.125rem;
-      }
-
-      .search-result-item .result-info strong {
-        font-size: var(--wa-font-size-s);
-      }
-
-      .search-result-item .result-info small {
-        color: var(--wa-color-text-secondary);
-        font-size: var(--wa-font-size-xs);
-      }
-
-      .selected-product {
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-m);
-        padding: 1rem;
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .selected-product h3 {
-        margin: 0 0 0.25rem 0;
-      }
-
-      .selected-product p {
-        margin: 0 0 0.5rem 0;
-        color: var(--wa-color-text-secondary);
-        font-size: var(--wa-font-size-s);
-      }
-
-      .product-image {
-        max-width: 200px;
-        border-radius: var(--wa-border-radius-m);
-        margin-bottom: 0.5rem;
-      }
-
-      .market-prices {
-        margin-top: 0.75rem;
-      }
-
-      .market-prices h4 {
-        margin: 0 0 0.5rem 0;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .price-row {
-        display: grid;
-        grid-template-columns: 1fr repeat(3, auto);
-        gap: 0.75rem;
-        font-size: var(--wa-font-size-xs);
-        padding: 0.25rem 0;
-        border-bottom: 1px solid var(--wa-color-surface-border);
-      }
-
-      .price-row:last-child {
-        border-bottom: none;
-      }
-
-      .profit-summary {
-        display: flex;
-        gap: 1.5rem;
-        padding: 0.75rem;
-        margin-top: 0.75rem;
-        background: var(--wa-color-surface-alt);
-        border-radius: var(--wa-border-radius-m);
-        font-size: var(--wa-font-size-s);
-        font-weight: 500;
-      }
-
-      .form-fields {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        margin-top: 0.75rem;
-      }
-
-      .delete-confirm-name {
-        font-weight: bold;
-      }
-
-      wa-dialog::part(body) {
-        max-height: 70vh;
-        overflow-y: auto;
-      }
-    `,
-  ];
+@customElement("ogs-inventory-sealed-page")
+export class OgsInventorySealedPage extends LitElement {
+  static styles = sharedInventoryStyles;
 
   // --- Properties ---
 
@@ -459,12 +47,8 @@ export class OgsInventoryPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = "";
 
-  // Filter state
+  // Filter state (no condition or rarity for sealed)
   @state() private gameFilter = "";
-  @state() private setFilter = "";
-  @state() private rarityFilter = "";
-  @state() private conditionFilter = "";
-  @state() private productTypeFilter = "all";
   @state() private searchTerm = "";
 
   // Pagination state
@@ -495,6 +79,7 @@ export class OgsInventoryPage extends LitElement {
   @state() private searchResults: ProductSearchResult[] = [];
   @state() private selectedProduct: ProductSearchResult | null = null;
   @state() private productSearchLoading = false;
+  @state() private productSearchTerm = "";
   @state() private addForm: AddForm = {
     quantity: 1,
     condition: "NM",
@@ -504,9 +89,8 @@ export class OgsInventoryPage extends LitElement {
     notes: "",
   };
 
-  // Edit form state
+  // Edit form state (no condition for sealed)
   @state() private editForm: Partial<{
-    condition: string;
     quantity: number;
     price: number;
     costBasis: number;
@@ -514,7 +98,7 @@ export class OgsInventoryPage extends LitElement {
     notes: string;
   }> = {};
 
-  // Bulk edit form state
+  // Bulk edit form state (no condition for sealed)
   @state() private bulkEditForm: BulkEditForm = {
     condition: "",
     quantity: null,
@@ -547,10 +131,6 @@ export class OgsInventoryPage extends LitElement {
     const params = new URLSearchParams(window.location.search);
     this.searchTerm = params.get("search") ?? "";
     this.gameFilter = params.get("game") ?? "";
-    this.setFilter = params.get("set") ?? "";
-    this.rarityFilter = params.get("rarity") ?? "";
-    this.conditionFilter = params.get("condition") ?? "";
-    this.productTypeFilter = params.get("type") ?? "all";
     const page = params.get("page");
     if (page) this.currentPage = Number.parseInt(page, 10) || 1;
   }
@@ -558,7 +138,7 @@ export class OgsInventoryPage extends LitElement {
   private updateQueryParams() {
     const url = new URL(window.location.href);
     const setOrDelete = (key: string, value: string) => {
-      if (value && value !== "all") {
+      if (value) {
         url.searchParams.set(key, value);
       } else {
         url.searchParams.delete(key);
@@ -566,10 +146,6 @@ export class OgsInventoryPage extends LitElement {
     };
     setOrDelete("search", this.searchTerm);
     setOrDelete("game", this.gameFilter);
-    setOrDelete("set", this.setFilter);
-    setOrDelete("rarity", this.rarityFilter);
-    setOrDelete("condition", this.conditionFilter);
-    setOrDelete("type", this.productTypeFilter);
     if (this.currentPage > 1) {
       url.searchParams.set("page", String(this.currentPage));
     } else {
@@ -585,20 +161,12 @@ export class OgsInventoryPage extends LitElement {
     this.error = "";
     this.updateQueryParams();
 
-    const filters: Record<string, unknown> = {};
+    const filters: Record<string, unknown> = {
+      includeSingles: false,
+      includeSealed: true,
+    };
     if (this.searchTerm) filters.searchTerm = this.searchTerm;
     if (this.gameFilter) filters.gameName = this.gameFilter;
-    if (this.setFilter) filters.setName = this.setFilter;
-    if (this.rarityFilter) filters.rarity = this.rarityFilter;
-    if (this.conditionFilter) filters.condition = this.conditionFilter;
-
-    if (this.productTypeFilter === "singles") {
-      filters.includeSingles = true;
-      filters.includeSealed = false;
-    } else if (this.productTypeFilter === "sealed") {
-      filters.includeSingles = false;
-      filters.includeSealed = true;
-    }
 
     try {
       const result = await execute(GetInventoryQuery, {
@@ -635,7 +203,8 @@ export class OgsInventoryPage extends LitElement {
         console.error("Search error:", result.errors);
         this.searchResults = [];
       } else {
-        this.searchResults = result.data.searchProducts;
+        // Filter to sealed products only
+        this.searchResults = result.data.searchProducts.filter((p) => p.isSealed);
       }
     } catch (e) {
       console.error("Search failed:", e);
@@ -660,18 +229,6 @@ export class OgsInventoryPage extends LitElement {
     switch (field) {
       case "game":
         this.gameFilter = value;
-        break;
-      case "set":
-        this.setFilter = value;
-        break;
-      case "rarity":
-        this.rarityFilter = value;
-        break;
-      case "condition":
-        this.conditionFilter = value;
-        break;
-      case "productType":
-        this.productTypeFilter = value || "all";
         break;
     }
 
@@ -733,12 +290,12 @@ export class OgsInventoryPage extends LitElement {
     this.showAddDialog = false;
     this.searchResults = [];
     this.selectedProduct = null;
+    this.productSearchTerm = "";
   }
 
   private openEditDialog(item: InventoryItem) {
     this.editingItem = item;
     this.editForm = {
-      condition: item.condition ?? "NM",
       quantity: item.quantity,
       price: item.price,
       costBasis: item.costBasis ?? 0,
@@ -792,6 +349,7 @@ export class OgsInventoryPage extends LitElement {
   private handleProductSearchInput(event: Event) {
     const input = event.target as WaInput;
     const term = input.value as string;
+    this.productSearchTerm = term;
     this.debouncedProductSearch(term);
   }
 
@@ -805,11 +363,6 @@ export class OgsInventoryPage extends LitElement {
       this.addForm = { ...this.addForm, price: firstPrice.marketPrice };
     } else if (firstPrice?.midPrice) {
       this.addForm = { ...this.addForm, price: firstPrice.midPrice };
-    }
-
-    // Default condition based on product type
-    if (!product.isSingle) {
-      this.addForm = { ...this.addForm, condition: "NM" };
     }
   }
 
@@ -849,7 +402,6 @@ export class OgsInventoryPage extends LitElement {
       const result = await execute(UpdateInventoryItemMutation, {
         input: {
           id: this.editingItem.id,
-          condition: this.editForm.condition ?? null,
           quantity: this.editForm.quantity ?? null,
           price: this.editForm.price ?? null,
           costBasis: this.editForm.costBasis ?? null,
@@ -892,8 +444,8 @@ export class OgsInventoryPage extends LitElement {
     const ids = Array.from(this.selectedIds);
     if (ids.length === 0) return;
 
+    // No condition field for sealed products
     const input: Record<string, unknown> = { ids };
-    if (this.bulkEditForm.condition) input.condition = this.bulkEditForm.condition;
     if (this.bulkEditForm.quantity != null) input.quantity = this.bulkEditForm.quantity;
     if (this.bulkEditForm.price != null) input.price = this.bulkEditForm.price;
     if (this.bulkEditForm.costBasis != null) input.costBasis = this.bulkEditForm.costBasis;
@@ -901,6 +453,7 @@ export class OgsInventoryPage extends LitElement {
     if (this.bulkEditForm.notes) input.notes = this.bulkEditForm.notes;
 
     try {
+      // biome-ignore lint/suspicious/noExplicitAny: GraphQL input type flexibility
       const result = await execute(BulkUpdateInventoryMutation, { input: input as any });
 
       if (result?.errors?.length) {
@@ -943,7 +496,7 @@ export class OgsInventoryPage extends LitElement {
   render() {
     return html`
       <ogs-page
-        activePage="Inventory"
+        activePage="inventory/sealed"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
@@ -969,7 +522,7 @@ export class OgsInventoryPage extends LitElement {
     `;
   }
 
-  // --- Filter Bar ---
+  // --- Filter Bar (no Condition or Rarity for sealed) ---
 
   private renderFilterBar() {
     return html`
@@ -985,34 +538,12 @@ export class OgsInventoryPage extends LitElement {
         <wa-select
           placeholder="Game"
           .value="${this.gameFilter}"
-          @wa-change="${(e: Event) => this.handleFilterChange("game", e)}"
+          @change="${(e: Event) => this.handleFilterChange("game", e)}"
           clearable
         >
           <wa-option value="">All Games</wa-option>
           <wa-option value="magic">Magic</wa-option>
           <wa-option value="pokemon">Pokemon</wa-option>
-        </wa-select>
-        <wa-select
-          placeholder="Condition"
-          .value="${this.conditionFilter}"
-          @wa-change="${(e: Event) => this.handleFilterChange("condition", e)}"
-          clearable
-        >
-          <wa-option value="">All Conditions</wa-option>
-          <wa-option value="NM">Near Mint</wa-option>
-          <wa-option value="LP">Lightly Played</wa-option>
-          <wa-option value="MP">Moderately Played</wa-option>
-          <wa-option value="HP">Heavily Played</wa-option>
-          <wa-option value="D">Damaged</wa-option>
-        </wa-select>
-        <wa-select
-          placeholder="Product Type"
-          .value="${this.productTypeFilter}"
-          @wa-change="${(e: Event) => this.handleFilterChange("productType", e)}"
-        >
-          <wa-option value="all">All Types</wa-option>
-          <wa-option value="singles">Singles</wa-option>
-          <wa-option value="sealed">Sealed</wa-option>
         </wa-select>
       </div>
     `;
@@ -1026,7 +557,7 @@ export class OgsInventoryPage extends LitElement {
       <div class="action-bar">
         <wa-button variant="brand" @click="${this.openAddDialog}">
           <wa-icon slot="prefix" name="plus"></wa-icon>
-          Add Item
+          Add Sealed
         </wa-button>
         <wa-button variant="neutral" href="/inventory/import">
           <wa-icon slot="prefix" name="upload"></wa-icon>
@@ -1044,14 +575,14 @@ export class OgsInventoryPage extends LitElement {
     `;
   }
 
-  // --- Inventory Table ---
+  // --- Inventory Table (no Rarity or Condition columns) ---
 
   private renderInventoryTable() {
     if (this.inventoryItems.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
           <wa-icon name="box-open" style="font-size: 3rem; margin-bottom: 1rem;"></wa-icon>
-          <h3>No inventory items found</h3>
+          <h3>No sealed inventory items found</h3>
           <p>Add items to your inventory or adjust your filters.</p>
         </div>
       `;
@@ -1064,13 +595,11 @@ export class OgsInventoryPage extends LitElement {
             <thead>
               <tr>
                 <th>
-                  <wa-checkbox ?checked="${this.selectAll}" @wa-change="${this.toggleSelectAll}"></wa-checkbox>
+                  <wa-checkbox .checked="${this.selectAll}" @change="${this.toggleSelectAll}"></wa-checkbox>
                 </th>
                 <th>Product</th>
                 <th>Game</th>
                 <th>Set</th>
-                <th>Rarity</th>
-                <th>Condition</th>
                 <th class="quantity-cell">Qty</th>
                 <th class="price-cell">Price</th>
                 <th class="price-cell">Cost Basis</th>
@@ -1083,15 +612,13 @@ export class OgsInventoryPage extends LitElement {
                   <tr>
                     <td>
                       <wa-checkbox
-                        ?checked="${this.selectedIds.has(item.id)}"
-                        @wa-change="${() => this.toggleItemSelection(item.id)}"
+                        .checked="${this.selectedIds.has(item.id)}"
+                        @change="${() => this.toggleItemSelection(item.id)}"
                       ></wa-checkbox>
                     </td>
                     <td>${item.productName}</td>
                     <td>${item.gameName}</td>
                     <td>${item.setName}</td>
-                    <td>${item.rarity ?? "—"}</td>
-                    <td>${item.condition ?? "—"}</td>
                     <td class="quantity-cell">${item.quantity}</td>
                     <td class="price-cell">$${item.price.toFixed(2)}</td>
                     <td class="price-cell">${item.costBasis != null ? `$${item.costBasis.toFixed(2)}` : "—"}</td>
@@ -1121,7 +648,6 @@ export class OgsInventoryPage extends LitElement {
     const start = (this.currentPage - 1) * this.pageSize + 1;
     const end = Math.min(this.currentPage * this.pageSize, this.totalCount);
 
-    // Generate page numbers to show
     const pages: number[] = [];
     const maxVisible = 5;
     let startPage = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
@@ -1170,14 +696,21 @@ export class OgsInventoryPage extends LitElement {
     `;
   }
 
-  // --- Add Item Dialog ---
+  // --- Add Item Dialog (no Condition for sealed) ---
 
   private renderAddDialog() {
     return html`
-      <wa-dialog label="Add Inventory Item" ?open="${this.showAddDialog}" @wa-after-hide="${this.closeAddDialog}">
+      <wa-dialog
+        label="Add Sealed Inventory Item"
+        ?open="${this.showAddDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeAddDialog();
+        }}"
+      >
         <wa-input
           label="Search Product"
-          placeholder="Type to search products..."
+          placeholder="Type to search sealed products..."
+          .value="${this.productSearchTerm}"
           @input="${this.handleProductSearchInput}"
         >
           <wa-icon slot="prefix" name="search"></wa-icon>
@@ -1226,24 +759,7 @@ export class OgsInventoryPage extends LitElement {
               <h3>${this.selectedProduct!.name}</h3>
               <p>${this.selectedProduct!.gameName} — ${this.selectedProduct!.setName}</p>
 
-              ${when(
-                this.selectedProduct!.prices?.length > 0,
-                () => html`
-                  <div class="market-prices">
-                    <h4>Market Prices</h4>
-                    ${this.selectedProduct!.prices.map(
-                      (p: ProductPrice) => html`
-                        <div class="price-row">
-                          <span>${p.subTypeName}</span>
-                          <span>Low: ${p.lowPrice != null ? `$${p.lowPrice.toFixed(2)}` : "—"}</span>
-                          <span>Mid: ${p.midPrice != null ? `$${p.midPrice.toFixed(2)}` : "—"}</span>
-                          <span>Market: ${p.marketPrice != null ? `$${p.marketPrice.toFixed(2)}` : "—"}</span>
-                        </div>
-                      `,
-                    )}
-                  </div>
-                `,
-              )}
+              ${renderMarketPrices(this.selectedProduct!.prices)}
             </div>
 
             <div class="form-fields">
@@ -1256,26 +772,6 @@ export class OgsInventoryPage extends LitElement {
                   this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
                 }}"
               ></wa-input>
-
-              ${when(
-                this.selectedProduct!.isSingle,
-                () => html`
-                  <wa-select
-                    label="Condition"
-                    .value="${this.addForm.condition}"
-                    @wa-change="${(e: Event) => {
-                      const val = (e.target as WaSelect).value;
-                      this.addForm = { ...this.addForm, condition: (Array.isArray(val) ? val[0] : val) as string };
-                    }}"
-                  >
-                    <wa-option value="NM">Near Mint</wa-option>
-                    <wa-option value="LP">Lightly Played</wa-option>
-                    <wa-option value="MP">Moderately Played</wa-option>
-                    <wa-option value="HP">Heavily Played</wa-option>
-                    <wa-option value="D">Damaged</wa-option>
-                  </wa-select>
-                `,
-              )}
 
               <wa-input
                 label="Price"
@@ -1325,52 +821,38 @@ export class OgsInventoryPage extends LitElement {
                 <span slot="help-text">${this.addForm.notes.length}/1000</span>
               </wa-textarea>
 
-              ${this.renderProfitSummary(this.addForm.price, this.addForm.costBasis, this.addForm.quantity)}
+              ${renderProfitSummary(this.addForm.price, this.addForm.costBasis, this.addForm.quantity)}
             </div>
           `,
         )}
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeAddDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="brand" ?disabled="${!this.selectedProduct}" @click="${this.submitAddItem}">
-          Add Item
+          Add Sealed
         </wa-button>
       </wa-dialog>
     `;
   }
 
-  // --- Edit Item Dialog ---
+  // --- Edit Item Dialog (no Condition for sealed) ---
 
   private renderEditDialog() {
     if (!this.editingItem) return nothing;
 
     return html`
-      <wa-dialog label="Edit Inventory Item" ?open="${this.showEditDialog}" @wa-after-hide="${this.closeEditDialog}">
+      <wa-dialog
+        label="Edit Inventory Item"
+        ?open="${this.showEditDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeEditDialog();
+        }}"
+      >
         <div class="selected-product">
           <h3>${this.editingItem.productName}</h3>
           <p>${this.editingItem.gameName} — ${this.editingItem.setName}</p>
         </div>
 
         <div class="form-fields">
-          ${when(
-            this.editingItem.isSingle,
-            () => html`
-              <wa-select
-                label="Condition"
-                .value="${this.editForm.condition ?? ""}"
-                @wa-change="${(e: Event) => {
-                  const val = (e.target as WaSelect).value;
-                  this.editForm = { ...this.editForm, condition: (Array.isArray(val) ? val[0] : val) as string };
-                }}"
-              >
-                <wa-option value="NM">Near Mint</wa-option>
-                <wa-option value="LP">Lightly Played</wa-option>
-                <wa-option value="MP">Moderately Played</wa-option>
-                <wa-option value="HP">Heavily Played</wa-option>
-                <wa-option value="D">Damaged</wa-option>
-              </wa-select>
-            `,
-          )}
-
           <wa-input
             label="Quantity"
             type="number"
@@ -1429,11 +911,7 @@ export class OgsInventoryPage extends LitElement {
             <span slot="help-text">${(this.editForm.notes ?? "").length}/1000</span>
           </wa-textarea>
 
-          ${this.renderProfitSummary(
-            this.editForm.price ?? 0,
-            this.editForm.costBasis ?? 0,
-            this.editForm.quantity ?? 1,
-          )}
+          ${renderProfitSummary(this.editForm.price ?? 0, this.editForm.costBasis ?? 0, this.editForm.quantity ?? 1)}
         </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeEditDialog}">Cancel</wa-button>
@@ -1451,7 +929,9 @@ export class OgsInventoryPage extends LitElement {
       <wa-dialog
         label="Delete Inventory Item"
         ?open="${this.showDeleteDialog}"
-        @wa-after-hide="${this.closeDeleteDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeDeleteDialog();
+        }}"
       >
         <p>
           Are you sure you want to delete
@@ -1465,35 +945,20 @@ export class OgsInventoryPage extends LitElement {
     `;
   }
 
-  // --- Bulk Edit Dialog ---
+  // --- Bulk Edit Dialog (no Condition for sealed) ---
 
   private renderBulkEditDialog() {
     return html`
       <wa-dialog
-        label="Bulk Edit Inventory"
+        label="Bulk Edit Sealed Inventory"
         ?open="${this.showBulkEditDialog}"
-        @wa-after-hide="${this.closeBulkEditDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkEditDialog();
+        }}"
       >
         <p>Editing <strong>${this.selectedIds.size}</strong> selected items. Only filled fields will be updated.</p>
 
         <div class="form-fields">
-          <wa-select
-            label="Condition"
-            placeholder="Leave unchanged"
-            .value="${this.bulkEditForm.condition}"
-            clearable
-            @wa-change="${(e: Event) => {
-              const val = (e.target as WaSelect).value;
-              this.bulkEditForm = { ...this.bulkEditForm, condition: (Array.isArray(val) ? val[0] : val) as string };
-            }}"
-          >
-            <wa-option value="NM">Near Mint</wa-option>
-            <wa-option value="LP">Lightly Played</wa-option>
-            <wa-option value="MP">Moderately Played</wa-option>
-            <wa-option value="HP">Heavily Played</wa-option>
-            <wa-option value="D">Damaged</wa-option>
-          </wa-select>
-
           <wa-input
             label="Quantity"
             type="number"
@@ -1562,7 +1027,9 @@ export class OgsInventoryPage extends LitElement {
       <wa-dialog
         label="Bulk Delete Inventory"
         ?open="${this.showBulkDeleteDialog}"
-        @wa-after-hide="${this.closeBulkDeleteDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkDeleteDialog();
+        }}"
       >
         <p>Are you sure you want to delete <strong>${this.selectedIds.size}</strong> selected items?</p>
         <p>This action cannot be undone.</p>
@@ -1572,28 +1039,6 @@ export class OgsInventoryPage extends LitElement {
           Delete ${this.selectedIds.size} Items
         </wa-button>
       </wa-dialog>
-    `;
-  }
-
-  // --- Profit/Loss Summary ---
-
-  private renderProfitSummary(price: number, costBasis: number, quantity: number) {
-    if (!costBasis || costBasis <= 0) return nothing;
-
-    const profitPerUnit = price - costBasis;
-    const margin = price > 0 ? (profitPerUnit / price) * 100 : 0;
-    const totalPL = profitPerUnit * quantity;
-
-    return html`
-      <div class="profit-summary">
-        <div style="color: ${profitPerUnit >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
-          P/L per unit: $${profitPerUnit.toFixed(2)}
-        </div>
-        <div>Margin: ${margin.toFixed(1)}%</div>
-        <div style="color: ${totalPL >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
-          Total P/L: $${totalPL.toFixed(2)}
-        </div>
-      </div>
     `;
   }
 }

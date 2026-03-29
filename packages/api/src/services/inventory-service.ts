@@ -121,7 +121,7 @@ export async function getInventoryItems(
   const conditions: ReturnType<typeof eq>[] = [];
 
   if (filters?.gameName) {
-    conditions.push(eq(category.name, filters.gameName));
+    conditions.push(like(category.seoCategoryName, `${filters.gameName.toLowerCase()}%`));
   }
   if (filters?.setName) {
     conditions.push(eq(group.name, filters.setName));
@@ -306,15 +306,23 @@ export async function bulkUpdateInventoryItems(
   input: BulkUpdateInventoryInput,
   userId: string,
 ): Promise<InventoryItem[]> {
+  const changingCondition = input.condition != null;
+  const changingCostBasis = input.costBasis !== undefined;
+
+  // If the update changes condition or costBasis, we may need to merge rows
+  // that would end up with the same (productId, condition, costBasis) tuple.
+  if (changingCondition || changingCostBasis) {
+    return bulkUpdateWithMerge(input, userId);
+  }
+
+  // Simple case: no unique-key fields are changing, just do a bulk update.
   const updates: Record<string, unknown> = {
     updatedBy: userId,
     updatedAt: new Date(),
   };
 
-  if (input.condition != null) updates.condition = input.condition;
   if (input.quantity != null) updates.quantity = input.quantity;
   if (input.price != null) updates.price = input.price;
-  if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? null;
   if (input.acquisitionDate !== undefined) {
     updates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
   }
@@ -324,6 +332,99 @@ export async function bulkUpdateInventoryItems(
 
   // Fetch all updated items
   const rows = await baseInventoryQuery().where(inArray(inventoryItem.id, input.ids));
+  return rows.map((r) => mapRow(r as unknown as Record<string, unknown>));
+}
+
+/**
+ * Handle bulk updates that change unique-key fields (condition or costBasis).
+ * When multiple items would end up with the same (productId, condition, costBasis)
+ * tuple, merge them by summing quantities and keeping one row.
+ */
+async function bulkUpdateWithMerge(input: BulkUpdateInventoryInput, userId: string): Promise<InventoryItem[]> {
+  // 1. Fetch current state of all items being updated
+  const currentItems = await otcgs.select().from(inventoryItem).where(inArray(inventoryItem.id, input.ids));
+
+  type ItemRow = (typeof currentItems)[number];
+  interface MergeGroup {
+    productId: number;
+    effectiveCondition: string;
+    effectiveCostBasis: number | null;
+    items: ItemRow[];
+  }
+
+  // 2. Group items by their resulting (productId, condition, costBasis) tuple
+  const groups = new Map<string, MergeGroup>();
+  for (const item of currentItems) {
+    const effectiveCondition = input.condition ?? item.condition;
+    const effectiveCostBasis = input.costBasis !== undefined ? (input.costBasis ?? null) : item.costBasis;
+    const key = `${item.productId}\0${effectiveCondition}\0${effectiveCostBasis}`;
+
+    let group = groups.get(key);
+    if (!group) {
+      group = { productId: item.productId, effectiveCondition, effectiveCostBasis, items: [] };
+      groups.set(key, group);
+    }
+    group.items.push(item);
+  }
+
+  const now = new Date();
+  const survivingIds: number[] = [];
+  const updateSetIds = new Set(input.ids);
+
+  for (const { productId, effectiveCondition, effectiveCostBasis, items } of groups.values()) {
+    // Check if there's an existing row (not in the update set) with the same tuple
+    const dupConditions = [eq(inventoryItem.productId, productId), eq(inventoryItem.condition, effectiveCondition)];
+    if (effectiveCostBasis != null) {
+      dupConditions.push(eq(inventoryItem.costBasis, effectiveCostBasis));
+    } else {
+      dupConditions.push(isNull(inventoryItem.costBasis));
+    }
+
+    const [existingMatch] = await otcgs
+      .select()
+      .from(inventoryItem)
+      .where(and(...dupConditions))
+      .limit(1);
+
+    // Find if the existing row is outside our update set
+    const outsideRow = existingMatch && !updateSetIds.has(existingMatch.id) ? existingMatch : null;
+
+    // Determine the survivor: prefer the outside row if it exists, otherwise the first item in the group
+    const survivor = outsideRow ?? items[0];
+    const itemsToMerge = outsideRow ? items : items.slice(1);
+
+    // Sum quantities from all items being merged into the survivor
+    let totalQuantity = input.quantity ?? survivor.quantity;
+    for (const item of itemsToMerge) {
+      totalQuantity += input.quantity ?? item.quantity;
+    }
+
+    // Build update for the survivor
+    const updates: Record<string, unknown> = {
+      quantity: totalQuantity,
+      updatedBy: userId,
+      updatedAt: now,
+    };
+    if (input.condition != null) updates.condition = input.condition;
+    if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? null;
+    if (input.price != null) updates.price = input.price;
+    if (input.acquisitionDate !== undefined) {
+      updates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
+    }
+    if (input.notes !== undefined) updates.notes = input.notes ?? null;
+
+    // Delete the merged items first (before updating survivor to avoid constraint issues)
+    const idsToDelete = itemsToMerge.map((item) => item.id);
+    if (idsToDelete.length > 0) {
+      await otcgs.delete(inventoryItem).where(inArray(inventoryItem.id, idsToDelete));
+    }
+
+    await otcgs.update(inventoryItem).set(updates).where(eq(inventoryItem.id, survivor.id));
+    survivingIds.push(survivor.id);
+  }
+
+  // Fetch all surviving items
+  const rows = await baseInventoryQuery().where(inArray(inventoryItem.id, survivingIds));
   return rows.map((r) => mapRow(r as unknown as Record<string, unknown>));
 }
 
@@ -344,7 +445,7 @@ export async function searchProducts(searchTerm: string, game?: string | null): 
   const conditions: ReturnType<typeof eq>[] = [like(product.name, `%${searchTerm}%`)];
 
   if (game) {
-    conditions.push(eq(category.name, game));
+    conditions.push(like(category.seoCategoryName, `${game.toLowerCase()}%`));
   }
 
   const rows = await otcgs

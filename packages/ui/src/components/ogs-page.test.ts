@@ -204,6 +204,65 @@ describe("ogs-page", () => {
     });
   });
 
+  describe("inventory navigation", () => {
+    test("does not show inventory links for non-employee/admin users", async () => {
+      element.userRole = "user";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a");
+      const inventoryLinks = Array.from(links).filter(
+        (a) => a.href.includes("/inventory/singles") || a.href.includes("/inventory/sealed"),
+      );
+      expect(inventoryLinks.length).toBe(0);
+    });
+
+    test("shows inventory section with Singles and Sealed links for employee role", async () => {
+      element.userRole = "employee";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a");
+      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
+      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+
+      expect(singlesLink).toBeTruthy();
+      expect(sealedLink).toBeTruthy();
+      expect(singlesLink!.getAttribute("href")).toBe("/inventory/singles");
+      expect(sealedLink!.getAttribute("href")).toBe("/inventory/sealed");
+    });
+
+    test("shows inventory section with Singles and Sealed links for admin role", async () => {
+      element.userRole = "admin";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a");
+      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
+      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+
+      expect(singlesLink).toBeTruthy();
+      expect(sealedLink).toBeTruthy();
+    });
+
+    test("highlights Singles link when activePage is inventory/singles", async () => {
+      element.userRole = "employee";
+      element.activePage = "inventory/singles";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a");
+      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
+      expect(singlesLink?.hasAttribute("current")).toBe(true);
+    });
+
+    test("highlights Sealed link when activePage is inventory/sealed", async () => {
+      element.userRole = "employee";
+      element.activePage = "inventory/sealed";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a");
+      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+      expect(sealedLink?.hasAttribute("current")).toBe(true);
+    });
+  });
+
   describe("user menu - authenticated user", () => {
     beforeEach(async () => {
       element.isAnonymous = false;

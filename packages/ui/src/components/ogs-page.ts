@@ -292,7 +292,13 @@ export class OgsPage extends LitElement {
               <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
               ${when(
                 this.userRole === "admin" || this.userRole === "employee",
-                () => html` <h2>${this.renderAnchor("/inventory", "Inventory", "Inventory")}</h2> `,
+                () => html`
+                  <h2>Inventory</h2>
+                  <ul>
+                    <li>${this.renderAnchor("/inventory/singles", "Singles", "inventory/singles")}</li>
+                    <li>${this.renderAnchor("/inventory/sealed", "Sealed", "inventory/sealed")}</li>
+                  </ul>
+                `,
               )}
             </nav>
           `,

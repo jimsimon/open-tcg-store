@@ -21,9 +21,13 @@ export class OgsInventoryImportPage extends LitElement {
           <h2>Import Inventory</h2>
           <p>Coming Soon</p>
           <p style="color: var(--wa-color-neutral-500);">Import inventory from CSV files and other sources.</p>
-          <wa-button variant="neutral" href="/inventory">
+          <wa-button variant="neutral" href="/inventory/singles">
             <wa-icon slot="prefix" name="arrow-left"></wa-icon>
-            Back to Inventory
+            Back to Singles
+          </wa-button>
+          <wa-button variant="neutral" href="/inventory/sealed">
+            <wa-icon slot="prefix" name="arrow-left"></wa-icon>
+            Back to Sealed
           </wa-button>
         </div>
       </ogs-page>

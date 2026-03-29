@@ -147,8 +147,14 @@ const router = new Router()
   .get("sales", "/sales", async (ctx) => {
     return renderPage(ctx, "sales");
   })
-  .get("inventory-management", "/inventory", async (ctx) => {
-    return renderPage(ctx, "inventory");
+  .get("inventory-redirect", "/inventory", async (ctx) => {
+    ctx.redirect("/inventory/singles");
+  })
+  .get("inventory-singles", "/inventory/singles", async (ctx) => {
+    return renderPage(ctx, "inventory-singles");
+  })
+  .get("inventory-sealed", "/inventory/sealed", async (ctx) => {
+    return renderPage(ctx, "inventory-sealed");
   })
   .get("import-inventory", "/inventory/import", async (ctx) => {
     return renderPage(ctx, "inventory-import");
