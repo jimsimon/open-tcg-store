@@ -1,5 +1,3 @@
-import { html } from "lit";
-import "./home.client.ts";
 import type { RouterContext } from "@koa/router";
 import { escapeHtml } from "../../lib/html-escape";
 

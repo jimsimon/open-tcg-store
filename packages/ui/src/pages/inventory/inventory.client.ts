@@ -977,7 +977,7 @@ export class OgsInventoryPage extends LitElement {
         <wa-input
           placeholder="Search products..."
           .value="${this.searchTerm}"
-          @wa-input="${this.handleSearchInput}"
+          @input="${this.handleSearchInput}"
           clearable
         >
           <wa-icon slot="prefix" name="search"></wa-icon>
@@ -1178,7 +1178,7 @@ export class OgsInventoryPage extends LitElement {
         <wa-input
           label="Search Product"
           placeholder="Type to search products..."
-          @wa-input="${this.handleProductSearchInput}"
+          @input="${this.handleProductSearchInput}"
         >
           <wa-icon slot="prefix" name="search"></wa-icon>
           ${when(this.productSearchLoading, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
@@ -1252,7 +1252,7 @@ export class OgsInventoryPage extends LitElement {
                 type="number"
                 min="1"
                 .value="${String(this.addForm.quantity)}"
-                @wa-input="${(e: Event) => {
+                @input="${(e: Event) => {
                   this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
                 }}"
               ></wa-input>
@@ -1283,7 +1283,7 @@ export class OgsInventoryPage extends LitElement {
                 step="0.01"
                 min="0"
                 .value="${String(this.addForm.price)}"
-                @wa-input="${(e: Event) => {
+                @input="${(e: Event) => {
                   this.addForm = {
                     ...this.addForm,
                     price: Number.parseFloat((e.target as WaInput).value as string) || 0,
@@ -1297,7 +1297,7 @@ export class OgsInventoryPage extends LitElement {
                 step="0.01"
                 min="0"
                 .value="${String(this.addForm.costBasis)}"
-                @wa-input="${(e: Event) => {
+                @input="${(e: Event) => {
                   this.addForm = {
                     ...this.addForm,
                     costBasis: Number.parseFloat((e.target as WaInput).value as string) || 0,
@@ -1309,7 +1309,7 @@ export class OgsInventoryPage extends LitElement {
                 label="Acquisition Date"
                 type="date"
                 .value="${this.addForm.acquisitionDate}"
-                @wa-input="${(e: Event) => {
+                @input="${(e: Event) => {
                   this.addForm = { ...this.addForm, acquisitionDate: (e.target as WaInput).value as string };
                 }}"
               ></wa-input>
@@ -1318,7 +1318,7 @@ export class OgsInventoryPage extends LitElement {
                 label="Notes"
                 maxlength="1000"
                 .value="${this.addForm.notes}"
-                @wa-input="${(e: Event) => {
+                @input="${(e: Event) => {
                   this.addForm = { ...this.addForm, notes: (e.target as HTMLTextAreaElement).value };
                 }}"
               >
@@ -1376,7 +1376,7 @@ export class OgsInventoryPage extends LitElement {
             type="number"
             min="1"
             .value="${String(this.editForm.quantity ?? 1)}"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.editForm = { ...this.editForm, quantity: Number((e.target as WaInput).value) || 1 };
             }}"
           ></wa-input>
@@ -1387,7 +1387,7 @@ export class OgsInventoryPage extends LitElement {
             step="0.01"
             min="0"
             .value="${String(this.editForm.price ?? 0)}"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.editForm = {
                 ...this.editForm,
                 price: Number.parseFloat((e.target as WaInput).value as string) || 0,
@@ -1401,7 +1401,7 @@ export class OgsInventoryPage extends LitElement {
             step="0.01"
             min="0"
             .value="${String(this.editForm.costBasis ?? 0)}"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.editForm = {
                 ...this.editForm,
                 costBasis: Number.parseFloat((e.target as WaInput).value as string) || 0,
@@ -1413,7 +1413,7 @@ export class OgsInventoryPage extends LitElement {
             label="Acquisition Date"
             type="date"
             .value="${this.editForm.acquisitionDate ?? ""}"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.editForm = { ...this.editForm, acquisitionDate: (e.target as WaInput).value as string };
             }}"
           ></wa-input>
@@ -1422,7 +1422,7 @@ export class OgsInventoryPage extends LitElement {
             label="Notes"
             maxlength="1000"
             .value="${this.editForm.notes ?? ""}"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.editForm = { ...this.editForm, notes: (e.target as HTMLTextAreaElement).value };
             }}"
           >
@@ -1499,7 +1499,7 @@ export class OgsInventoryPage extends LitElement {
             type="number"
             min="1"
             placeholder="Leave unchanged"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               const val = (e.target as WaInput).value;
               this.bulkEditForm = { ...this.bulkEditForm, quantity: val ? Number(val) : null };
             }}"
@@ -1511,7 +1511,7 @@ export class OgsInventoryPage extends LitElement {
             step="0.01"
             min="0"
             placeholder="Leave unchanged"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               const val = (e.target as WaInput).value;
               this.bulkEditForm = { ...this.bulkEditForm, price: val ? Number.parseFloat(val as string) : null };
             }}"
@@ -1523,7 +1523,7 @@ export class OgsInventoryPage extends LitElement {
             step="0.01"
             min="0"
             placeholder="Leave unchanged"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               const val = (e.target as WaInput).value;
               this.bulkEditForm = { ...this.bulkEditForm, costBasis: val ? Number.parseFloat(val as string) : null };
             }}"
@@ -1532,7 +1532,7 @@ export class OgsInventoryPage extends LitElement {
           <wa-input
             label="Acquisition Date"
             type="date"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.bulkEditForm = { ...this.bulkEditForm, acquisitionDate: (e.target as WaInput).value as string };
             }}"
           ></wa-input>
@@ -1541,7 +1541,7 @@ export class OgsInventoryPage extends LitElement {
             label="Notes"
             maxlength="1000"
             placeholder="Leave unchanged"
-            @wa-input="${(e: Event) => {
+            @input="${(e: Event) => {
               this.bulkEditForm = { ...this.bulkEditForm, notes: (e.target as HTMLTextAreaElement).value };
             }}"
           ></wa-textarea>

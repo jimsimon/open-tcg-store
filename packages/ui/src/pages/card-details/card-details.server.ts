@@ -1,5 +1,3 @@
-import { html } from "lit";
-import "./card-details.client.ts";
 import type { RouterContext } from "@koa/router";
 import { escapeHtml } from "../../lib/html-escape";
 
