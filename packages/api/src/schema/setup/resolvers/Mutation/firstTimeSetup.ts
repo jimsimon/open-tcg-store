@@ -1,34 +1,57 @@
 import type { MutationResolvers } from "../../../types.generated.ts";
 import { auth } from "../../../../auth.ts";
+import { fromNodeHeaders } from "better-auth/node";
 import { eq } from "drizzle-orm";
 import { otcgs } from "../../../../db/index.ts";
 import { user as userTable } from "../../../../db/otcgs/schema.ts";
+import { GraphqlContext } from "../../../../server.ts";
 
 export const firstTimeSetup: NonNullable<MutationResolvers["firstTimeSetup"]> = async (
   _parent,
   { userDetails },
-  _ctx,
+  ctx: GraphqlContext,
 ) => {
   let createdUserId: string | undefined;
 
   try {
-    const { user } = await auth.api.signUpEmail({
+    // Use asResponse to get the Set-Cookie headers from the signup response,
+    // which we forward to the browser so the user is automatically signed in.
+    const signUpResponse = await auth.api.signUpEmail({
       body: {
         email: userDetails.email,
         password: userDetails.password,
         name: userDetails.firstName,
       },
+      headers: fromNodeHeaders(ctx.req.headers),
+      asResponse: true,
     });
-    createdUserId = user.id;
+
+    const signUpData = await signUpResponse.json();
+
+    if (!signUpResponse.ok) {
+      throw new Error(signUpData.message ?? "Failed to create user account");
+    }
+
+    createdUserId = signUpData.user?.id;
+
+    if (!createdUserId) {
+      throw new Error("Failed to create user account");
+    }
 
     // Directly update the role in the database since no admin exists yet
     // to authorize the setRole API call during first-time setup
-    await otcgs.update(userTable).set({ role: "admin" }).where(eq(userTable.id, user.id));
+    await otcgs.update(userTable).set({ role: "admin" }).where(eq(userTable.id, createdUserId));
+
+    // Forward Set-Cookie headers from the signup response to the browser
+    const setCookies = signUpResponse.headers.getSetCookie();
+    for (const cookie of setCookies) {
+      ctx.res.append("Set-Cookie", cookie);
+    }
 
     console.log("Initial admin user has been created successfully.");
-    return user.id;
+    return createdUserId;
   } catch (error) {
-    // If the user was created but the role update failed, clean up the
+    // If the user was created but a subsequent step failed, clean up the
     // partially created user so setup can be retried cleanly
     if (createdUserId) {
       try {

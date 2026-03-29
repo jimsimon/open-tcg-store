@@ -176,6 +176,8 @@ export class FirstTimeSetupPage extends LitElement {
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(". ");
       } else {
+        // The server-side resolver signs in the user and forwards the session
+        // cookie via the GraphQL response, so we can redirect immediately.
         window.location.href = "/";
       }
     } catch (err) {

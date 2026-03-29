@@ -17,6 +17,7 @@ import type { IncomingMessage } from "node:http";
 export type GraphqlContext = {
   auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
   req: IncomingMessage;
+  res: import("koa").Response;
 };
 
 const app = new Koa();
@@ -50,6 +51,7 @@ app.use(
             headers: fromNodeHeaders(req.raw.headers),
           }),
           req: req.raw,
+          res: req.context.res,
         } as GraphqlContext;
       },
     }),
