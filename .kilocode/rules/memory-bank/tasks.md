@@ -35,6 +35,63 @@
 - Service layer abstracts database operations from GraphQL resolvers
 - Comprehensive error handling for missing carts and products
 
+## Inventory Management Implementation
+**Last performed:** 2026-03-29
+**Description:** Complete inventory management feature with role-based access, database schema, GraphQL API, service layer, and full-featured UI
+
+**Files created:**
+- `packages/api/src/db/otcgs/inventory-schema.ts` - Inventory database schema
+- `packages/api/src/db/otcgs/inventory-relations.ts` - Drizzle ORM relations
+- `packages/api/src/schema/inventory/schema.graphql` - GraphQL schema
+- `packages/api/src/schema/inventory/resolvers/` - All resolvers (Query + Mutation)
+- `packages/api/src/services/inventory-service.ts` - Business logic service
+- `packages/ui/src/pages/inventory/inventory.client.ts` - Main inventory page
+- `packages/ui/src/pages/inventory/inventory.server.ts` - Server template
+- `packages/ui/src/pages/inventory-import/` - Import placeholder page
+- Test files for service and UI component
+
+**Files modified:**
+- `packages/api/src/auth.ts` - Added access control with employee role
+- `packages/api/src/auth-client.ts` - Added access control to API client
+- `packages/ui/src/auth-client.ts` - Added access control to UI client
+- `packages/api/src/db/otcgs/schema.ts` - Export inventory schema
+- `packages/api/src/db/otcgs/index.ts` - Import inventory relations
+- `packages/ui/src/components/ogs-page.ts` - Role-based inventory nav link
+- `packages/ui/src/server.ts` - Inventory routes
+- `packages/api/src/schema/cards/schema.graphql` - Product type filters
+- `packages/api/src/schema/cards/resolvers/Query/getSingleCardInventory.ts` - Product type filtering
+- `packages/ui/src/pages/cards/cards.client.ts` - Product type filter UI
+
+**Steps followed:**
+1. **Access Control**: Configured Better Auth with employee role and access control plugin
+2. **Database Schema**: Created inventory_item table with productId, condition, quantity, price, costBasis, unique constraint on productId+condition+costBasis
+3. **Relations**: Defined Drizzle ORM relations connecting inventory items to products
+4. **GraphQL Schema**: Defined types, inputs, queries (getInventory, searchProducts), and mutations (addInventoryItem, updateInventoryItem, deleteInventoryItem, bulkUpdateInventory, bulkDeleteInventory)
+5. **Service Layer**: Created inventory service with all business logic (CRUD, bulk ops, pagination, filtering)
+6. **Resolvers**: Implemented all GraphQL resolvers using the service layer with access control checks
+7. **UI Page**: Built full-featured inventory page with filters, search, table, pagination, dialogs, bulk actions
+8. **Product Type Filtering**: Added singles vs sealed filtering to both inventory and cards pages
+9. **Import Placeholder**: Created placeholder page for future inventory import functionality
+10. **Testing**: 20 service layer tests + 14 UI component tests
+
+**Key Implementation Patterns:**
+- Service layer pattern for business logic separation
+- Role-based access control with Better Auth employee role
+- Server-side pagination with configurable page size and offset
+- Filtering by condition, product type (singles vs sealed), and text search
+- Bulk operations for efficient multi-item updates and deletes
+- Unique constraint on productId+condition+costBasis to prevent duplicates
+- Dialog-based CRUD operations with product search integration
+
+**Important Notes:**
+- Employee role required for all inventory mutations
+- Inventory items have a unique constraint on productId + condition + costBasis
+- Product search supports autocomplete for adding inventory items
+- Bulk actions require row selection via checkboxes
+- Pagination is server-side with page size options (10, 25, 50, 100)
+- Product type filter distinguishes singles from sealed products
+- Import inventory page is a placeholder for future implementation
+
 ## Database Schema Extension Pattern
 **Description:** Pattern for extending database schemas with new business entities
 
