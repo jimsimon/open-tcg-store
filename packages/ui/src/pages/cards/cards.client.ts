@@ -6,6 +6,7 @@ import "@awesome.me/webawesome/dist/components/card/card.js";
 import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/radio/radio.js";
 import "@awesome.me/webawesome/dist/components/select/select.js";
+import "@awesome.me/webawesome/dist/components/option/option.js";
 import "@awesome.me/webawesome/dist/components/badge/badge.js";
 import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
 import "@awesome.me/webawesome/dist/components/tooltip/tooltip.js";
@@ -131,6 +132,11 @@ export class CardsPage extends LitElement {
     `,
   ];
 
+  @property({ type: String }) userRole = "";
+
+  @state()
+  private productTypeFilter: string = new URLSearchParams(window.location.search).get("type") ?? "all";
+
   @state()
   private cards: Card[] = [];
 
@@ -164,6 +170,14 @@ export class CardsPage extends LitElement {
     const normalizedValue = Array.isArray(value) ? value.join(",") : value;
     this.setFilter = normalizedValue;
     this.updateQueryParam("set", normalizedValue);
+    this.fetchSingleCardInventory();
+  }
+
+  private handleProductTypeChange(event: Event) {
+    const { value } = event.target as WaSelect;
+    const normalizedValue = Array.isArray(value) ? value[0] : value;
+    this.productTypeFilter = normalizedValue || "all";
+    this.updateQueryParam("type", this.productTypeFilter === "all" ? null : this.productTypeFilter);
     this.fetchSingleCardInventory();
   }
 
@@ -243,12 +257,22 @@ export class CardsPage extends LitElement {
       }
     `);
 
+    const filters: Record<string, unknown> = {
+      searchTerm: this.cardsSearchTerm,
+      setCode: this.setFilter,
+    };
+
+    if (this.productTypeFilter === "singles") {
+      filters.includeSingles = true;
+      filters.includeSealed = false;
+    } else if (this.productTypeFilter === "sealed") {
+      filters.includeSingles = false;
+      filters.includeSealed = true;
+    }
+
     const result = await execute(GetSingleCardInventoryQuery, {
       game: this.game,
-      filters: {
-        searchTerm: this.cardsSearchTerm,
-        setCode: this.setFilter,
-      },
+      filters,
     });
 
     if (result?.errors?.length) {
@@ -260,7 +284,7 @@ export class CardsPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="games/${this.game}/cards">
+      <ogs-page activePage="games/${this.game}/cards" userRole="${this.userRole}">
         <div class="search-container">
           <div class="filter-button">
             <wa-select
@@ -271,6 +295,17 @@ export class CardsPage extends LitElement {
               ?disabled=${this.setsLoading}
             >
               ${this.setsLoading ? html`<wa-spinner slot="start"></wa-spinner>` : this.renderSetOptions()}
+            </wa-select>
+          </div>
+          <div class="filter-button">
+            <wa-select
+              label="Product Type"
+              .value="${this.productTypeFilter}"
+              @change="${this.handleProductTypeChange}"
+            >
+              <wa-option ?selected="${this.productTypeFilter === "all"}" value="all">All</wa-option>
+              <wa-option ?selected="${this.productTypeFilter === "singles"}" value="singles">Singles</wa-option>
+              <wa-option ?selected="${this.productTypeFilter === "sealed"}" value="sealed">Sealed</wa-option>
             </wa-select>
           </div>
           <div class="search-input">

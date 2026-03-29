@@ -49,6 +49,8 @@ export class CardDetailsPage extends LitElement {
     `,
   ];
 
+  @property({ type: String }) userRole = "";
+
   @property()
   private game: string = "";
 
@@ -120,7 +122,7 @@ export class CardDetailsPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="games/${this.game}/card-details">
+      <ogs-page activePage="games/${this.game}/card-details" userRole="${this.userRole}">
         <h1>${this.card?.name}</h1>
         <div class="wa-stack">
           <wa-card appearance="outlined">

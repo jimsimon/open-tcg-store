@@ -1,2 +1,3 @@
 export * from "./auth-schema";
 export * from "./shopping-schema";
+export * from "./inventory-schema";

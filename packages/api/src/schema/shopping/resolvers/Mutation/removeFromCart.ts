@@ -3,7 +3,7 @@ import { cartItem, otcgs } from "../../../../db";
 import { GraphqlContext } from "../../../../server";
 import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
 import type { MutationResolvers } from "./../../../types.generated";
-export const removeFromCart: NonNullable<MutationResolvers["removeFromCart"]> = async (
+export const removeFromCart: NonNullable<MutationResolvers['removeFromCart']> = async (
   _parent,
   arg,
   ctx: GraphqlContext,

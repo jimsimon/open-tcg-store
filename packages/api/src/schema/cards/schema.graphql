@@ -38,6 +38,8 @@ type Set {
 input SingleCardFilters {
   searchTerm: String
   setCode: String
+  includeSingles: Boolean
+  includeSealed: Boolean
 }
 
 input SetFilters {

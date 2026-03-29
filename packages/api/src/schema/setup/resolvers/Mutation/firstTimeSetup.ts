@@ -3,7 +3,7 @@ import { auth } from "../../../../auth.ts";
 import { fromNodeHeaders } from "better-auth/node";
 import { GraphqlContext } from "../../../../server.ts";
 
-export const firstTimeSetup: NonNullable<MutationResolvers["firstTimeSetup"]> = async (
+export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
   _parent,
   { userDetails },
   ctx: GraphqlContext,

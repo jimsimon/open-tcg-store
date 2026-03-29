@@ -1,0 +1,109 @@
+type InventoryItem {
+  id: Int!
+  productId: Int!
+  productName: String!
+  gameName: String!
+  setName: String!
+  rarity: String
+  isSingle: Boolean!
+  isSealed: Boolean!
+  condition: String
+  quantity: Int!
+  price: Float!
+  costBasis: Float
+  acquisitionDate: String
+  notes: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type InventoryPage {
+  items: [InventoryItem!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+input InventoryFilters {
+  gameName: String
+  setName: String
+  rarity: String
+  condition: String
+  searchTerm: String
+  includeSingles: Boolean
+  includeSealed: Boolean
+}
+
+input PaginationInput {
+  page: Int
+  pageSize: Int
+}
+
+input AddInventoryItemInput {
+  productId: Int!
+  condition: String!
+  quantity: Int!
+  price: Float!
+  costBasis: Float
+  acquisitionDate: String
+  notes: String
+}
+
+input UpdateInventoryItemInput {
+  id: Int!
+  condition: String
+  quantity: Int
+  price: Float
+  costBasis: Float
+  acquisitionDate: String
+  notes: String
+}
+
+input BulkUpdateInventoryInput {
+  ids: [Int!]!
+  condition: String
+  quantity: Int
+  price: Float
+  costBasis: Float
+  acquisitionDate: String
+  notes: String
+}
+
+input BulkDeleteInventoryInput {
+  ids: [Int!]!
+}
+
+extend type Query {
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  searchProducts(searchTerm: String!, game: String): [ProductSearchResult!]!
+}
+
+type ProductSearchResult {
+  id: Int!
+  name: String!
+  gameName: String!
+  setName: String!
+  rarity: String
+  imageUrl: String
+  isSingle: Boolean!
+  isSealed: Boolean!
+  prices: [ProductPrice!]!
+}
+
+type ProductPrice {
+  subTypeName: String!
+  lowPrice: Float
+  midPrice: Float
+  highPrice: Float
+  marketPrice: Float
+  directLowPrice: Float
+}
+
+extend type Mutation {
+  addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
+  updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
+  deleteInventoryItem(id: Int!): Boolean!
+  bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
+  bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
+}

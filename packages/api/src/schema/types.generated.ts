@@ -16,6 +16,30 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddInventoryItemInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition: Scalars['String']['input'];
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price: Scalars['Float']['input'];
+  productId: Scalars['Int']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type BulkDeleteInventoryInput = {
+  ids: Array<Scalars['Int']['input']>;
+};
+
+export type BulkUpdateInventoryInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  ids: Array<Scalars['Int']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price?: InputMaybe<Scalars['Float']['input']>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
@@ -64,19 +88,83 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type InventoryFilters = {
+  condition?: InputMaybe<Scalars['String']['input']>;
+  gameName?: InputMaybe<Scalars['String']['input']>;
+  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
+  rarity?: InputMaybe<Scalars['String']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  setName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type InventoryItem = {
+  __typename?: 'InventoryItem';
+  acquisitionDate?: Maybe<Scalars['String']['output']>;
+  condition?: Maybe<Scalars['String']['output']>;
+  costBasis?: Maybe<Scalars['Float']['output']>;
+  createdAt: Scalars['String']['output'];
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  price: Scalars['Float']['output'];
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type InventoryPage = {
+  __typename?: 'InventoryPage';
+  items: Array<InventoryItem>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  addInventoryItem: InventoryItem;
   addToCart: ShoppingCart;
+  bulkDeleteInventory: Scalars['Boolean']['output'];
+  bulkUpdateInventory: Array<InventoryItem>;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  deleteInventoryItem: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
+  updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
+};
+
+
+export type MutationaddInventoryItemArgs = {
+  input: AddInventoryItemInput;
 };
 
 
 export type MutationaddToCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationbulkDeleteInventoryArgs = {
+  input: BulkDeleteInventoryInput;
+};
+
+
+export type MutationbulkUpdateInventoryArgs = {
+  input: BulkUpdateInventoryInput;
+};
+
+
+export type MutationdeleteInventoryItemArgs = {
+  id: Scalars['Int']['input'];
 };
 
 
@@ -91,23 +179,64 @@ export type MutationremoveFromCartArgs = {
 };
 
 
+export type MutationupdateInventoryItemArgs = {
+  input: UpdateInventoryItemInput;
+};
+
+
 export type MutationupdateItemInCartArgs = {
   cartItem: CartItemInput;
+};
+
+export type PaginationInput = {
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type ProductPrice = {
+  __typename?: 'ProductPrice';
+  directLowPrice?: Maybe<Scalars['Float']['output']>;
+  highPrice?: Maybe<Scalars['Float']['output']>;
+  lowPrice?: Maybe<Scalars['Float']['output']>;
+  marketPrice?: Maybe<Scalars['Float']['output']>;
+  midPrice?: Maybe<Scalars['Float']['output']>;
+  subTypeName: Scalars['String']['output'];
+};
+
+export type ProductSearchResult = {
+  __typename?: 'ProductSearchResult';
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  prices: Array<ProductPrice>;
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
 };
 
 export type Query = {
   __typename?: 'Query';
   getCard: Card;
+  getInventory: InventoryPage;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+  searchProducts: Array<ProductSearchResult>;
 };
 
 
 export type QuerygetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
+};
+
+
+export type QuerygetInventoryArgs = {
+  filters?: InputMaybe<InventoryFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -120,6 +249,12 @@ export type QuerygetSetsArgs = {
 export type QuerygetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
+};
+
+
+export type QuerysearchProductsArgs = {
+  game?: InputMaybe<Scalars['String']['input']>;
+  searchTerm: Scalars['String']['input'];
 };
 
 export type Set = {
@@ -143,8 +278,20 @@ export type ShoppingCart = {
 };
 
 export type SingleCardFilters = {
+  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   setCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateInventoryItemInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  id: Scalars['Int']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price?: InputMaybe<Scalars['Float']['input']>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UserDetails = {
@@ -224,45 +371,65 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  Card: ResolverTypeWrapper<Card>;
+  AddInventoryItemInput: AddInventoryItemInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
-  CardImages: ResolverTypeWrapper<CardImages>;
-  CartItemInput: CartItemInput;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  BulkDeleteInventoryInput: BulkDeleteInventoryInput;
+  BulkUpdateInventoryInput: BulkUpdateInventoryInput;
+  Card: ResolverTypeWrapper<Card>;
+  CardImages: ResolverTypeWrapper<CardImages>;
+  CartItemInput: CartItemInput;
   CartItemOutput: ResolverTypeWrapper<CartItemOutput>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
-  Mutation: ResolverTypeWrapper<{}>;
-  Query: ResolverTypeWrapper<{}>;
+  InventoryFilters: InventoryFilters;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  InventoryItem: ResolverTypeWrapper<InventoryItem>;
+  InventoryPage: ResolverTypeWrapper<InventoryPage>;
+  Mutation: ResolverTypeWrapper<{}>;
+  PaginationInput: PaginationInput;
+  ProductPrice: ResolverTypeWrapper<ProductPrice>;
+  ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
+  Query: ResolverTypeWrapper<{}>;
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
   Settings: Settings;
   ShoppingCart: ResolverTypeWrapper<ShoppingCart>;
   SingleCardFilters: SingleCardFilters;
+  UpdateInventoryItemInput: UpdateInventoryItemInput;
   UserDetails: UserDetails;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  Card: Card;
+  AddInventoryItemInput: AddInventoryItemInput;
   String: Scalars['String']['output'];
-  CardImages: CardImages;
-  CartItemInput: CartItemInput;
   Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
+  BulkDeleteInventoryInput: BulkDeleteInventoryInput;
+  BulkUpdateInventoryInput: BulkUpdateInventoryInput;
+  Card: Card;
+  CardImages: CardImages;
+  CartItemInput: CartItemInput;
   CartItemOutput: CartItemOutput;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
-  Mutation: {};
-  Query: {};
+  InventoryFilters: InventoryFilters;
   Boolean: Scalars['Boolean']['output'];
+  InventoryItem: InventoryItem;
+  InventoryPage: InventoryPage;
+  Mutation: {};
+  PaginationInput: PaginationInput;
+  ProductPrice: ProductPrice;
+  ProductSearchResult: ProductSearchResult;
+  Query: {};
   Set: Set;
   SetFilters: SetFilters;
   Settings: Settings;
   ShoppingCart: ShoppingCart;
   SingleCardFilters: SingleCardFilters;
+  UpdateInventoryItemInput: UpdateInventoryItemInput;
   UserDetails: UserDetails;
 };
 
@@ -309,21 +476,80 @@ export type ConditionInventoryResolvers<ContextType = any, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type InventoryItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryItem'] = ResolversParentTypes['InventoryItem']> = {
+  acquisitionDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  condition?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  costBasis?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type InventoryPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryPage'] = ResolversParentTypes['InventoryPage']> = {
+  items?: Resolver<Array<ResolversTypes['InventoryItem']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
   addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
+  bulkDeleteInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationbulkDeleteInventoryArgs, 'input'>>;
+  bulkUpdateInventory?: Resolver<Array<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<MutationbulkUpdateInventoryArgs, 'input'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
+  deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
   firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'settings' | 'userDetails'>>;
   removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
+  updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
+};
+
+export type ProductPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductPrice'] = ResolversParentTypes['ProductPrice']> = {
+  directLowPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  highPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  lowPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  marketPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  midPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  subTypeName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ProductSearchResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductSearchResult'] = ResolversParentTypes['ProductSearchResult']> = {
+  gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  imageUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  prices?: Resolver<Array<ResolversTypes['ProductPrice']>, ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
+  getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  searchProducts?: Resolver<Array<ResolversTypes['ProductSearchResult']>, ParentType, ContextType, RequireFields<QuerysearchProductsArgs, 'searchTerm'>>;
 };
 
 export type SetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Set'] = ResolversParentTypes['Set']> = {
@@ -343,7 +569,11 @@ export type Resolvers<ContextType = any> = {
   CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
+  InventoryItem?: InventoryItemResolvers<ContextType>;
+  InventoryPage?: InventoryPageResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  ProductPrice?: ProductPriceResolvers<ContextType>;
+  ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Set?: SetResolvers<ContextType>;
   ShoppingCart?: ShoppingCartResolvers<ContextType>;

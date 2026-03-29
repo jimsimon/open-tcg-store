@@ -126,7 +126,7 @@ const router = new Router()
   .get("first-time-setup", "/first-time-setup", async (ctx) => {
     return renderPage(ctx, "first-time-setup");
   })
-  .get("inventory", "/games/:game/cards", async (ctx) => {
+  .get("cards", "/games/:game/cards", async (ctx) => {
     return renderPage(ctx, "cards");
   })
   .get("card-details", "/games/:game/cards/:cardId", async (ctx) => {
@@ -134,6 +134,12 @@ const router = new Router()
   })
   .get("sales", "/sales", async (ctx) => {
     return renderPage(ctx, "sales");
+  })
+  .get("inventory-management", "/inventory", async (ctx) => {
+    return renderPage(ctx, "inventory");
+  })
+  .get("import-inventory", "/inventory/import", async (ctx) => {
+    return renderPage(ctx, "inventory-import");
   })
   .get("settings", "/settings", async (ctx) => {
     return renderPage(ctx, "settings");

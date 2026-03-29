@@ -1,11 +1,12 @@
 import { css, html, LitElement, unsafeCSS } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import "@awesome.me/webawesome/dist/components/card/card.js";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
 import "../../components/ogs-page.ts";
 
 @customElement("ogs-home-page")
 export class HomePage extends LitElement {
+  @property({ type: String }) userRole = "";
   static styles = [
     css`
       ${unsafeCSS(utilityStyles)}
@@ -19,7 +20,7 @@ export class HomePage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="Dashboard">
+      <ogs-page activePage="Dashboard" userRole="${this.userRole}">
         <h1>Dashboard</h1>
         <div class="wa-grid">
           <wa-card appearance="filled">

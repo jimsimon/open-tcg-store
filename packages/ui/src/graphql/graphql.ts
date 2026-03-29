@@ -16,6 +16,30 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddInventoryItemInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition: Scalars['String']['input'];
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price: Scalars['Float']['input'];
+  productId: Scalars['Int']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type BulkDeleteInventoryInput = {
+  ids: Array<Scalars['Int']['input']>;
+};
+
+export type BulkUpdateInventoryInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  ids: Array<Scalars['Int']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price?: InputMaybe<Scalars['Float']['input']>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
@@ -64,19 +88,83 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type InventoryFilters = {
+  condition?: InputMaybe<Scalars['String']['input']>;
+  gameName?: InputMaybe<Scalars['String']['input']>;
+  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
+  rarity?: InputMaybe<Scalars['String']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  setName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type InventoryItem = {
+  __typename?: 'InventoryItem';
+  acquisitionDate?: Maybe<Scalars['String']['output']>;
+  condition?: Maybe<Scalars['String']['output']>;
+  costBasis?: Maybe<Scalars['Float']['output']>;
+  createdAt: Scalars['String']['output'];
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  price: Scalars['Float']['output'];
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type InventoryPage = {
+  __typename?: 'InventoryPage';
+  items: Array<InventoryItem>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  addInventoryItem: InventoryItem;
   addToCart: ShoppingCart;
+  bulkDeleteInventory: Scalars['Boolean']['output'];
+  bulkUpdateInventory: Array<InventoryItem>;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  deleteInventoryItem: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
+  updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
+};
+
+
+export type MutationAddInventoryItemArgs = {
+  input: AddInventoryItemInput;
 };
 
 
 export type MutationAddToCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationBulkDeleteInventoryArgs = {
+  input: BulkDeleteInventoryInput;
+};
+
+
+export type MutationBulkUpdateInventoryArgs = {
+  input: BulkUpdateInventoryInput;
+};
+
+
+export type MutationDeleteInventoryItemArgs = {
+  id: Scalars['Int']['input'];
 };
 
 
@@ -91,23 +179,64 @@ export type MutationRemoveFromCartArgs = {
 };
 
 
+export type MutationUpdateInventoryItemArgs = {
+  input: UpdateInventoryItemInput;
+};
+
+
 export type MutationUpdateItemInCartArgs = {
   cartItem: CartItemInput;
+};
+
+export type PaginationInput = {
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type ProductPrice = {
+  __typename?: 'ProductPrice';
+  directLowPrice?: Maybe<Scalars['Float']['output']>;
+  highPrice?: Maybe<Scalars['Float']['output']>;
+  lowPrice?: Maybe<Scalars['Float']['output']>;
+  marketPrice?: Maybe<Scalars['Float']['output']>;
+  midPrice?: Maybe<Scalars['Float']['output']>;
+  subTypeName: Scalars['String']['output'];
+};
+
+export type ProductSearchResult = {
+  __typename?: 'ProductSearchResult';
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  prices: Array<ProductPrice>;
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
 };
 
 export type Query = {
   __typename?: 'Query';
   getCard: Card;
+  getInventory: InventoryPage;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   isSetupPending: Scalars['Boolean']['output'];
+  searchProducts: Array<ProductSearchResult>;
 };
 
 
 export type QueryGetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
+};
+
+
+export type QueryGetInventoryArgs = {
+  filters?: InputMaybe<InventoryFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -120,6 +249,12 @@ export type QueryGetSetsArgs = {
 export type QueryGetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
+};
+
+
+export type QuerySearchProductsArgs = {
+  game?: InputMaybe<Scalars['String']['input']>;
+  searchTerm: Scalars['String']['input'];
 };
 
 export type Set = {
@@ -143,8 +278,20 @@ export type ShoppingCart = {
 };
 
 export type SingleCardFilters = {
+  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   setCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateInventoryItemInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  id: Scalars['Int']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  price?: InputMaybe<Scalars['Float']['input']>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UserDetails = {

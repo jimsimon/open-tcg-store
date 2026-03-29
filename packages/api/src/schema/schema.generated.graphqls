@@ -1,3 +1,27 @@
+input AddInventoryItemInput {
+  acquisitionDate: String
+  condition: String!
+  costBasis: Float
+  notes: String
+  price: Float!
+  productId: Int!
+  quantity: Int!
+}
+
+input BulkDeleteInventoryInput {
+  ids: [Int!]!
+}
+
+input BulkUpdateInventoryInput {
+  acquisitionDate: String
+  condition: String
+  costBasis: Float
+  ids: [Int!]!
+  notes: String
+  price: Float
+  quantity: Int
+}
+
 type Card {
   finishes: [String!]!
   flavorText: String
@@ -41,21 +65,91 @@ type ConditionInventory {
   quantity: Int!
 }
 
+input InventoryFilters {
+  condition: String
+  gameName: String
+  includeSealed: Boolean
+  includeSingles: Boolean
+  rarity: String
+  searchTerm: String
+  setName: String
+}
+
+type InventoryItem {
+  acquisitionDate: String
+  condition: String
+  costBasis: Float
+  createdAt: String!
+  gameName: String!
+  id: Int!
+  isSealed: Boolean!
+  isSingle: Boolean!
+  notes: String
+  price: Float!
+  productId: Int!
+  productName: String!
+  quantity: Int!
+  rarity: String
+  setName: String!
+  updatedAt: String!
+}
+
+type InventoryPage {
+  items: [InventoryItem!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
 type Mutation {
+  addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addToCart(cartItem: CartItemInput!): ShoppingCart!
+  bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
+  bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
+  deleteInventoryItem(id: Int!): Boolean!
   firstTimeSetup(settings: Settings!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
+  updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
+}
+
+input PaginationInput {
+  page: Int
+  pageSize: Int
+}
+
+type ProductPrice {
+  directLowPrice: Float
+  highPrice: Float
+  lowPrice: Float
+  marketPrice: Float
+  midPrice: Float
+  subTypeName: String!
+}
+
+type ProductSearchResult {
+  gameName: String!
+  id: Int!
+  imageUrl: String
+  isSealed: Boolean!
+  isSingle: Boolean!
+  name: String!
+  prices: [ProductPrice!]!
+  rarity: String
+  setName: String!
 }
 
 type Query {
   getCard(cardId: String!, game: String!): Card!
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   isSetupPending: Boolean!
+  searchProducts(game: String, searchTerm: String!): [ProductSearchResult!]!
 }
 
 type Set {
@@ -77,8 +171,20 @@ type ShoppingCart {
 }
 
 input SingleCardFilters {
+  includeSealed: Boolean
+  includeSingles: Boolean
   searchTerm: String
   setCode: String
+}
+
+input UpdateInventoryItemInput {
+  acquisitionDate: String
+  condition: String
+  costBasis: Float
+  id: Int!
+  notes: String
+  price: Float
+  quantity: Int
 }
 
 input UserDetails {

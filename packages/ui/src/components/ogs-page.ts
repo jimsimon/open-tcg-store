@@ -12,7 +12,6 @@ import Cookies from "js-cookie";
 import { graphql } from "../graphql";
 import { execute } from "../lib/graphql";
 import { ShoppingCart } from "../graphql/graphql";
-import { number } from "better-auth";
 
 @customElement("ogs-page")
 export class OgsPage extends LitElement {
@@ -99,6 +98,9 @@ export class OgsPage extends LitElement {
 
   @property({ type: String })
   activePage?: string;
+
+  @property({ type: String })
+  userRole = "";
 
   @property({ type: Boolean })
   hideNav = false;
@@ -188,7 +190,9 @@ export class OgsPage extends LitElement {
           </wa-select>
           <wa-button appearance="filled">
             <wa-icon name="shopping-cart"></wa-icon>
-            <wa-badge pill>${this.cart?.items.reduce<number>((total, item) => (total += item.quantity), 0) ?? 0}</wa-badge>
+            <wa-badge pill
+              >${this.cart?.items.reduce<number>((total, item) => (total += item.quantity), 0) ?? 0}</wa-badge
+            >
           </wa-button>
           <wa-divider orientation="vertical"></wa-divider>
           <wa-button class="avatar-button" appearance="filled">
@@ -208,6 +212,10 @@ export class OgsPage extends LitElement {
                 <li>${this.renderAnchor("/games/pokemon/cards", "Pokemon", "games/pokemon/cards")}</li>
               </ul>
               <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
+              ${when(
+                this.userRole === "admin" || this.userRole === "employee",
+                () => html` <h2>${this.renderAnchor("/inventory", "Inventory", "Inventory")}</h2> `,
+              )}
             </nav>
           `,
           () => nothing,
