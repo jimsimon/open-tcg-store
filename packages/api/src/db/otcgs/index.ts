@@ -1,20 +1,23 @@
 import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 import { databaseFile } from "./drizzle.config";
 import { databaseFile as tcgDataDatabaseFile } from "../tcg-data/drizzle.config";
 import * as schema from "./schema";
-import * as relations from "./relations";
 import * as tcgDataSchema from "../tcg-data/schema";
 import * as tcgDataRelations from "../tcg-data/relations";
-import { sql } from "drizzle-orm";
 export * from "./schema";
 
-const otcgs = drizzle(databaseFile, {
+const client = createClient({ url: databaseFile });
+// Strip the "file:" prefix for ATTACH DATABASE since it expects a plain file path
+const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, "");
+await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+
+const otcgs = drizzle(client, {
   schema: {
     ...schema,
     ...tcgDataSchema,
-    ...relations,
     ...tcgDataRelations,
   },
 });
-otcgs.run(sql`ATTACH_DATABASE '${tcgDataDatabaseFile}' AS tcg_data;`);
+
 export { otcgs };

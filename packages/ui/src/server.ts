@@ -35,8 +35,58 @@ app.use(async (ctx, next) => {
   // No session was found, so we need to create an anonymous one
   if (!getSessionResponse.data) {
     await authClient.signIn.anonymous({
-      fetchOptions: createSignInFetchOptions(ctx, next),
+      fetchOptions: {
+        headers: {
+          Cookie: ctx.headers.cookie,
+        } as Record<string, string>,
+        onSuccess: (successCtx) => {
+          // Copy Set-Cookie headers from the sign-in response to the browser response
+          const responseCookies = successCtx.response.headers.getSetCookie();
+          for (const cookie of responseCookies) {
+            ctx.response.append("Set-Cookie", cookie);
+          }
+
+          // Extract name=value pairs from Set-Cookie headers (strip attributes like Path, HttpOnly, etc.)
+          const newCookiePairs = responseCookies.map((c: string) => c.split(";")[0]);
+
+          // Build a map of cookie name -> value from the new cookies
+          const newCookieMap = new Map<string, string>();
+          for (const pair of newCookiePairs) {
+            const eqIndex = pair.indexOf("=");
+            if (eqIndex !== -1) {
+              newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
+            }
+          }
+
+          // Replace existing cookies with new values, or append new ones
+          const existingRequestCookies = ctx.req.headers.cookie;
+          if (!existingRequestCookies) {
+            ctx.request.headers.cookie = newCookiePairs.join("; ");
+          } else {
+            // Parse existing cookies and replace any that have new values
+            const existingPairs = existingRequestCookies.split(";").map((c) => c.trim());
+            const updatedPairs = existingPairs.map((pair) => {
+              const eqIndex = pair.indexOf("=");
+              if (eqIndex !== -1) {
+                const name = pair.substring(0, eqIndex);
+                if (newCookieMap.has(name)) {
+                  const newValue = newCookieMap.get(name);
+                  newCookieMap.delete(name); // Mark as handled
+                  return `${name}=${newValue}`;
+                }
+              }
+              return pair;
+            });
+            // Append any remaining new cookies that weren't replacements
+            for (const [name, value] of newCookieMap) {
+              updatedPairs.push(`${name}=${value}`);
+            }
+            ctx.request.headers.cookie = updatedPairs.join("; ");
+          }
+        },
+      },
     });
+
     getSessionResponse = await getSession(ctx);
     if (!getSessionResponse.data) {
       throw new Error("Failed to retrieve session data after anonymous account creation");
@@ -44,8 +94,8 @@ app.use(async (ctx, next) => {
     ctx.state.auth = getSessionResponse.data;
   } else {
     ctx.state.auth = getSessionResponse.data;
-    await next();
   }
+  await next();
 });
 
 function getSession(ctx: Context) {
@@ -57,26 +107,6 @@ function getSession(ctx: Context) {
       } as Record<string, string>,
     },
   });
-}
-
-function createSignInFetchOptions(ctx: Context, next: Next) {
-  return {
-    onResponse: async ({ response }: { response: Response }) => {
-      for (const cookie of response.headers.getSetCookie()) {
-        // Copy over any auth cookies from the API response to the response we're about to send to the browser
-        ctx.response.append("Set-Cookie", cookie);
-        // Also copy the cookies over to the current request for future auth calls
-      }
-      const existingRequestCookies = ctx.req.headers.cookie;
-      const newResponseCookies = response.headers.get("Set-Cookie") ?? undefined;
-      if (!existingRequestCookies) {
-        ctx.request.headers.cookie = newResponseCookies;
-      } else {
-        ctx.request.headers.cookie = `${existingRequestCookies}; ${newResponseCookies}`;
-      }
-      await next();
-    },
-  };
 }
 
 const router = new Router()
