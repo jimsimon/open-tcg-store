@@ -42,6 +42,8 @@ export default defineConfig({
     projects: [
       {
         test: {
+          name: "API",
+          root: "packages/api",
           include: ["src/**/*.test.ts"],
           exclude: ["node_modules", "dist", "src/components", "src/**/*.client.test.ts"],
           globals: true,
@@ -50,8 +52,9 @@ export default defineConfig({
       },
       {
         test: {
+          name: "UI",
+          root: "packages/ui",
           include: ["src/components/**/*.test.ts", "src/**/*.client.test.ts"],
-          name: "browser",
           browser: {
             enabled: true,
             provider: "playwright",
