@@ -78,7 +78,7 @@ export class FirstTimeSetupPage extends LitElement {
                 Don't worry, you'll be able to add additional accounts, including more admins, after this initial setup
                 process is complete.
               </p>
-              <form slot="end">
+              <form slot="end" @submit="${(e: Event) => e.preventDefault()}">
                 <wa-input label="First Name" name="name" autocomplete="name" @input="${this.handleFirstNameChange}">
                   <wa-icon slot="start" name="pencil"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
