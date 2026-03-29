@@ -1,8 +1,10 @@
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
 import "../../components/ogs-page.ts";
 import "../../components/ogs-wizard.ts";
 import "../../components/ogs-two-pane-panel.ts";
+import "@awesome.me/webawesome/dist/components/callout/callout.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
@@ -32,6 +34,10 @@ export class FirstTimeSetupPage extends LitElement {
       flex-direction: column;
       gap: var(--wa-space-m);
     }
+
+    wa-callout {
+      margin-bottom: var(--wa-space-m);
+    }
   `;
 
   @state()
@@ -41,9 +47,21 @@ export class FirstTimeSetupPage extends LitElement {
     password: undefined,
   };
 
+  @state()
+  error = "";
+
   render() {
     return html`
       <ogs-page hideNav>
+        ${when(
+          this.error,
+          () => html`
+            <wa-callout variant="danger">
+              <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+              ${this.error}
+            </wa-callout>
+          `,
+        )}
         <ogs-wizard @ogs-wizard-save-click="${this.handleSaveClick}">
           <ogs-wizard-item heading="First Time Setup">
             <p>Welcome to the first time setup wizard! This process will help you with the following tasks:</p>
@@ -61,15 +79,28 @@ export class FirstTimeSetupPage extends LitElement {
                 process is complete.
               </p>
               <form slot="end">
-                <wa-input label="First Name" @input="${this.handleFirstNameChange}">
+                <wa-input label="First Name" name="name" autocomplete="name" @input="${this.handleFirstNameChange}">
                   <wa-icon slot="start" name="pencil"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input type="email" label="E-mail Address" @input="${this.handleEmailChange}">
+                <wa-input
+                  type="email"
+                  label="E-mail Address"
+                  name="email"
+                  autocomplete="email"
+                  @input="${this.handleEmailChange}"
+                >
                   <wa-icon slot="start" name="envelope"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input type="password" label="Password" password-toggle @input="${this.handlePasswordChange}">
+                <wa-input
+                  type="password"
+                  label="Password"
+                  name="password"
+                  autocomplete="new-password"
+                  password-toggle
+                  @input="${this.handlePasswordChange}"
+                >
                   <wa-icon slot="start" name="lock"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
@@ -109,18 +140,32 @@ export class FirstTimeSetupPage extends LitElement {
   }
 
   async handleSaveClick() {
+    // Clear any previous error
+    this.error = "";
+
+    // Client-side validation
+    const missingFields: string[] = [];
+    if (!this.user.firstName?.trim()) missingFields.push("First Name");
+    if (!this.user.email?.trim()) missingFields.push("E-mail Address");
+    if (!this.user.password) missingFields.push("Password");
+
+    if (missingFields.length > 0) {
+      this.error = `Please fill in the following required fields: ${missingFields.join(", ")}`;
+      return;
+    }
+
     const FirstTimeSetupMutation = graphql(`
       mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
         firstTimeSetup(userDetails: $userDetails, settings: $settings)
       }
     `);
 
-    if (this.user.email && this.user.firstName && this.user.password) {
+    try {
       const result = await execute(FirstTimeSetupMutation, {
         userDetails: {
-          firstName: this.user.firstName,
-          email: this.user.email,
-          password: this.user.password,
+          firstName: this.user.firstName!,
+          email: this.user.email!,
+          password: this.user.password!,
         },
         settings: {
           country: "US",
@@ -129,10 +174,12 @@ export class FirstTimeSetupPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        console.log({ result });
+        this.error = result.errors.map((e: { message: string }) => e.message).join(". ");
       } else {
         window.location.href = "/";
       }
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
     }
   }
 }

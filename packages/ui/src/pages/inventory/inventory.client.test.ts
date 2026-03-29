@@ -182,9 +182,9 @@ describe("ogs-inventory-page", () => {
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const alert = element.shadowRoot!.querySelector("wa-alert");
-    expect(alert).toBeTruthy();
-    expect(alert?.textContent).toContain("Network failure");
+    const callout = element.shadowRoot!.querySelector("wa-callout");
+    expect(callout).toBeTruthy();
+    expect(callout?.textContent).toContain("Network failure");
   });
 
   test("should open add dialog when Add button is clicked", async () => {

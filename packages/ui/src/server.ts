@@ -29,72 +29,13 @@ const vite = await createViteServer(viteConfig);
 app.use(koaConnect(vite.middlewares));
 app.use(bodyParser());
 app.use(async (ctx, next) => {
-  // First, check to see if the user has a session
-  let getSessionResponse = await getSession(ctx);
+  // Check if the user already has a session
+  const getSessionResponse = await getSession(ctx);
 
-  // No session was found, so we need to create an anonymous one
-  if (!getSessionResponse.data) {
-    await authClient.signIn.anonymous({
-      fetchOptions: {
-        headers: {
-          Cookie: ctx.headers.cookie,
-        } as Record<string, string>,
-        onSuccess: (successCtx) => {
-          // Copy Set-Cookie headers from the sign-in response to the browser response
-          const responseCookies = successCtx.response.headers.getSetCookie();
-          for (const cookie of responseCookies) {
-            ctx.response.append("Set-Cookie", cookie);
-          }
-
-          // Extract name=value pairs from Set-Cookie headers (strip attributes like Path, HttpOnly, etc.)
-          const newCookiePairs = responseCookies.map((c: string) => c.split(";")[0]);
-
-          // Build a map of cookie name -> value from the new cookies
-          const newCookieMap = new Map<string, string>();
-          for (const pair of newCookiePairs) {
-            const eqIndex = pair.indexOf("=");
-            if (eqIndex !== -1) {
-              newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
-            }
-          }
-
-          // Replace existing cookies with new values, or append new ones
-          const existingRequestCookies = ctx.req.headers.cookie;
-          if (!existingRequestCookies) {
-            ctx.request.headers.cookie = newCookiePairs.join("; ");
-          } else {
-            // Parse existing cookies and replace any that have new values
-            const existingPairs = existingRequestCookies.split(";").map((c) => c.trim());
-            const updatedPairs = existingPairs.map((pair) => {
-              const eqIndex = pair.indexOf("=");
-              if (eqIndex !== -1) {
-                const name = pair.substring(0, eqIndex);
-                if (newCookieMap.has(name)) {
-                  const newValue = newCookieMap.get(name);
-                  newCookieMap.delete(name); // Mark as handled
-                  return `${name}=${newValue}`;
-                }
-              }
-              return pair;
-            });
-            // Append any remaining new cookies that weren't replacements
-            for (const [name, value] of newCookieMap) {
-              updatedPairs.push(`${name}=${value}`);
-            }
-            ctx.request.headers.cookie = updatedPairs.join("; ");
-          }
-        },
-      },
-    });
-
-    getSessionResponse = await getSession(ctx);
-    if (!getSessionResponse.data) {
-      throw new Error("Failed to retrieve session data after anonymous account creation");
-    }
-    ctx.state.auth = getSessionResponse.data;
-  } else {
+  if (getSessionResponse.data) {
     ctx.state.auth = getSessionResponse.data;
   }
+
   await next();
 });
 
@@ -107,6 +48,76 @@ function getSession(ctx: Context) {
       } as Record<string, string>,
     },
   });
+}
+
+/**
+ * Middleware that ensures the user has a session, creating an anonymous one if needed.
+ * Used on public-facing pages (e.g. card browsing) where guest users
+ * need a session for shopping cart functionality.
+ */
+async function ensureAnonymousSession(ctx: Context, next: Next) {
+  // Already has a session from the global middleware
+  if (ctx.state.auth) return next();
+
+  await authClient.signIn.anonymous({
+    fetchOptions: {
+      headers: {
+        Cookie: ctx.headers.cookie,
+      } as Record<string, string>,
+      onSuccess: (successCtx) => {
+        // Copy Set-Cookie headers from the sign-in response to the browser response
+        const responseCookies = successCtx.response.headers.getSetCookie();
+        for (const cookie of responseCookies) {
+          ctx.response.append("Set-Cookie", cookie);
+        }
+
+        // Extract name=value pairs from Set-Cookie headers (strip attributes like Path, HttpOnly, etc.)
+        const newCookiePairs = responseCookies.map((c: string) => c.split(";")[0]);
+
+        // Build a map of cookie name -> value from the new cookies
+        const newCookieMap = new Map<string, string>();
+        for (const pair of newCookiePairs) {
+          const eqIndex = pair.indexOf("=");
+          if (eqIndex !== -1) {
+            newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
+          }
+        }
+
+        // Replace existing cookies with new values, or append new ones
+        const existingRequestCookies = ctx.req.headers.cookie;
+        if (!existingRequestCookies) {
+          ctx.request.headers.cookie = newCookiePairs.join("; ");
+        } else {
+          // Parse existing cookies and replace any that have new values
+          const existingPairs = existingRequestCookies.split(";").map((c) => c.trim());
+          const updatedPairs = existingPairs.map((pair) => {
+            const eqIndex = pair.indexOf("=");
+            if (eqIndex !== -1) {
+              const name = pair.substring(0, eqIndex);
+              if (newCookieMap.has(name)) {
+                const newValue = newCookieMap.get(name);
+                newCookieMap.delete(name); // Mark as handled
+                return `${name}=${newValue}`;
+              }
+            }
+            return pair;
+          });
+          // Append any remaining new cookies that weren't replacements
+          for (const [name, value] of newCookieMap) {
+            updatedPairs.push(`${name}=${value}`);
+          }
+          ctx.request.headers.cookie = updatedPairs.join("; ");
+        }
+      },
+    },
+  });
+
+  const getSessionResponse = await getSession(ctx);
+  if (!getSessionResponse.data) {
+    throw new Error("Failed to retrieve session data after anonymous account creation");
+  }
+  ctx.state.auth = getSessionResponse.data;
+  return next();
 }
 
 const router = new Router()
@@ -126,6 +137,7 @@ const router = new Router()
   .get("first-time-setup", "/first-time-setup", async (ctx) => {
     return renderPage(ctx, "first-time-setup");
   })
+  .use("/games", ensureAnonymousSession)
   .get("cards", "/games/:game/cards", async (ctx) => {
     return renderPage(ctx, "cards");
   })

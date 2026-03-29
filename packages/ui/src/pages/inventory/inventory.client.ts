@@ -952,10 +952,10 @@ export class OgsInventoryPage extends LitElement {
         ${when(
           this.error,
           () => html`
-            <wa-alert variant="danger" open closable @wa-after-hide=${() => (this.error = "")}>
-              <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+            <wa-callout variant="danger">
+              <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
               ${this.error}
-            </wa-alert>
+            </wa-callout>
           `,
         )}
         ${when(
