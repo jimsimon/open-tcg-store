@@ -1,10 +1,10 @@
-import { sql } from "drizzle-orm";
+import { sql, eq, and, like } from "drizzle-orm";
 import { otcgs } from "../../../../db";
 import { productExtendedData } from "../../../../db/tcg-data/schema";
+import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
-import { createFakeInventory } from "./utils";
 
-export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
+export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
   _parent,
   { game, filters },
   _ctx,
@@ -79,6 +79,62 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
     limit: 10,
   });
 
+  // Fetch real inventory data for all products
+  const productIds = results.map((r) => r.id);
+  const inventoryData =
+    productIds.length > 0
+      ? await otcgs
+          .select({
+            productId: inventoryItem.productId,
+            condition: inventoryItem.condition,
+            totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as("total_quantity"),
+            lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as("lowest_price"),
+          })
+          .from(inventoryItem)
+          .where(
+            sql`${inventoryItem.productId} IN (${sql.join(
+              productIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})`,
+          )
+          .groupBy(inventoryItem.productId, inventoryItem.condition)
+      : [];
+
+  // Build a nested map: productId -> condition -> { quantity, price }
+  const inventoryMap = new Map<number, Map<string, { quantity: number; price: number | null }>>();
+  for (const row of inventoryData) {
+    if (!inventoryMap.has(row.productId)) {
+      inventoryMap.set(row.productId, new Map());
+    }
+    inventoryMap.get(row.productId)!.set(row.condition, {
+      quantity: row.totalQuantity,
+      price: row.lowestPrice,
+    });
+  }
+
+  function getConditionInventory(
+    productId: number,
+    condition: string,
+    marketPrice: number | null,
+    midPrice: number | null,
+  ) {
+    const inv = inventoryMap.get(productId)?.get(condition);
+    const fallbackPrice = marketPrice || midPrice || 0;
+    const conditionMultiplier: Record<string, number> = {
+      NM: 1.0,
+      LP: 0.8,
+      MP: 0.5,
+      HP: 0.3,
+      D: 0.2,
+    };
+    const multiplier = conditionMultiplier[condition] ?? 1.0;
+
+    return {
+      quantity: inv?.quantity ?? 0,
+      price: inv?.price != null ? inv.price.toFixed(2) : (fallbackPrice * multiplier).toFixed(2),
+    };
+  }
+
   const cards: Card[] = [];
   for (const result of results) {
     for (const { marketPrice, midPrice, subTypeName } of result.prices) {
@@ -94,7 +150,11 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
         inventory: [
           {
             type: subTypeName,
-            ...createFakeInventory(marketPrice, midPrice),
+            NM: getConditionInventory(result.id, "NM", marketPrice, midPrice),
+            LP: getConditionInventory(result.id, "LP", marketPrice, midPrice),
+            MP: getConditionInventory(result.id, "MP", marketPrice, midPrice),
+            HP: getConditionInventory(result.id, "HP", marketPrice, midPrice),
+            D: getConditionInventory(result.id, "D", marketPrice, midPrice),
           },
         ],
       });

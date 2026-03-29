@@ -46,10 +46,68 @@ input SetFilters {
   searchTerm: String
 }
 
+type ProductListing {
+  id: String!
+  name: String!
+  setName: String!
+  gameName: String!
+  rarity: String
+  finishes: [String!]!
+  images: CardImages
+  totalQuantity: Int!
+  lowestPrice: String
+}
+
+input ProductListingFilters {
+  searchTerm: String
+  setCode: String
+  gameName: String
+  inStockOnly: Boolean
+  includeSingles: Boolean
+  includeSealed: Boolean
+}
+
+input ProductListingPagination {
+  page: Int
+  pageSize: Int
+}
+
+type ProductListingPage {
+  items: [ProductListing!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+type ProductDetail {
+  id: String!
+  name: String!
+  setName: String!
+  gameName: String!
+  rarity: String
+  type: String
+  text: String
+  flavorText: String
+  finishes: [String!]!
+  isSingle: Boolean!
+  isSealed: Boolean!
+  images: CardImages
+  inventoryRecords: [ProductInventoryRecord!]!
+}
+
+type ProductInventoryRecord {
+  condition: String!
+  quantity: Int!
+  price: Float!
+}
+
 # extend type Mutation {}
 
 extend type Query {
   getSingleCardInventory(game: String!, filters: SingleCardFilters): [Card!]!
   getSets(game: String!, filters: SetFilters): [Set!]!
   getCard(game: String!, cardId: String!): Card!
+  getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
+  getProduct(productId: String!): ProductDetail!
 }

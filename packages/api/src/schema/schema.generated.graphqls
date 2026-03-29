@@ -121,6 +121,62 @@ input PaginationInput {
   pageSize: Int
 }
 
+type ProductDetail {
+  finishes: [String!]!
+  flavorText: String
+  gameName: String!
+  id: String!
+  images: CardImages
+  inventoryRecords: [ProductInventoryRecord!]!
+  isSealed: Boolean!
+  isSingle: Boolean!
+  name: String!
+  rarity: String
+  setName: String!
+  text: String
+  type: String
+}
+
+type ProductInventoryRecord {
+  condition: String!
+  price: Float!
+  quantity: Int!
+}
+
+type ProductListing {
+  finishes: [String!]!
+  gameName: String!
+  id: String!
+  images: CardImages
+  lowestPrice: String
+  name: String!
+  rarity: String
+  setName: String!
+  totalQuantity: Int!
+}
+
+input ProductListingFilters {
+  gameName: String
+  inStockOnly: Boolean
+  includeSealed: Boolean
+  includeSingles: Boolean
+  searchTerm: String
+  setCode: String
+}
+
+type ProductListingPage {
+  items: [ProductListing!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+input ProductListingPagination {
+  page: Int
+  pageSize: Int
+}
+
 type ProductPrice {
   directLowPrice: Float
   highPrice: Float
@@ -145,6 +201,8 @@ type ProductSearchResult {
 type Query {
   getCard(cardId: String!, game: String!): Card!
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getProduct(productId: String!): ProductDetail!
+  getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!

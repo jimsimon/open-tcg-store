@@ -221,13 +221,13 @@ describe("ogs-page", () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll("a");
-      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
-      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+      const inventorySinglesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
+      const inventorySealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
 
-      expect(singlesLink).toBeTruthy();
-      expect(sealedLink).toBeTruthy();
-      expect(singlesLink!.getAttribute("href")).toBe("/inventory/singles");
-      expect(sealedLink!.getAttribute("href")).toBe("/inventory/sealed");
+      expect(inventorySinglesLink).toBeTruthy();
+      expect(inventorySealedLink).toBeTruthy();
+      expect(inventorySinglesLink!.textContent?.trim()).toBe("Singles");
+      expect(inventorySealedLink!.textContent?.trim()).toBe("Sealed");
     });
 
     test("shows inventory section with Singles and Sealed links for admin role", async () => {
@@ -235,11 +235,11 @@ describe("ogs-page", () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll("a");
-      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
-      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+      const inventorySinglesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
+      const inventorySealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
 
-      expect(singlesLink).toBeTruthy();
-      expect(sealedLink).toBeTruthy();
+      expect(inventorySinglesLink).toBeTruthy();
+      expect(inventorySealedLink).toBeTruthy();
     });
 
     test("highlights Singles link when activePage is inventory/singles", async () => {
@@ -248,7 +248,7 @@ describe("ogs-page", () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll("a");
-      const singlesLink = Array.from(links).find((a) => a.textContent?.trim() === "Singles");
+      const singlesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
       expect(singlesLink?.hasAttribute("current")).toBe(true);
     });
 
@@ -258,7 +258,7 @@ describe("ogs-page", () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll("a");
-      const sealedLink = Array.from(links).find((a) => a.textContent?.trim() === "Sealed");
+      const sealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
       expect(sealedLink?.hasAttribute("current")).toBe(true);
     });
   });

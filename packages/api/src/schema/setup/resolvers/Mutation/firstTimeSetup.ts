@@ -6,7 +6,7 @@ import { otcgs } from "../../../../db/index.ts";
 import { user as userTable } from "../../../../db/otcgs/schema.ts";
 import { GraphqlContext } from "../../../../server.ts";
 
-export const firstTimeSetup: NonNullable<MutationResolvers["firstTimeSetup"]> = async (
+export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
   _parent,
   { userDetails },
   ctx: GraphqlContext,

@@ -9,7 +9,7 @@ function assertInventoryAccess(ctx: GraphqlContext) {
   }
 }
 
-export const getInventory: NonNullable<QueryResolvers["getInventory"]> = async (_parent, args, ctx: GraphqlContext) => {
+export const getInventory: NonNullable<QueryResolvers['getInventory']> = async (_parent, args, ctx: GraphqlContext) => {
   assertInventoryAccess(ctx);
   return await getInventoryItems(args.filters, args.pagination);
 };

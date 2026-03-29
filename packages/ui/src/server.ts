@@ -137,12 +137,26 @@ const router = new Router()
   .get("first-time-setup", "/first-time-setup", async (ctx) => {
     return renderPage(ctx, "first-time-setup");
   })
-  .use("/games", ensureAnonymousSession)
-  .get("cards", "/games/:game/cards", async (ctx) => {
-    return renderPage(ctx, "cards");
+  .use("/products", ensureAnonymousSession)
+  .get("products-redirect", "/products", async (ctx) => {
+    ctx.redirect("/products/singles");
   })
-  .get("card-details", "/games/:game/cards/:cardId", async (ctx) => {
-    return renderPage(ctx, "card-details");
+  .get("products-singles", "/products/singles", async (ctx) => {
+    return renderPage(ctx, "products-singles");
+  })
+  .get("products-sealed", "/products/sealed", async (ctx) => {
+    return renderPage(ctx, "products-sealed");
+  })
+  .get("product-details", "/products/:productId", async (ctx) => {
+    return renderPage(ctx, "product-details");
+  })
+  // Backward-compatible redirects from old card URLs
+  .get("cards-redirect", "/games/:game/cards", async (ctx) => {
+    const game = ctx.params.game;
+    ctx.redirect(`/products/singles?game=${game}`);
+  })
+  .get("card-details-redirect", "/games/:game/cards/:cardId", async (ctx) => {
+    ctx.redirect(`/products/${ctx.params.cardId}`);
   })
   .get("sales", "/sales", async (ctx) => {
     return renderPage(ctx, "sales");

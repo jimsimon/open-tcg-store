@@ -193,6 +193,66 @@ export type PaginationInput = {
   pageSize?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type ProductDetail = {
+  __typename?: 'ProductDetail';
+  finishes: Array<Scalars['String']['output']>;
+  flavorText?: Maybe<Scalars['String']['output']>;
+  gameName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  images?: Maybe<CardImages>;
+  inventoryRecords: Array<ProductInventoryRecord>;
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  text?: Maybe<Scalars['String']['output']>;
+  type?: Maybe<Scalars['String']['output']>;
+};
+
+export type ProductInventoryRecord = {
+  __typename?: 'ProductInventoryRecord';
+  condition: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
+export type ProductListing = {
+  __typename?: 'ProductListing';
+  finishes: Array<Scalars['String']['output']>;
+  gameName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  images?: Maybe<CardImages>;
+  lowestPrice?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+};
+
+export type ProductListingFilters = {
+  gameName?: InputMaybe<Scalars['String']['input']>;
+  inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  setCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ProductListingPage = {
+  __typename?: 'ProductListingPage';
+  items: Array<ProductListing>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type ProductListingPagination = {
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type ProductPrice = {
   __typename?: 'ProductPrice';
   directLowPrice?: Maybe<Scalars['Float']['output']>;
@@ -220,6 +280,8 @@ export type Query = {
   __typename?: 'Query';
   getCard: Card;
   getInventory: InventoryPage;
+  getProduct: ProductDetail;
+  getProductListings: ProductListingPage;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
@@ -237,6 +299,17 @@ export type QueryGetCardArgs = {
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryGetProductArgs = {
+  productId: Scalars['String']['input'];
+};
+
+
+export type QueryGetProductListingsArgs = {
+  filters?: InputMaybe<ProductListingFilters>;
+  pagination?: InputMaybe<ProductListingPagination>;
 };
 
 
@@ -305,30 +378,6 @@ export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }
 
 export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', quantity: number, productId: number, productName: string }> } };
 
-export type GetCardQueryQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  cardId: Scalars['String']['input'];
-}>;
-
-
-export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, rarity?: string | null, type?: string | null, text?: string | null, flavorText?: string | null, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: Array<{ __typename?: 'ConditionInventories', type: string, NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } | null> } };
-
-export type GetSetsQueryQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  filters?: InputMaybe<SetFilters>;
-}>;
-
-
-export type GetSetsQueryQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
-
-export type GetSingleCardInventoryQueryQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  filters?: InputMaybe<SingleCardFilters>;
-}>;
-
-
-export type GetSingleCardInventoryQueryQuery = { __typename?: 'Query', getSingleCardInventory: Array<{ __typename?: 'Card', id: string, name: string, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: Array<{ __typename?: 'ConditionInventories', type: string, NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } | null> }> };
-
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   settings: Settings;
@@ -336,6 +385,14 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
+
+export type GetCardQueryQueryVariables = Exact<{
+  game: Scalars['String']['input'];
+  cardId: Scalars['String']['input'];
+}>;
+
+
+export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, rarity?: string | null, type?: string | null, text?: string | null, flavorText?: string | null, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: Array<{ __typename?: 'ConditionInventories', type: string, NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } | null> } };
 
 export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -372,6 +429,11 @@ export const GetShoppingCartQueryDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
+export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
+    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
+  firstTimeSetup(userDetails: $userDetails, settings: $settings)
+}
+    `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const GetCardQueryDocument = new TypedDocumentString(`
     query GetCardQuery($game: String!, $cardId: String!) {
   getCard(game: $game, cardId: $cardId) {
@@ -413,56 +475,6 @@ export const GetCardQueryDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetCardQueryQuery, GetCardQueryQueryVariables>;
-export const GetSetsQueryDocument = new TypedDocumentString(`
-    query GetSetsQuery($game: String!, $filters: SetFilters) {
-  getSets(game: $game, filters: $filters) {
-    code
-    name
-  }
-}
-    `) as unknown as TypedDocumentString<GetSetsQueryQuery, GetSetsQueryQueryVariables>;
-export const GetSingleCardInventoryQueryDocument = new TypedDocumentString(`
-    query GetSingleCardInventoryQuery($game: String!, $filters: SingleCardFilters) {
-  getSingleCardInventory(game: $game, filters: $filters) {
-    id
-    name
-    setName
-    finishes
-    images {
-      small
-      large
-    }
-    inventory {
-      type
-      NM {
-        quantity
-        price
-      }
-      LP {
-        quantity
-        price
-      }
-      MP {
-        quantity
-        price
-      }
-      HP {
-        quantity
-        price
-      }
-      D {
-        quantity
-        price
-      }
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GetSingleCardInventoryQueryQuery, GetSingleCardInventoryQueryQueryVariables>;
-export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
-    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
-  firstTimeSetup(userDetails: $userDetails, settings: $settings)
-}
-    `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`
     query IsSetupPending {
   isSetupPending
