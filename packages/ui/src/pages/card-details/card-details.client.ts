@@ -50,6 +50,8 @@ export class CardDetailsPage extends LitElement {
   ];
 
   @property({ type: String }) userRole = "";
+  @property({ type: Boolean }) isAnonymous = false;
+  @property({ type: String }) userName = "";
 
   @property()
   private game: string = "";
@@ -122,7 +124,12 @@ export class CardDetailsPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="games/${this.game}/card-details" userRole="${this.userRole}">
+      <ogs-page
+        activePage="games/${this.game}/card-details"
+        userRole="${this.userRole}"
+        ?isAnonymous="${this.isAnonymous}"
+        userName="${this.userName}"
+      >
         <h1>${this.card?.name}</h1>
         <div class="wa-stack">
           <wa-card appearance="outlined">

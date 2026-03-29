@@ -133,6 +133,8 @@ export class CardsPage extends LitElement {
   ];
 
   @property({ type: String }) userRole = "";
+  @property({ type: Boolean }) isAnonymous = false;
+  @property({ type: String }) userName = "";
 
   @state()
   private productTypeFilter: string = new URLSearchParams(window.location.search).get("type") ?? "all";
@@ -284,7 +286,12 @@ export class CardsPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="games/${this.game}/cards" userRole="${this.userRole}">
+      <ogs-page
+        activePage="games/${this.game}/cards"
+        userRole="${this.userRole}"
+        ?isAnonymous="${this.isAnonymous}"
+        userName="${this.userName}"
+      >
         <div class="search-container">
           <div class="filter-button">
             <wa-select

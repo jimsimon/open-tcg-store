@@ -7,6 +7,8 @@ import "../../components/ogs-page.ts";
 @customElement("ogs-home-page")
 export class HomePage extends LitElement {
   @property({ type: String }) userRole = "";
+  @property({ type: Boolean }) isAnonymous = false;
+  @property({ type: String }) userName = "";
   static styles = [
     css`
       ${unsafeCSS(utilityStyles)}
@@ -20,7 +22,12 @@ export class HomePage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="Dashboard" userRole="${this.userRole}">
+      <ogs-page
+        activePage="Dashboard"
+        userRole="${this.userRole}"
+        ?isAnonymous="${this.isAnonymous}"
+        userName="${this.userName}"
+      >
         <h1>Dashboard</h1>
         <div class="wa-grid">
           <wa-card appearance="filled">

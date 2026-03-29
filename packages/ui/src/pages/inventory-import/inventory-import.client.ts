@@ -5,10 +5,17 @@ import "../../components/ogs-page.ts";
 @customElement("ogs-inventory-import-page")
 export class OgsInventoryImportPage extends LitElement {
   @property({ type: String }) userRole = "";
+  @property({ type: Boolean }) isAnonymous = false;
+  @property({ type: String }) userName = "";
 
   render() {
     return html`
-      <ogs-page pageTitle="Import Inventory" userRole="${this.userRole}">
+      <ogs-page
+        pageTitle="Import Inventory"
+        userRole="${this.userRole}"
+        ?isAnonymous="${this.isAnonymous}"
+        userName="${this.userName}"
+      >
         <div style="text-align: center; padding: 4rem 2rem;">
           <wa-icon name="upload" style="font-size: 4rem; color: var(--wa-color-neutral-400);"></wa-icon>
           <h2>Import Inventory</h2>

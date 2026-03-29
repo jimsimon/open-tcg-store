@@ -1,7 +1,10 @@
 import "./inventory-import.client.ts";
 import type { RouterContext } from "@koa/router";
+import { escapeHtml } from "../../lib/html-escape";
 
 export function render(ctx: RouterContext) {
   const userRole = ctx.state.auth?.user?.role ?? "";
-  return `<ogs-inventory-import-page userRole="${userRole}"></ogs-inventory-import-page>`;
+  const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
+  const userName = ctx.state.auth?.user?.name ?? "";
+  return `<ogs-inventory-import-page userRole="${escapeHtml(userRole)}" ${isAnonymous ? "isAnonymous" : ""} userName="${escapeHtml(userName)}"></ogs-inventory-import-page>`;
 }

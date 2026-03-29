@@ -456,6 +456,8 @@ export class OgsInventoryPage extends LitElement {
   // --- Properties ---
 
   @property({ type: String }) userRole = "";
+  @property({ type: Boolean }) isAnonymous = false;
+  @property({ type: String }) userName = "";
 
   // Filter state
   @state() private gameFilter = "";
@@ -940,7 +942,12 @@ export class OgsInventoryPage extends LitElement {
 
   render() {
     return html`
-      <ogs-page activePage="Inventory" userRole="${this.userRole}">
+      <ogs-page
+        activePage="Inventory"
+        userRole="${this.userRole}"
+        ?isAnonymous="${this.isAnonymous}"
+        userName="${this.userName}"
+      >
         ${this.renderFilterBar()} ${this.renderActionBar()}
         ${when(
           this.error,
