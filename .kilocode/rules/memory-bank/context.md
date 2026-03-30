@@ -1,47 +1,54 @@
 # Context: Current State of OpenTCGS
 
 ## Current Work Focus
-Navigation UI has been improved with a polished sidebar design featuring icons, hover effects, active state highlighting, and section labels. "Sales" has been renamed to "Orders" across all pages, routes, and navigation. Focus continues toward integration testing, checkout/payment processing, and other planned features.
+Inventory ID tracking refactor completed. The entire cart → order → cancel flow now tracks `inventoryItemId` instead of `productId + condition`, eliminating FIFO lookup ambiguity and enabling precise inventory restocking on order cancellation.
 
 ## Recent Changes
-- **Navigation Redesign**: Sidebar nav improved with icons (wa-icon), hover/active states, section labels, compact layout, and raised background
-- **Sales → Orders Rename**: "Sales" nav link, page files, and route renamed to "Orders" (`/orders` route, `orders/` page directory)
-- **Complete Inventory Management System**: Database schema, GraphQL API (queries + mutations), service layer, resolvers, and full UI page
-- **Employee Role with Access Control**: Better Auth configured with employee role and access control for inventory operations
-- **Inventory UI Page**: Full CRUD operations, filtering by condition/product type, search, pagination, and bulk actions (update/delete)
-- **Product Type Filtering**: Singles vs sealed product type filter added to both inventory and cards pages
-- **Import Inventory Placeholder**: Placeholder page for future inventory import functionality
-- **Comprehensive Test Coverage**: 34 test cases (20 inventory service tests + 14 UI component tests)
-- **Shopping Cart Backend**: All GraphQL mutations and queries implemented (addToCart, removeFromCart, updateItemInCart, clearCart, checkoutWithCart, getShoppingCart)
-- **Shopping Cart Service Layer**: Business logic abstracted into dedicated service for better maintainability
-- **Development Orchestration**: Tilt configured for multi-service development workflow
+- **Inventory ID Tracking Refactor**: Complete refactor of cart/order system to track `inventoryItemId` throughout
+  - `cartItem` table: replaced `productId` + `condition` columns with `inventoryItemId` (FK to inventory_item.id)
+  - `cartItem` unique constraint: changed from `cartId+productId+condition` to `cartId+inventoryItemId`
+  - Shopping relations: `cartItem.product` relation replaced with `cartItem.inventoryItem` relation
+  - `CartItemInput` GraphQL type: changed from `{productId, condition, quantity}` to `{inventoryItemId, quantity}`
+  - `CartItemOutput` GraphQL type: added `inventoryItemId` field (keeps productId, productName, condition for display)
+  - Shopping cart service: joins through `inventoryItem → product` for display data (no more separate inventory queries)
+  - Cart resolvers (add/update/remove): all use `inventoryItemId` for matching and upsert
+  - Order service `submitOrder()`: validates directly against `inventoryItem.quantity`, decrements by `inventoryItemId` (no more FIFO)
+  - `ProductInventoryRecord` GraphQL type: added `inventoryItemId` field
+  - `ProductConditionPrice` GraphQL type: added `inventoryItemId` field (lowest-priced item per condition)
+  - `ProductListing` GraphQL type: added `lowestPriceInventoryItemId` field (for sealed products)
+  - `getProduct` resolver: includes `inventory_item.id` in records
+  - `getProductListings` resolver: includes `inventoryItemId` in condition prices
+  - Frontend `CartItem` interface: added `inventoryItemId` field
+  - All product pages (singles, sealed, details) and cart drawer: pass `inventoryItemId` in addToCart/updateItemInCart/removeFromCart mutations
+  - Database migration: recreated `cartItem` table with new schema
 
 ## Next Steps
-- Integration testing across frontend and backend
+- Integration testing across frontend and backend for cart drawer and order flow
 - Implement checkout process and payment integration
-- Connect frontend UI to shopping cart GraphQL mutations
 - Add barcode scanning functionality
 - Create customer management system
 - Build analytics dashboard
-- Implement login UI
+- Implement login UI improvements
 - Implement user settings UI
 - Admin UI for user and settings management
 
 ## Current Status
 - **Authentication**: ✅ Implemented with Better Auth (including anonymous users and employee role)
 - **Access Control**: ✅ Role-based access control with employee role for inventory operations
-- **Database**: ✅ Complete schemas (auth, TCG data, shopping cart, inventory with relations)
+- **Database**: ✅ Complete schemas (auth, TCG data, shopping cart, inventory, orders with relations)
 - **UI Framework**: ✅ Lit with Web Awesome components
 - **Routing**: ✅ Koa.js server with page routing
 - **GraphQL**: ✅ Complete setup with type generation and resolvers
-- **Shopping Cart Backend**: ✅ Complete GraphQL API with service layer
+- **Shopping Cart Backend**: ✅ Complete GraphQL API with service layer (includes price + availability)
+- **Shopping Cart UI**: ✅ Cart drawer with quantity controls, remove, customer name, submit order
+- **Order System**: ✅ Complete (database, service, GraphQL API, UI page with expandable order details)
 - **TCG Data Schema**: ✅ Categories, groups, products, prices with relations
-- **Card Details UI**: ✅ Implemented with cart functionality placeholders
+- **Card Details UI**: ✅ Implemented with cart functionality
 - **Inventory Backend**: ✅ Complete GraphQL API with service layer (CRUD + bulk operations + search + pagination)
 - **Inventory UI**: ✅ Full-featured page with filters, search, pagination, bulk actions, add/edit/delete dialogs
 - **Inventory Tests**: ✅ 34 test cases (20 service + 14 UI component)
 - **Cards Page**: ✅ With product type filtering (singles vs sealed)
-- **Orders UI**: 🔄 Backend complete, frontend integration pending (renamed from Sales)
+- **Orders UI**: ✅ Paginated table with expandable order item details (employee/admin only)
 - **Analytics UI**: ❌ Not implemented
 - **Barcode Scanning**: ❌ Not implemented
 - **Login UI**: ❌ Not implemented

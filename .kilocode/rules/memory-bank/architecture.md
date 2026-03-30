@@ -30,6 +30,8 @@ packages/
 │       │       ├── shopping-relations.ts   # Shopping cart relations
 │       │       ├── inventory-schema.ts     # Inventory item schema
 │       │       ├── inventory-relations.ts  # Inventory relations
+│       │       ├── order-schema.ts        # Order and order item schema
+│       │       ├── order-relations.ts     # Order relations
 │       │       ├── schema.ts              # Combined schema exports
 │       │       ├── index.ts               # Combined relations and exports
 │       │       └── drizzle.config.ts      # Drizzle configuration
@@ -41,11 +43,15 @@ packages/
 │       │   ├── inventory/ # Inventory management resolvers
 │       │   │   ├── schema.graphql         # Inventory GraphQL schema
 │       │   │   └── resolvers/             # Query + Mutation resolvers
+│       │   ├── orders/   # Order management resolvers
+│       │   │   ├── schema.graphql         # Orders GraphQL schema
+│       │   │   └── resolvers/             # Query + Mutation resolvers
 │       │   ├── resolvers.generated.ts # Generated resolver types
 │       │   └── types.generated.ts     # Generated GraphQL types
 │       └── services/      # Business logic services
-│           ├── shopping-cart-service.ts # Shopping cart business logic
-│           └── inventory-service.ts    # Inventory management business logic
+│           ├── shopping-cart-service.ts # Shopping cart business logic (includes price + availability)
+│           ├── inventory-service.ts    # Inventory management business logic
+│           └── order-service.ts        # Order creation, validation, inventory decrement
 ├── ui/                    # Frontend UI package
 │   ├── package.json       # UI-specific dependencies
 │   ├── codegen.ts         # GraphQL codegen configuration
@@ -97,7 +103,7 @@ packages/
 6. **API**: Client communicates via GraphQL endpoints
 
 ## Component Architecture
-- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees)
+- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees); cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission
 - **Page Components**: Each page has server.ts and client.ts files
 - **Custom Elements**: All components use Lit custom elements
 - **Web Awesome**: UI components from Web Awesome framework
@@ -121,13 +127,15 @@ packages/
 ## Database Schema
 - **Authentication**: Better Auth provides user, session, account tables with anonymous user support
 - **TCG Data**: Complete schema for categories, groups, products, prices, presale info, and extended data
-- **Shopping Cart**: Cart and cart item tables with user and product relations, unique constraints on cart-product combinations
+- **Shopping Cart**: Cart and cart item tables with user and inventory item relations, unique constraint on cartId+inventoryItemId
 - **Inventory**: inventory_item table with productId, condition, quantity, price, costBasis, createdAt, updatedAt; unique constraint on productId+condition+costBasis combination
-- **Relations**: Comprehensive Drizzle ORM relations connecting all schemas (inventory items → products)
+- **Orders**: order table with orderNumber, customerName, userId, status, totalAmount, createdAt; order_item table with orderId, productId, productName, condition, quantity, unitPrice
+- **Relations**: Comprehensive Drizzle ORM relations connecting all schemas (inventory items → products, orders → users, order items → orders/products)
 - **Adapter**: Drizzle ORM with libsql (SQLite-compatible) for development
 
 ## Shopping Cart Architecture
 - **Service Layer**: `shopping-cart-service.ts` abstracts business logic from GraphQL resolvers
+- **Inventory Item Tracking**: Cart items reference `inventoryItemId` (FK to inventory_item.id) instead of productId+condition, enabling precise inventory tracking
 - **GraphQL Operations**: Complete CRUD operations (addToCart, removeFromCart, updateItemInCart, clearCart, checkoutWithCart, getShoppingCart)
 - **User Context**: Cart operations isolated per user through authentication context
 - **Anonymous Support**: Guest users can maintain shopping carts through anonymous authentication
