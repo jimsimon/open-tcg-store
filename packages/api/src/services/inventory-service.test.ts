@@ -42,12 +42,13 @@ let insertChain: ReturnType<typeof chainable>;
 let updateChain: ReturnType<typeof chainable>;
 let deleteChain: ReturnType<typeof chainable>;
 
-const mockOtcgs = {
-  select: vi.fn(() => selectChain),
-  insert: vi.fn(() => insertChain),
-  update: vi.fn(() => updateChain),
-  delete: vi.fn(() => deleteChain),
-};
+// Use vi.hoisted so mockOtcgs is available when vi.mock factories are hoisted.
+const mockOtcgs = vi.hoisted(() => ({
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+}));
 
 vi.mock("../db/otcgs/index", () => ({
   otcgs: mockOtcgs,
@@ -90,20 +91,28 @@ vi.mock("../db/tcg-data/schema", () => ({
 }));
 
 // Mock drizzle-orm operators so they don't throw
-vi.mock("drizzle-orm", () => ({
-  eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
-  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
-  like: vi.fn((...args: unknown[]) => ({ type: "like", args })),
-  sql: Object.assign(
-    vi.fn((...args: unknown[]) => ({ type: "sql", args })),
+vi.mock("drizzle-orm", () => {
+  // sql needs to work both as a function call and as a tagged template literal.
+  // Tagged templates receive (strings[], ...values) and the result needs .as().
+  const sqlResult = () => ({ type: "sql", as: vi.fn().mockReturnValue({ type: "sql-alias" }) });
+  const sqlFn = Object.assign(
+    vi.fn((...args: unknown[]) => sqlResult()),
     {
-      // Tagged template support: sql`...`
       raw: vi.fn(),
     },
-  ),
-  inArray: vi.fn((...args: unknown[]) => ({ type: "inArray", args })),
-  isNull: vi.fn((...args: unknown[]) => ({ type: "isNull", args })),
-}));
+  );
+  // Make it callable as a tagged template: sql`...` invokes the function
+  // with (TemplateStringsArray, ...expressions). The vi.fn() handles this,
+  // but we need to ensure the return value has .as().
+  return {
+    eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
+    and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
+    like: vi.fn((...args: unknown[]) => ({ type: "like", args })),
+    sql: sqlFn,
+    inArray: vi.fn((...args: unknown[]) => ({ type: "inArray", args })),
+    isNull: vi.fn((...args: unknown[]) => ({ type: "isNull", args })),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import the service under test *after* mocks are registered.
@@ -155,6 +164,10 @@ describe("inventory-service", () => {
     insertChain = chainable([]);
     updateChain = chainable([]);
     deleteChain = chainable([]);
+    mockOtcgs.select.mockImplementation(() => selectChain);
+    mockOtcgs.insert.mockImplementation(() => insertChain);
+    mockOtcgs.update.mockImplementation(() => updateChain);
+    mockOtcgs.delete.mockImplementation(() => deleteChain);
   });
 
   // -----------------------------------------------------------------------
@@ -376,6 +389,139 @@ describe("inventory-service", () => {
       const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(setCall.updatedBy).toBe("user-42");
       expect(setCall.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it("should merge with existing item when costBasis change creates duplicate tuple", async () => {
+      // Current item being edited: id=1, productId=100, condition=NM, costBasis=10.00, quantity=3
+      const currentItemChain = chainable([
+        { id: 1, productId: 100, condition: "NM", costBasis: 10.0, quantity: 3, price: 5.0 },
+      ]);
+      // Duplicate check finds existing item: id=2, same productId+condition but costBasis=20.00 (the target)
+      const dupCheckChain = chainable([
+        { id: 2, productId: 100, condition: "NM", costBasis: 20.0, quantity: 5, price: 6.0 },
+      ]);
+      // Delete chain for removing the edited item
+      const delChain = chainable([]);
+      // Update chain for the surviving item
+      const updChain = chainable([]);
+      // Final fetch of the surviving item
+      const fetchChain = chainable([fakeRow({ id: 2, quantity: 8, costBasis: 20.0 })]);
+
+      let selectCallIndex = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectCallIndex++;
+        if (selectCallIndex === 1) return currentItemChain; // fetch current item
+        if (selectCallIndex === 2) return dupCheckChain; // duplicate check
+        return fetchChain; // getInventoryItemById for the survivor
+      });
+      mockOtcgs.delete.mockReturnValue(delChain);
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      const result = await updateInventoryItem({ id: 1, costBasis: 20.0 }, "user-1");
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(2);
+      // The edited item (id=1) should have been deleted
+      expect(mockOtcgs.delete).toHaveBeenCalled();
+      // The surviving item (id=2) should have been updated with merged quantity
+      expect(mockOtcgs.update).toHaveBeenCalled();
+      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(setCall.quantity).toBe(8); // 5 (existing) + 3 (from edited item)
+    });
+
+    it("should merge with existing item when condition change creates duplicate tuple", async () => {
+      // Current item: id=1, productId=100, condition=NM, costBasis=10.00, quantity=2
+      const currentItemChain = chainable([
+        { id: 1, productId: 100, condition: "NM", costBasis: 10.0, quantity: 2, price: 5.0 },
+      ]);
+      // Duplicate check finds existing item with condition=LP and same costBasis
+      const dupCheckChain = chainable([
+        { id: 3, productId: 100, condition: "LP", costBasis: 10.0, quantity: 7, price: 4.0 },
+      ]);
+      const delChain = chainable([]);
+      const updChain = chainable([]);
+      const fetchChain = chainable([fakeRow({ id: 3, quantity: 9, condition: "LP" })]);
+
+      let selectCallIndex = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectCallIndex++;
+        if (selectCallIndex === 1) return currentItemChain;
+        if (selectCallIndex === 2) return dupCheckChain;
+        return fetchChain;
+      });
+      mockOtcgs.delete.mockReturnValue(delChain);
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      const result = await updateInventoryItem({ id: 1, condition: "LP" }, "user-1");
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(3);
+      expect(mockOtcgs.delete).toHaveBeenCalled();
+      expect(mockOtcgs.update).toHaveBeenCalled();
+      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(setCall.quantity).toBe(9); // 7 (existing) + 2 (from edited item)
+    });
+
+    it("should use input quantity when merging if quantity is provided", async () => {
+      // Current item: id=1, quantity=3
+      const currentItemChain = chainable([
+        { id: 1, productId: 100, condition: "NM", costBasis: 10.0, quantity: 3, price: 5.0 },
+      ]);
+      // Existing match: id=2, quantity=5
+      const dupCheckChain = chainable([
+        { id: 2, productId: 100, condition: "NM", costBasis: 20.0, quantity: 5, price: 6.0 },
+      ]);
+      const delChain = chainable([]);
+      const updChain = chainable([]);
+      const fetchChain = chainable([fakeRow({ id: 2, quantity: 15 })]);
+
+      let selectCallIndex = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectCallIndex++;
+        if (selectCallIndex === 1) return currentItemChain;
+        if (selectCallIndex === 2) return dupCheckChain;
+        return fetchChain;
+      });
+      mockOtcgs.delete.mockReturnValue(delChain);
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      // Provide explicit quantity=10 along with costBasis change
+      const result = await updateInventoryItem({ id: 1, costBasis: 20.0, quantity: 10 }, "user-1");
+
+      expect(result).toBeDefined();
+      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      // Should use input quantity (10) instead of current item quantity (3)
+      expect(setCall.quantity).toBe(15); // 5 (existing) + 10 (input override)
+    });
+
+    it("should not merge when costBasis change does not create a duplicate", async () => {
+      // Current item: id=1, productId=100, condition=NM, costBasis=10.00
+      const currentItemChain = chainable([
+        { id: 1, productId: 100, condition: "NM", costBasis: 10.0, quantity: 3, price: 5.0 },
+      ]);
+      // Duplicate check finds the same item (id=1), no other match
+      const dupCheckChain = chainable([
+        { id: 1, productId: 100, condition: "NM", costBasis: 30.0, quantity: 3, price: 5.0 },
+      ]);
+      const updChain = chainable([]);
+      const fetchChain = chainable([fakeRow({ id: 1, costBasis: 30.0 })]);
+
+      let selectCallIndex = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectCallIndex++;
+        if (selectCallIndex === 1) return currentItemChain;
+        if (selectCallIndex === 2) return dupCheckChain;
+        return fetchChain;
+      });
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      const result = await updateInventoryItem({ id: 1, costBasis: 30.0 }, "user-1");
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(1);
+      // Should NOT delete anything – just a normal update
+      expect(mockOtcgs.delete).not.toHaveBeenCalled();
+      expect(mockOtcgs.update).toHaveBeenCalled();
     });
   });
 

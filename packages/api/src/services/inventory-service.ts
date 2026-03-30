@@ -270,6 +270,63 @@ export async function addInventoryItem(input: AddInventoryItemInput, userId: str
 // ---------------------------------------------------------------------------
 
 export async function updateInventoryItem(input: UpdateInventoryItemInput, userId: string): Promise<InventoryItem> {
+  const changingCondition = input.condition != null;
+  const changingCostBasis = input.costBasis !== undefined;
+
+  // If condition or costBasis is changing, check for merge with an existing row
+  if (changingCondition || changingCostBasis) {
+    // Fetch the current item so we can compute the effective unique-key tuple
+    const [currentItem] = await otcgs.select().from(inventoryItem).where(eq(inventoryItem.id, input.id)).limit(1);
+
+    if (currentItem) {
+      const effectiveCondition = input.condition ?? currentItem.condition;
+      const effectiveCostBasis = changingCostBasis ? (input.costBasis ?? null) : currentItem.costBasis;
+
+      // Look for an existing row with the same (productId, condition, costBasis) tuple
+      const dupConditions = [
+        eq(inventoryItem.productId, currentItem.productId),
+        eq(inventoryItem.condition, effectiveCondition),
+      ];
+      if (effectiveCostBasis != null) {
+        dupConditions.push(eq(inventoryItem.costBasis, effectiveCostBasis));
+      } else {
+        dupConditions.push(isNull(inventoryItem.costBasis));
+      }
+
+      const [existingMatch] = await otcgs
+        .select()
+        .from(inventoryItem)
+        .where(and(...dupConditions))
+        .limit(1);
+
+      // If a different row matches the target tuple, merge into it
+      if (existingMatch && existingMatch.id !== input.id) {
+        const effectiveQuantity = input.quantity ?? currentItem.quantity;
+        const mergedQuantity = existingMatch.quantity + effectiveQuantity;
+
+        // Delete the item being edited (it will be absorbed into the match)
+        await otcgs.delete(inventoryItem).where(eq(inventoryItem.id, input.id));
+
+        // Update the surviving row with merged quantity and any other provided fields
+        const mergeUpdates: Record<string, unknown> = {
+          quantity: mergedQuantity,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+        if (input.price != null) mergeUpdates.price = input.price;
+        if (input.acquisitionDate !== undefined) {
+          mergeUpdates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
+        }
+        if (input.notes !== undefined) mergeUpdates.notes = input.notes ?? null;
+
+        await otcgs.update(inventoryItem).set(mergeUpdates).where(eq(inventoryItem.id, existingMatch.id));
+
+        return (await getInventoryItemById(existingMatch.id))!;
+      }
+    }
+  }
+
+  // No merge needed – apply a normal update
   const updates: Record<string, unknown> = {
     updatedBy: userId,
     updatedAt: new Date(),
