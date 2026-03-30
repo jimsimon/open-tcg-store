@@ -158,8 +158,8 @@ const router = new Router()
   .get("card-details-redirect", "/games/:game/cards/:cardId", async (ctx) => {
     ctx.redirect(`/products/${ctx.params.cardId}`);
   })
-  .get("sales", "/sales", async (ctx) => {
-    return renderPage(ctx, "sales");
+  .get("orders", "/orders", async (ctx) => {
+    return renderPage(ctx, "orders");
   })
   .get("inventory-redirect", "/inventory", async (ctx) => {
     ctx.redirect("/inventory/singles");

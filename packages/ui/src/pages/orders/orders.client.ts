@@ -1,16 +1,16 @@
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
 import "../../components/ogs-page.ts";
 
-@customElement("ogs-home-page")
-export class HomePage extends LitElement {
+@customElement("ogs-orders-page")
+export class OrdersPage extends LitElement {
   @property({ type: String }) userRole = "";
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = "";
+
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -58,35 +58,55 @@ export class HomePage extends LitElement {
         color: var(--wa-color-text-muted);
         font-size: var(--wa-font-size-s);
       }
+
+      .placeholder {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--wa-color-text-muted);
+      }
+
+      .placeholder wa-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      .placeholder h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: var(--wa-font-size-xl);
+        color: var(--wa-color-text-normal);
+      }
+
+      .placeholder p {
+        margin: 0;
+        max-width: 400px;
+        margin-inline: auto;
+      }
     `,
   ];
 
   render() {
     return html`
       <ogs-page
-        activePage="Dashboard"
+        activePage="Orders"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
       >
         <div class="page-header">
           <div class="page-header-icon">
-            <wa-icon name="house" style="font-size: 1.5rem;"></wa-icon>
+            <wa-icon name="receipt" style="font-size: 1.5rem;"></wa-icon>
           </div>
           <div class="page-header-content">
-            <h2>Dashboard</h2>
-            <p>Store overview and key metrics</p>
+            <h2>Orders</h2>
+            <p>View and manage customer orders</p>
           </div>
         </div>
-        <div class="wa-grid">
-          <wa-card appearance="filled">
-            <h2 slot="header">Monthly Sales</h2>
-            <p>Sales data goes here</p>
-          </wa-card>
-          <wa-card appearance="filled">
-            <h2 slot="header">Best Sellers</h2>
-            <p>Best seller data goes here</p>
-          </wa-card>
+
+        <div class="placeholder">
+          <wa-icon name="receipt"></wa-icon>
+          <h3>Coming Soon</h3>
+          <p>Order management and history will appear here.</p>
         </div>
       </ogs-page>
     `;

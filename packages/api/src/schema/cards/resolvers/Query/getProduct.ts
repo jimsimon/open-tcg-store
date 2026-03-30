@@ -3,7 +3,7 @@ import type { QueryResolvers } from "../../../types.generated";
 import { otcgs } from "../../../../db";
 import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
 
-export const getProduct: NonNullable<QueryResolvers["getProduct"]> = async (_parent, { productId }, _ctx) => {
+export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_parent, { productId }, _ctx) => {
   const id = Number.parseInt(productId, 10);
   if (Number.isNaN(id)) {
     throw new Error(`Invalid product id: ${productId}`);

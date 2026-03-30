@@ -193,6 +193,13 @@ export type PaginationInput = {
   pageSize?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type ProductConditionPrice = {
+  __typename?: 'ProductConditionPrice';
+  condition: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type ProductDetail = {
   __typename?: 'ProductDetail';
   finishes: Array<Scalars['String']['output']>;
@@ -219,6 +226,7 @@ export type ProductInventoryRecord = {
 
 export type ProductListing = {
   __typename?: 'ProductListing';
+  conditionPrices: Array<ProductConditionPrice>;
   finishes: Array<Scalars['String']['output']>;
   gameName: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -231,6 +239,7 @@ export type ProductListing = {
 };
 
 export type ProductListingFilters = {
+  condition?: InputMaybe<Scalars['String']['input']>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -386,14 +395,6 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
-export type GetCardQueryQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  cardId: Scalars['String']['input'];
-}>;
-
-
-export type GetCardQueryQuery = { __typename?: 'Query', getCard: { __typename?: 'Card', id: string, name: string, rarity?: string | null, type?: string | null, text?: string | null, flavorText?: string | null, setName: string, finishes: Array<string>, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventory: Array<{ __typename?: 'ConditionInventories', type: string, NM: { __typename?: 'ConditionInventory', quantity: number, price: string }, LP: { __typename?: 'ConditionInventory', quantity: number, price: string }, MP: { __typename?: 'ConditionInventory', quantity: number, price: string }, HP?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null, D?: { __typename?: 'ConditionInventory', quantity: number, price: string } | null } | null> } };
-
 export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -434,47 +435,6 @@ export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
   firstTimeSetup(userDetails: $userDetails, settings: $settings)
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
-export const GetCardQueryDocument = new TypedDocumentString(`
-    query GetCardQuery($game: String!, $cardId: String!) {
-  getCard(game: $game, cardId: $cardId) {
-    id
-    name
-    rarity
-    type
-    text
-    flavorText
-    setName
-    finishes
-    images {
-      small
-      large
-    }
-    inventory {
-      type
-      NM {
-        quantity
-        price
-      }
-      LP {
-        quantity
-        price
-      }
-      MP {
-        quantity
-        price
-      }
-      HP {
-        quantity
-        price
-      }
-      D {
-        quantity
-        price
-      }
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GetCardQueryQuery, GetCardQueryQueryVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`
     query IsSetupPending {
   isSetupPending

@@ -1,6 +1,7 @@
 import { LitElement, PropertyValues, css, html, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
 import "@awesome.me/webawesome/dist/components/select/select.js";
 import "@awesome.me/webawesome/dist/components/option/option.js";
@@ -21,6 +22,7 @@ import Cookies from "js-cookie";
 import { graphql } from "../graphql";
 import { execute } from "../lib/graphql";
 import { ShoppingCart } from "../graphql/graphql";
+import logoSvg from "../assets/logo.svg?raw";
 
 // Lazy-load authClient to avoid potential SSR issues
 let _authClient: typeof import("../auth-client").authClient | undefined;
@@ -50,52 +52,133 @@ export class OgsPage extends LitElement {
 
       #page {
         display: flex;
-        height: calc(100% - 84px);
+        height: calc(100vh - 64px);
       }
 
       header {
         box-sizing: border-box;
         border-bottom: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
-        padding-inline: var(--wa-space-xl);
+        padding-inline: var(--wa-space-l);
         padding-inline-end: var(--wa-space-s);
-        block-size: 84px;
+        block-size: 64px;
+        background: var(--wa-color-surface-raised);
+      }
+
+      header h1 {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-xs);
+        font-size: var(--wa-font-size-xl);
+        margin: 0;
+        letter-spacing: -0.02em;
+      }
+
+      .logo {
+        display: inline-flex;
+        width: 1.5em;
+        height: 1.5em;
+        color: var(--wa-color-brand-text);
+      }
+
+      .logo svg {
+        width: 100%;
+        height: 100%;
       }
 
       nav {
         display: flex;
         flex-direction: column;
-        column-gap: 1rem;
+        gap: 1px;
         overflow: auto;
         height: 100%;
         max-height: 100%;
-        min-width: 300px;
-        max-width: 300px;
+        min-width: 260px;
+        max-width: 260px;
+        flex-shrink: 0;
         box-sizing: border-box;
         border-right: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
-        overflow-x: auto;
+        background: var(--wa-color-surface-raised);
+        padding: var(--wa-space-s) 0;
+        overflow-x: hidden;
         overflow-y: auto;
       }
 
-      ul {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+      .nav-section-label {
+        padding: var(--wa-space-2xs) var(--wa-space-l);
         margin: 0;
-        padding: 0;
+        font-size: var(--wa-font-size-2xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--wa-color-text-muted);
+        user-select: none;
       }
 
-      li {
-        padding: 1rem 2rem;
-        list-style: none;
-      }
-
-      a {
-        color: var(--wa-color-text-link);
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-s);
+        padding: var(--wa-space-xs) var(--wa-space-l);
+        color: var(--wa-color-text-normal);
         text-decoration: none;
+        font-size: var(--wa-font-size-m);
+        font-weight: 500;
+        border-radius: var(--wa-border-radius-m);
+        margin-inline: var(--wa-space-xs);
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease;
       }
 
-      a[current] {
-        text-decoration: underline;
+      .nav-link:hover {
+        background: var(--wa-color-surface-sunken);
+        color: var(--wa-color-text-link);
+      }
+
+      .nav-link[current] {
+        background: var(--wa-color-brand-container);
+        color: var(--wa-color-brand-text);
+        font-weight: 600;
+      }
+
+      .nav-link wa-icon {
+        font-size: var(--wa-font-size-l);
+        flex-shrink: 0;
+        width: 1.25em;
+        text-align: center;
+      }
+
+      .nav-sub-link {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-s);
+        padding: var(--wa-space-2xs) var(--wa-space-l);
+        padding-left: var(--wa-space-m);
+        margin-left: calc(var(--wa-space-xs) + var(--wa-space-l) + 0.625em + 4px);
+        margin-right: var(--wa-space-xs);
+        border-left: 2px solid var(--wa-color-surface-border);
+        color: var(--wa-color-text-muted);
+        text-decoration: none;
+        font-size: var(--wa-font-size-s);
+        font-weight: 400;
+        border-radius: 0 var(--wa-border-radius-m) var(--wa-border-radius-m) 0;
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .nav-sub-link:hover {
+        background: var(--wa-color-surface-sunken);
+        color: var(--wa-color-text-link);
+        border-left-color: var(--wa-color-text-link);
+      }
+
+      .nav-sub-link[current] {
+        background: var(--wa-color-brand-container);
+        color: var(--wa-color-brand-text);
+        font-weight: 600;
+        border-left-color: var(--wa-color-brand-text);
       }
 
       section {
@@ -103,6 +186,7 @@ export class OgsPage extends LitElement {
         margin-inline: auto;
         max-width: 1200px;
         flex: 1;
+        padding: var(--wa-space-l);
       }
 
       [hidden] {
@@ -228,7 +312,7 @@ export class OgsPage extends LitElement {
   render() {
     return html`
       <header class="wa-split">
-        <h1>OpenTCGS</h1>
+        <h1><span class="logo">${this.renderLogo()}</span>OpenTCGS</h1>
         <div class="wa-cluster">
           <wa-select
             class="color-scheme-selector"
@@ -283,21 +367,21 @@ export class OgsPage extends LitElement {
           !this.hideNav,
           () => html`
             <nav>
-              <h2>${this.renderAnchor("/", "Dashboard", "Dashboard")}</h2>
-              <h2>Products</h2>
-              <ul>
-                <li>${this.renderAnchor("/products/singles", "Singles", "products/singles")}</li>
-                <li>${this.renderAnchor("/products/sealed", "Sealed", "products/sealed")}</li>
-              </ul>
-              <h2>${this.renderAnchor("/sales", "Sales", "Sales")}</h2>
+              <div class="nav-section-label">Shop</div>
+              ${this.renderNavLink("/products/singles", "bag-shopping", "Browse", "products")}
+              ${this.renderNavSubLink("/products/singles", "Singles", "products/singles")}
+              ${this.renderNavSubLink("/products/sealed", "Sealed", "products/sealed")}
               ${when(
                 this.userRole === "admin" || this.userRole === "employee",
                 () => html`
-                  <h2>Inventory</h2>
-                  <ul>
-                    <li>${this.renderAnchor("/inventory/singles", "Singles", "inventory/singles")}</li>
-                    <li>${this.renderAnchor("/inventory/sealed", "Sealed", "inventory/sealed")}</li>
-                  </ul>
+                  <wa-divider></wa-divider>
+                  <div class="nav-section-label">Management</div>
+
+                  ${this.renderNavLink("/", "house", "Dashboard", "Dashboard")}
+                  ${this.renderNavLink("/orders", "receipt", "Orders", "Orders")}
+                  ${this.renderNavLink("/inventory/singles", "boxes-stacked", "Inventory", "inventory")}
+                  ${this.renderNavSubLink("/inventory/singles", "Singles", "inventory/singles")}
+                  ${this.renderNavSubLink("/inventory/sealed", "Sealed", "inventory/sealed")}
                 `,
               )}
             </nav>
@@ -313,7 +397,7 @@ export class OgsPage extends LitElement {
   }
 
   private renderUserMenu() {
-    if (this.isAnonymous) {
+    if (this.isAnonymous || !this.userName) {
       return html`
         <wa-dropdown>
           <wa-button class="avatar-button" appearance="filled" slot="trigger" aria-label="User menu">
@@ -567,7 +651,19 @@ export class OgsPage extends LitElement {
     }
   }
 
-  renderAnchor(href: string, label: string, activationKey: string) {
-    return html`<a href="${href}" ?current="${this.activePage === activationKey}">${label}</a>`;
+  private renderLogo() {
+    return unsafeHTML(logoSvg);
+  }
+
+  private renderNavLink(href: string, icon: string, label: string, activationKey: string) {
+    const isActive = this.activePage === activationKey || (this.activePage?.startsWith(activationKey + "/") ?? false);
+    return html`<a class="nav-link" href="${href}" ?current="${isActive}">
+      <wa-icon name="${icon}" variant="solid"></wa-icon>
+      ${label}
+    </a>`;
+  }
+
+  private renderNavSubLink(href: string, label: string, activationKey: string) {
+    return html`<a class="nav-sub-link" href="${href}" ?current="${this.activePage === activationKey}"> ${label} </a>`;
   }
 }

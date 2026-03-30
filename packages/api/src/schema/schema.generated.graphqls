@@ -121,6 +121,12 @@ input PaginationInput {
   pageSize: Int
 }
 
+type ProductConditionPrice {
+  condition: String!
+  price: Float!
+  quantity: Int!
+}
+
 type ProductDetail {
   finishes: [String!]!
   flavorText: String
@@ -144,6 +150,7 @@ type ProductInventoryRecord {
 }
 
 type ProductListing {
+  conditionPrices: [ProductConditionPrice!]!
   finishes: [String!]!
   gameName: String!
   id: String!
@@ -156,6 +163,7 @@ type ProductListing {
 }
 
 input ProductListingFilters {
+  condition: String
   gameName: String
   inStockOnly: Boolean
   includeSealed: Boolean

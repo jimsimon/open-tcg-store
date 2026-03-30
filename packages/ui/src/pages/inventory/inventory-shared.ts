@@ -231,12 +231,125 @@ export const sharedInventoryStyles = [
       box-sizing: border-box;
     }
 
+    /* --- Page Header --- */
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .page-header-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--wa-border-radius-l);
+      background: var(--wa-color-brand-fill-normal);
+      color: var(--wa-color-brand-on-normal);
+      flex-shrink: 0;
+    }
+
+    .page-header-content {
+      flex: 1;
+    }
+
+    .page-header h2 {
+      margin: 0;
+      font-size: var(--wa-font-size-2xl);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .page-header p {
+      margin: 0.25rem 0 0 0;
+      color: var(--wa-color-text-muted);
+      font-size: var(--wa-font-size-s);
+    }
+
+    /* --- Summary Stats --- */
+
+    .stats-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      background: var(--wa-color-surface-raised);
+      border: 1px solid var(--wa-color-surface-border);
+      border-radius: var(--wa-border-radius-l);
+      min-width: 160px;
+      flex: 1;
+    }
+
+    .stat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: var(--wa-border-radius-m);
+      background: var(--wa-color-brand-container);
+      color: var(--wa-color-brand-text);
+      font-size: 1.125rem;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.success {
+      background: var(--wa-color-success-container);
+      color: var(--wa-color-success-text);
+    }
+
+    .stat-icon.warning {
+      background: var(--wa-color-warning-container);
+      color: var(--wa-color-warning-text);
+    }
+
+    .stat-icon.neutral {
+      background: var(--wa-color-neutral-container);
+      color: var(--wa-color-text-muted);
+    }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .stat-label {
+      font-size: var(--wa-font-size-xs);
+      color: var(--wa-color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: var(--wa-font-size-xl);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* --- Filter Bar --- */
+
     .filter-bar {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
       margin-bottom: 1rem;
       align-items: flex-end;
+      padding: 1rem;
+      background: var(--wa-color-surface-raised);
+      border: 1px solid var(--wa-color-surface-border);
+      border-radius: var(--wa-border-radius-l);
     }
 
     .filter-bar wa-input {
@@ -248,6 +361,8 @@ export const sharedInventoryStyles = [
       min-width: 150px;
     }
 
+    /* --- Action Bar --- */
+
     .action-bar {
       display: flex;
       gap: 0.75rem;
@@ -255,6 +370,24 @@ export const sharedInventoryStyles = [
       flex-wrap: wrap;
       align-items: center;
     }
+
+    .action-bar-spacer {
+      flex: 1;
+    }
+
+    .selection-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.875rem;
+      background: var(--wa-color-brand-container);
+      color: var(--wa-color-brand-text);
+      border-radius: var(--wa-border-radius-pill);
+      font-size: var(--wa-font-size-s);
+      font-weight: 600;
+    }
+
+    /* --- Table --- */
 
     .table-container {
       overflow-x: auto;
@@ -265,9 +398,18 @@ export const sharedInventoryStyles = [
       vertical-align: middle;
     }
 
+    .wa-table th {
+      font-size: var(--wa-font-size-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--wa-color-text-muted);
+      font-weight: 600;
+    }
+
     .price-cell {
       text-align: right;
       white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
 
     .quantity-cell {
@@ -277,6 +419,60 @@ export const sharedInventoryStyles = [
     .actions-cell {
       white-space: nowrap;
     }
+
+    .actions-cell wa-button {
+      transition: opacity 0.15s;
+    }
+
+    .product-name {
+      font-weight: 500;
+    }
+
+    .game-name,
+    .set-name {
+      color: var(--wa-color-text-muted);
+      font-size: var(--wa-font-size-s);
+    }
+
+    /* --- Condition Badge --- */
+
+    .condition-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--wa-border-radius-pill);
+      font-size: var(--wa-font-size-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .condition-badge.nm {
+      background: var(--wa-color-success-container);
+      color: var(--wa-color-success-text);
+    }
+
+    .condition-badge.lp {
+      background: var(--wa-color-brand-container);
+      color: var(--wa-color-brand-text);
+    }
+
+    .condition-badge.mp {
+      background: var(--wa-color-warning-container);
+      color: var(--wa-color-warning-text);
+    }
+
+    .condition-badge.hp {
+      background: var(--wa-color-danger-container);
+      color: var(--wa-color-danger-text);
+    }
+
+    .condition-badge.d {
+      background: var(--wa-color-neutral-container);
+      color: var(--wa-color-text-muted);
+    }
+
+    /* --- Pagination --- */
 
     .pagination {
       display: flex;
@@ -288,8 +484,14 @@ export const sharedInventoryStyles = [
     }
 
     .pagination-info {
-      color: var(--wa-color-text-secondary);
+      color: var(--wa-color-text-muted);
       font-size: var(--wa-font-size-s);
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
 
     .pagination-buttons {
@@ -303,19 +505,60 @@ export const sharedInventoryStyles = [
       text-decoration: underline;
     }
 
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: var(--wa-font-size-s);
+      color: var(--wa-color-text-muted);
+    }
+
+    .page-size-selector wa-select {
+      width: 80px;
+    }
+
+    /* --- Loading & Empty States --- */
+
     .loading-container {
       display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      padding: 3rem;
+      padding: 4rem;
+      gap: 1rem;
+    }
+
+    .loading-container span {
+      color: var(--wa-color-text-muted);
+      font-size: var(--wa-font-size-s);
     }
 
     .empty-state {
       text-align: center;
-      padding: 3rem;
-      color: var(--wa-color-text-secondary);
+      padding: 4rem 2rem;
+      color: var(--wa-color-text-muted);
     }
 
-    /* Add Dialog Styles */
+    .empty-state wa-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: var(--wa-font-size-xl);
+      color: var(--wa-color-text-normal);
+    }
+
+    .empty-state p {
+      margin: 0 0 1.5rem 0;
+      max-width: 400px;
+      margin-inline: auto;
+    }
+
+    /* --- Add Dialog Styles --- */
+
     .search-results {
       max-height: 200px;
       overflow-y: auto;
@@ -355,32 +598,40 @@ export const sharedInventoryStyles = [
     }
 
     .search-result-item .result-info small {
-      color: var(--wa-color-text-secondary);
+      color: var(--wa-color-text-muted);
       font-size: var(--wa-font-size-xs);
     }
 
     .selected-product {
+      display: flex;
+      gap: 1rem;
       border: 1px solid var(--wa-color-surface-border);
-      border-radius: var(--wa-border-radius-m);
+      border-radius: var(--wa-border-radius-l);
       padding: 1rem;
       margin-top: 0.75rem;
       margin-bottom: 0.75rem;
+      background: var(--wa-color-surface-alt);
+    }
+
+    .selected-product-info {
+      flex: 1;
     }
 
     .selected-product h3 {
       margin: 0 0 0.25rem 0;
+      font-size: var(--wa-font-size-l);
     }
 
     .selected-product p {
       margin: 0 0 0.5rem 0;
-      color: var(--wa-color-text-secondary);
+      color: var(--wa-color-text-muted);
       font-size: var(--wa-font-size-s);
     }
 
     .product-image {
-      max-width: 200px;
+      max-width: 120px;
       border-radius: var(--wa-border-radius-m);
-      margin-bottom: 0.5rem;
+      flex-shrink: 0;
     }
 
     .market-prices {
@@ -390,6 +641,7 @@ export const sharedInventoryStyles = [
     .market-prices h4 {
       margin: 0 0 0.5rem 0;
       font-size: var(--wa-font-size-s);
+      font-weight: 600;
     }
 
     .price-row {
@@ -408,10 +660,11 @@ export const sharedInventoryStyles = [
     .profit-summary {
       display: flex;
       gap: 1.5rem;
-      padding: 0.75rem;
+      padding: 0.875rem 1rem;
       margin-top: 0.75rem;
       background: var(--wa-color-surface-alt);
-      border-radius: var(--wa-border-radius-m);
+      border: 1px solid var(--wa-color-surface-border);
+      border-radius: var(--wa-border-radius-l);
       font-size: var(--wa-font-size-s);
       font-weight: 500;
     }
@@ -423,18 +676,109 @@ export const sharedInventoryStyles = [
       margin-top: 0.75rem;
     }
 
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
     .delete-confirm-name {
       font-weight: bold;
+      color: var(--wa-color-text-normal);
     }
 
     wa-dialog::part(body) {
       max-height: 70vh;
       overflow-y: auto;
     }
+
+    wa-dialog::part(title) {
+      font-size: var(--wa-font-size-xl);
+      font-weight: 700;
+    }
+
+    /* --- Edit dialog header --- */
+
+    .edit-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--wa-color-surface-alt);
+      border-radius: var(--wa-border-radius-l);
+      margin-bottom: 0.75rem;
+    }
+
+    .edit-item-header wa-icon {
+      font-size: 1.5rem;
+      color: var(--wa-color-brand-text);
+    }
+
+    .edit-item-header-info h3 {
+      margin: 0;
+      font-size: var(--wa-font-size-m);
+      font-weight: 600;
+    }
+
+    .edit-item-header-info p {
+      margin: 0;
+      font-size: var(--wa-font-size-xs);
+      color: var(--wa-color-text-muted);
+    }
+
+    /* --- Delete dialog --- */
+
+    .delete-warning {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1rem;
+      background: var(--wa-color-danger-container);
+      border-radius: var(--wa-border-radius-l);
+    }
+
+    .delete-warning wa-icon {
+      font-size: 1.5rem;
+      color: var(--wa-color-danger-text);
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+
+    .delete-warning-text p {
+      margin: 0;
+    }
+
+    .delete-warning-text p:first-child {
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .delete-warning-text p:last-child {
+      font-size: var(--wa-font-size-s);
+      color: var(--wa-color-text-muted);
+    }
   `,
 ];
 
 // --- Shared render helpers ---
+
+export function renderConditionBadge(condition: string | null | undefined) {
+  if (!condition) return html`<span>—</span>`;
+  const lower = condition.toLowerCase();
+  const labels: Record<string, string> = {
+    nm: "Near Mint",
+    lp: "Lightly Played",
+    mp: "Mod. Played",
+    hp: "Heavily Played",
+    d: "Damaged",
+  };
+  return html`<span class="condition-badge ${lower}">${labels[lower] ?? condition}</span>`;
+}
+
+export function formatCurrency(value: number | null | undefined): string {
+  if (value == null) return "—";
+  return `$${value.toFixed(2)}`;
+}
 
 export function renderProfitSummary(price: number, costBasis: number, quantity: number) {
   if (!costBasis || costBasis <= 0) return nothing;
@@ -446,11 +790,15 @@ export function renderProfitSummary(price: number, costBasis: number, quantity: 
   return html`
     <div class="profit-summary">
       <div style="color: ${profitPerUnit >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
-        P/L per unit: $${profitPerUnit.toFixed(2)}
+        <wa-icon
+          name="${profitPerUnit >= 0 ? "arrow-trend-up" : "arrow-trend-down"}"
+          style="font-size: 0.875em;"
+        ></wa-icon>
+        P/L per unit: ${formatCurrency(profitPerUnit)}
       </div>
       <div>Margin: ${margin.toFixed(1)}%</div>
       <div style="color: ${totalPL >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
-        Total P/L: $${totalPL.toFixed(2)}
+        Total P/L: ${formatCurrency(totalPL)}
       </div>
     </div>
   `;
@@ -474,6 +822,24 @@ export function renderMarketPrices(prices: ProductPrice[]) {
       )}
     </div>
   `;
+}
+
+export function computeInventoryStats(items: InventoryItem[]) {
+  let totalItems = 0;
+  let totalQuantity = 0;
+  let totalValue = 0;
+  let totalCost = 0;
+
+  for (const item of items) {
+    totalItems++;
+    totalQuantity += item.quantity;
+    totalValue += item.price * item.quantity;
+    if (item.costBasis != null) {
+      totalCost += item.costBasis * item.quantity;
+    }
+  }
+
+  return { totalItems, totalQuantity, totalValue, totalCost };
 }
 
 // Re-export types for convenience

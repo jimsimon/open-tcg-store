@@ -1,4 +1,4 @@
-import { sql, and, like, eq, exists, sum, min } from "drizzle-orm";
+import { sql, and, like, eq, exists } from "drizzle-orm";
 import { otcgs } from "../../../../db";
 import { product, productExtendedData } from "../../../../db/tcg-data/schema";
 import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
@@ -9,7 +9,7 @@ import type {
   QueryResolvers,
 } from "../../../types.generated";
 
-export const getProductListings: NonNullable<QueryResolvers['getProductListings']> = async (
+export const getProductListings: NonNullable<QueryResolvers["getProductListings"]> = async (
   _parent,
   { filters, pagination },
   _ctx,
@@ -42,6 +42,9 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     categoryId = 2;
   }
 
+  // Resolve condition filter
+  const conditionFilter = filters?.condition ?? null;
+
   // Build WHERE conditions
   const conditions = [];
 
@@ -55,6 +58,24 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
 
   if (filters?.setCode) {
     conditions.push(eq(product.groupId, Number.parseInt(filters.setCode, 10)));
+  }
+
+  // If condition filter is set, only show products that have inventory in that condition
+  if (conditionFilter) {
+    conditions.push(
+      exists(
+        otcgs
+          .select({ one: sql`1` })
+          .from(inventoryItem)
+          .where(
+            and(
+              eq(inventoryItem.productId, product.id),
+              eq(inventoryItem.condition, conditionFilter),
+              sql`${inventoryItem.quantity} > 0`,
+            ),
+          ),
+      ),
+    );
   }
 
   // Product type filtering: singles vs sealed
@@ -179,6 +200,34 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     return "Unknown";
   }
 
+  // Fetch per-condition pricing for all product IDs
+  const conditionPricesRaw =
+    productIds.length > 0
+      ? await otcgs
+          .select({
+            productId: inventoryItem.productId,
+            condition: inventoryItem.condition,
+            quantity: sql<number>`SUM(${inventoryItem.quantity})`.as("cond_qty"),
+            price: sql<number>`MIN(${inventoryItem.price})`.as("cond_price"),
+          })
+          .from(inventoryItem)
+          .where(
+            sql`${inventoryItem.productId} IN (${sql.join(
+              productIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})`,
+          )
+          .groupBy(inventoryItem.productId, inventoryItem.condition)
+      : [];
+
+  // Build condition prices lookup: productId -> conditionPrices[]
+  const conditionPricesMap = new Map<number, { condition: string; quantity: number; price: number }[]>();
+  for (const row of conditionPricesRaw) {
+    const arr = conditionPricesMap.get(row.productId) ?? [];
+    arr.push({ condition: row.condition, quantity: row.quantity, price: row.price });
+    conditionPricesMap.set(row.productId, arr);
+  }
+
   const items = results.map((r) => {
     const productData = productMap.get(r.id);
     const extendedDataMap = (productData?.extendedData ?? []).reduce(
@@ -200,6 +249,12 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       lowestPrice = productData.prices[0].marketPrice.toFixed(2);
     }
 
+    // Get per-condition pricing, sorted by condition order
+    const conditionOrder = ["NM", "LP", "MP", "HP", "D"];
+    const conditionPrices = (conditionPricesMap.get(r.id) ?? [])
+      .filter((cp) => cp.quantity > 0)
+      .sort((a, b) => conditionOrder.indexOf(a.condition) - conditionOrder.indexOf(b.condition));
+
     return {
       id: r.id.toString(),
       name: r.name,
@@ -213,6 +268,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       },
       totalQuantity: r.totalQuantity,
       lowestPrice,
+      conditionPrices,
     };
   });
 

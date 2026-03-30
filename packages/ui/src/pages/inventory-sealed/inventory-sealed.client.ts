@@ -33,6 +33,8 @@ import {
   sharedInventoryStyles,
   renderProfitSummary,
   renderMarketPrices,
+  formatCurrency,
+  computeInventoryStats,
 } from "../inventory/inventory-shared.ts";
 
 // --- Component ---
@@ -501,7 +503,7 @@ export class OgsInventorySealedPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
       >
-        ${this.renderFilterBar()} ${this.renderActionBar()}
+        ${this.renderPageHeader()} ${this.renderStatsBar()} ${this.renderFilterBar()} ${this.renderActionBar()}
         ${when(
           this.error,
           () => html`
@@ -513,12 +515,79 @@ export class OgsInventorySealedPage extends LitElement {
         )}
         ${when(
           this.loading,
-          () => html`<div class="loading-container"><wa-spinner style="font-size: 2rem;"></wa-spinner></div>`,
+          () => html`
+            <div class="loading-container">
+              <wa-spinner style="font-size: 2rem;"></wa-spinner>
+              <span>Loading sealed inventory...</span>
+            </div>
+          `,
           () => this.renderInventoryTable(),
         )}
         ${this.renderPagination()} ${this.renderAddDialog()} ${this.renderEditDialog()} ${this.renderDeleteDialog()}
         ${this.renderBulkEditDialog()} ${this.renderBulkDeleteDialog()}
       </ogs-page>
+    `;
+  }
+
+  // --- Page Header ---
+
+  private renderPageHeader() {
+    return html`
+      <div class="page-header">
+        <div class="page-header-icon">
+          <wa-icon name="box" style="font-size: 1.5rem;"></wa-icon>
+        </div>
+        <div class="page-header-content">
+          <h2>Sealed Inventory</h2>
+          <p>Manage your sealed products like boosters, boxes, and decks</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Stats Bar ---
+
+  private renderStatsBar() {
+    const stats = computeInventoryStats(this.inventoryItems);
+    return html`
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-icon neutral">
+            <wa-icon name="shipping-box"></wa-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Items</span>
+            <span class="stat-value">${this.totalCount}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <wa-icon name="cubes"></wa-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Qty</span>
+            <span class="stat-value">${stats.totalQuantity}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon success">
+            <wa-icon name="tag"></wa-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Value</span>
+            <span class="stat-value">${formatCurrency(stats.totalValue)}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <wa-icon name="chart-line"></wa-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Cost</span>
+            <span class="stat-value">${formatCurrency(stats.totalCost)}</span>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -528,12 +597,12 @@ export class OgsInventorySealedPage extends LitElement {
     return html`
       <div class="filter-bar">
         <wa-input
-          placeholder="Search products..."
+          placeholder="Search by name..."
           .value="${this.searchTerm}"
           @input="${this.handleSearchInput}"
           clearable
         >
-          <wa-icon slot="prefix" name="search"></wa-icon>
+          <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
         </wa-input>
         <wa-select
           placeholder="Game"
@@ -563,13 +632,19 @@ export class OgsInventorySealedPage extends LitElement {
           <wa-icon slot="prefix" name="upload"></wa-icon>
           Import
         </wa-button>
+        ${when(
+          selectionCount > 0,
+          () =>
+            html`<span class="selection-indicator"><wa-icon name="check"></wa-icon> ${selectionCount} selected</span>`,
+        )}
+        <div class="action-bar-spacer"></div>
         <wa-button variant="neutral" ?disabled="${selectionCount === 0}" @click="${this.openBulkEditDialog}">
           <wa-icon slot="prefix" name="pencil"></wa-icon>
-          Bulk Edit${selectionCount > 0 ? ` (${selectionCount})` : ""}
+          Bulk Edit
         </wa-button>
         <wa-button variant="danger" ?disabled="${selectionCount === 0}" @click="${this.openBulkDeleteDialog}">
           <wa-icon slot="prefix" name="trash"></wa-icon>
-          Bulk Delete${selectionCount > 0 ? ` (${selectionCount})` : ""}
+          Bulk Delete
         </wa-button>
       </div>
     `;
@@ -581,9 +656,13 @@ export class OgsInventorySealedPage extends LitElement {
     if (this.inventoryItems.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
-          <wa-icon name="box-open" style="font-size: 3rem; margin-bottom: 1rem;"></wa-icon>
-          <h3>No sealed inventory items found</h3>
-          <p>Add items to your inventory or adjust your filters.</p>
+          <wa-icon name="box-open"></wa-icon>
+          <h3>No sealed products found</h3>
+          <p>Add sealed products to your inventory or adjust your search filters.</p>
+          <wa-button variant="brand" @click="${this.openAddDialog}">
+            <wa-icon slot="prefix" name="plus"></wa-icon>
+            Add Your First Sealed
+          </wa-button>
         </div>
       `;
     }
@@ -594,16 +673,16 @@ export class OgsInventorySealedPage extends LitElement {
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <thead>
               <tr>
-                <th>
+                <th style="width: 40px;">
                   <wa-checkbox .checked="${this.selectAll}" @change="${this.toggleSelectAll}"></wa-checkbox>
                 </th>
                 <th>Product</th>
                 <th>Game</th>
                 <th>Set</th>
-                <th class="quantity-cell">Qty</th>
-                <th class="price-cell">Price</th>
-                <th class="price-cell">Cost Basis</th>
-                <th>Actions</th>
+                <th class="quantity-cell" style="width: 60px;">Qty</th>
+                <th class="price-cell" style="width: 90px;">Price</th>
+                <th class="price-cell" style="width: 90px;">Cost Basis</th>
+                <th style="width: 100px;">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -616,17 +695,33 @@ export class OgsInventorySealedPage extends LitElement {
                         @change="${() => this.toggleItemSelection(item.id)}"
                       ></wa-checkbox>
                     </td>
-                    <td>${item.productName}</td>
+                    <td>
+                      <div class="product-name">${item.productName}</div>
+                    </td>
                     <td>${item.gameName}</td>
                     <td>${item.setName}</td>
-                    <td class="quantity-cell">${item.quantity}</td>
-                    <td class="price-cell">$${item.price.toFixed(2)}</td>
-                    <td class="price-cell">${item.costBasis != null ? `$${item.costBasis.toFixed(2)}` : "—"}</td>
+                    <td class="quantity-cell">
+                      <strong>${item.quantity}</strong>
+                    </td>
+                    <td class="price-cell">
+                      <strong>${formatCurrency(item.price)}</strong>
+                    </td>
+                    <td class="price-cell">${formatCurrency(item.costBasis)}</td>
                     <td class="actions-cell">
-                      <wa-button size="small" variant="neutral" @click="${() => this.openEditDialog(item)}">
+                      <wa-button
+                        size="small"
+                        variant="neutral"
+                        title="Edit"
+                        @click="${() => this.openEditDialog(item)}"
+                      >
                         <wa-icon name="pencil"></wa-icon>
                       </wa-button>
-                      <wa-button size="small" variant="neutral" @click="${() => this.openDeleteDialog(item)}">
+                      <wa-button
+                        size="small"
+                        variant="neutral"
+                        title="Delete"
+                        @click="${() => this.openDeleteDialog(item)}"
+                      >
                         <wa-icon name="trash"></wa-icon>
                       </wa-button>
                     </td>
@@ -643,7 +738,7 @@ export class OgsInventorySealedPage extends LitElement {
   // --- Pagination ---
 
   private renderPagination() {
-    if (this.totalPages <= 1) return nothing;
+    if (this.totalPages <= 0) return nothing;
 
     const start = (this.currentPage - 1) * this.pageSize + 1;
     const end = Math.min(this.currentPage * this.pageSize, this.totalCount);
@@ -661,36 +756,43 @@ export class OgsInventorySealedPage extends LitElement {
 
     return html`
       <div class="pagination">
-        <span class="pagination-info">Showing ${start}–${end} of ${this.totalCount}</span>
-        <div class="pagination-buttons">
-          <wa-button
-            size="small"
-            variant="neutral"
-            ?disabled="${this.currentPage === 1}"
-            @click="${() => this.goToPage(this.currentPage - 1)}"
-          >
-            Previous
-          </wa-button>
-          ${pages.map(
-            (p) => html`
-              <wa-button
-                size="small"
-                variant="${p === this.currentPage ? "brand" : "neutral"}"
-                ?data-current="${p === this.currentPage}"
-                @click="${() => this.goToPage(p)}"
-              >
-                ${p}
-              </wa-button>
+        <span class="pagination-info">Showing ${start}–${end} of ${this.totalCount} items</span>
+        <div class="pagination-controls">
+          ${when(
+            this.totalPages > 1,
+            () => html`
+              <div class="pagination-buttons">
+                <wa-button
+                  size="small"
+                  variant="neutral"
+                  ?disabled="${this.currentPage === 1}"
+                  @click="${() => this.goToPage(this.currentPage - 1)}"
+                >
+                  <wa-icon name="chevron-left"></wa-icon>
+                </wa-button>
+                ${pages.map(
+                  (p) => html`
+                    <wa-button
+                      size="small"
+                      variant="${p === this.currentPage ? "brand" : "neutral"}"
+                      ?data-current="${p === this.currentPage}"
+                      @click="${() => this.goToPage(p)}"
+                    >
+                      ${p}
+                    </wa-button>
+                  `,
+                )}
+                <wa-button
+                  size="small"
+                  variant="neutral"
+                  ?disabled="${this.currentPage === this.totalPages}"
+                  @click="${() => this.goToPage(this.currentPage + 1)}"
+                >
+                  <wa-icon name="chevron-right"></wa-icon>
+                </wa-button>
+              </div>
             `,
           )}
-          <wa-button
-            size="small"
-            variant="neutral"
-            ?disabled="${this.currentPage === this.totalPages}"
-            @click="${() => this.goToPage(this.currentPage + 1)}"
-          >
-            Next
-          </wa-button>
         </div>
       </div>
     `;
@@ -701,7 +803,7 @@ export class OgsInventorySealedPage extends LitElement {
   private renderAddDialog() {
     return html`
       <wa-dialog
-        label="Add Sealed Inventory Item"
+        label="Add Sealed Item"
         ?open="${this.showAddDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeAddDialog();
@@ -713,7 +815,7 @@ export class OgsInventorySealedPage extends LitElement {
           .value="${this.productSearchTerm}"
           @input="${this.handleProductSearchInput}"
         >
-          <wa-icon slot="prefix" name="search"></wa-icon>
+          <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
           ${when(this.productSearchLoading, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
         </wa-input>
 
@@ -756,36 +858,39 @@ export class OgsInventorySealedPage extends LitElement {
                     class="product-image"
                   />`,
               )}
-              <h3>${this.selectedProduct!.name}</h3>
-              <p>${this.selectedProduct!.gameName} — ${this.selectedProduct!.setName}</p>
-
-              ${renderMarketPrices(this.selectedProduct!.prices)}
+              <div class="selected-product-info">
+                <h3>${this.selectedProduct!.name}</h3>
+                <p>${this.selectedProduct!.gameName} — ${this.selectedProduct!.setName}</p>
+                ${renderMarketPrices(this.selectedProduct!.prices)}
+              </div>
             </div>
 
             <div class="form-fields">
-              <wa-input
-                label="Quantity"
-                type="number"
-                min="1"
-                .value="${String(this.addForm.quantity)}"
-                @input="${(e: Event) => {
-                  this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
-                }}"
-              ></wa-input>
+              <div class="form-row">
+                <wa-input
+                  label="Quantity"
+                  type="number"
+                  min="1"
+                  .value="${String(this.addForm.quantity)}"
+                  @input="${(e: Event) => {
+                    this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
+                  }}"
+                ></wa-input>
 
-              <wa-input
-                label="Price"
-                type="number"
-                step="0.01"
-                min="0"
-                .value="${String(this.addForm.price)}"
-                @input="${(e: Event) => {
-                  this.addForm = {
-                    ...this.addForm,
-                    price: Number.parseFloat((e.target as WaInput).value as string) || 0,
-                  };
-                }}"
-              ></wa-input>
+                <wa-input
+                  label="Price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  .value="${String(this.addForm.price)}"
+                  @input="${(e: Event) => {
+                    this.addForm = {
+                      ...this.addForm,
+                      price: Number.parseFloat((e.target as WaInput).value as string) || 0,
+                    };
+                  }}"
+                ></wa-input>
+              </div>
 
               <wa-input
                 label="Cost Basis"
@@ -841,41 +946,46 @@ export class OgsInventorySealedPage extends LitElement {
 
     return html`
       <wa-dialog
-        label="Edit Inventory Item"
+        label="Edit Sealed Item"
         ?open="${this.showEditDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeEditDialog();
         }}"
       >
-        <div class="selected-product">
-          <h3>${this.editingItem.productName}</h3>
-          <p>${this.editingItem.gameName} — ${this.editingItem.setName}</p>
+        <div class="edit-item-header">
+          <wa-icon name="shipping-box"></wa-icon>
+          <div class="edit-item-header-info">
+            <h3>${this.editingItem.productName}</h3>
+            <p>${this.editingItem.gameName} — ${this.editingItem.setName}</p>
+          </div>
         </div>
 
         <div class="form-fields">
-          <wa-input
-            label="Quantity"
-            type="number"
-            min="1"
-            .value="${String(this.editForm.quantity ?? 1)}"
-            @input="${(e: Event) => {
-              this.editForm = { ...this.editForm, quantity: Number((e.target as WaInput).value) || 1 };
-            }}"
-          ></wa-input>
+          <div class="form-row">
+            <wa-input
+              label="Quantity"
+              type="number"
+              min="1"
+              .value="${String(this.editForm.quantity ?? 1)}"
+              @input="${(e: Event) => {
+                this.editForm = { ...this.editForm, quantity: Number((e.target as WaInput).value) || 1 };
+              }}"
+            ></wa-input>
 
-          <wa-input
-            label="Price"
-            type="number"
-            step="0.01"
-            min="0"
-            .value="${String(this.editForm.price ?? 0)}"
-            @input="${(e: Event) => {
-              this.editForm = {
-                ...this.editForm,
-                price: Number.parseFloat((e.target as WaInput).value as string) || 0,
-              };
-            }}"
-          ></wa-input>
+            <wa-input
+              label="Price"
+              type="number"
+              step="0.01"
+              min="0"
+              .value="${String(this.editForm.price ?? 0)}"
+              @input="${(e: Event) => {
+                this.editForm = {
+                  ...this.editForm,
+                  price: Number.parseFloat((e.target as WaInput).value as string) || 0,
+                };
+              }}"
+            ></wa-input>
+          </div>
 
           <wa-input
             label="Cost Basis"
@@ -927,20 +1037,25 @@ export class OgsInventorySealedPage extends LitElement {
 
     return html`
       <wa-dialog
-        label="Delete Inventory Item"
+        label="Delete Item"
         ?open="${this.showDeleteDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeDeleteDialog();
         }}"
       >
-        <p>
-          Are you sure you want to delete
-          <span class="delete-confirm-name">${this.deletingItem.productName}</span>?
-        </p>
-        <p>This action cannot be undone.</p>
+        <div class="delete-warning">
+          <wa-icon name="triangle-exclamation"></wa-icon>
+          <div class="delete-warning-text">
+            <p>Delete <span class="delete-confirm-name">${this.deletingItem.productName}</span>?</p>
+            <p>This action cannot be undone.</p>
+          </div>
+        </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="danger" @click="${this.submitDeleteItem}">Delete</wa-button>
+        <wa-button slot="footer" variant="danger" @click="${this.submitDeleteItem}">
+          <wa-icon slot="prefix" name="trash"></wa-icon>
+          Delete
+        </wa-button>
       </wa-dialog>
     `;
   }
@@ -950,7 +1065,7 @@ export class OgsInventorySealedPage extends LitElement {
   private renderBulkEditDialog() {
     return html`
       <wa-dialog
-        label="Bulk Edit Sealed Inventory"
+        label="Bulk Edit Sealed"
         ?open="${this.showBulkEditDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkEditDialog();
@@ -959,28 +1074,30 @@ export class OgsInventorySealedPage extends LitElement {
         <p>Editing <strong>${this.selectedIds.size}</strong> selected items. Only filled fields will be updated.</p>
 
         <div class="form-fields">
-          <wa-input
-            label="Quantity"
-            type="number"
-            min="1"
-            placeholder="Leave unchanged"
-            @input="${(e: Event) => {
-              const val = (e.target as WaInput).value;
-              this.bulkEditForm = { ...this.bulkEditForm, quantity: val ? Number(val) : null };
-            }}"
-          ></wa-input>
+          <div class="form-row">
+            <wa-input
+              label="Quantity"
+              type="number"
+              min="1"
+              placeholder="Leave unchanged"
+              @input="${(e: Event) => {
+                const val = (e.target as WaInput).value;
+                this.bulkEditForm = { ...this.bulkEditForm, quantity: val ? Number(val) : null };
+              }}"
+            ></wa-input>
 
-          <wa-input
-            label="Price"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Leave unchanged"
-            @input="${(e: Event) => {
-              const val = (e.target as WaInput).value;
-              this.bulkEditForm = { ...this.bulkEditForm, price: val ? Number.parseFloat(val as string) : null };
-            }}"
-          ></wa-input>
+            <wa-input
+              label="Price"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Leave unchanged"
+              @input="${(e: Event) => {
+                const val = (e.target as WaInput).value;
+                this.bulkEditForm = { ...this.bulkEditForm, price: val ? Number.parseFloat(val as string) : null };
+              }}"
+            ></wa-input>
+          </div>
 
           <wa-input
             label="Cost Basis"
@@ -1025,17 +1142,23 @@ export class OgsInventorySealedPage extends LitElement {
   private renderBulkDeleteDialog() {
     return html`
       <wa-dialog
-        label="Bulk Delete Inventory"
+        label="Bulk Delete"
         ?open="${this.showBulkDeleteDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkDeleteDialog();
         }}"
       >
-        <p>Are you sure you want to delete <strong>${this.selectedIds.size}</strong> selected items?</p>
-        <p>This action cannot be undone.</p>
+        <div class="delete-warning">
+          <wa-icon name="triangle-exclamation"></wa-icon>
+          <div class="delete-warning-text">
+            <p>Delete <strong>${this.selectedIds.size}</strong> selected items?</p>
+            <p>This action cannot be undone.</p>
+          </div>
+        </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeBulkDeleteDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="danger" @click="${this.submitBulkDelete}">
+          <wa-icon slot="prefix" name="trash"></wa-icon>
           Delete ${this.selectedIds.size} Items
         </wa-button>
       </wa-dialog>

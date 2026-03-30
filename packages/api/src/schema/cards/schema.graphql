@@ -56,12 +56,20 @@ type ProductListing {
   images: CardImages
   totalQuantity: Int!
   lowestPrice: String
+  conditionPrices: [ProductConditionPrice!]!
+}
+
+type ProductConditionPrice {
+  condition: String!
+  quantity: Int!
+  price: Float!
 }
 
 input ProductListingFilters {
   searchTerm: String
   setCode: String
   gameName: String
+  condition: String
   inStockOnly: Boolean
   includeSingles: Boolean
   includeSealed: Boolean

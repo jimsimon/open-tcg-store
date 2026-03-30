@@ -36,15 +36,36 @@ describe("ogs-page", () => {
     element.remove();
   });
 
-  test("renders page component with navigation", async () => {
+  test("renders page component with navigation and Browse link", async () => {
     const navigation = await screen.findByShadowRole("navigation");
     expect(navigation).toBeInTheDocument();
 
-    const dashboardLink = await screen.findByShadowText("Dashboard");
-    const salesLink = await screen.findByShadowText("Sales");
+    const browseLink = await screen.findByShadowText("Browse");
+    expect(browseLink).toBeInTheDocument();
+  });
 
-    expect(dashboardLink).toBeInTheDocument();
-    expect(salesLink).toBeInTheDocument();
+  test("does not show Dashboard and Orders links for non-employee/admin users", async () => {
+    element.userRole = "user";
+    await element.updateComplete;
+
+    const links = element.shadowRoot!.querySelectorAll("a.nav-link");
+    const dashboardLink = Array.from(links).find((a) => a.textContent?.includes("Dashboard"));
+    const ordersLink = Array.from(links).find((a) => a.textContent?.includes("Orders"));
+
+    expect(dashboardLink).toBeFalsy();
+    expect(ordersLink).toBeFalsy();
+  });
+
+  test("shows Dashboard and Orders links for employee role", async () => {
+    element.userRole = "employee";
+    await element.updateComplete;
+
+    const links = element.shadowRoot!.querySelectorAll("a.nav-link");
+    const dashboardLink = Array.from(links).find((a) => a.textContent?.includes("Dashboard"));
+    const ordersLink = Array.from(links).find((a) => a.textContent?.includes("Orders"));
+
+    expect(dashboardLink).toBeTruthy();
+    expect(ordersLink).toBeTruthy();
   });
 
   test("theme switcher is present", async () => {
@@ -205,7 +226,7 @@ describe("ogs-page", () => {
   });
 
   describe("inventory navigation", () => {
-    test("does not show inventory links for non-employee/admin users", async () => {
+    test("does not show inventory, dashboard, or orders links for non-employee/admin users", async () => {
       element.userRole = "user";
       await element.updateComplete;
 
@@ -213,17 +234,31 @@ describe("ogs-page", () => {
       const inventoryLinks = Array.from(links).filter(
         (a) => a.href.includes("/inventory/singles") || a.href.includes("/inventory/sealed"),
       );
+      const dashboardLink = Array.from(links).find((a) => a.getAttribute("href") === "/");
+      const ordersLink = Array.from(links).find((a) => a.getAttribute("href") === "/orders");
+
       expect(inventoryLinks.length).toBe(0);
+      expect(dashboardLink).toBeFalsy();
+      expect(ordersLink).toBeFalsy();
     });
 
-    test("shows inventory section with Singles and Sealed links for employee role", async () => {
+    test("shows inventory section with parent link and Singles/Sealed sub-links for employee role", async () => {
       element.userRole = "employee";
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll("a");
-      const inventorySinglesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
-      const inventorySealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
+      const inventoryParentLink = Array.from(links).find(
+        (a) => a.classList.contains("nav-link") && a.getAttribute("href") === "/inventory/singles",
+      );
+      const inventorySinglesLink = Array.from(links).find(
+        (a) => a.classList.contains("nav-sub-link") && a.getAttribute("href") === "/inventory/singles",
+      );
+      const inventorySealedLink = Array.from(links).find(
+        (a) => a.classList.contains("nav-sub-link") && a.getAttribute("href") === "/inventory/sealed",
+      );
 
+      expect(inventoryParentLink).toBeTruthy();
+      expect(inventoryParentLink!.textContent).toContain("Inventory");
       expect(inventorySinglesLink).toBeTruthy();
       expect(inventorySealedLink).toBeTruthy();
       expect(inventorySinglesLink!.textContent?.trim()).toBe("Singles");
@@ -234,7 +269,7 @@ describe("ogs-page", () => {
       element.userRole = "admin";
       await element.updateComplete;
 
-      const links = element.shadowRoot!.querySelectorAll("a");
+      const links = element.shadowRoot!.querySelectorAll("a.nav-sub-link");
       const inventorySinglesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
       const inventorySealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
 
@@ -242,24 +277,34 @@ describe("ogs-page", () => {
       expect(inventorySealedLink).toBeTruthy();
     });
 
-    test("highlights Singles link when activePage is inventory/singles", async () => {
+    test("highlights Singles sub-link when activePage is inventory/singles", async () => {
       element.userRole = "employee";
       element.activePage = "inventory/singles";
       await element.updateComplete;
 
-      const links = element.shadowRoot!.querySelectorAll("a");
+      const links = element.shadowRoot!.querySelectorAll("a.nav-sub-link");
       const singlesLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/singles");
       expect(singlesLink?.hasAttribute("current")).toBe(true);
     });
 
-    test("highlights Sealed link when activePage is inventory/sealed", async () => {
+    test("highlights Sealed sub-link when activePage is inventory/sealed", async () => {
       element.userRole = "employee";
       element.activePage = "inventory/sealed";
       await element.updateComplete;
 
-      const links = element.shadowRoot!.querySelectorAll("a");
+      const links = element.shadowRoot!.querySelectorAll("a.nav-sub-link");
       const sealedLink = Array.from(links).find((a) => a.getAttribute("href") === "/inventory/sealed");
       expect(sealedLink?.hasAttribute("current")).toBe(true);
+    });
+
+    test("highlights Inventory parent link when activePage is inventory/singles", async () => {
+      element.userRole = "employee";
+      element.activePage = "inventory/singles";
+      await element.updateComplete;
+
+      const links = element.shadowRoot!.querySelectorAll("a.nav-link");
+      const inventoryLink = Array.from(links).find((a) => a.textContent?.includes("Inventory"));
+      expect(inventoryLink?.hasAttribute("current")).toBe(true);
     });
   });
 

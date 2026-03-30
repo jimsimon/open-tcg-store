@@ -18,6 +18,16 @@ import type WaSelect from "@awesome.me/webawesome/dist/components/select/select.
 import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import type WaCheckbox from "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import { TypedDocumentString } from "../../graphql/graphql.ts";
+import {
+  productPageStyles,
+  filterBarStyles,
+  productTableStyles,
+  cartControlsStyles,
+  paginationStyles,
+  emptyStateStyles,
+  loadingStateStyles,
+  getQuantityBadgeClass,
+} from "../products/products-shared.ts";
 
 // --- Types ---
 
@@ -102,128 +112,17 @@ export class OgsProductsSealedPage extends LitElement {
     css`
       ${unsafeCSS(utilityStyles)}
     `,
+    productPageStyles,
+    filterBarStyles,
+    productTableStyles,
+    cartControlsStyles,
+    paginationStyles,
+    emptyStateStyles,
+    loadingStateStyles,
     css`
       :host {
         box-sizing: border-box;
-      }
-
-      .filter-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        align-items: flex-end;
-      }
-
-      .filter-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: flex-end;
-      }
-
-      .filter-bar wa-select {
-        min-width: 150px;
-      }
-
-      .search-input {
-        margin-left: auto;
-        min-width: 200px;
-        max-width: 400px;
-        flex: 1;
-      }
-
-      .in-stock-checkbox {
-        display: flex;
-        align-items: center;
-        padding-bottom: 0.25rem;
-      }
-
-      .table-container {
-        overflow-x: auto;
-      }
-
-      .card-thumbnail {
-        width: 60px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--wa-color-text-secondary);
-        font-size: 24px;
-      }
-
-      .wa-table th,
-      .wa-table td {
-        vertical-align: middle;
-      }
-
-      .price-cell {
-        text-align: right;
-        white-space: nowrap;
-      }
-
-      .quantity-cell {
-        text-align: center;
-      }
-
-      .card-name-link {
-        color: var(--wa-color-text-link);
-        text-decoration: none;
-      }
-
-      .card-name-link:hover {
-        text-decoration: underline;
-      }
-
-      .cart-controls {
-        display: flex;
-        flex-direction: row;
-        gap: 0.5rem;
-        align-items: center;
-        justify-content: flex-end;
-      }
-
-      .pagination {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 1rem;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      .pagination-info {
-        color: var(--wa-color-text-secondary);
-        font-size: var(--wa-font-size-s);
-      }
-
-      .pagination-buttons {
-        display: flex;
-        gap: 0.25rem;
-        align-items: center;
-      }
-
-      .pagination-buttons wa-button[data-current] {
-        font-weight: bold;
-        text-decoration: underline;
-      }
-
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        padding: 3rem;
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: var(--wa-color-text-secondary);
-      }
-
-      .out-of-stock {
-        color: var(--wa-color-text-secondary);
-        font-style: italic;
+        display: block;
       }
     `,
   ];
@@ -376,7 +275,7 @@ export class OgsProductsSealedPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
       >
-        ${this.renderFilterBar()}
+        ${this.renderPageHeader()} ${this.renderFilterBar()}
         ${when(
           this.error,
           () => html`
@@ -388,11 +287,27 @@ export class OgsProductsSealedPage extends LitElement {
         )}
         ${when(
           this.loading,
-          () => html`<div class="loading-container"><wa-spinner style="font-size: 2rem;"></wa-spinner></div>`,
+          () => this.renderLoadingState(),
           () => this.renderProductTable(),
         )}
         ${this.renderPagination()}
       </ogs-page>
+    `;
+  }
+
+  // --- Page Header ---
+
+  private renderPageHeader() {
+    return html`
+      <div class="page-header">
+        <div class="page-header-icon">
+          <wa-icon name="box" style="font-size: 1.5rem;"></wa-icon>
+        </div>
+        <div class="page-header-content">
+          <h2>Sealed Products</h2>
+          <p>Browse booster boxes, bundles, and other sealed products</p>
+        </div>
+      </div>
     `;
   }
 
@@ -401,27 +316,41 @@ export class OgsProductsSealedPage extends LitElement {
   private renderFilterBar() {
     return html`
       <div class="filter-bar">
-        <div class="filter-group">
-          <wa-select placeholder="Game" value="${this.gameFilter}" @change="${this.handleGameFilterChange}" clearable>
-            <wa-option value="">All Games</wa-option>
-            <wa-option value="magic">Magic</wa-option>
-            <wa-option value="pokemon">Pokemon</wa-option>
-          </wa-select>
-          <div class="in-stock-checkbox">
-            <wa-checkbox ?checked="${this.inStockOnly}" @change="${this.handleInStockOnlyChange}">
-              In Stock Only
-            </wa-checkbox>
-          </div>
-        </div>
         <wa-input
-          class="search-input"
           placeholder="Search products..."
-          value="${this.searchTerm}"
+          .value="${this.searchTerm}"
           @input="${this.handleSearchInput}"
           clearable
         >
-          <wa-icon slot="prefix" name="search"></wa-icon>
+          <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
         </wa-input>
+        <wa-select placeholder="Game" .value="${this.gameFilter}" @change="${this.handleGameFilterChange}" clearable>
+          <wa-option value="">All Games</wa-option>
+          <wa-option value="magic">Magic</wa-option>
+          <wa-option value="pokemon">Pokemon</wa-option>
+        </wa-select>
+        <label
+          class="in-stock-toggle ${this.inStockOnly ? "active" : ""}"
+          @click="${() => {
+            const checkbox = this.shadowRoot?.querySelector("wa-checkbox") as WaCheckbox | null;
+            if (checkbox) checkbox.checked = !checkbox.checked;
+            this.handleInStockOnlyChange({ target: checkbox } as unknown as Event);
+          }}"
+        >
+          <wa-checkbox ?checked="${this.inStockOnly}" @change="${this.handleInStockOnlyChange}"></wa-checkbox>
+          <span>In Stock Only</span>
+        </label>
+      </div>
+    `;
+  }
+
+  // --- Loading State ---
+
+  private renderLoadingState() {
+    return html`
+      <div class="loading-container">
+        <wa-spinner></wa-spinner>
+        <span class="loading-text">Loading products...</span>
       </div>
     `;
   }
@@ -432,7 +361,9 @@ export class OgsProductsSealedPage extends LitElement {
     if (this.products.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
-          <wa-icon name="box-open" style="font-size: 3rem; margin-bottom: 1rem;"></wa-icon>
+          <div class="empty-state-icon">
+            <wa-icon name="box" style="font-size: 2rem;"></wa-icon>
+          </div>
           <h3>No sealed products found</h3>
           <p>Try adjusting your filters or uncheck "In Stock Only" to see all products.</p>
         </div>
@@ -440,73 +371,75 @@ export class OgsProductsSealedPage extends LitElement {
     }
 
     return html`
-      <wa-card appearance="outline">
-        <div class="table-container">
-          <table class="wa-table wa-zebra-rows wa-hover-rows">
-            <thead>
-              <tr>
-                <th class="wa-visually-hidden">Thumbnail</th>
-                <th>Name</th>
-                <th>Game</th>
-                <th>Set</th>
-                <th class="quantity-cell">Qty</th>
-                <th class="price-cell">Price</th>
-                <th class="wa-visually-hidden">Add to Cart</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.products.map(
-                (product) => html`
-                  <tr>
-                    <td>
-                      ${product.images?.small
-                        ? html`<a href="${product.images.large}" target="_blank"
-                            ><img src="${product.images.small}" alt="${product.name}" class="card-thumbnail"
-                          /></a>`
-                        : html`<wa-icon name="box" variant="regular" class="card-thumbnail"></wa-icon>`}
-                    </td>
-                    <td>
-                      <a href="/products/${product.id}" class="card-name-link">
-                        ${product.name.length > 31 ? `${product.name.substring(0, 31)}...` : product.name}
-                      </a>
-                    </td>
-                    <td>${product.gameName}</td>
-                    <td>${product.setName.length > 20 ? `${product.setName.substring(0, 20)}...` : product.setName}</td>
-                    <td class="quantity-cell">
-                      ${product.totalQuantity > 0 ? product.totalQuantity : html`<span class="out-of-stock">0</span>`}
-                    </td>
-                    <td class="price-cell">
-                      ${product.lowestPrice != null
-                        ? html`from $${product.lowestPrice}`
-                        : html`<span class="out-of-stock">—</span>`}
-                    </td>
-                    <td>
-                      ${product.totalQuantity > 0
-                        ? html`
-                            <div class="cart-controls">
-                              <wa-input
-                                type="number"
-                                min="1"
-                                max="${product.totalQuantity}"
-                                value="1"
-                                style="width: 80px;"
-                              >
-                                <span slot="label" class="wa-visually-hidden">Quantity</span>
-                              </wa-input>
-                              <wa-button appearance="filled" size="small">
-                                <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
-                              </wa-button>
-                            </div>
-                          `
-                        : nothing}
-                    </td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
-        </div>
-      </wa-card>
+      <div class="table-container">
+        <table class="wa-table">
+          <thead>
+            <tr>
+              <th class="wa-visually-hidden">Thumbnail</th>
+              <th>Name</th>
+              <th>Game</th>
+              <th>Set</th>
+              <th class="quantity-cell">Qty</th>
+              <th class="price-cell">Price</th>
+              <th class="wa-visually-hidden">Add to Cart</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.products.map(
+              (product) => html`
+                <tr>
+                  <td>
+                    ${product.images?.small
+                      ? html`<a href="${product.images.large}" target="_blank"
+                          ><img src="${product.images.small}" alt="${product.name}" class="card-thumbnail"
+                        /></a>`
+                      : html`<div class="card-thumbnail">
+                          <wa-icon name="box" variant="regular" style="font-size: 1.25rem;"></wa-icon>
+                        </div>`}
+                  </td>
+                  <td class="product-name">
+                    <a href="/products/${product.id}">
+                      ${product.name.length > 31 ? `${product.name.substring(0, 31)}...` : product.name}
+                    </a>
+                  </td>
+                  <td>
+                    <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
+                  </td>
+                  <td class="product-set">
+                    ${product.setName.length > 20 ? `${product.setName.substring(0, 20)}...` : product.setName}
+                  </td>
+                  <td class="quantity-cell">
+                    <span class="quantity-badge ${getQuantityBadgeClass(product.totalQuantity)}">
+                      ${product.totalQuantity > 0 ? product.totalQuantity : "0"}
+                    </span>
+                  </td>
+                  <td class="price-cell">
+                    ${product.lowestPrice != null
+                      ? html`<span class="price-value"
+                          ><span class="price-from">from</span> $${product.lowestPrice}</span
+                        >`
+                      : html`<span class="out-of-stock-text">—</span>`}
+                  </td>
+                  <td>
+                    ${product.totalQuantity > 0
+                      ? html`
+                          <div class="cart-controls">
+                            <wa-input type="number" min="1" max="${product.totalQuantity}" value="1">
+                              <span slot="label" class="wa-visually-hidden">Quantity</span>
+                            </wa-input>
+                            <wa-button appearance="filled" size="small">
+                              <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
+                            </wa-button>
+                          </div>
+                        `
+                      : nothing}
+                  </td>
+                </tr>
+              `,
+            )}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -531,7 +464,10 @@ export class OgsProductsSealedPage extends LitElement {
 
     return html`
       <div class="pagination">
-        <span class="pagination-info">Showing ${start}–${end} of ${this.totalCount}</span>
+        <span class="pagination-info">
+          <wa-icon name="list" style="font-size: 1rem;"></wa-icon>
+          Showing ${start}–${end} of ${this.totalCount}
+        </span>
         <div class="pagination-buttons">
           <wa-button
             size="small"
@@ -539,13 +475,13 @@ export class OgsProductsSealedPage extends LitElement {
             ?disabled="${this.currentPage === 1}"
             @click="${() => this.goToPage(this.currentPage - 1)}"
           >
-            Previous
+            <wa-icon name="chevron-left" style="font-size: 0.875rem;"></wa-icon>
           </wa-button>
           ${pages.map(
             (p) => html`
               <wa-button
                 size="small"
-                variant="${p === this.currentPage ? "brand" : "neutral"}"
+                variant="${p === this.currentPage ? "neutral" : "ghost"}"
                 ?data-current="${p === this.currentPage}"
                 @click="${() => this.goToPage(p)}"
               >
@@ -559,7 +495,7 @@ export class OgsProductsSealedPage extends LitElement {
             ?disabled="${this.currentPage === this.totalPages}"
             @click="${() => this.goToPage(this.currentPage + 1)}"
           >
-            Next
+            <wa-icon name="chevron-right" style="font-size: 0.875rem;"></wa-icon>
           </wa-button>
         </div>
       </div>

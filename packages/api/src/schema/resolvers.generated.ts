@@ -27,6 +27,7 @@ import    { ConditionInventories } from './cards/resolvers/ConditionInventories'
 import    { ConditionInventory } from './cards/resolvers/ConditionInventory';
 import    { InventoryItem } from './inventory/resolvers/InventoryItem';
 import    { InventoryPage } from './inventory/resolvers/InventoryPage';
+import    { ProductConditionPrice } from './cards/resolvers/ProductConditionPrice';
 import    { ProductDetail } from './cards/resolvers/ProductDetail';
 import    { ProductInventoryRecord } from './cards/resolvers/ProductInventoryRecord';
 import    { ProductListing } from './cards/resolvers/ProductListing';
@@ -46,6 +47,7 @@ ConditionInventories: ConditionInventories,
 ConditionInventory: ConditionInventory,
 InventoryItem: InventoryItem,
 InventoryPage: InventoryPage,
+ProductConditionPrice: ProductConditionPrice,
 ProductDetail: ProductDetail,
 ProductInventoryRecord: ProductInventoryRecord,
 ProductListing: ProductListing,

@@ -193,6 +193,13 @@ export type PaginationInput = {
   pageSize?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type ProductConditionPrice = {
+  __typename?: 'ProductConditionPrice';
+  condition: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type ProductDetail = {
   __typename?: 'ProductDetail';
   finishes: Array<Scalars['String']['output']>;
@@ -219,6 +226,7 @@ export type ProductInventoryRecord = {
 
 export type ProductListing = {
   __typename?: 'ProductListing';
+  conditionPrices: Array<ProductConditionPrice>;
   finishes: Array<Scalars['String']['output']>;
   gameName: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -231,6 +239,7 @@ export type ProductListing = {
 };
 
 export type ProductListingFilters = {
+  condition?: InputMaybe<Scalars['String']['input']>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -462,6 +471,7 @@ export type ResolversTypes = {
   InventoryPage: ResolverTypeWrapper<InventoryPage>;
   Mutation: ResolverTypeWrapper<{}>;
   PaginationInput: PaginationInput;
+  ProductConditionPrice: ResolverTypeWrapper<ProductConditionPrice>;
   ProductDetail: ResolverTypeWrapper<ProductDetail>;
   ProductInventoryRecord: ResolverTypeWrapper<ProductInventoryRecord>;
   ProductListing: ResolverTypeWrapper<ProductListing>;
@@ -500,6 +510,7 @@ export type ResolversParentTypes = {
   InventoryPage: InventoryPage;
   Mutation: {};
   PaginationInput: PaginationInput;
+  ProductConditionPrice: ProductConditionPrice;
   ProductDetail: ProductDetail;
   ProductInventoryRecord: ProductInventoryRecord;
   ProductListing: ProductListing;
@@ -604,6 +615,13 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
 };
 
+export type ProductConditionPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice']> = {
+  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ProductDetailResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductDetail'] = ResolversParentTypes['ProductDetail']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   flavorText?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -629,6 +647,7 @@ export type ProductInventoryRecordResolvers<ContextType = any, ParentType extend
 };
 
 export type ProductListingResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductListing'] = ResolversParentTypes['ProductListing']> = {
+  conditionPrices?: Resolver<Array<ResolversTypes['ProductConditionPrice']>, ParentType, ContextType>;
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -705,6 +724,7 @@ export type Resolvers<ContextType = any> = {
   InventoryItem?: InventoryItemResolvers<ContextType>;
   InventoryPage?: InventoryPageResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  ProductConditionPrice?: ProductConditionPriceResolvers<ContextType>;
   ProductDetail?: ProductDetailResolvers<ContextType>;
   ProductInventoryRecord?: ProductInventoryRecordResolvers<ContextType>;
   ProductListing?: ProductListingResolvers<ContextType>;
