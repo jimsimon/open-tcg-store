@@ -1,5 +1,8 @@
 import { GraphqlContext } from "../../../../server";
-import { getOrCreateShoppingCart as getOrCreateCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
+import {
+  getOrCreateShoppingCart as getOrCreateCart,
+  mapToGraphqlShoppingCart,
+} from "../../../../services/shopping-cart-service";
 import type { QueryResolvers } from "./../../../types.generated";
 export const getShoppingCart: NonNullable<QueryResolvers['getShoppingCart']> = async (
   _parent,
@@ -7,5 +10,5 @@ export const getShoppingCart: NonNullable<QueryResolvers['getShoppingCart']> = a
   ctx: GraphqlContext,
 ) => {
   const result = await getOrCreateCart(ctx.auth.user.id);
-  return mapToGraphqlShoppingCart(result)
+  return await mapToGraphqlShoppingCart(result);
 };

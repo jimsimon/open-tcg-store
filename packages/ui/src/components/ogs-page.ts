@@ -20,12 +20,17 @@ if (typeof globalThis.document !== "undefined") {
   import("@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js");
   import("@awesome.me/webawesome/dist/components/dialog/dialog.js");
   import("@awesome.me/webawesome/dist/components/input/input.js");
+  import("@awesome.me/webawesome/dist/components/drawer/drawer.js");
+  import("@awesome.me/webawesome/dist/components/spinner/spinner.js");
+  import("@awesome.me/webawesome/dist/components/callout/callout.js");
 }
 import Cookies from "js-cookie";
 import { graphql } from "../graphql";
 import { execute } from "../lib/graphql";
+import { TypedDocumentString } from "../graphql/graphql";
 import logoSvg from "../assets/logo.svg?raw";
 import { cartState } from "../lib/cart-state";
+import type { CartItem } from "../lib/cart-state";
 
 // Lazy-load authClient to avoid potential SSR issues
 let _authClient: typeof import("../auth-client").authClient | undefined;
@@ -36,6 +41,83 @@ async function getAuthClient() {
   }
   return _authClient;
 }
+
+// --- GraphQL Mutations for Cart ---
+
+const UpdateItemInCartMutation = new TypedDocumentString(`
+  mutation UpdateItemInCart($cartItem: CartItemInput!) {
+    updateItemInCart(cartItem: $cartItem) {
+      items {
+        inventoryItemId
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        maxAvailable
+      }
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { updateItemInCart: { items: CartItem[] } },
+  { cartItem: { inventoryItemId: number; quantity: number } }
+>;
+
+const RemoveFromCartMutation = new TypedDocumentString(`
+  mutation RemoveFromCart($cartItem: CartItemInput!) {
+    removeFromCart(cartItem: $cartItem) {
+      items {
+        inventoryItemId
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        maxAvailable
+      }
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { removeFromCart: { items: CartItem[] } },
+  { cartItem: { inventoryItemId: number; quantity: number } }
+>;
+
+const SubmitOrderMutation = new TypedDocumentString(`
+  mutation SubmitOrder($input: SubmitOrderInput!) {
+    submitOrder(input: $input) {
+      order {
+        id
+        orderNumber
+        customerName
+        totalAmount
+        createdAt
+      }
+      error
+      insufficientItems {
+        productId
+        productName
+        condition
+        requested
+        available
+      }
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    submitOrder: {
+      order?: { id: number; orderNumber: string; customerName: string; totalAmount: number; createdAt: string };
+      error?: string;
+      insufficientItems?: {
+        productId: number;
+        productName: string;
+        condition: string;
+        requested: number;
+        available: number;
+      }[];
+    };
+  },
+  { input: { customerName: string } }
+>;
 
 @customElement("ogs-page")
 export class OgsPage extends SignalWatcher(LitElement) {
@@ -247,6 +329,104 @@ export class OgsPage extends SignalWatcher(LitElement) {
         font-size: var(--wa-font-size-s);
         color: var(--wa-color-text-normal);
       }
+
+      /* Cart Drawer Styles */
+      .cart-items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-m);
+      }
+
+      .cart-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-xs);
+        padding: var(--wa-space-s);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-surface-sunken);
+      }
+
+      .cart-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--wa-space-xs);
+      }
+
+      .cart-item-name {
+        font-weight: 600;
+        font-size: var(--wa-font-size-s);
+        flex: 1;
+        word-break: break-word;
+      }
+
+      .cart-item-condition {
+        font-size: var(--wa-font-size-2xs);
+        color: var(--wa-color-text-muted);
+      }
+
+      .cart-item-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--wa-space-xs);
+      }
+
+      .cart-item-qty {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-2xs);
+      }
+
+      .cart-item-price {
+        font-weight: 600;
+        font-size: var(--wa-font-size-s);
+        white-space: nowrap;
+      }
+
+      .cart-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--wa-space-s) 0;
+        border-top: 2px solid var(--wa-color-surface-border);
+        margin-top: var(--wa-space-s);
+        font-weight: 700;
+        font-size: var(--wa-font-size-m);
+      }
+
+      .cart-empty {
+        text-align: center;
+        padding: var(--wa-space-xl) var(--wa-space-m);
+        color: var(--wa-color-text-muted);
+      }
+
+      .cart-empty wa-icon {
+        font-size: 3rem;
+        margin-bottom: var(--wa-space-s);
+        opacity: 0.4;
+      }
+
+      .cart-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wa-space-m);
+        margin-top: var(--wa-space-m);
+        padding-top: var(--wa-space-m);
+        border-top: 1px solid var(--wa-color-surface-border);
+      }
+
+      .cart-success {
+        text-align: center;
+        padding: var(--wa-space-l);
+      }
+
+      .cart-success wa-icon {
+        font-size: 3rem;
+        color: var(--wa-color-success-text);
+        margin-bottom: var(--wa-space-s);
+      }
     `,
   ];
 
@@ -261,6 +441,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
   @property({ type: Boolean })
   isAnonymous = false;
+
+  @property({ type: Boolean })
+  showCartButton = false;
+
+  @property({ type: Boolean })
+  showUserMenu = false;
 
   @property({ type: String })
   userName = "";
@@ -295,6 +481,25 @@ export class OgsPage extends SignalWatcher(LitElement) {
   @state()
   authLoading = false;
 
+  // Cart drawer state
+  @state()
+  showCartDrawer = false;
+
+  @state()
+  customerName = "";
+
+  @state()
+  submittingOrder = false;
+
+  @state()
+  orderError = "";
+
+  @state()
+  orderSuccess = "";
+
+  @state()
+  updatingCartItem = false;
+
   private lastScrollY = 0;
   private scrollThreshold = 10;
   private boundHandleScroll = this.handleScroll.bind(this);
@@ -319,10 +524,13 @@ export class OgsPage extends SignalWatcher(LitElement) {
       query GetShoppingCartQuery {
         getShoppingCart {
           items {
+            inventoryItemId
             quantity
             productId
             productName
             condition
+            unitPrice
+            maxAvailable
           }
         }
       }
@@ -397,12 +605,16 @@ export class OgsPage extends SignalWatcher(LitElement) {
               System
             </wa-option>
           </wa-select>
-          <wa-button appearance="filled" aria-label="Shopping cart">
-            <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
-            <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
-          </wa-button>
-          <wa-divider orientation="vertical"></wa-divider>
-          ${this.renderUserMenu()}
+          ${this.showCartButton
+            ? html`
+                <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
+                  <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
+                  <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
+                </wa-button>
+                <wa-divider orientation="vertical"></wa-divider>
+              `
+            : nothing}
+          ${this.showUserMenu ? this.renderUserMenu() : nothing}
         </div>
       </header>
       <div id="page">
@@ -435,9 +647,262 @@ export class OgsPage extends SignalWatcher(LitElement) {
           <slot></slot>
         </section>
       </div>
-      ${this.renderAuthDialog()}
+      ${this.renderAuthDialog()} ${this.renderCartDrawer()}
     `;
   }
+
+  // --- Cart Drawer ---
+
+  private openCartDrawer() {
+    this.orderError = "";
+    this.orderSuccess = "";
+    this.showCartDrawer = true;
+  }
+
+  private closeCartDrawer() {
+    this.showCartDrawer = false;
+  }
+
+  private renderCartDrawer() {
+    const cart = cartState.get();
+    const cartTotal = cart.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const hasItems = cart.items.length > 0;
+
+    return html`
+      <wa-drawer
+        label="Shopping Cart"
+        placement="end"
+        ?open="${this.showCartDrawer}"
+        @wa-after-hide="${this.closeCartDrawer}"
+      >
+        ${this.orderSuccess
+          ? this.renderOrderSuccess()
+          : html`
+              ${hasItems
+                ? html`
+                    <div class="cart-items">${cart.items.map((item) => this.renderCartItem(item))}</div>
+                    <div class="cart-total">
+                      <span>Total</span>
+                      <span>$${cartTotal.toFixed(2)}</span>
+                    </div>
+                    <div class="cart-form">
+                      <wa-input
+                        label="Customer Name"
+                        placeholder="Enter customer name"
+                        required
+                        .value="${this.customerName}"
+                        @input="${this.handleCustomerNameInput}"
+                      >
+                        <wa-icon slot="start" name="user"></wa-icon>
+                      </wa-input>
+                      ${this.orderError
+                        ? html`<wa-callout variant="danger">
+                            <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                            ${this.orderError}
+                          </wa-callout>`
+                        : nothing}
+                    </div>
+                  `
+                : html`
+                    <div class="cart-empty">
+                      <wa-icon name="shopping-cart"></wa-icon>
+                      <p>Your cart is empty</p>
+                      <p style="font-size: var(--wa-font-size-s);">Browse products to add items to your cart.</p>
+                    </div>
+                  `}
+            `}
+        ${when(
+          hasItems && !this.orderSuccess,
+          () => html`
+            <wa-button
+              slot="footer"
+              variant="brand"
+              style="width: 100%;"
+              ?loading="${this.submittingOrder}"
+              ?disabled="${!this.customerName.trim() || this.updatingCartItem}"
+              @click="${this.handleSubmitOrder}"
+            >
+              <wa-icon slot="prefix" name="check"></wa-icon>
+              Submit Order
+            </wa-button>
+          `,
+        )}
+      </wa-drawer>
+    `;
+  }
+
+  private renderCartItem(item: CartItem) {
+    const lineTotal = item.unitPrice * item.quantity;
+    return html`
+      <div class="cart-item">
+        <div class="cart-item-header">
+          <div>
+            <div class="cart-item-name">${item.productName}</div>
+            <div class="cart-item-condition">${item.condition} · $${item.unitPrice.toFixed(2)} each</div>
+          </div>
+          <wa-button
+            size="small"
+            variant="danger"
+            appearance="plain"
+            aria-label="Remove ${item.productName}"
+            ?disabled="${this.updatingCartItem}"
+            @click="${() => this.handleRemoveFromCart(item)}"
+          >
+            <wa-icon name="trash"></wa-icon>
+          </wa-button>
+        </div>
+        <div class="cart-item-controls">
+          <div class="cart-item-qty">
+            <wa-button
+              size="small"
+              appearance="outlined"
+              ?disabled="${item.quantity <= 1 || this.updatingCartItem}"
+              @click="${() => this.handleUpdateQuantity(item, item.quantity - 1)}"
+            >
+              <wa-icon name="minus"></wa-icon>
+            </wa-button>
+            <wa-input
+              type="number"
+              min="1"
+              max="${item.maxAvailable}"
+              .value="${String(item.quantity)}"
+              style="width: 70px; text-align: center;"
+              ?disabled="${this.updatingCartItem}"
+              @change="${(e: Event) => {
+                const val = Number.parseInt((e.target as HTMLInputElement).value, 10);
+                if (val > 0 && val <= item.maxAvailable) {
+                  this.handleUpdateQuantity(item, val);
+                }
+              }}"
+            >
+              <span slot="label" class="wa-visually-hidden">Quantity</span>
+            </wa-input>
+            <wa-button
+              size="small"
+              appearance="outlined"
+              ?disabled="${item.quantity >= item.maxAvailable || this.updatingCartItem}"
+              @click="${() => this.handleUpdateQuantity(item, item.quantity + 1)}"
+            >
+              <wa-icon name="plus"></wa-icon>
+            </wa-button>
+            <span style="font-size: var(--wa-font-size-2xs); color: var(--wa-color-text-muted);">
+              of ${item.maxAvailable}
+            </span>
+          </div>
+          <div class="cart-item-price">$${lineTotal.toFixed(2)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderOrderSuccess() {
+    return html`
+      <div class="cart-success">
+        <wa-icon name="circle-check"></wa-icon>
+        <h3 style="margin: 0 0 var(--wa-space-xs) 0;">Order Submitted!</h3>
+        <p style="color: var(--wa-color-text-muted); margin: 0;">${this.orderSuccess}</p>
+        <wa-button
+          variant="brand"
+          style="margin-top: var(--wa-space-l);"
+          @click="${() => {
+            this.orderSuccess = "";
+            this.closeCartDrawer();
+          }}"
+        >
+          Close
+        </wa-button>
+      </div>
+    `;
+  }
+
+  private handleCustomerNameInput(event: Event) {
+    this.customerName = (event.target as HTMLInputElement).value;
+  }
+
+  private async handleUpdateQuantity(item: CartItem, newQuantity: number) {
+    if (this.updatingCartItem) return;
+    this.updatingCartItem = true;
+
+    try {
+      const result = await execute(UpdateItemInCartMutation, {
+        cartItem: { inventoryItemId: item.inventoryItemId, quantity: newQuantity },
+      });
+
+      if (result?.errors?.length) {
+        console.error("Failed to update cart item:", result.errors);
+      } else {
+        cartState.set(result.data.updateItemInCart);
+      }
+    } catch (e) {
+      console.error("Failed to update cart item:", e);
+    } finally {
+      this.updatingCartItem = false;
+    }
+  }
+
+  private async handleRemoveFromCart(item: CartItem) {
+    if (this.updatingCartItem) return;
+    this.updatingCartItem = true;
+
+    try {
+      const result = await execute(RemoveFromCartMutation, {
+        cartItem: { inventoryItemId: item.inventoryItemId, quantity: item.quantity },
+      });
+
+      if (result?.errors?.length) {
+        console.error("Failed to remove cart item:", result.errors);
+      } else {
+        cartState.set(result.data.removeFromCart);
+      }
+    } catch (e) {
+      console.error("Failed to remove cart item:", e);
+    } finally {
+      this.updatingCartItem = false;
+    }
+  }
+
+  private async handleSubmitOrder() {
+    if (this.submittingOrder || !this.customerName.trim()) return;
+    this.submittingOrder = true;
+    this.orderError = "";
+
+    try {
+      const result = await execute(SubmitOrderMutation, {
+        input: { customerName: this.customerName.trim() },
+      });
+
+      if (result?.errors?.length) {
+        this.orderError = result.errors.map((e: { message: string }) => e.message).join(", ");
+      } else {
+        const data = result.data.submitOrder;
+        if (data.error) {
+          if (data.insufficientItems && data.insufficientItems.length > 0) {
+            const details = data.insufficientItems
+              .map(
+                (i: { productName: string; condition: string; requested: number; available: number }) =>
+                  `${i.productName} (${i.condition}): requested ${i.requested}, only ${i.available} available`,
+              )
+              .join("; ");
+            this.orderError = `${data.error}: ${details}`;
+          } else {
+            this.orderError = data.error;
+          }
+          // Refresh cart to get updated maxAvailable values
+          await this.fetchCart();
+        } else if (data.order) {
+          this.orderSuccess = `Order ${data.order.orderNumber} created for $${data.order.totalAmount.toFixed(2)}`;
+          cartState.set({ items: [] });
+          this.customerName = "";
+        }
+      }
+    } catch (e) {
+      this.orderError = e instanceof Error ? e.message : "Failed to submit order";
+    } finally {
+      this.submittingOrder = false;
+    }
+  }
+
+  // --- User Menu ---
 
   private renderUserMenu() {
     if (this.isAnonymous || !this.userName) {

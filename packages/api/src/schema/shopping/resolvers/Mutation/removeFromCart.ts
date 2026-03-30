@@ -9,14 +9,16 @@ export const removeFromCart: NonNullable<MutationResolvers['removeFromCart']> = 
   ctx: GraphqlContext,
 ) => {
   const cart = await getOrCreateShoppingCart(ctx.auth.user.id);
-  const productIds = cart.cartItems.reduce<number[]>((list, ci) => {
-    if (ci.product.id === arg.cartItem.productId) {
+  const itemIds = cart.cartItems.reduce<number[]>((list, ci) => {
+    if (ci.inventoryItemId === arg.cartItem.inventoryItemId) {
       list.push(ci.id);
     }
     return list;
   }, []);
-  await otcgs.delete(cartItem).where(inArray(cartItem.id, productIds));
+  if (itemIds.length > 0) {
+    await otcgs.delete(cartItem).where(inArray(cartItem.id, itemIds));
+  }
 
   const updatedCart = await getOrCreateShoppingCart(ctx.auth.user.id);
-  return mapToGraphqlShoppingCart(updatedCart);
+  return await mapToGraphqlShoppingCart(updatedCart);
 };

@@ -13,17 +13,15 @@ export const addToCart: NonNullable<MutationResolvers['addToCart']> = async (_pa
   });
 
   if (result?.id) {
-    const condition = arg.cartItem.condition ?? "NM";
     await otcgs
       .insert(cartItem)
       .values({
         cartId: result.id,
-        productId: arg.cartItem.productId,
-        condition,
+        inventoryItemId: arg.cartItem.inventoryItemId,
         quantity: arg.cartItem.quantity,
       })
       .onConflictDoUpdate({
-        target: [cartItem.cartId, cartItem.productId, cartItem.condition],
+        target: [cartItem.cartId, cartItem.inventoryItemId],
         set: { quantity: sql`${cartItem.quantity} + ${arg.cartItem.quantity}` },
       });
   } else {
@@ -31,5 +29,5 @@ export const addToCart: NonNullable<MutationResolvers['addToCart']> = async (_pa
   }
 
   const cartResult = await getOrCreateShoppingCart(ctx.auth.user.id);
-  return mapToGraphqlShoppingCart(cartResult);
+  return await mapToGraphqlShoppingCart(cartResult);
 };

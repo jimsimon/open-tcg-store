@@ -1,14 +1,14 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, foreignKey, index, unique } from "drizzle-orm/sqlite-core";
 import { user } from "./auth-schema";
+import { inventoryItem } from "./inventory-schema";
 
 export const cartItem = sqliteTable(
   "cartItem",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     cartId: integer("cart_id").notNull(),
-    productId: integer("product_id").notNull(),
-    condition: text("condition").notNull().default("NM"),
+    inventoryItemId: integer("inventory_item_id").notNull(),
     quantity: integer("quantity").notNull(),
   },
   (table) => [
@@ -17,9 +17,14 @@ export const cartItem = sqliteTable(
       foreignColumns: [cart.id],
       name: "cart_item_cart_id_fkey",
     }),
-    unique("cart_item_product_condition_uniq").on(table.cartId, table.productId, table.condition),
+    foreignKey({
+      columns: [table.inventoryItemId],
+      foreignColumns: [inventoryItem.id],
+      name: "cart_item_inventory_item_id_fkey",
+    }),
+    unique("cart_item_inventory_item_uniq").on(table.cartId, table.inventoryItemId),
     index("cart_item_id_idx").on(table.id),
-    index("cart_item_product_id_idx").on(table.productId),
+    index("cart_item_inventory_item_id_idx").on(table.inventoryItemId),
   ],
 );
 

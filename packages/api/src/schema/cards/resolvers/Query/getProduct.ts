@@ -60,6 +60,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
   // Fetch actual inventory records for this product
   const inventoryRecords = await otcgs
     .select({
+      id: inventoryItem.id,
       condition: inventoryItem.condition,
       quantity: inventoryItem.quantity,
       price: inventoryItem.price,
@@ -92,6 +93,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
       large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
     },
     inventoryRecords: inventoryRecords.map((r) => ({
+      inventoryItemId: r.id,
       condition: r.condition,
       quantity: r.quantity,
       price: r.price,

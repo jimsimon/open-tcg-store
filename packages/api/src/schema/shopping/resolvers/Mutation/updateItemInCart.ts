@@ -9,11 +9,11 @@ export const updateItemInCart: NonNullable<MutationResolvers['updateItemInCart']
   ctx: GraphqlContext,
 ) => {
   const cart = await getOrCreateShoppingCart(ctx.auth.user.id);
-  const item = cart.cartItems.find((ci) => ci.product.id === _arg.cartItem.productId);
+  const item = cart.cartItems.find((ci) => ci.inventoryItemId === _arg.cartItem.inventoryItemId);
   if (item) {
     await otcgs.update(cartItem).set({ quantity: _arg.cartItem.quantity }).where(eq(cartItem.id, item.id));
     item.quantity = _arg.cartItem.quantity;
   }
 
-  return mapToGraphqlShoppingCart(cart);
+  return await mapToGraphqlShoppingCart(cart);
 };

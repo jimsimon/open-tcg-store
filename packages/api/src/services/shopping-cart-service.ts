@@ -7,14 +7,25 @@ export async function getOrCreateShoppingCart(userId: string) {
       cartItems: {
         columns: {
           id: true,
-          condition: true,
+          inventoryItemId: true,
           quantity: true,
         },
         with: {
-          product: {
+          inventoryItem: {
             columns: {
               id: true,
-              name: true,
+              productId: true,
+              condition: true,
+              quantity: true,
+              price: true,
+            },
+            with: {
+              product: {
+                columns: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -40,18 +51,22 @@ export async function getOrCreateShoppingCart(userId: string) {
   }
 }
 
-export function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof getOrCreateShoppingCart>>) {
-  return {
-    items: cart.cartItems.reduce<CartItemOutput[]>((list, ci) => {
-      if (ci.product) {
-        list.push({
-          productId: ci.product.id,
-          productName: ci.product.name,
-          condition: ci.condition,
-          quantity: ci.quantity,
-        });
-      }
-      return list;
-    }, []),
-  };
+export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof getOrCreateShoppingCart>>) {
+  // Map cart items through inventoryItem join to get display data
+  const cartItemsWithInventory = cart.cartItems.filter((ci) => ci.inventoryItem?.product);
+
+  const items: CartItemOutput[] = cartItemsWithInventory.map((ci) => {
+    const inv = ci.inventoryItem;
+    return {
+      inventoryItemId: ci.inventoryItemId,
+      productId: inv.product.id,
+      productName: inv.product.name,
+      condition: inv.condition,
+      quantity: ci.quantity,
+      unitPrice: inv.price,
+      maxAvailable: inv.quantity,
+    };
+  });
+
+  return { items };
 }

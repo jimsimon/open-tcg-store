@@ -20,6 +20,7 @@ import { cartState } from "../../lib/cart-state.ts";
 // --- Types ---
 
 interface ProductInventoryRecord {
+  inventoryItemId: number;
   condition: string;
   quantity: number;
   price: number;
@@ -47,16 +48,31 @@ const AddToCartMutation = new TypedDocumentString(`
   mutation AddToCart($cartItem: CartItemInput!) {
     addToCart(cartItem: $cartItem) {
       items {
+        inventoryItemId
         productId
         productName
         condition
         quantity
+        unitPrice
+        maxAvailable
       }
     }
   }
 `) as unknown as TypedDocumentString<
-  { addToCart: { items: { productId: number; productName: string; condition: string; quantity: number }[] } },
-  { cartItem: { productId: number; condition?: string; quantity: number } }
+  {
+    addToCart: {
+      items: {
+        inventoryItemId: number;
+        productId: number;
+        productName: string;
+        condition: string;
+        quantity: number;
+        unitPrice: number;
+        maxAvailable: number;
+      }[];
+    };
+  },
+  { cartItem: { inventoryItemId: number; quantity: number } }
 >;
 
 const GetProductQuery = new TypedDocumentString(`
@@ -78,6 +94,7 @@ const GetProductQuery = new TypedDocumentString(`
         large
       }
       inventoryRecords {
+        inventoryItemId
         condition
         quantity
         price
@@ -219,7 +236,7 @@ export class ProductDetailsPage extends LitElement {
     }
   }
 
-  private async handleAddToCart(productId: string, condition: string | undefined, button: EventTarget | null) {
+  private async handleAddToCart(inventoryItemId: number, button: EventTarget | null) {
     if (this.addingToCart) return;
     this.addingToCart = true;
     this.cartMessage = "";
@@ -233,7 +250,7 @@ export class ProductDetailsPage extends LitElement {
 
     try {
       const result = await execute(AddToCartMutation, {
-        cartItem: { productId: Number(productId), condition, quantity },
+        cartItem: { inventoryItemId, quantity },
       });
 
       if (result?.errors?.length) {
@@ -256,6 +273,7 @@ export class ProductDetailsPage extends LitElement {
     return html`
       <ogs-page
         activePage="products"
+        ?showCartButton="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
@@ -386,7 +404,7 @@ export class ProductDetailsPage extends LitElement {
                 <wa-button
                   appearance="filled"
                   ?disabled="${this.addingToCart}"
-                  @click="${(e: Event) => this.handleAddToCart(this.product!.id, undefined, e.currentTarget)}"
+                  @click="${(e: Event) => this.handleAddToCart(p.inventoryRecords[0].inventoryItemId, e.currentTarget)}"
                 >
                   <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                   ${this.addingToCart ? "Adding..." : "Add to Cart"}
@@ -423,15 +441,22 @@ export class ProductDetailsPage extends LitElement {
   // --- Singles Pricing: grouped by condition ---
 
   private renderSinglePricing(records: ProductInventoryRecord[]) {
-    // Group records by condition
-    const conditionMap = new Map<string, { totalQuantity: number; lowestPrice: number }>();
+    // Group records by condition, tracking the inventoryItemId of the lowest-priced record
+    const conditionMap = new Map<string, { totalQuantity: number; lowestPrice: number; inventoryItemId: number }>();
     for (const r of records) {
       const existing = conditionMap.get(r.condition);
       if (existing) {
         existing.totalQuantity += r.quantity;
-        existing.lowestPrice = Math.min(existing.lowestPrice, r.price);
+        if (r.price < existing.lowestPrice) {
+          existing.lowestPrice = r.price;
+          existing.inventoryItemId = r.inventoryItemId;
+        }
       } else {
-        conditionMap.set(r.condition, { totalQuantity: r.quantity, lowestPrice: r.price });
+        conditionMap.set(r.condition, {
+          totalQuantity: r.quantity,
+          lowestPrice: r.price,
+          inventoryItemId: r.inventoryItemId,
+        });
       }
     }
 
@@ -485,8 +510,7 @@ export class ProductDetailsPage extends LitElement {
                               <wa-button
                                 appearance="filled"
                                 ?disabled="${this.addingToCart}"
-                                @click="${(e: Event) =>
-                                  this.handleAddToCart(this.product!.id, condition, e.currentTarget)}"
+                                @click="${(e: Event) => this.handleAddToCart(data.inventoryItemId, e.currentTarget)}"
                               >
                                 <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                               </wa-button>
@@ -533,8 +557,7 @@ export class ProductDetailsPage extends LitElement {
                             <wa-button
                               appearance="filled"
                               ?disabled="${this.addingToCart}"
-                              @click="${(e: Event) =>
-                                this.handleAddToCart(this.product!.id, record.condition, e.currentTarget)}"
+                              @click="${(e: Event) => this.handleAddToCart(record.inventoryItemId, e.currentTarget)}"
                             >
                               <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                             </wa-button>

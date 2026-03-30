@@ -201,6 +201,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
   }
 
   // Fetch per-condition pricing for all product IDs
+  // We need the inventory item with the lowest price per product+condition for the inventoryItemId
   const conditionPricesRaw =
     productIds.length > 0
       ? await otcgs
@@ -220,11 +221,45 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
           .groupBy(inventoryItem.productId, inventoryItem.condition)
       : [];
 
+  // Also fetch the specific inventory item ID with the lowest price per product+condition
+  const inventoryItemIdsRaw =
+    productIds.length > 0
+      ? await otcgs
+          .select({
+            id: inventoryItem.id,
+            productId: inventoryItem.productId,
+            condition: inventoryItem.condition,
+            price: inventoryItem.price,
+          })
+          .from(inventoryItem)
+          .where(
+            sql`${inventoryItem.productId} IN (${sql.join(
+              productIds.map((id) => sql`${id}`),
+              sql`, `,
+            )}) AND ${inventoryItem.quantity} > 0`,
+          )
+          .orderBy(inventoryItem.price)
+      : [];
+
+  // Build a map: productId+condition -> lowest-priced inventoryItemId
+  const lowestPriceItemMap = new Map<string, number>();
+  for (const row of inventoryItemIdsRaw) {
+    const key = `${row.productId}:${row.condition}`;
+    if (!lowestPriceItemMap.has(key)) {
+      lowestPriceItemMap.set(key, row.id);
+    }
+  }
+
   // Build condition prices lookup: productId -> conditionPrices[]
-  const conditionPricesMap = new Map<number, { condition: string; quantity: number; price: number }[]>();
+  const conditionPricesMap = new Map<
+    number,
+    { inventoryItemId: number; condition: string; quantity: number; price: number }[]
+  >();
   for (const row of conditionPricesRaw) {
     const arr = conditionPricesMap.get(row.productId) ?? [];
-    arr.push({ condition: row.condition, quantity: row.quantity, price: row.price });
+    const key = `${row.productId}:${row.condition}`;
+    const inventoryItemId = lowestPriceItemMap.get(key) ?? 0;
+    arr.push({ inventoryItemId, condition: row.condition, quantity: row.quantity, price: row.price });
     conditionPricesMap.set(row.productId, arr);
   }
 
@@ -255,6 +290,13 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       .filter((cp) => cp.quantity > 0)
       .sort((a, b) => conditionOrder.indexOf(a.condition) - conditionOrder.indexOf(b.condition));
 
+    // Get the inventoryItemId for the overall lowest-priced item (for sealed products)
+    const allConditionItems = conditionPricesMap.get(r.id) ?? [];
+    const lowestPriceItem =
+      allConditionItems.length > 0
+        ? allConditionItems.reduce((min, cp) => (cp.price < min.price ? cp : min), allConditionItems[0])
+        : null;
+
     return {
       id: r.id.toString(),
       name: r.name,
@@ -268,6 +310,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       },
       totalQuantity: r.totalQuantity,
       lowestPrice,
+      lowestPriceInventoryItemId: lowestPriceItem?.inventoryItemId ?? null,
       conditionPrices,
     };
   });

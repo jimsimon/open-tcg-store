@@ -7,6 +7,7 @@ import * as tcgDataSchema from "../tcg-data/schema";
 import * as tcgDataRelations from "../tcg-data/relations";
 import * as shoppingRelations from "./shopping-relations";
 import * as inventoryRelations from "./inventory-relations";
+import * as orderRelations from "./order-relations";
 export * from "./schema";
 
 const client = createClient({ url: databaseFile });
@@ -21,6 +22,7 @@ const otcgs = drizzle(client, {
     ...tcgDataRelations,
     ...shoppingRelations,
     ...inventoryRelations,
+    ...orderRelations,
   },
 });
 

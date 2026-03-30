@@ -56,10 +56,12 @@ type ProductListing {
   images: CardImages
   totalQuantity: Int!
   lowestPrice: String
+  lowestPriceInventoryItemId: Int
   conditionPrices: [ProductConditionPrice!]!
 }
 
 type ProductConditionPrice {
+  inventoryItemId: Int!
   condition: String!
   quantity: Int!
   price: Float!
@@ -105,6 +107,7 @@ type ProductDetail {
 }
 
 type ProductInventoryRecord {
+  inventoryItemId: Int!
   condition: String!
   quantity: Int!
   price: Float!

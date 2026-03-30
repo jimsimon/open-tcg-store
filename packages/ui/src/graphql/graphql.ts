@@ -40,6 +40,12 @@ export type BulkUpdateInventoryInput = {
   quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type CancelOrderResult = {
+  __typename?: 'CancelOrderResult';
+  error?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
+};
+
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
@@ -61,17 +67,19 @@ export type CardImages = {
 };
 
 export type CartItemInput = {
-  condition?: InputMaybe<Scalars['String']['input']>;
-  productId: Scalars['Float']['input'];
+  inventoryItemId: Scalars['Int']['input'];
   quantity: Scalars['Int']['input'];
 };
 
 export type CartItemOutput = {
   __typename?: 'CartItemOutput';
   condition: Scalars['String']['output'];
+  inventoryItemId: Scalars['Int']['output'];
+  maxAvailable: Scalars['Int']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+  unitPrice: Scalars['Float']['output'];
 };
 
 export type ConditionInventories = {
@@ -88,6 +96,15 @@ export type ConditionInventory = {
   __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+};
+
+export type InsufficientItem = {
+  __typename?: 'InsufficientItem';
+  available: Scalars['Int']['output'];
+  condition: Scalars['String']['output'];
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  requested: Scalars['Int']['output'];
 };
 
 export type InventoryFilters = {
@@ -135,13 +152,16 @@ export type Mutation = {
   addToCart: ShoppingCart;
   bulkDeleteInventory: Scalars['Boolean']['output'];
   bulkUpdateInventory: Array<InventoryItem>;
+  cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
   deleteInventoryItem: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
+  submitOrder: SubmitOrderResult;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
+  updateOrderStatus: UpdateOrderStatusResult;
 };
 
 
@@ -165,6 +185,11 @@ export type MutationBulkUpdateInventoryArgs = {
 };
 
 
+export type MutationCancelOrderArgs = {
+  orderId: Scalars['Int']['input'];
+};
+
+
 export type MutationDeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
@@ -181,6 +206,11 @@ export type MutationRemoveFromCartArgs = {
 };
 
 
+export type MutationSubmitOrderArgs = {
+  input: SubmitOrderInput;
+};
+
+
 export type MutationUpdateInventoryItemArgs = {
   input: UpdateInventoryItemInput;
 };
@@ -188,6 +218,46 @@ export type MutationUpdateInventoryItemArgs = {
 
 export type MutationUpdateItemInCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationUpdateOrderStatusArgs = {
+  orderId: Scalars['Int']['input'];
+  status: Scalars['String']['input'];
+};
+
+export type Order = {
+  __typename?: 'Order';
+  createdAt: Scalars['String']['output'];
+  customerName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  items: Array<OrderItem>;
+  orderNumber: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  totalAmount: Scalars['Float']['output'];
+  totalCostBasis?: Maybe<Scalars['Float']['output']>;
+  totalProfit?: Maybe<Scalars['Float']['output']>;
+};
+
+export type OrderItem = {
+  __typename?: 'OrderItem';
+  condition: Scalars['String']['output'];
+  costBasis?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['Int']['output'];
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  profit?: Maybe<Scalars['Float']['output']>;
+  quantity: Scalars['Int']['output'];
+  unitPrice: Scalars['Float']['output'];
+};
+
+export type OrderPage = {
+  __typename?: 'OrderPage';
+  orders: Array<Order>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type PaginationInput = {
@@ -198,6 +268,7 @@ export type PaginationInput = {
 export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
   condition: Scalars['String']['output'];
+  inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Float']['output'];
   quantity: Scalars['Int']['output'];
 };
@@ -222,6 +293,7 @@ export type ProductDetail = {
 export type ProductInventoryRecord = {
   __typename?: 'ProductInventoryRecord';
   condition: Scalars['String']['output'];
+  inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Float']['output'];
   quantity: Scalars['Int']['output'];
 };
@@ -234,6 +306,7 @@ export type ProductListing = {
   id: Scalars['String']['output'];
   images?: Maybe<CardImages>;
   lowestPrice?: Maybe<Scalars['String']['output']>;
+  lowestPriceInventoryItemId?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
   setName: Scalars['String']['output'];
@@ -291,6 +364,7 @@ export type Query = {
   __typename?: 'Query';
   getCard: Card;
   getInventory: InventoryPage;
+  getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
   getSets: Array<Set>;
@@ -309,6 +383,11 @@ export type QueryGetCardArgs = {
 
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryGetOrdersArgs = {
   pagination?: InputMaybe<PaginationInput>;
 };
 
@@ -368,6 +447,17 @@ export type SingleCardFilters = {
   setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type SubmitOrderInput = {
+  customerName: Scalars['String']['input'];
+};
+
+export type SubmitOrderResult = {
+  __typename?: 'SubmitOrderResult';
+  error?: Maybe<Scalars['String']['output']>;
+  insufficientItems?: Maybe<Array<InsufficientItem>>;
+  order?: Maybe<Order>;
+};
+
 export type UpdateInventoryItemInput = {
   acquisitionDate?: InputMaybe<Scalars['String']['input']>;
   condition?: InputMaybe<Scalars['String']['input']>;
@@ -376,6 +466,12 @@ export type UpdateInventoryItemInput = {
   notes?: InputMaybe<Scalars['String']['input']>;
   price?: InputMaybe<Scalars['Float']['input']>;
   quantity?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateOrderStatusResult = {
+  __typename?: 'UpdateOrderStatusResult';
+  error?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Order>;
 };
 
 export type UserDetails = {
@@ -387,7 +483,7 @@ export type UserDetails = {
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', quantity: number, productId: number, productName: string, condition: string }> } };
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: string, unitPrice: number, maxAvailable: number }> } };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
@@ -425,10 +521,13 @@ export const GetShoppingCartQueryDocument = new TypedDocumentString(`
     query GetShoppingCartQuery {
   getShoppingCart {
     items {
+      inventoryItemId
       quantity
       productId
       productName
       condition
+      unitPrice
+      maxAvailable
     }
   }
 }

@@ -65,6 +65,7 @@ export class HomePage extends LitElement {
     return html`
       <ogs-page
         activePage="Dashboard"
+        ?showUserMenu="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"

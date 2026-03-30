@@ -22,6 +22,11 @@ input BulkUpdateInventoryInput {
   quantity: Int
 }
 
+type CancelOrderResult {
+  error: String
+  order: Order
+}
+
 type Card {
   finishes: [String!]!
   flavorText: String
@@ -41,16 +46,18 @@ type CardImages {
 }
 
 input CartItemInput {
-  condition: String
-  productId: Float!
+  inventoryItemId: Int!
   quantity: Int!
 }
 
 type CartItemOutput {
   condition: String!
+  inventoryItemId: Int!
+  maxAvailable: Int!
   productId: Int!
   productName: String!
   quantity: Int!
+  unitPrice: Float!
 }
 
 type ConditionInventories {
@@ -65,6 +72,14 @@ type ConditionInventories {
 type ConditionInventory {
   price: String!
   quantity: Int!
+}
+
+type InsufficientItem {
+  available: Int!
+  condition: String!
+  productId: Int!
+  productName: String!
+  requested: Int!
 }
 
 input InventoryFilters {
@@ -109,13 +124,47 @@ type Mutation {
   addToCart(cartItem: CartItemInput!): ShoppingCart!
   bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
   bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
+  cancelOrder(orderId: Int!): CancelOrderResult!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
   deleteInventoryItem(id: Int!): Boolean!
   firstTimeSetup(settings: Settings!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
+  submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
+  updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
+}
+
+type Order {
+  createdAt: String!
+  customerName: String!
+  id: Int!
+  items: [OrderItem!]!
+  orderNumber: String!
+  status: String!
+  totalAmount: Float!
+  totalCostBasis: Float
+  totalProfit: Float
+}
+
+type OrderItem {
+  condition: String!
+  costBasis: Float
+  id: Int!
+  productId: Int!
+  productName: String!
+  profit: Float
+  quantity: Int!
+  unitPrice: Float!
+}
+
+type OrderPage {
+  orders: [Order!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
 }
 
 input PaginationInput {
@@ -125,6 +174,7 @@ input PaginationInput {
 
 type ProductConditionPrice {
   condition: String!
+  inventoryItemId: Int!
   price: Float!
   quantity: Int!
 }
@@ -147,6 +197,7 @@ type ProductDetail {
 
 type ProductInventoryRecord {
   condition: String!
+  inventoryItemId: Int!
   price: Float!
   quantity: Int!
 }
@@ -158,6 +209,7 @@ type ProductListing {
   id: String!
   images: CardImages
   lowestPrice: String
+  lowestPriceInventoryItemId: Int
   name: String!
   rarity: String
   setName: String!
@@ -211,6 +263,7 @@ type ProductSearchResult {
 type Query {
   getCard(cardId: String!, game: String!): Card!
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getOrders(pagination: PaginationInput): OrderPage!
   getProduct(productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
   getSets(filters: SetFilters, game: String!): [Set!]!
@@ -245,6 +298,16 @@ input SingleCardFilters {
   setCode: String
 }
 
+input SubmitOrderInput {
+  customerName: String!
+}
+
+type SubmitOrderResult {
+  error: String
+  insufficientItems: [InsufficientItem!]
+  order: Order
+}
+
 input UpdateInventoryItemInput {
   acquisitionDate: String
   condition: String
@@ -253,6 +316,11 @@ input UpdateInventoryItemInput {
   notes: String
   price: Float
   quantity: Int
+}
+
+type UpdateOrderStatusResult {
+  error: String
+  order: Order
 }
 
 input UserDetails {

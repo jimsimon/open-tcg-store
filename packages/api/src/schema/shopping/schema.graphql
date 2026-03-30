@@ -1,14 +1,16 @@
 input CartItemInput {
-  productId: Float!
-  condition: String
+  inventoryItemId: Int!
   quantity: Int!
 }
 
 type CartItemOutput {
+  inventoryItemId: Int!
   productId: Int!
   productName: String!
   condition: String!
   quantity: Int!
+  unitPrice: Float!
+  maxAvailable: Int!
 }
 
 type ShoppingCart {

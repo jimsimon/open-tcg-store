@@ -33,6 +33,7 @@ import {
 // --- Types ---
 
 interface ConditionPrice {
+  inventoryItemId: number;
   condition: string;
   quantity: number;
   price: number;
@@ -70,16 +71,31 @@ const AddToCartMutation = new TypedDocumentString(`
   mutation AddToCart($cartItem: CartItemInput!) {
     addToCart(cartItem: $cartItem) {
       items {
+        inventoryItemId
         productId
         productName
         condition
         quantity
+        unitPrice
+        maxAvailable
       }
     }
   }
 `) as unknown as TypedDocumentString<
-  { addToCart: { items: { productId: number; productName: string; condition: string; quantity: number }[] } },
-  { cartItem: { productId: number; condition?: string; quantity: number } }
+  {
+    addToCart: {
+      items: {
+        inventoryItemId: number;
+        productId: number;
+        productName: string;
+        condition: string;
+        quantity: number;
+        unitPrice: number;
+        maxAvailable: number;
+      }[];
+    };
+  },
+  { cartItem: { inventoryItemId: number; quantity: number } }
 >;
 
 const GetProductListingsQuery = new TypedDocumentString(`
@@ -99,6 +115,7 @@ const GetProductListingsQuery = new TypedDocumentString(`
         totalQuantity
         lowestPrice
         conditionPrices {
+          inventoryItemId
           condition
           quantity
           price
@@ -440,17 +457,21 @@ export class OgsProductsSinglesPage extends LitElement {
     return "";
   }
 
-  private getDisplayPrice(product: ProductListing): { price: string | null; quantity: number } {
+  private getDisplayPrice(product: ProductListing): {
+    price: string | null;
+    quantity: number;
+    inventoryItemId: number;
+  } {
     const activeCond = this.getActiveCondition(product);
     if (activeCond && product.conditionPrices.length > 0) {
       const cp = product.conditionPrices.find((c) => c.condition === activeCond);
       if (cp) {
-        return { price: cp.price.toFixed(2), quantity: cp.quantity };
+        return { price: cp.price.toFixed(2), quantity: cp.quantity, inventoryItemId: cp.inventoryItemId };
       }
-      return { price: null, quantity: 0 };
+      return { price: null, quantity: 0, inventoryItemId: 0 };
     }
     // Fallback when no conditions available
-    return { price: product.lowestPrice, quantity: product.totalQuantity };
+    return { price: product.lowestPrice, quantity: product.totalQuantity, inventoryItemId: 0 };
   }
 
   // --- Pagination handlers ---
@@ -463,7 +484,7 @@ export class OgsProductsSinglesPage extends LitElement {
 
   // --- Add to Cart ---
 
-  private async handleAddToCart(productId: string, condition: string | undefined, event: Event) {
+  private async handleAddToCart(inventoryItemId: number, event: Event) {
     if (this.addingToCart) return;
     this.addingToCart = true;
     this.cartMessage = "";
@@ -476,7 +497,7 @@ export class OgsProductsSinglesPage extends LitElement {
 
     try {
       const result = await execute(AddToCartMutation, {
-        cartItem: { productId: Number(productId), condition, quantity },
+        cartItem: { inventoryItemId, quantity },
       });
 
       if (result?.errors?.length) {
@@ -501,6 +522,7 @@ export class OgsProductsSinglesPage extends LitElement {
     return html`
       <ogs-page
         activePage="products/singles"
+        ?showCartButton="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
@@ -720,7 +742,7 @@ export class OgsProductsSinglesPage extends LitElement {
                               appearance="filled"
                               size="small"
                               ?disabled="${this.addingToCart}"
-                              @click="${(e: Event) => this.handleAddToCart(product.id, activeCond, e)}"
+                              @click="${(e: Event) => this.handleAddToCart(display.inventoryItemId, e)}"
                             >
                               <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                             </wa-button>

@@ -77,6 +77,7 @@ describe("ogs-page", () => {
     beforeEach(async () => {
       // isAnonymous defaults to false, so we need to set it to true for anonymous tests
       element.isAnonymous = true;
+      element.showUserMenu = true;
       await element.updateComplete;
     });
 
@@ -312,6 +313,7 @@ describe("ogs-page", () => {
     beforeEach(async () => {
       element.isAnonymous = false;
       element.userName = "Test User";
+      element.showUserMenu = true;
       await element.updateComplete;
     });
 

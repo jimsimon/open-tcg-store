@@ -1,0 +1,68 @@
+type Order {
+  id: Int!
+  orderNumber: String!
+  customerName: String!
+  status: String!
+  totalAmount: Float!
+  totalCostBasis: Float
+  totalProfit: Float
+  createdAt: String!
+  items: [OrderItem!]!
+}
+
+type OrderItem {
+  id: Int!
+  productId: Int!
+  productName: String!
+  condition: String!
+  quantity: Int!
+  unitPrice: Float!
+  costBasis: Float
+  profit: Float
+}
+
+type OrderPage {
+  orders: [Order!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+input SubmitOrderInput {
+  customerName: String!
+}
+
+type SubmitOrderResult {
+  order: Order
+  error: String
+  insufficientItems: [InsufficientItem!]
+}
+
+type InsufficientItem {
+  productId: Int!
+  productName: String!
+  condition: String!
+  requested: Int!
+  available: Int!
+}
+
+type CancelOrderResult {
+  order: Order
+  error: String
+}
+
+type UpdateOrderStatusResult {
+  order: Order
+  error: String
+}
+
+extend type Mutation {
+  submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
+  cancelOrder(orderId: Int!): CancelOrderResult!
+  updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
+}
+
+extend type Query {
+  getOrders(pagination: PaginationInput): OrderPage!
+}

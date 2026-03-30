@@ -511,6 +511,7 @@ export class OgsInventorySealedPage extends LitElement {
     return html`
       <ogs-page
         activePage="inventory/sealed"
+        ?showUserMenu="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
