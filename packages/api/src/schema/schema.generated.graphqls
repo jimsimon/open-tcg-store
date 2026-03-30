@@ -41,11 +41,13 @@ type CardImages {
 }
 
 input CartItemInput {
+  condition: String
   productId: Float!
   quantity: Int!
 }
 
 type CartItemOutput {
+  condition: String!
   productId: Int!
   productName: String!
   quantity: Int!

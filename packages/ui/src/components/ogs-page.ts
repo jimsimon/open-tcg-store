@@ -1,5 +1,6 @@
 import { LitElement, PropertyValues, css, html, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { SignalWatcher } from "@lit-labs/signals";
 import { when } from "lit/directives/when.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
@@ -8,6 +9,8 @@ import "@awesome.me/webawesome/dist/components/option/option.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/avatar/avatar.js";
+import "@awesome.me/webawesome/dist/components/badge/badge.js";
+import "@awesome.me/webawesome/dist/components/button/button.js";
 import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 
 // These components reference `document` at module scope, so they must be
@@ -21,8 +24,8 @@ if (typeof globalThis.document !== "undefined") {
 import Cookies from "js-cookie";
 import { graphql } from "../graphql";
 import { execute } from "../lib/graphql";
-import { ShoppingCart } from "../graphql/graphql";
 import logoSvg from "../assets/logo.svg?raw";
+import { cartState } from "../lib/cart-state";
 
 // Lazy-load authClient to avoid potential SSR issues
 let _authClient: typeof import("../auth-client").authClient | undefined;
@@ -35,7 +38,7 @@ async function getAuthClient() {
 }
 
 @customElement("ogs-page")
-export class OgsPage extends LitElement {
+export class OgsPage extends SignalWatcher(LitElement) {
   static styles = [
     css`
       ${unsafeCSS(utilityStyles)}
@@ -269,9 +272,6 @@ export class OgsPage extends LitElement {
   themeColor = this.determineThemeColor();
 
   @state()
-  cart?: ShoppingCart;
-
-  @state()
   showAuthDialog = false;
 
   @state()
@@ -314,6 +314,29 @@ export class OgsPage extends LitElement {
     window.removeEventListener("scroll", this.boundHandleScroll);
   }
 
+  async fetchCart() {
+    const GetShoppingCartQuery = graphql(`
+      query GetShoppingCartQuery {
+        getShoppingCart {
+          items {
+            quantity
+            productId
+            productName
+            condition
+          }
+        }
+      }
+    `);
+
+    const result = await execute(GetShoppingCartQuery);
+
+    if (result?.errors?.length) {
+      console.log({ result });
+    } else {
+      cartState.set(result.data.getShoppingCart);
+    }
+  }
+
   private handleScroll() {
     const currentScrollY = window.scrollY;
     const delta = currentScrollY - this.lastScrollY;
@@ -329,28 +352,6 @@ export class OgsPage extends LitElement {
     }
 
     this.lastScrollY = currentScrollY;
-  }
-
-  async fetchCart() {
-    const GetShoppingCartQuery = graphql(`
-      query GetShoppingCartQuery {
-        getShoppingCart {
-          items {
-            quantity
-            productId
-            productName
-          }
-        }
-      }
-    `);
-
-    const result = await execute(GetShoppingCartQuery);
-
-    if (result?.errors?.length) {
-      console.log({ result });
-    } else {
-      this.cart = result.data.getShoppingCart;
-    }
   }
 
   render() {
@@ -398,9 +399,7 @@ export class OgsPage extends LitElement {
           </wa-select>
           <wa-button appearance="filled" aria-label="Shopping cart">
             <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
-            <wa-badge pill
-              >${this.cart?.items.reduce<number>((total, item) => (total += item.quantity), 0) ?? 0}</wa-badge
-            >
+            <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
           </wa-button>
           <wa-divider orientation="vertical"></wa-divider>
           ${this.renderUserMenu()}

@@ -7,6 +7,7 @@ export async function getOrCreateShoppingCart(userId: string) {
       cartItems: {
         columns: {
           id: true,
+          condition: true,
           quantity: true,
         },
         with: {
@@ -46,6 +47,7 @@ export function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof getOrCr
         list.push({
           productId: ci.product.id,
           productName: ci.product.name,
+          condition: ci.condition,
           quantity: ci.quantity,
         });
       }

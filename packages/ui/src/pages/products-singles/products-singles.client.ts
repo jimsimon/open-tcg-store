@@ -17,6 +17,8 @@ import { execute } from "../../lib/graphql.ts";
 import type WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
 import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
 import { TypedDocumentString } from "../../graphql/graphql.ts";
+import "@awesome.me/webawesome/dist/components/callout/callout.js";
+import { cartState } from "../../lib/cart-state.ts";
 import {
   productPageStyles,
   filterBarStyles,
@@ -62,7 +64,23 @@ interface SetOption {
   name: string;
 }
 
-// --- GraphQL Queries ---
+// --- GraphQL ---
+
+const AddToCartMutation = new TypedDocumentString(`
+  mutation AddToCart($cartItem: CartItemInput!) {
+    addToCart(cartItem: $cartItem) {
+      items {
+        productId
+        productName
+        condition
+        quantity
+      }
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { addToCart: { items: { productId: number; productName: string; condition: string; quantity: number }[] } },
+  { cartItem: { productId: number; condition?: string; quantity: number } }
+>;
 
 const GetProductListingsQuery = new TypedDocumentString(`
   query GetProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
@@ -234,6 +252,9 @@ export class OgsProductsSinglesPage extends LitElement {
   @state() private products: ProductListing[] = [];
   @state() private loading = false;
   @state() private error = "";
+  @state() private cartMessage = "";
+  @state() private cartError = "";
+  @state() private addingToCart = false;
 
   // --- Debounced handlers ---
 
@@ -440,6 +461,40 @@ export class OgsProductsSinglesPage extends LitElement {
     this.fetchProducts();
   }
 
+  // --- Add to Cart ---
+
+  private async handleAddToCart(productId: string, condition: string | undefined, event: Event) {
+    if (this.addingToCart) return;
+    this.addingToCart = true;
+    this.cartMessage = "";
+    this.cartError = "";
+
+    const btn = event.currentTarget as HTMLElement;
+    const container = btn?.closest(".cart-controls");
+    const input = container?.querySelector("wa-input") as WaInput | null;
+    const quantity = input ? Number.parseInt(input.value as string, 10) || 1 : 1;
+
+    try {
+      const result = await execute(AddToCartMutation, {
+        cartItem: { productId: Number(productId), condition, quantity },
+      });
+
+      if (result?.errors?.length) {
+        this.cartError = result.errors.map((e: { message: string }) => e.message).join(", ");
+      } else {
+        this.cartMessage = `Added ${quantity} item${quantity > 1 ? "s" : ""} to cart`;
+        cartState.set(result.data.addToCart);
+        setTimeout(() => {
+          this.cartMessage = "";
+        }, 3000);
+      }
+    } catch (e) {
+      this.cartError = e instanceof Error ? e.message : "Failed to add to cart";
+    } finally {
+      this.addingToCart = false;
+    }
+  }
+
   // --- Render ---
 
   render() {
@@ -451,6 +506,18 @@ export class OgsProductsSinglesPage extends LitElement {
         userName="${this.userName}"
       >
         ${this.renderPageHeader()} ${this.renderFilterBar()}
+        ${this.cartMessage
+          ? html`<wa-callout variant="success" style="margin-bottom: 1rem;">
+              <wa-icon slot="icon" name="circle-check"></wa-icon>
+              ${this.cartMessage}
+            </wa-callout>`
+          : nothing}
+        ${this.cartError
+          ? html`<wa-callout variant="danger" style="margin-bottom: 1rem;">
+              <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+              ${this.cartError}
+            </wa-callout>`
+          : nothing}
         ${when(
           this.error,
           () => html`
@@ -649,7 +716,12 @@ export class OgsProductsSinglesPage extends LitElement {
                             <wa-input type="number" min="1" max="${display.quantity}" value="1">
                               <span slot="label" class="wa-visually-hidden">Quantity</span>
                             </wa-input>
-                            <wa-button appearance="filled" size="small">
+                            <wa-button
+                              appearance="filled"
+                              size="small"
+                              ?disabled="${this.addingToCart}"
+                              @click="${(e: Event) => this.handleAddToCart(product.id, activeCond, e)}"
+                            >
                               <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                             </wa-button>
                           </div>

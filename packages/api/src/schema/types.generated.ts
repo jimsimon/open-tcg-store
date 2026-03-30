@@ -61,12 +61,14 @@ export type CardImages = {
 };
 
 export type CartItemInput = {
+  condition?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['Float']['input'];
   quantity: Scalars['Int']['input'];
 };
 
 export type CartItemOutput = {
   __typename?: 'CartItemOutput';
+  condition: Scalars['String']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
@@ -550,6 +552,7 @@ export type CardImagesResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type CartItemOutputResolvers<ContextType = any, ParentType extends ResolversParentTypes['CartItemOutput'] = ResolversParentTypes['CartItemOutput']> = {
+  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

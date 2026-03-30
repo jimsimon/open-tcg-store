@@ -61,12 +61,14 @@ export type CardImages = {
 };
 
 export type CartItemInput = {
+  condition?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['Float']['input'];
   quantity: Scalars['Int']['input'];
 };
 
 export type CartItemOutput = {
   __typename?: 'CartItemOutput';
+  condition: Scalars['String']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
@@ -385,7 +387,7 @@ export type UserDetails = {
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', quantity: number, productId: number, productName: string }> } };
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', quantity: number, productId: number, productName: string, condition: string }> } };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
@@ -426,6 +428,7 @@ export const GetShoppingCartQueryDocument = new TypedDocumentString(`
       quantity
       productId
       productName
+      condition
     }
   }
 }

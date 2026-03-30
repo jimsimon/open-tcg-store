@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { cartItem, otcgs } from "../../../../db";
 import { GraphqlContext } from "../../../../server";
 import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
@@ -12,11 +13,19 @@ export const addToCart: NonNullable<MutationResolvers['addToCart']> = async (_pa
   });
 
   if (result?.id) {
-    await otcgs.insert(cartItem).values({
-      cartId: result.id,
-      productId: arg.cartItem.productId,
-      quantity: arg.cartItem.quantity,
-    });
+    const condition = arg.cartItem.condition ?? "NM";
+    await otcgs
+      .insert(cartItem)
+      .values({
+        cartId: result.id,
+        productId: arg.cartItem.productId,
+        condition,
+        quantity: arg.cartItem.quantity,
+      })
+      .onConflictDoUpdate({
+        target: [cartItem.cartId, cartItem.productId, cartItem.condition],
+        set: { quantity: sql`${cartItem.quantity} + ${arg.cartItem.quantity}` },
+      });
   } else {
     throw new Error("Unable to find cart for user");
   }

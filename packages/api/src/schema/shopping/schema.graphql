@@ -1,11 +1,13 @@
 input CartItemInput {
   productId: Float!
+  condition: String
   quantity: Int!
 }
 
 type CartItemOutput {
   productId: Int!
   productName: String!
+  condition: String!
   quantity: Int!
 }
 

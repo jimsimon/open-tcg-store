@@ -16,7 +16,6 @@
     "test:browser:run": "vitest run --browser"
   },
   "dependencies": {
-  },
-  "devDependencies": {
+    "@lit-labs/signals": "^0.2.0"
   }
 }

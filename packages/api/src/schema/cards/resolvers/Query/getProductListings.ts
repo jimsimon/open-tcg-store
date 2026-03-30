@@ -9,7 +9,7 @@ import type {
   QueryResolvers,
 } from "../../../types.generated";
 
-export const getProductListings: NonNullable<QueryResolvers["getProductListings"]> = async (
+export const getProductListings: NonNullable<QueryResolvers['getProductListings']> = async (
   _parent,
   { filters, pagination },
   _ctx,
