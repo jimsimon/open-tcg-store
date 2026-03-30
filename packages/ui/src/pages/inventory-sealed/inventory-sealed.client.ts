@@ -1,4 +1,4 @@
-import { html, LitElement, nothing } from "lit";
+import { html, LitElement, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -127,6 +127,18 @@ export class OgsInventorySealedPage extends LitElement {
     super.connectedCallback();
     this.loadFiltersFromUrl();
     this.fetchInventory();
+  }
+
+  protected firstUpdated(_changedProperties: PropertyValues) {
+    super.firstUpdated(_changedProperties);
+    this.focusFirstInput();
+  }
+
+  private focusFirstInput() {
+    requestAnimationFrame(() => {
+      const input = this.shadowRoot?.querySelector<HTMLElement>(".filter-bar wa-input");
+      input?.focus();
+    });
   }
 
   private loadFiltersFromUrl() {
@@ -810,6 +822,7 @@ export class OgsInventorySealedPage extends LitElement {
         }}"
       >
         <wa-input
+          autofocus
           label="Search Product"
           placeholder="Type to search sealed products..."
           .value="${this.productSearchTerm}"
@@ -963,6 +976,7 @@ export class OgsInventorySealedPage extends LitElement {
         <div class="form-fields">
           <div class="form-row">
             <wa-input
+              autofocus
               label="Quantity"
               type="number"
               min="1"
@@ -1051,7 +1065,7 @@ export class OgsInventorySealedPage extends LitElement {
           </div>
         </div>
 
-        <wa-button slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>
+        <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="danger" @click="${this.submitDeleteItem}">
           <wa-icon slot="prefix" name="trash"></wa-icon>
           Delete
@@ -1076,6 +1090,7 @@ export class OgsInventorySealedPage extends LitElement {
         <div class="form-fields">
           <div class="form-row">
             <wa-input
+              autofocus
               label="Quantity"
               type="number"
               min="1"
@@ -1156,7 +1171,7 @@ export class OgsInventorySealedPage extends LitElement {
           </div>
         </div>
 
-        <wa-button slot="footer" variant="neutral" @click="${this.closeBulkDeleteDialog}">Cancel</wa-button>
+        <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeBulkDeleteDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="danger" @click="${this.submitBulkDelete}">
           <wa-icon slot="prefix" name="trash"></wa-icon>
           Delete ${this.selectedIds.size} Items

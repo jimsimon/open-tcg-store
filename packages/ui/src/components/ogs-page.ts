@@ -496,6 +496,7 @@ export class OgsPage extends LitElement {
           )}
 
           <wa-input
+            autofocus
             type="email"
             name="email"
             autocomplete="email"

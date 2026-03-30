@@ -83,6 +83,7 @@ export class OgsWizard extends LitElement {
   firstUpdated() {
     this.firstUpdateCompleted = true;
     this.updateItemVisibility();
+    this.focusFirstElement();
   }
 
   shouldShowPrevious() {
@@ -122,6 +123,7 @@ export class OgsWizard extends LitElement {
     if (this.activeIndex < this.items.length - 1) {
       this.activeIndex++;
       this.updateItemVisibility();
+      this.focusFirstElement();
     }
   }
 
@@ -129,6 +131,7 @@ export class OgsWizard extends LitElement {
     if (this.activeIndex > 0) {
       this.activeIndex--;
       this.updateItemVisibility();
+      this.focusFirstElement();
     }
   }
 
@@ -144,6 +147,28 @@ export class OgsWizard extends LitElement {
     for (let i = 0; i < this.items.length; i++) {
       this.items[i].style.display = i !== this.activeIndex ? "none" : "block";
     }
+  }
+
+  private focusFirstElement() {
+    requestAnimationFrame(() => {
+      const activeItem = this.items[this.activeIndex];
+      if (!activeItem) return;
+
+      // Try to find the first focusable element in the active wizard step
+      const focusable = activeItem.querySelector<HTMLElement>(
+        'wa-input, wa-select, wa-textarea, wa-button, input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable) {
+        focusable.focus();
+        return;
+      }
+
+      // If no focusable element in the step, focus the Next/Save button in the footer
+      const footerButton = this.shadowRoot?.querySelector<HTMLElement>(
+        'nav wa-button[variant="brand"], nav wa-button[variant="success"]',
+      );
+      footerButton?.focus();
+    });
   }
 }
 

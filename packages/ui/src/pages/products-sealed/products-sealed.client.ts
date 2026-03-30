@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from "lit";
+import { css, html, LitElement, nothing, unsafeCSS, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -162,6 +162,18 @@ export class OgsProductsSealedPage extends LitElement {
     super.connectedCallback();
     this.loadFiltersFromUrl();
     this.fetchProducts();
+  }
+
+  protected firstUpdated(_changedProperties: PropertyValues) {
+    super.firstUpdated(_changedProperties);
+    this.focusFirstInput();
+  }
+
+  private focusFirstInput() {
+    requestAnimationFrame(() => {
+      const input = this.shadowRoot?.querySelector<HTMLElement>(".filter-bar wa-input");
+      input?.focus();
+    });
   }
 
   private loadFiltersFromUrl() {
