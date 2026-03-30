@@ -1,9 +1,11 @@
 # Context: Current State of OpenTCGS
 
 ## Current Work Focus
-Inventory management feature is now complete with a full-stack implementation including database schema, GraphQL API, service layer, resolvers, and a full-featured UI page with 34 test cases. The project continues to mature with robust monorepo architecture using pnpm workspaces. Focus is shifting toward integration testing, checkout/payment processing, and other planned features.
+Navigation UI has been improved with a polished sidebar design featuring icons, hover effects, active state highlighting, and section labels. "Sales" has been renamed to "Orders" across all pages, routes, and navigation. Focus continues toward integration testing, checkout/payment processing, and other planned features.
 
 ## Recent Changes
+- **Navigation Redesign**: Sidebar nav improved with icons (wa-icon), hover/active states, section labels, compact layout, and raised background
+- **Sales → Orders Rename**: "Sales" nav link, page files, and route renamed to "Orders" (`/orders` route, `orders/` page directory)
 - **Complete Inventory Management System**: Database schema, GraphQL API (queries + mutations), service layer, resolvers, and full UI page
 - **Employee Role with Access Control**: Better Auth configured with employee role and access control for inventory operations
 - **Inventory UI Page**: Full CRUD operations, filtering by condition/product type, search, pagination, and bulk actions (update/delete)
@@ -39,7 +41,7 @@ Inventory management feature is now complete with a full-stack implementation in
 - **Inventory UI**: ✅ Full-featured page with filters, search, pagination, bulk actions, add/edit/delete dialogs
 - **Inventory Tests**: ✅ 34 test cases (20 service + 14 UI component)
 - **Cards Page**: ✅ With product type filtering (singles vs sealed)
-- **Sales UI**: 🔄 Backend complete, frontend integration pending
+- **Orders UI**: 🔄 Backend complete, frontend integration pending (renamed from Sales)
 - **Analytics UI**: ❌ Not implemented
 - **Barcode Scanning**: ❌ Not implemented
 - **Login UI**: ❌ Not implemented

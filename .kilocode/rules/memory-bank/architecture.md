@@ -54,7 +54,7 @@ packages/
 │       ├── server.ts      # UI server entry point
 │       ├── shell.ts       # HTML shell template for SSR
 │       ├── components/    # Reusable UI components
-│       │   ├── ogs-page.ts        # Main layout component (role-based nav)
+│       │   ├── ogs-page.ts        # Main layout component (role-based nav with icons, hover/active states)
 │       │   ├── ogs-wizard.ts      # Multi-step wizard component
 │       │   └── ogs-two-pane-panel.ts # Two-column layout component
 │       ├── pages/         # Page components (server + client)
@@ -68,7 +68,7 @@ packages/
 │       │   ├── inventory-import/ # Inventory import placeholder
 │       │   │   ├── inventory-import.client.ts  # Import UI placeholder
 │       │   │   └── inventory-import.server.ts  # Server template
-│       │   ├── sales/     # Sales processing
+│       │   ├── orders/    # Orders page (renamed from sales)
 │       │   ├── settings/  # Settings page
 │       │   └── first-time-setup/ # Initial setup wizard
 │       ├── graphql/       # GraphQL client setup
@@ -97,7 +97,7 @@ packages/
 6. **API**: Client communicates via GraphQL endpoints
 
 ## Component Architecture
-- **ogs-page**: Main layout with navigation and theme switching; role-based nav links (inventory visible to employees)
+- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees)
 - **Page Components**: Each page has server.ts and client.ts files
 - **Custom Elements**: All components use Lit custom elements
 - **Web Awesome**: UI components from Web Awesome framework
