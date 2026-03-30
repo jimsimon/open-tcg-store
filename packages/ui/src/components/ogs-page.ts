@@ -52,7 +52,7 @@ export class OgsPage extends LitElement {
 
       #page {
         display: flex;
-        height: calc(100vh - 64px);
+        min-height: calc(100vh - 64px);
       }
 
       header {
@@ -62,6 +62,14 @@ export class OgsPage extends LitElement {
         padding-inline-end: var(--wa-space-s);
         block-size: 64px;
         background: var(--wa-color-surface-raised);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transition: translate 0.3s ease;
+      }
+
+      :host([header-hidden]) header {
+        translate: 0 -100%;
       }
 
       header h1 {
@@ -89,9 +97,9 @@ export class OgsPage extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 1px;
-        overflow: auto;
-        height: 100%;
-        max-height: 100%;
+        position: sticky;
+        top: 64px;
+        height: calc(100vh - 64px);
         min-width: 260px;
         max-width: 260px;
         flex-shrink: 0;
@@ -101,6 +109,15 @@ export class OgsPage extends LitElement {
         padding: var(--wa-space-s) 0;
         overflow-x: hidden;
         overflow-y: auto;
+        align-self: flex-start;
+        transition:
+          top 0.3s ease,
+          height 0.3s ease;
+      }
+
+      :host([header-hidden]) nav {
+        top: 0;
+        height: 100vh;
       }
 
       .nav-section-label {
@@ -278,6 +295,10 @@ export class OgsPage extends LitElement {
   @state()
   authLoading = false;
 
+  private lastScrollY = 0;
+  private scrollThreshold = 10;
+  private boundHandleScroll = this.handleScroll.bind(this);
+
   protected firstUpdated(_changedProperties: PropertyValues): void {
     this.updateThemeClass();
   }
@@ -285,6 +306,29 @@ export class OgsPage extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.fetchCart();
+    window.addEventListener("scroll", this.boundHandleScroll, { passive: true });
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener("scroll", this.boundHandleScroll);
+  }
+
+  private handleScroll() {
+    const currentScrollY = window.scrollY;
+    const delta = currentScrollY - this.lastScrollY;
+
+    if (Math.abs(delta) < this.scrollThreshold) return;
+
+    if (delta > 0 && currentScrollY > 64) {
+      // Scrolling down & past the header height
+      this.toggleAttribute("header-hidden", true);
+    } else if (delta < 0) {
+      // Scrolling up
+      this.toggleAttribute("header-hidden", false);
+    }
+
+    this.lastScrollY = currentScrollY;
   }
 
   async fetchCart() {

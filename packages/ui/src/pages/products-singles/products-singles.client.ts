@@ -515,19 +515,17 @@ export class OgsProductsSinglesPage extends LitElement {
           <wa-option value="HP">Heavily Played</wa-option>
           <wa-option value="D">Damaged</wa-option>
         </wa-select>
-        <label
+        <div
           class="in-stock-toggle ${this.inStockOnly ? "active" : ""}"
           @click="${() => {
-            const checkbox = this.shadowRoot?.querySelector("wa-checkbox") as HTMLElement | null;
-            if (checkbox) {
-              const input = checkbox.querySelector("input");
-              if (input) input.click();
-            }
+            this.inStockOnly = !this.inStockOnly;
+            this.currentPage = 1;
+            this.fetchProducts();
           }}"
         >
-          <wa-checkbox ?checked="${this.inStockOnly}" @change="${this.handleInStockOnlyChange}"></wa-checkbox>
+          <wa-checkbox ?checked="${this.inStockOnly}"></wa-checkbox>
           <span>In Stock Only</span>
-        </label>
+        </div>
       </div>
     `;
   }

@@ -329,17 +329,17 @@ export class OgsProductsSealedPage extends LitElement {
           <wa-option value="magic">Magic</wa-option>
           <wa-option value="pokemon">Pokemon</wa-option>
         </wa-select>
-        <label
+        <div
           class="in-stock-toggle ${this.inStockOnly ? "active" : ""}"
           @click="${() => {
-            const checkbox = this.shadowRoot?.querySelector("wa-checkbox") as WaCheckbox | null;
-            if (checkbox) checkbox.checked = !checkbox.checked;
-            this.handleInStockOnlyChange({ target: checkbox } as unknown as Event);
+            this.inStockOnly = !this.inStockOnly;
+            this.currentPage = 1;
+            this.fetchProducts();
           }}"
         >
-          <wa-checkbox ?checked="${this.inStockOnly}" @change="${this.handleInStockOnlyChange}"></wa-checkbox>
+          <wa-checkbox ?checked="${this.inStockOnly}"></wa-checkbox>
           <span>In Stock Only</span>
-        </label>
+        </div>
       </div>
     `;
   }

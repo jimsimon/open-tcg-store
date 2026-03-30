@@ -553,7 +553,7 @@ export class OgsInventorySealedPage extends LitElement {
       <div class="stats-bar">
         <div class="stat-card">
           <div class="stat-icon neutral">
-            <wa-icon name="shipping-box"></wa-icon>
+            <wa-icon name="box"></wa-icon>
           </div>
           <div class="stat-content">
             <span class="stat-label">Items</span>
@@ -953,7 +953,7 @@ export class OgsInventorySealedPage extends LitElement {
         }}"
       >
         <div class="edit-item-header">
-          <wa-icon name="shipping-box"></wa-icon>
+          <wa-icon name="box"></wa-icon>
           <div class="edit-item-header-info">
             <h3>${this.editingItem.productName}</h3>
             <p>${this.editingItem.gameName} — ${this.editingItem.setName}</p>
