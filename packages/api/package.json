@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "db:update-better-auth-schema": "npx @better-auth/cli generate -y --output ./src/db/otcgs/auth-schema.ts",
     "db:push:main": "drizzle-kit push --config ./src/db/otcgs/drizzle.config.ts",
-    "db:push:tcg-data": "drizzle-kit push --config ./src/db/tcg-data/drizzle.config.ts",
+    "db:push:tcg-data": "drizzle-kit push --config ./src/db/tcg-data/drizzle.config.ts"
   },
   "dependencies": {
   },
