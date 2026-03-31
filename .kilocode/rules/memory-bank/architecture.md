@@ -35,9 +35,12 @@ packages/
 │       │       ├── inventory-relations.ts  # Inventory relations
 │       │       ├── order-schema.ts        # Order and order item schema
 │       │       ├── order-relations.ts     # Order relations
+│       │       ├── settings-schema.ts     # Store settings wide table
 │       │       ├── schema.ts              # Combined schema exports
 │       │       ├── index.ts               # Combined relations and exports
 │       │       └── drizzle.config.ts      # Drizzle configuration
+│       ├── lib/           # Utility libraries
+│       │   └── encryption.ts              # AES-256-GCM encryption for sensitive settings
 │       ├── schema/        # GraphQL resolvers
 │       │   ├── base/      # Base GraphQL schema
 │       │   ├── setup/     # Setup-related resolvers
@@ -49,12 +52,17 @@ packages/
 │       │   ├── orders/   # Order management resolvers
 │       │   │   ├── schema.graphql         # Orders GraphQL schema
 │       │   │   └── resolvers/             # Query + Mutation resolvers
+│       │   ├── settings/ # Settings management resolvers
+│       │   │   ├── schema.graphql         # Settings GraphQL schema
+│       │   │   └── resolvers/             # Query + Mutation resolvers
 │       │   ├── resolvers.generated.ts # Generated resolver types
 │       │   └── types.generated.ts     # Generated GraphQL types
 │       └── services/      # Business logic services
 │           ├── shopping-cart-service.ts # Shopping cart business logic (includes price + availability)
 │           ├── inventory-service.ts    # Inventory management business logic
-│           └── order-service.ts        # Order creation, validation, inventory decrement
+│           ├── order-service.ts        # Order creation, validation, inventory decrement
+│           ├── settings-service.ts    # Store settings CRUD, sales tax lookup, integration management
+│           └── backup-service.ts      # Backup/restore with Google Drive, Dropbox, OneDrive OAuth
 ├── ui/                    # Frontend UI package
 │   ├── package.json       # UI-specific dependencies
 │   ├── codegen.ts         # GraphQL codegen configuration
@@ -78,7 +86,11 @@ packages/
 │       │   │   ├── inventory-import.client.ts  # Import UI placeholder
 │       │   │   └── inventory-import.server.ts  # Server template
 │       │   ├── orders/    # Orders page (renamed from sales)
-│       │   ├── settings/  # Settings page
+│       │   ├── settings-general/     # General settings (store info, address, EIN, sales tax)
+│       │   ├── settings-backup/      # Backup & Restore (OAuth, cloud providers)
+│       │   ├── settings-autoprice/   # Autoprice (stub)
+│       │   ├── settings-integrations/ # Integrations (Stripe, Shopify, QuickBooks)
+│       │   ├── settings-users/       # User Accounts (Better Auth admin APIs)
 │       │   └── first-time-setup/ # Initial setup wizard
 │       ├── graphql/       # GraphQL client setup
 │       │   ├── gql.ts     # GraphQL document map
@@ -108,7 +120,7 @@ packages/
 
 ## Component Architecture
 
-- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees); cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission
+- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees); cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission; settings section visible to admin only
 - **Page Components**: Each page has server.ts and client.ts files
 - **Custom Elements**: All components use Lit custom elements
 - **Web Awesome**: UI components from Web Awesome framework
@@ -138,6 +150,7 @@ packages/
 - **Shopping Cart**: Cart and cart item tables with user and inventory item relations, unique constraint on cartId+inventoryItemId
 - **Inventory**: inventory_item table with productId, condition, quantity, price, costBasis, createdAt, updatedAt; unique constraint on productId+condition+costBasis combination
 - **Orders**: order table with orderNumber, customerName, userId, status, totalAmount, createdAt; order_item table with orderId, productId, productName, condition, quantity, unitPrice
+- **Settings**: store_settings wide table (single-row pattern) with store info (name, address, EIN, sales tax rate), backup config (provider, frequency, OAuth tokens), integration credentials (Stripe, Shopify, QuickBooks with encrypted API keys)
 - **Relations**: Comprehensive Drizzle ORM relations connecting all schemas (inventory items → products, orders → users, order items → orders/products)
 - **Adapter**: Drizzle ORM with libsql (SQLite-compatible) for development
 

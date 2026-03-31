@@ -643,6 +643,20 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavSubLink('/inventory/sealed', 'Sealed', 'inventory/sealed')}
                 `,
               )}
+              ${when(
+                this.userRole === 'admin',
+                () => html`
+                  <wa-divider></wa-divider>
+                  <div class="nav-section-label">Settings</div>
+
+                  ${this.renderNavLink('/settings/general', 'gear', 'Settings', 'settings')}
+                  ${this.renderNavSubLink('/settings/general', 'General', 'settings/general')}
+                  ${this.renderNavSubLink('/settings/backup', 'Backup & Restore', 'settings/backup')}
+                  ${this.renderNavSubLink('/settings/autoprice', 'Autoprice', 'settings/autoprice')}
+                  ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
+                  ${this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users')}
+                `,
+              )}
             </nav>
           `,
           () => nothing,

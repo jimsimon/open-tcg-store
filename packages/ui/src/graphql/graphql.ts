@@ -26,6 +26,23 @@ export type AddInventoryItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type BackupResult = {
+  __typename?: 'BackupResult';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  timestamp?: Maybe<Scalars['String']['output']>;
+};
+
+export type BackupSettings = {
+  __typename?: 'BackupSettings';
+  dropboxConnected: Scalars['Boolean']['output'];
+  frequency?: Maybe<Scalars['String']['output']>;
+  googleDriveConnected: Scalars['Boolean']['output'];
+  lastBackupAt?: Maybe<Scalars['String']['output']>;
+  onedriveConnected: Scalars['Boolean']['output'];
+  provider?: Maybe<Scalars['String']['output']>;
+};
+
 export type BulkDeleteInventoryInput = {
   ids: Array<Scalars['Int']['input']>;
 };
@@ -107,6 +124,13 @@ export type InsufficientItem = {
   requested: Scalars['Int']['output'];
 };
 
+export type IntegrationSettings = {
+  __typename?: 'IntegrationSettings';
+  quickbooks: QuickBooksIntegration;
+  shopify: ShopifyIntegration;
+  stripe: StripeIntegration;
+};
+
 export type InventoryFilters = {
   condition?: InputMaybe<Scalars['String']['input']>;
   gameName?: InputMaybe<Scalars['String']['input']>;
@@ -159,9 +183,16 @@ export type Mutation = {
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
   submitOrder: SubmitOrderResult;
+  triggerBackup: BackupResult;
+  triggerRestore: RestoreResult;
+  updateBackupSettings: BackupSettings;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateOrderStatus: UpdateOrderStatusResult;
+  updateQuickBooksIntegration: QuickBooksIntegration;
+  updateShopifyIntegration: ShopifyIntegration;
+  updateStoreSettings: StoreSettings;
+  updateStripeIntegration: StripeIntegration;
 };
 
 
@@ -211,6 +242,16 @@ export type MutationSubmitOrderArgs = {
 };
 
 
+export type MutationTriggerRestoreArgs = {
+  provider: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateBackupSettingsArgs = {
+  input: UpdateBackupSettingsInput;
+};
+
+
 export type MutationUpdateInventoryItemArgs = {
   input: UpdateInventoryItemInput;
 };
@@ -224,6 +265,26 @@ export type MutationUpdateItemInCartArgs = {
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateQuickBooksIntegrationArgs = {
+  input: UpdateQuickBooksIntegrationInput;
+};
+
+
+export type MutationUpdateShopifyIntegrationArgs = {
+  input: UpdateShopifyIntegrationInput;
+};
+
+
+export type MutationUpdateStoreSettingsArgs = {
+  input: UpdateStoreSettingsInput;
+};
+
+
+export type MutationUpdateStripeIntegrationArgs = {
+  input: UpdateStripeIntegrationInput;
 };
 
 export type Order = {
@@ -367,7 +428,9 @@ export type ProductSearchResult = {
 
 export type Query = {
   __typename?: 'Query';
+  getBackupSettings: BackupSettings;
   getCard: Card;
+  getIntegrationSettings: IntegrationSettings;
   getInventory: InventoryPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
@@ -375,7 +438,9 @@ export type Query = {
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
+  getStoreSettings: StoreSettings;
   isSetupPending: Scalars['Boolean']['output'];
+  lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
 };
 
@@ -421,9 +486,35 @@ export type QueryGetSingleCardInventoryArgs = {
 };
 
 
+export type QueryLookupSalesTaxArgs = {
+  countryCode: Scalars['String']['input'];
+  stateCode: Scalars['String']['input'];
+};
+
+
 export type QuerySearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
   searchTerm: Scalars['String']['input'];
+};
+
+export type QuickBooksIntegration = {
+  __typename?: 'QuickBooksIntegration';
+  enabled: Scalars['Boolean']['output'];
+  hasClientId: Scalars['Boolean']['output'];
+  hasClientSecret: Scalars['Boolean']['output'];
+};
+
+export type RestoreResult = {
+  __typename?: 'RestoreResult';
+  message?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type SalesTaxLookupResult = {
+  __typename?: 'SalesTaxLookupResult';
+  currency?: Maybe<Scalars['String']['output']>;
+  rate: Scalars['Float']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type Set = {
@@ -441,6 +532,13 @@ export type Settings = {
   state: Scalars['String']['input'];
 };
 
+export type ShopifyIntegration = {
+  __typename?: 'ShopifyIntegration';
+  enabled: Scalars['Boolean']['output'];
+  hasApiKey: Scalars['Boolean']['output'];
+  shopDomain?: Maybe<Scalars['String']['output']>;
+};
+
 export type ShoppingCart = {
   __typename?: 'ShoppingCart';
   items: Array<CartItemOutput>;
@@ -453,6 +551,24 @@ export type SingleCardFilters = {
   setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StoreSettings = {
+  __typename?: 'StoreSettings';
+  city?: Maybe<Scalars['String']['output']>;
+  ein?: Maybe<Scalars['String']['output']>;
+  salesTaxRate?: Maybe<Scalars['Float']['output']>;
+  state?: Maybe<Scalars['String']['output']>;
+  storeName?: Maybe<Scalars['String']['output']>;
+  street1?: Maybe<Scalars['String']['output']>;
+  street2?: Maybe<Scalars['String']['output']>;
+  zip?: Maybe<Scalars['String']['output']>;
+};
+
+export type StripeIntegration = {
+  __typename?: 'StripeIntegration';
+  enabled: Scalars['Boolean']['output'];
+  hasApiKey: Scalars['Boolean']['output'];
+};
+
 export type SubmitOrderInput = {
   customerName: Scalars['String']['input'];
 };
@@ -462,6 +578,11 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type UpdateBackupSettingsInput = {
+  frequency?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateInventoryItemInput = {
@@ -478,6 +599,33 @@ export type UpdateOrderStatusResult = {
   __typename?: 'UpdateOrderStatusResult';
   error?: Maybe<Scalars['String']['output']>;
   order?: Maybe<Order>;
+};
+
+export type UpdateQuickBooksIntegrationInput = {
+  clientId?: InputMaybe<Scalars['String']['input']>;
+  clientSecret?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type UpdateShopifyIntegrationInput = {
+  apiKey?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  shopDomain?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStoreSettingsInput = {
+  city?: InputMaybe<Scalars['String']['input']>;
+  ein?: InputMaybe<Scalars['String']['input']>;
+  state?: InputMaybe<Scalars['String']['input']>;
+  storeName?: InputMaybe<Scalars['String']['input']>;
+  street1?: InputMaybe<Scalars['String']['input']>;
+  street2?: InputMaybe<Scalars['String']['input']>;
+  zip?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStripeIntegrationInput = {
+  apiKey?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type UserDetails = {

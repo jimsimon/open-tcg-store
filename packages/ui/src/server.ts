@@ -51,6 +51,20 @@ function getSession(ctx: Context) {
 }
 
 /**
+ * Middleware that requires the user to have an admin role.
+ * Returns 403 Forbidden for non-admin users.
+ */
+async function requireAdmin(ctx: Context, next: Next) {
+  const role = ctx.state.auth?.user?.role;
+  if (role !== 'admin') {
+    ctx.status = 403;
+    ctx.body = 'Forbidden: Admin access required';
+    return;
+  }
+  return next();
+}
+
+/**
  * Middleware that ensures the user has a session, creating an anonymous one if needed.
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
@@ -182,8 +196,25 @@ const router = new Router()
   .get('import-inventory', '/inventory/import', async (ctx) => {
     return renderPage(ctx, 'inventory-import');
   })
-  .get('settings', '/settings', async (ctx) => {
-    return renderPage(ctx, 'settings');
+  // Settings routes - admin only
+  .use('/settings', requireAdmin)
+  .get('settings-redirect', '/settings', async (ctx) => {
+    ctx.redirect('/settings/general');
+  })
+  .get('settings-general', '/settings/general', async (ctx) => {
+    return renderPage(ctx, 'settings-general');
+  })
+  .get('settings-backup', '/settings/backup', async (ctx) => {
+    return renderPage(ctx, 'settings-backup');
+  })
+  .get('settings-autoprice', '/settings/autoprice', async (ctx) => {
+    return renderPage(ctx, 'settings-autoprice');
+  })
+  .get('settings-integrations', '/settings/integrations', async (ctx) => {
+    return renderPage(ctx, 'settings-integrations');
+  })
+  .get('settings-users', '/settings/users', async (ctx) => {
+    return renderPage(ctx, 'settings-users');
   });
 
 const port = 5173;

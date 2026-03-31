@@ -6,8 +6,6 @@ export function render(ctx: RouterContext) {
   const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
   const userName = ctx.state.auth?.user?.name ?? '';
   return `
-    <ogs-page path="${escapeHtml(ctx.URL.pathname)}" userRole="${escapeHtml(userRole)}" ${isAnonymous ? 'isAnonymous' : ''} userName="${escapeHtml(userName)}">
-      <h1>Settings</h1>
-    </ogs-page>
+    <ogs-settings-integrations-page userRole="${escapeHtml(userRole)}" ${isAnonymous ? 'isAnonymous' : ''} userName="${escapeHtml(userName)}" activePage="settings/integrations" showUserMenu></ogs-settings-integrations-page>
   `;
 }
