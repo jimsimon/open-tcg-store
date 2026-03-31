@@ -16,11 +16,13 @@ vi.mock("../auth-client", () => ({
   },
 }));
 
+const mockExecute = vi.fn().mockResolvedValue({
+  data: { getShoppingCart: { items: [] } },
+});
+
 // Mock the graphql execute function to prevent network calls
 vi.mock("../lib/graphql", () => ({
-  execute: vi.fn().mockResolvedValue({
-    data: { getShoppingCart: { items: [] } },
-  }),
+  execute: (...args: unknown[]) => mockExecute(...args),
 }));
 
 describe("ogs-page", () => {
@@ -306,6 +308,40 @@ describe("ogs-page", () => {
       const links = element.shadowRoot!.querySelectorAll("a.nav-link");
       const inventoryLink = Array.from(links).find((a) => a.textContent?.includes("Inventory"));
       expect(inventoryLink?.hasAttribute("current")).toBe(true);
+    });
+  });
+
+  describe("fetchCart error handling", () => {
+    test("renders without errors when fetchCart rejects", async () => {
+      mockExecute.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      const el = document.createElement("ogs-page") as OgsPage;
+      document.body.appendChild(el);
+      await el.updateComplete;
+
+      // Component should still render successfully
+      const navigation = el.shadowRoot!.querySelector("nav");
+      expect(navigation).toBeTruthy();
+
+      el.remove();
+    });
+
+    test("does not update cartState when fetchCart rejects", async () => {
+      mockExecute.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      const el = document.createElement("ogs-page") as OgsPage;
+      document.body.appendChild(el);
+      await el.updateComplete;
+
+      // Cart drawer should still render with the default empty cart
+      const drawer = el.shadowRoot!.querySelector("wa-drawer");
+      expect(drawer).toBeTruthy();
+
+      // The empty cart message should be present
+      const emptyMessage = el.shadowRoot!.querySelector(".cart-empty");
+      expect(emptyMessage).toBeTruthy();
+
+      el.remove();
     });
   });
 

@@ -536,12 +536,16 @@ export class OgsPage extends SignalWatcher(LitElement) {
       }
     `);
 
-    const result = await execute(GetShoppingCartQuery);
+    try {
+      const result = await execute(GetShoppingCartQuery);
 
-    if (result?.errors?.length) {
-      console.log({ result });
-    } else {
-      cartState.set(result.data.getShoppingCart);
+      if (result?.errors?.length) {
+        console.log({ result });
+      } else if (result?.data?.getShoppingCart) {
+        cartState.set(result.data.getShoppingCart);
+      }
+    } catch {
+      // Fetch may fail if the API server is unavailable (e.g. during tests)
     }
   }
 
