@@ -9,11 +9,11 @@ export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> =
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string };
-  String: { input: string; output: string };
-  Boolean: { input: boolean; output: boolean };
-  Int: { input: number; output: number };
-  Float: { input: number; output: number };
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
 };
 
 export type AddInventoryItemInput = {
@@ -164,50 +164,62 @@ export type Mutation = {
   updateOrderStatus: UpdateOrderStatusResult;
 };
 
+
 export type MutationAddInventoryItemArgs = {
   input: AddInventoryItemInput;
 };
+
 
 export type MutationAddToCartArgs = {
   cartItem: CartItemInput;
 };
 
+
 export type MutationBulkDeleteInventoryArgs = {
   input: BulkDeleteInventoryInput;
 };
+
 
 export type MutationBulkUpdateInventoryArgs = {
   input: BulkUpdateInventoryInput;
 };
 
+
 export type MutationCancelOrderArgs = {
   orderId: Scalars['Int']['input'];
 };
 
+
 export type MutationDeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
+
 
 export type MutationFirstTimeSetupArgs = {
   settings: Settings;
   userDetails: UserDetails;
 };
 
+
 export type MutationRemoveFromCartArgs = {
   cartItem: CartItemInput;
 };
+
 
 export type MutationSubmitOrderArgs = {
   input: SubmitOrderInput;
 };
 
+
 export type MutationUpdateInventoryItemArgs = {
   input: UpdateInventoryItemInput;
 };
 
+
 export type MutationUpdateItemInCartArgs = {
   cartItem: CartItemInput;
 };
+
 
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
@@ -362,38 +374,46 @@ export type Query = {
   searchProducts: Array<ProductSearchResult>;
 };
 
+
 export type QueryGetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
 };
+
 
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryGetOrdersArgs = {
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryGetProductArgs = {
   productId: Scalars['String']['input'];
 };
+
 
 export type QueryGetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
   pagination?: InputMaybe<ProductListingPagination>;
 };
 
+
 export type QueryGetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
 };
 
+
 export type QueryGetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
 };
+
 
 export type QuerySearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
@@ -460,35 +480,23 @@ export type UserDetails = {
   password: Scalars['String']['input'];
 };
 
-export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never }>;
+export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
-export type GetShoppingCartQueryQuery = {
-  __typename?: 'Query';
-  getShoppingCart: {
-    __typename?: 'ShoppingCart';
-    items: Array<{
-      __typename?: 'CartItemOutput';
-      inventoryItemId: number;
-      quantity: number;
-      productId: number;
-      productName: string;
-      condition: string;
-      unitPrice: number;
-      maxAvailable: number;
-    }>;
-  };
-};
+
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: string, unitPrice: number, maxAvailable: number }> } };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   settings: Settings;
 }>;
 
-export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation'; firstTimeSetup: string };
 
-export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never }>;
+export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
-export type IsSetupPendingQuery = { __typename?: 'Query'; isSetupPending: boolean };
+export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type IsSetupPendingQuery = { __typename?: 'Query', isSetupPending: boolean };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
