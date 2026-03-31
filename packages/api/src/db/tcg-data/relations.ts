@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm/relations";
-import { category, group, product, price, productPresaleInfo, productExtendedData } from "./schema";
+import { relations } from 'drizzle-orm/relations';
+import { category, group, product, price, productPresaleInfo, productExtendedData } from './schema';
 
 export const categoryRelations = relations(category, ({ many }) => ({
   groups: many(group),

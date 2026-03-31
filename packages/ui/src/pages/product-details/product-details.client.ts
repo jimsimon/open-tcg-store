@@ -1,21 +1,21 @@
-import { css, html, LitElement, nothing, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/input/input.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "@awesome.me/webawesome/dist/components/badge/badge.js";
-import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
-import "@awesome.me/webawesome/dist/components/divider/divider.js";
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "../../components/ogs-page.ts";
-import { execute } from "../../lib/graphql.ts";
-import { TypedDocumentString } from "../../graphql/graphql.ts";
-import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
-import { cartState } from "../../lib/cart-state.ts";
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { when } from 'lit/directives/when.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/badge/badge.js';
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '../../components/ogs-page.ts';
+import { execute } from '../../lib/graphql.ts';
+import { TypedDocumentString } from '../../graphql/graphql.ts';
+import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { cartState } from '../../lib/cart-state.ts';
 
 // --- Types ---
 
@@ -107,24 +107,24 @@ const GetProductQuery = new TypedDocumentString(`
 
 /** Sanitize HTML to only allow safe formatting tags */
 function sanitizeHtml(html: string): string {
-  const allowedTags = ["br", "em", "strong", "i", "b", "p", "span"];
+  const allowedTags = ['br', 'em', 'strong', 'i', 'b', 'p', 'span'];
   // Remove all tags except allowed ones
   return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/gi, (match, tag) => {
     if (allowedTags.includes(tag.toLowerCase())) {
       // For allowed tags, only keep the tag name (strip attributes)
-      const isClosing = match.startsWith("</");
-      const isSelfClosing = match.endsWith("/>");
+      const isClosing = match.startsWith('</');
+      const isSelfClosing = match.endsWith('/>');
       if (isClosing) return `</${tag.toLowerCase()}>`;
       if (isSelfClosing) return `<${tag.toLowerCase()} />`;
       return `<${tag.toLowerCase()}>`;
     }
-    return ""; // Strip disallowed tags
+    return ''; // Strip disallowed tags
   });
 }
 
 // --- Component ---
 
-@customElement("ogs-product-details-page")
+@customElement('ogs-product-details-page')
 export class ProductDetailsPage extends LitElement {
   static styles = [
     css`
@@ -185,12 +185,12 @@ export class ProductDetailsPage extends LitElement {
     `,
   ];
 
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
 
   @property()
-  private productId: string = "";
+  private productId: string = '';
 
   @state()
   private product: ProductDetail | null = null;
@@ -199,13 +199,13 @@ export class ProductDetailsPage extends LitElement {
   private loading = true;
 
   @state()
-  private error = "";
+  private error = '';
 
   @state()
-  private cartMessage = "";
+  private cartMessage = '';
 
   @state()
-  private cartError = "";
+  private cartError = '';
 
   @state()
   private addingToCart = false;
@@ -217,7 +217,7 @@ export class ProductDetailsPage extends LitElement {
 
   async fetchProduct() {
     this.loading = true;
-    this.error = "";
+    this.error = '';
 
     try {
       const result = await execute(GetProductQuery, {
@@ -225,12 +225,12 @@ export class ProductDetailsPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         this.product = result.data.getProduct;
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to load product";
+      this.error = e instanceof Error ? e.message : 'Failed to load product';
     } finally {
       this.loading = false;
     }
@@ -239,13 +239,13 @@ export class ProductDetailsPage extends LitElement {
   private async handleAddToCart(inventoryItemId: number, button: EventTarget | null) {
     if (this.addingToCart) return;
     this.addingToCart = true;
-    this.cartMessage = "";
-    this.cartError = "";
+    this.cartMessage = '';
+    this.cartError = '';
 
     // Find the quantity input sibling to the clicked button
     const btn = button as HTMLElement;
-    const container = btn?.closest(".cart-controls") ?? btn?.closest(".sealed-cart-section");
-    const input = container?.querySelector("wa-input") as WaInput | null;
+    const container = btn?.closest('.cart-controls') ?? btn?.closest('.sealed-cart-section');
+    const input = container?.querySelector('wa-input') as WaInput | null;
     const quantity = input ? Number.parseInt(input.value as string, 10) || 1 : 1;
 
     try {
@@ -254,16 +254,16 @@ export class ProductDetailsPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.cartError = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.cartError = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        this.cartMessage = `Added ${quantity} item${quantity > 1 ? "s" : ""} to cart`;
+        this.cartMessage = `Added ${quantity} item${quantity > 1 ? 's' : ''} to cart`;
         cartState.set(result.data.addToCart);
         setTimeout(() => {
-          this.cartMessage = "";
+          this.cartMessage = '';
         }, 3000);
       }
     } catch (e) {
-      this.cartError = e instanceof Error ? e.message : "Failed to add to cart";
+      this.cartError = e instanceof Error ? e.message : 'Failed to add to cart';
     } finally {
       this.addingToCart = false;
     }
@@ -343,11 +343,11 @@ export class ProductDetailsPage extends LitElement {
               </tr>
               <tr>
                 <th>Type</th>
-                <td>${p.type ?? "—"}</td>
+                <td>${p.type ?? '—'}</td>
               </tr>
               <tr>
                 <th>Rarity</th>
-                <td>${p.rarity ?? "—"}</td>
+                <td>${p.rarity ?? '—'}</td>
               </tr>
               <tr>
                 <th>Printings</th>
@@ -355,11 +355,11 @@ export class ProductDetailsPage extends LitElement {
               </tr>
               <tr>
                 <th>Text</th>
-                <td>${p.text ? unsafeHTML(sanitizeHtml(p.text)) : "—"}</td>
+                <td>${p.text ? unsafeHTML(sanitizeHtml(p.text)) : '—'}</td>
               </tr>
               <tr>
                 <th>Flavor Text</th>
-                <td>${p.flavorText ? unsafeHTML(sanitizeHtml(p.flavorText)) : "—"}</td>
+                <td>${p.flavorText ? unsafeHTML(sanitizeHtml(p.flavorText)) : '—'}</td>
               </tr>
             </tbody>
           </table>
@@ -407,7 +407,7 @@ export class ProductDetailsPage extends LitElement {
                   @click="${(e: Event) => this.handleAddToCart(p.inventoryRecords[0].inventoryItemId, e.currentTarget)}"
                 >
                   <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
-                  ${this.addingToCart ? "Adding..." : "Add to Cart"}
+                  ${this.addingToCart ? 'Adding...' : 'Add to Cart'}
                 </wa-button>
                 <span>${totalQuantity} available</span>
               </div>
@@ -460,13 +460,13 @@ export class ProductDetailsPage extends LitElement {
       }
     }
 
-    const conditionOrder = ["NM", "LP", "MP", "HP", "D"];
+    const conditionOrder = ['NM', 'LP', 'MP', 'HP', 'D'];
     const conditionLabels: Record<string, string> = {
-      NM: "Near Mint",
-      LP: "Lightly Played",
-      MP: "Moderately Played",
-      HP: "Heavily Played",
-      D: "Damaged",
+      NM: 'Near Mint',
+      LP: 'Lightly Played',
+      MP: 'Moderately Played',
+      HP: 'Heavily Played',
+      D: 'Damaged',
     };
 
     return html`

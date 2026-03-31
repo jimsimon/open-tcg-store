@@ -1,14 +1,14 @@
-import { LitElement, css, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { unsafeCSS } from "lit";
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "../../components/ogs-page.ts";
+import { LitElement, css, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { unsafeCSS } from 'lit';
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '../../components/ogs-page.ts';
 
-@customElement("ogs-inventory-import-page")
+@customElement('ogs-inventory-import-page')
 export class OgsInventoryImportPage extends LitElement {
   static styles = [
     css`
@@ -129,9 +129,9 @@ export class OgsInventoryImportPage extends LitElement {
     `,
   ];
 
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
 
   render() {
     return html`

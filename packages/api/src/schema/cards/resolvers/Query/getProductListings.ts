@@ -1,10 +1,10 @@
-import { sql, and, like, eq, exists } from "drizzle-orm";
-import { otcgs } from "../../../../db";
-import { product, productExtendedData } from "../../../../db/tcg-data/schema";
-import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
-import type { InputMaybe, ProductListingFilters, QueryResolvers } from "../../../types.generated";
+import { sql, and, like, eq, exists } from 'drizzle-orm';
+import { otcgs } from '../../../../db';
+import { product, productExtendedData } from '../../../../db/tcg-data/schema';
+import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import type { InputMaybe, ProductListingFilters, QueryResolvers } from '../../../types.generated';
 
-export const getProductListings: NonNullable<QueryResolvers["getProductListings"]> = async (
+export const getProductListings: NonNullable<QueryResolvers['getProductListings']> = async (
   _parent,
   { filters, pagination },
   _ctx,
@@ -31,9 +31,9 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
 
   // Resolve game name to category ID
   let categoryId: number | undefined;
-  if (filters?.gameName === "magic") {
+  if (filters?.gameName === 'magic') {
     categoryId = 1;
-  } else if (filters?.gameName === "pokemon") {
+  } else if (filters?.gameName === 'pokemon') {
     categoryId = 2;
   }
 
@@ -110,8 +110,8 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       name: product.name,
       tcgpProductId: product.tcgpProductId,
       groupId: product.groupId,
-      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as("total_quantity"),
-      lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as("lowest_price"),
+      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+      lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(product)
     .leftJoin(inventoryItem, eq(inventoryItem.productId, product.id))
@@ -124,7 +124,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
   // Get total count first (without pagination)
   const countQuery = otcgs
     .select({
-      count: sql<number>`COUNT(*)`.as("count"),
+      count: sql<number>`COUNT(*)`.as('count'),
     })
     .from(
       inStockOnly
@@ -190,9 +190,9 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
 
   // Map game name from categoryId
   function getGameName(catId: number | null | undefined): string {
-    if (catId === 1) return "Magic";
-    if (catId === 2) return "Pokemon";
-    return "Unknown";
+    if (catId === 1) return 'Magic';
+    if (catId === 2) return 'Pokemon';
+    return 'Unknown';
   }
 
   // Fetch per-condition pricing for all product IDs
@@ -203,8 +203,8 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
           .select({
             productId: inventoryItem.productId,
             condition: inventoryItem.condition,
-            quantity: sql<number>`SUM(${inventoryItem.quantity})`.as("cond_qty"),
-            price: sql<number>`MIN(${inventoryItem.price})`.as("cond_price"),
+            quantity: sql<number>`SUM(${inventoryItem.quantity})`.as('cond_qty'),
+            price: sql<number>`MIN(${inventoryItem.price})`.as('cond_price'),
           })
           .from(inventoryItem)
           .where(
@@ -280,7 +280,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     }
 
     // Get per-condition pricing, sorted by condition order
-    const conditionOrder = ["NM", "LP", "MP", "HP", "D"];
+    const conditionOrder = ['NM', 'LP', 'MP', 'HP', 'D'];
     const conditionPrices = (conditionPricesMap.get(r.id) ?? [])
       .filter((cp) => cp.quantity > 0)
       .sort((a, b) => conditionOrder.indexOf(a.condition) - conditionOrder.indexOf(b.condition));
@@ -295,7 +295,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     return {
       id: r.id.toString(),
       name: r.name,
-      setName: productData?.group?.name ?? "Unknown Set",
+      setName: productData?.group?.name ?? 'Unknown Set',
       gameName: getGameName(productData?.categoryId),
       rarity: extendedDataMap.Rarity ?? null,
       finishes,

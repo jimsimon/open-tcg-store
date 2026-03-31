@@ -1,13 +1,13 @@
-import { bodyParser } from "@koa/bodyparser";
-import Router from "@koa/router";
-import type { RouterContext } from "@koa/router";
-import Koa, { Context, type Next } from "koa";
-import koaConnect from "koa-connect";
-import { createServer as createViteServer } from "vite";
-import viteConfig from "../../../vite.config.ts";
-import { execute } from "./lib/graphql.ts";
-import { graphql } from "./graphql/index.ts";
-import { authClient } from "./auth-client.ts";
+import { bodyParser } from '@koa/bodyparser';
+import Router from '@koa/router';
+import type { RouterContext } from '@koa/router';
+import Koa, { Context, type Next } from 'koa';
+import koaConnect from 'koa-connect';
+import { createServer as createViteServer } from 'vite';
+import viteConfig from '../../../vite.config.ts';
+import { execute } from './lib/graphql.ts';
+import { graphql } from './graphql/index.ts';
+import { authClient } from './auth-client.ts';
 
 type AppState = {
   auth: typeof authClient.$Infer.Session;
@@ -70,16 +70,16 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
         // Copy Set-Cookie headers from the sign-in response to the browser response
         const responseCookies = successCtx.response.headers.getSetCookie();
         for (const cookie of responseCookies) {
-          ctx.response.append("Set-Cookie", cookie);
+          ctx.response.append('Set-Cookie', cookie);
         }
 
         // Extract name=value pairs from Set-Cookie headers (strip attributes like Path, HttpOnly, etc.)
-        const newCookiePairs = responseCookies.map((c: string) => c.split(";")[0]);
+        const newCookiePairs = responseCookies.map((c: string) => c.split(';')[0]);
 
         // Build a map of cookie name -> value from the new cookies
         const newCookieMap = new Map<string, string>();
         for (const pair of newCookiePairs) {
-          const eqIndex = pair.indexOf("=");
+          const eqIndex = pair.indexOf('=');
           if (eqIndex !== -1) {
             newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
           }
@@ -88,12 +88,12 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
         // Replace existing cookies with new values, or append new ones
         const existingRequestCookies = ctx.req.headers.cookie;
         if (!existingRequestCookies) {
-          ctx.request.headers.cookie = newCookiePairs.join("; ");
+          ctx.request.headers.cookie = newCookiePairs.join('; ');
         } else {
           // Parse existing cookies and replace any that have new values
-          const existingPairs = existingRequestCookies.split(";").map((c) => c.trim());
+          const existingPairs = existingRequestCookies.split(';').map((c) => c.trim());
           const updatedPairs = existingPairs.map((pair) => {
-            const eqIndex = pair.indexOf("=");
+            const eqIndex = pair.indexOf('=');
             if (eqIndex !== -1) {
               const name = pair.substring(0, eqIndex);
               if (newCookieMap.has(name)) {
@@ -108,22 +108,22 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
           for (const [name, value] of newCookieMap) {
             updatedPairs.push(`${name}=${value}`);
           }
-          ctx.request.headers.cookie = updatedPairs.join("; ");
+          ctx.request.headers.cookie = updatedPairs.join('; ');
         }
       },
     },
   });
 
   if (signInResult.error) {
-    console.error("Anonymous sign-in failed:", signInResult.error);
+    console.error('Anonymous sign-in failed:', signInResult.error);
     throw new Error(
-      `Anonymous sign-in failed: ${signInResult.error.message ?? signInResult.error.code ?? "unknown error"}`,
+      `Anonymous sign-in failed: ${signInResult.error.message ?? signInResult.error.code ?? 'unknown error'}`,
     );
   }
 
   const getSessionResponse = await getSession(ctx);
   if (!getSessionResponse.data) {
-    throw new Error("Failed to retrieve session data after anonymous account creation");
+    throw new Error('Failed to retrieve session data after anonymous account creation');
   }
   ctx.state.auth = getSessionResponse.data;
   return next();
@@ -131,8 +131,8 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
 
 const router = new Router()
   .use(async (ctx: RouterContext, next: Next) => {
-    if ((await isSetupPending()) && ctx._matchedRouteName !== "first-time-setup") {
-      const redirectUrlOrError = router.url("first-time-setup");
+    if ((await isSetupPending()) && ctx._matchedRouteName !== 'first-time-setup') {
+      const redirectUrlOrError = router.url('first-time-setup');
       if (redirectUrlOrError instanceof Error) {
         throw redirectUrlOrError;
       }
@@ -140,50 +140,50 @@ const router = new Router()
     }
     return next();
   })
-  .get("dashboard", "/", async (ctx) => {
-    return renderPage(ctx, "home");
+  .get('dashboard', '/', async (ctx) => {
+    return renderPage(ctx, 'home');
   })
-  .get("first-time-setup", "/first-time-setup", async (ctx) => {
-    return renderPage(ctx, "first-time-setup");
+  .get('first-time-setup', '/first-time-setup', async (ctx) => {
+    return renderPage(ctx, 'first-time-setup');
   })
-  .use("/products", ensureAnonymousSession)
-  .get("products-redirect", "/products", async (ctx) => {
-    ctx.redirect("/products/singles");
+  .use('/products', ensureAnonymousSession)
+  .get('products-redirect', '/products', async (ctx) => {
+    ctx.redirect('/products/singles');
   })
-  .get("products-singles", "/products/singles", async (ctx) => {
-    return renderPage(ctx, "products-singles");
+  .get('products-singles', '/products/singles', async (ctx) => {
+    return renderPage(ctx, 'products-singles');
   })
-  .get("products-sealed", "/products/sealed", async (ctx) => {
-    return renderPage(ctx, "products-sealed");
+  .get('products-sealed', '/products/sealed', async (ctx) => {
+    return renderPage(ctx, 'products-sealed');
   })
-  .get("product-details", "/products/:productId", async (ctx) => {
-    return renderPage(ctx, "product-details");
+  .get('product-details', '/products/:productId', async (ctx) => {
+    return renderPage(ctx, 'product-details');
   })
   // Backward-compatible redirects from old card URLs
-  .get("cards-redirect", "/games/:game/cards", async (ctx) => {
+  .get('cards-redirect', '/games/:game/cards', async (ctx) => {
     const game = ctx.params.game;
     ctx.redirect(`/products/singles?game=${game}`);
   })
-  .get("card-details-redirect", "/games/:game/cards/:cardId", async (ctx) => {
+  .get('card-details-redirect', '/games/:game/cards/:cardId', async (ctx) => {
     ctx.redirect(`/products/${ctx.params.cardId}`);
   })
-  .get("orders", "/orders", async (ctx) => {
-    return renderPage(ctx, "orders");
+  .get('orders', '/orders', async (ctx) => {
+    return renderPage(ctx, 'orders');
   })
-  .get("inventory-redirect", "/inventory", async (ctx) => {
-    ctx.redirect("/inventory/singles");
+  .get('inventory-redirect', '/inventory', async (ctx) => {
+    ctx.redirect('/inventory/singles');
   })
-  .get("inventory-singles", "/inventory/singles", async (ctx) => {
-    return renderPage(ctx, "inventory-singles");
+  .get('inventory-singles', '/inventory/singles', async (ctx) => {
+    return renderPage(ctx, 'inventory-singles');
   })
-  .get("inventory-sealed", "/inventory/sealed", async (ctx) => {
-    return renderPage(ctx, "inventory-sealed");
+  .get('inventory-sealed', '/inventory/sealed', async (ctx) => {
+    return renderPage(ctx, 'inventory-sealed');
   })
-  .get("import-inventory", "/inventory/import", async (ctx) => {
-    return renderPage(ctx, "inventory-import");
+  .get('import-inventory', '/inventory/import', async (ctx) => {
+    return renderPage(ctx, 'inventory-import');
   })
-  .get("settings", "/settings", async (ctx) => {
-    return renderPage(ctx, "settings");
+  .get('settings', '/settings', async (ctx) => {
+    return renderPage(ctx, 'settings');
   });
 
 const port = 5173;
@@ -191,17 +191,17 @@ app
   .use(router.routes())
   .use(router.allowedMethods())
   .listen(port, () => {
-    console.log("Routes:");
+    console.log('Routes:');
     console.log(router.stack.map((i) => i.path));
     console.log(`Server is listening on port ${port}`);
   });
 
 async function renderPage(ctx: RouterContext, pageDirectory: string) {
-  const { render: renderShellTemplate } = await vite.ssrLoadModule("/packages/ui/src/shell.ts");
+  const { render: renderShellTemplate } = await vite.ssrLoadModule('/packages/ui/src/shell.ts');
   const { render: pageTemplate } = await vite.ssrLoadModule(
     `/packages/ui/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
   );
-  ctx.type = "html";
+  ctx.type = 'html';
   // ctx.body = new RenderResultReadable(
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );

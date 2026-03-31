@@ -1,19 +1,19 @@
-import { css, html, LitElement, nothing, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
-import "@awesome.me/webawesome/dist/components/badge/badge.js";
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { when } from 'lit/directives/when.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
+import '@awesome.me/webawesome/dist/components/badge/badge.js';
 
-if (typeof globalThis.document !== "undefined") {
-  import("@awesome.me/webawesome/dist/components/dialog/dialog.js");
+if (typeof globalThis.document !== 'undefined') {
+  import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
 }
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "../../components/ogs-page.ts";
-import { execute } from "../../lib/graphql.ts";
-import { TypedDocumentString } from "../../graphql/graphql.ts";
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '../../components/ogs-page.ts';
+import { execute } from '../../lib/graphql.ts';
+import { TypedDocumentString } from '../../graphql/graphql.ts';
 
 // --- Types ---
 
@@ -156,15 +156,15 @@ const UpdateOrderStatusMutation = new TypedDocumentString(`
   { orderId: number; status: string }
 >;
 
-@customElement("ogs-orders-page")
+@customElement('ogs-orders-page')
 export class OrdersPage extends LitElement {
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
 
   @state() orders: Order[] = [];
   @state() loading = true;
-  @state() error = "";
+  @state() error = '';
   @state() page = 1;
   @state() pageSize = 25;
   @state() totalCount = 0;
@@ -365,7 +365,7 @@ export class OrdersPage extends LitElement {
 
   async fetchOrders() {
     this.loading = true;
-    this.error = "";
+    this.error = '';
 
     try {
       const result = await execute(GetOrdersQuery, {
@@ -373,7 +373,7 @@ export class OrdersPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.getOrders;
         this.orders = data.orders;
@@ -381,7 +381,7 @@ export class OrdersPage extends LitElement {
         this.totalPages = data.totalPages;
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to load orders";
+      this.error = e instanceof Error ? e.message : 'Failed to load orders';
     } finally {
       this.loading = false;
     }
@@ -419,7 +419,7 @@ export class OrdersPage extends LitElement {
       const result = await execute(CancelOrderMutation, { orderId });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.cancelOrder;
         if (data.error) {
@@ -430,7 +430,7 @@ export class OrdersPage extends LitElement {
         }
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to cancel order";
+      this.error = e instanceof Error ? e.message : 'Failed to cancel order';
     } finally {
       this.cancellingOrderId = null;
       this.closeCancelDialog();
@@ -446,7 +446,7 @@ export class OrdersPage extends LitElement {
       const result = await execute(UpdateOrderStatusMutation, { orderId, status: newStatus });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.updateOrderStatus;
         if (data.error) {
@@ -456,7 +456,7 @@ export class OrdersPage extends LitElement {
         }
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to update order status";
+      this.error = e instanceof Error ? e.message : 'Failed to update order status';
     } finally {
       this.updatingStatusOrderId = null;
     }
@@ -560,39 +560,39 @@ export class OrdersPage extends LitElement {
         </td>
         <td><strong>${order.orderNumber}</strong></td>
         <td>${order.customerName}</td>
-        <td>${itemCount} item${itemCount !== 1 ? "s" : ""}</td>
+        <td>${itemCount} item${itemCount !== 1 ? 's' : ''}</td>
         <td class="price-cell">$${order.totalAmount.toFixed(2)}</td>
-        <td class="price-cell">${order.totalCostBasis != null ? `$${order.totalCostBasis.toFixed(2)}` : "—"}</td>
+        <td class="price-cell">${order.totalCostBasis != null ? `$${order.totalCostBasis.toFixed(2)}` : '—'}</td>
         <td
           class="price-cell"
           style="${order.totalProfit != null && order.totalProfit > 0
-            ? "color: var(--wa-color-success-text);"
+            ? 'color: var(--wa-color-success-text);'
             : order.totalProfit != null && order.totalProfit < 0
-              ? "color: var(--wa-color-danger-text);"
-              : ""}"
+              ? 'color: var(--wa-color-danger-text);'
+              : ''}"
         >
-          ${order.totalProfit != null ? `$${order.totalProfit.toFixed(2)}` : "—"}
+          ${order.totalProfit != null ? `$${order.totalProfit.toFixed(2)}` : '—'}
         </td>
         <td>
           <wa-badge
             class="status-badge"
-            variant="${order.status === "completed"
-              ? "success"
-              : order.status === "cancelled"
-                ? "danger"
-                : order.status === "open"
-                  ? "brand"
-                  : "neutral"}"
+            variant="${order.status === 'completed'
+              ? 'success'
+              : order.status === 'cancelled'
+                ? 'danger'
+                : order.status === 'open'
+                  ? 'brand'
+                  : 'neutral'}"
           >
             ${order.status}
           </wa-badge>
         </td>
         <td>${this.formatDate(order.createdAt)}</td>
         <td>
-          ${order.status !== "cancelled"
+          ${order.status !== 'cancelled'
             ? html`
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                  ${order.status === "open"
+                  ${order.status === 'open'
                     ? html`
                         <wa-button
                           size="small"
@@ -600,7 +600,7 @@ export class OrdersPage extends LitElement {
                           appearance="outlined"
                           ?loading="${this.updatingStatusOrderId === order.id}"
                           ?disabled="${this.updatingStatusOrderId !== null}"
-                          @click="${(e: Event) => this.handleUpdateStatus(order.id, "completed", e)}"
+                          @click="${(e: Event) => this.handleUpdateStatus(order.id, 'completed', e)}"
                         >
                           <wa-icon slot="start" name="check"></wa-icon>
                           Complete
@@ -613,13 +613,13 @@ export class OrdersPage extends LitElement {
                           appearance="outlined"
                           ?loading="${this.updatingStatusOrderId === order.id}"
                           ?disabled="${this.updatingStatusOrderId !== null}"
-                          @click="${(e: Event) => this.handleUpdateStatus(order.id, "open", e)}"
+                          @click="${(e: Event) => this.handleUpdateStatus(order.id, 'open', e)}"
                         >
                           <wa-icon slot="start" name="rotate-left"></wa-icon>
                           Re-open
                         </wa-button>
                       `}
-                  ${order.status !== "completed"
+                  ${order.status !== 'completed'
                     ? html`
                         <wa-button
                           size="small"
@@ -664,19 +664,19 @@ export class OrdersPage extends LitElement {
                             <td>${item.condition}</td>
                             <td class="price-cell">$${item.unitPrice.toFixed(2)}</td>
                             <td class="price-cell">
-                              ${item.costBasis != null ? `$${item.costBasis.toFixed(2)}` : "—"}
+                              ${item.costBasis != null ? `$${item.costBasis.toFixed(2)}` : '—'}
                             </td>
                             <td class="price-cell">${item.quantity}</td>
                             <td class="price-cell">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
                             <td
                               class="price-cell"
                               style="${item.profit != null && item.profit > 0
-                                ? "color: var(--wa-color-success-text);"
+                                ? 'color: var(--wa-color-success-text);'
                                 : item.profit != null && item.profit < 0
-                                  ? "color: var(--wa-color-danger-text);"
-                                  : ""}"
+                                  ? 'color: var(--wa-color-danger-text);'
+                                  : ''}"
                             >
-                              ${item.profit != null ? `$${item.profit.toFixed(2)}` : "—"}
+                              ${item.profit != null ? `$${item.profit.toFixed(2)}` : '—'}
                             </td>
                           </tr>
                         `,
@@ -700,7 +700,7 @@ export class OrdersPage extends LitElement {
               <p>Are you sure you want to cancel order <strong>${order.orderNumber}</strong>?</p>
               <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
                 This will return ${order.items.reduce((sum, i) => sum + i.quantity, 0)}
-                item${order.items.reduce((sum, i) => sum + i.quantity, 0) !== 1 ? "s" : ""} back to inventory and mark
+                item${order.items.reduce((sum, i) => sum + i.quantity, 0) !== 1 ? 's' : ''} back to inventory and mark
                 the order as cancelled. This action cannot be undone.
               </p>
             `

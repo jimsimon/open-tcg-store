@@ -1,6 +1,6 @@
-import { eq, and, like, sql, inArray, isNull } from "drizzle-orm";
-import { otcgs, inventoryItem } from "../db/otcgs/index";
-import { product, group, category, productExtendedData, price } from "../db/tcg-data/schema";
+import { eq, and, like, sql, inArray, isNull } from 'drizzle-orm';
+import { otcgs, inventoryItem } from '../db/otcgs/index';
+import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import type {
   InventoryItem,
   InventoryPage,
@@ -10,7 +10,7 @@ import type {
   UpdateInventoryItemInput,
   BulkUpdateInventoryInput,
   ProductSearchResult,
-} from "../schema/types.generated";
+} from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,7 +47,7 @@ function baseInventoryQuery() {
         WHERE ${productExtendedData.productId} = ${product.id}
           AND ${productExtendedData.name} = 'Rarity'
         LIMIT 1
-      )`.as("rarity"),
+      )`.as('rarity'),
       // isSingle flag
       isSingle: sql<boolean>`(
         EXISTS (
@@ -55,7 +55,7 @@ function baseInventoryQuery() {
           WHERE ${productExtendedData.productId} = ${product.id}
             AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
         )
-      )`.as("is_single"),
+      )`.as('is_single'),
     })
     .from(inventoryItem)
     .innerJoin(product, eq(inventoryItem.productId, product.id))
@@ -88,9 +88,9 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
   return {
     id: r.id,
     productId: r.productId,
-    productName: r.productName ?? "",
-    gameName: r.gameName ?? "",
-    setName: r.setName ?? "",
+    productName: r.productName ?? '',
+    gameName: r.gameName ?? '',
+    setName: r.setName ?? '',
     rarity: r.rarity ?? null,
     isSingle,
     isSealed: !isSingle,
@@ -518,14 +518,14 @@ export async function searchProducts(searchTerm: string, game?: string | null): 
         WHERE ${productExtendedData.productId} = ${product.id}
           AND ${productExtendedData.name} = 'Rarity'
         LIMIT 1
-      )`.as("rarity"),
+      )`.as('rarity'),
       isSingle: sql<boolean>`(
         EXISTS (
           SELECT 1 FROM ${productExtendedData}
           WHERE ${productExtendedData.productId} = ${product.id}
             AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
         )
-      )`.as("is_single"),
+      )`.as('is_single'),
     })
     .from(product)
     .leftJoin(group, eq(product.groupId, group.id))
@@ -566,9 +566,9 @@ export async function searchProducts(searchTerm: string, game?: string | null): 
 
     return {
       id: r.id,
-      name: r.name ?? "",
-      gameName: r.gameName ?? "",
-      setName: r.setName ?? "",
+      name: r.name ?? '',
+      gameName: r.gameName ?? '',
+      setName: r.setName ?? '',
       rarity: r.rarity ?? null,
       imageUrl: r.imageUrl ?? null,
       isSingle,

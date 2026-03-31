@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
-import { cartItem, otcgs } from "../../../../db";
-import { GraphqlContext } from "../../../../server";
-import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
-import type { MutationResolvers } from "./../../../types.generated";
-export const updateItemInCart: NonNullable<MutationResolvers["updateItemInCart"]> = async (
+import { eq } from 'drizzle-orm';
+import { cartItem, otcgs } from '../../../../db';
+import { GraphqlContext } from '../../../../server';
+import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from '../../../../services/shopping-cart-service';
+import type { MutationResolvers } from './../../../types.generated';
+export const updateItemInCart: NonNullable<MutationResolvers['updateItemInCart']> = async (
   _parent,
   _arg,
   ctx: GraphqlContext,

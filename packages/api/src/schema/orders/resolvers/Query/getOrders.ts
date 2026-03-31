@@ -1,7 +1,7 @@
-import { getOrders as getOrdersService } from "../../../../services/order-service";
-import type { QueryResolvers } from "./../../../types.generated";
+import { getOrders as getOrdersService } from '../../../../services/order-service';
+import type { QueryResolvers } from './../../../types.generated';
 
-export const getOrders: NonNullable<QueryResolvers["getOrders"]> = async (_parent, _arg, _ctx) => {
+export const getOrders: NonNullable<QueryResolvers['getOrders']> = async (_parent, _arg, _ctx) => {
   const pagination = _arg.pagination
     ? {
         page: _arg.pagination.page ?? undefined,

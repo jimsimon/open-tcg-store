@@ -1,1 +1,1 @@
-import "../../components/ogs-page.ts";
+import '../../components/ogs-page.ts';

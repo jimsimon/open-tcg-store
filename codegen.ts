@@ -1,15 +1,15 @@
-import type { CodegenConfig } from "@graphql-codegen/cli";
-import { defineConfig } from "@eddeee888/gcg-typescript-resolver-files";
+import type { CodegenConfig } from '@graphql-codegen/cli';
+import { defineConfig } from '@eddeee888/gcg-typescript-resolver-files';
 
 const config: CodegenConfig = {
-  schema: ["packages/api/src/schema/**/schema.graphql"],
-  documents: ["packages/ui/src/*.ts", "packages/ui/src/**/*.ts"],
+  schema: ['packages/api/src/schema/**/schema.graphql'],
+  documents: ['packages/ui/src/*.ts', 'packages/ui/src/**/*.ts'],
   generates: {
-    "packages/api/src/schema": defineConfig({ tsConfigFilePath: "./tsconfig.json" }),
-    "packages/ui/src/graphql/": {
-      preset: "client",
+    'packages/api/src/schema': defineConfig({ tsConfigFilePath: './tsconfig.json' }),
+    'packages/ui/src/graphql/': {
+      preset: 'client',
       config: {
-        documentMode: "string",
+        documentMode: 'string',
       },
     },
   },

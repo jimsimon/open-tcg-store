@@ -1,42 +1,42 @@
-import { LitElement, PropertyValues, css, html, nothing, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { SignalWatcher } from "@lit-labs/signals";
-import { when } from "lit/directives/when.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "@awesome.me/webawesome/dist/components/select/select.js";
-import "@awesome.me/webawesome/dist/components/option/option.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/divider/divider.js";
-import "@awesome.me/webawesome/dist/components/avatar/avatar.js";
-import "@awesome.me/webawesome/dist/components/badge/badge.js";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
+import { LitElement, PropertyValues, css, html, nothing, unsafeCSS } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { SignalWatcher } from '@lit-labs/signals';
+import { when } from 'lit/directives/when.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '@awesome.me/webawesome/dist/components/select/select.js';
+import '@awesome.me/webawesome/dist/components/option/option.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '@awesome.me/webawesome/dist/components/avatar/avatar.js';
+import '@awesome.me/webawesome/dist/components/badge/badge.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 
 // These components reference `document` at module scope, so they must be
 // loaded dynamically to avoid "document is not defined" during SSR.
-if (typeof globalThis.document !== "undefined") {
-  import("@awesome.me/webawesome/dist/components/dropdown/dropdown.js");
-  import("@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js");
-  import("@awesome.me/webawesome/dist/components/dialog/dialog.js");
-  import("@awesome.me/webawesome/dist/components/input/input.js");
-  import("@awesome.me/webawesome/dist/components/drawer/drawer.js");
-  import("@awesome.me/webawesome/dist/components/spinner/spinner.js");
-  import("@awesome.me/webawesome/dist/components/callout/callout.js");
+if (typeof globalThis.document !== 'undefined') {
+  import('@awesome.me/webawesome/dist/components/dropdown/dropdown.js');
+  import('@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js');
+  import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
+  import('@awesome.me/webawesome/dist/components/input/input.js');
+  import('@awesome.me/webawesome/dist/components/drawer/drawer.js');
+  import('@awesome.me/webawesome/dist/components/spinner/spinner.js');
+  import('@awesome.me/webawesome/dist/components/callout/callout.js');
 }
-import Cookies from "js-cookie";
-import { graphql } from "../graphql";
-import { execute } from "../lib/graphql";
-import { TypedDocumentString } from "../graphql/graphql";
-import logoSvg from "../assets/logo.svg?raw";
-import { cartState } from "../lib/cart-state";
-import type { CartItem } from "../lib/cart-state";
+import Cookies from 'js-cookie';
+import { graphql } from '../graphql';
+import { execute } from '../lib/graphql';
+import { TypedDocumentString } from '../graphql/graphql';
+import logoSvg from '../assets/logo.svg?raw';
+import { cartState } from '../lib/cart-state';
+import type { CartItem } from '../lib/cart-state';
 
 // Lazy-load authClient to avoid potential SSR issues
-let _authClient: typeof import("../auth-client").authClient | undefined;
+let _authClient: typeof import('../auth-client').authClient | undefined;
 async function getAuthClient() {
   if (!_authClient) {
-    const mod = await import("../auth-client");
+    const mod = await import('../auth-client');
     _authClient = mod.authClient;
   }
   return _authClient;
@@ -119,7 +119,7 @@ const SubmitOrderMutation = new TypedDocumentString(`
   { input: { customerName: string } }
 >;
 
-@customElement("ogs-page")
+@customElement('ogs-page')
 export class OgsPage extends SignalWatcher(LitElement) {
   static styles = [
     css`
@@ -434,7 +434,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   activePage?: string;
 
   @property({ type: String })
-  userRole = "";
+  userRole = '';
 
   @property({ type: Boolean })
   hideNav = false;
@@ -449,10 +449,10 @@ export class OgsPage extends SignalWatcher(LitElement) {
   showUserMenu = false;
 
   @property({ type: String })
-  userName = "";
+  userName = '';
 
   @state()
-  themePreference = Cookies.get("ogs-theme-preference") || "auto";
+  themePreference = Cookies.get('ogs-theme-preference') || 'auto';
 
   @state()
   themeColor = this.determineThemeColor();
@@ -461,22 +461,22 @@ export class OgsPage extends SignalWatcher(LitElement) {
   showAuthDialog = false;
 
   @state()
-  authMode: "signin" | "signup" = "signin";
+  authMode: 'signin' | 'signup' = 'signin';
 
   @state()
-  authEmail = "";
+  authEmail = '';
 
   @state()
-  authPassword = "";
+  authPassword = '';
 
   @state()
-  authConfirmPassword = "";
+  authConfirmPassword = '';
 
   @state()
-  authName = "";
+  authName = '';
 
   @state()
-  authError = "";
+  authError = '';
 
   @state()
   authLoading = false;
@@ -486,16 +486,16 @@ export class OgsPage extends SignalWatcher(LitElement) {
   showCartDrawer = false;
 
   @state()
-  customerName = "";
+  customerName = '';
 
   @state()
   submittingOrder = false;
 
   @state()
-  orderError = "";
+  orderError = '';
 
   @state()
-  orderSuccess = "";
+  orderSuccess = '';
 
   @state()
   updatingCartItem = false;
@@ -511,12 +511,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
   connectedCallback(): void {
     super.connectedCallback();
     this.fetchCart();
-    window.addEventListener("scroll", this.boundHandleScroll, { passive: true });
+    window.addEventListener('scroll', this.boundHandleScroll, { passive: true });
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener("scroll", this.boundHandleScroll);
+    window.removeEventListener('scroll', this.boundHandleScroll);
   }
 
   async fetchCart() {
@@ -557,10 +557,10 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
     if (delta > 0 && currentScrollY > 64) {
       // Scrolling down & past the header height
-      this.toggleAttribute("header-hidden", true);
+      this.toggleAttribute('header-hidden', true);
     } else if (delta < 0) {
       // Scrolling up
-      this.toggleAttribute("header-hidden", false);
+      this.toggleAttribute('header-hidden', false);
     }
 
     this.lastScrollY = currentScrollY;
@@ -585,14 +585,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
               slot="start"
               name="sun"
               variant="regular"
-              .hidden="${this.themeColor === "dark"}"
+              .hidden="${this.themeColor === 'dark'}"
             ></wa-icon>
             <wa-icon
               class="only-dark"
               slot="start"
               name="moon"
               variant="regular"
-              .hidden="${this.themeColor === "light"}"
+              .hidden="${this.themeColor === 'light'}"
             ></wa-icon>
             <wa-option value="light">
               <wa-icon slot="start" name="sun" variant="regular"></wa-icon>
@@ -627,20 +627,20 @@ export class OgsPage extends SignalWatcher(LitElement) {
           () => html`
             <nav>
               <div class="nav-section-label">Shop</div>
-              ${this.renderNavLink("/products/singles", "bag-shopping", "Browse", "products")}
-              ${this.renderNavSubLink("/products/singles", "Singles", "products/singles")}
-              ${this.renderNavSubLink("/products/sealed", "Sealed", "products/sealed")}
+              ${this.renderNavLink('/products/singles', 'bag-shopping', 'Browse', 'products')}
+              ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
+              ${this.renderNavSubLink('/products/sealed', 'Sealed', 'products/sealed')}
               ${when(
-                this.userRole === "admin" || this.userRole === "employee",
+                this.userRole === 'admin' || this.userRole === 'employee',
                 () => html`
                   <wa-divider></wa-divider>
                   <div class="nav-section-label">Management</div>
 
-                  ${this.renderNavLink("/", "house", "Dashboard", "Dashboard")}
-                  ${this.renderNavLink("/orders", "receipt", "Orders", "Orders")}
-                  ${this.renderNavLink("/inventory/singles", "boxes-stacked", "Inventory", "inventory")}
-                  ${this.renderNavSubLink("/inventory/singles", "Singles", "inventory/singles")}
-                  ${this.renderNavSubLink("/inventory/sealed", "Sealed", "inventory/sealed")}
+                  ${this.renderNavLink('/', 'house', 'Dashboard', 'Dashboard')}
+                  ${this.renderNavLink('/orders', 'receipt', 'Orders', 'Orders')}
+                  ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
+                  ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}
+                  ${this.renderNavSubLink('/inventory/sealed', 'Sealed', 'inventory/sealed')}
                 `,
               )}
             </nav>
@@ -658,8 +658,8 @@ export class OgsPage extends SignalWatcher(LitElement) {
   // --- Cart Drawer ---
 
   private openCartDrawer() {
-    this.orderError = "";
-    this.orderSuccess = "";
+    this.orderError = '';
+    this.orderSuccess = '';
     this.showCartDrawer = true;
   }
 
@@ -809,7 +809,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
           variant="brand"
           style="margin-top: var(--wa-space-l);"
           @click="${() => {
-            this.orderSuccess = "";
+            this.orderSuccess = '';
             this.closeCartDrawer();
           }}"
         >
@@ -833,12 +833,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
       });
 
       if (result?.errors?.length) {
-        console.error("Failed to update cart item:", result.errors);
+        console.error('Failed to update cart item:', result.errors);
       } else {
         cartState.set(result.data.updateItemInCart);
       }
     } catch (e) {
-      console.error("Failed to update cart item:", e);
+      console.error('Failed to update cart item:', e);
     } finally {
       this.updatingCartItem = false;
     }
@@ -854,12 +854,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
       });
 
       if (result?.errors?.length) {
-        console.error("Failed to remove cart item:", result.errors);
+        console.error('Failed to remove cart item:', result.errors);
       } else {
         cartState.set(result.data.removeFromCart);
       }
     } catch (e) {
-      console.error("Failed to remove cart item:", e);
+      console.error('Failed to remove cart item:', e);
     } finally {
       this.updatingCartItem = false;
     }
@@ -868,7 +868,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   private async handleSubmitOrder() {
     if (this.submittingOrder || !this.customerName.trim()) return;
     this.submittingOrder = true;
-    this.orderError = "";
+    this.orderError = '';
 
     try {
       const result = await execute(SubmitOrderMutation, {
@@ -876,7 +876,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       });
 
       if (result?.errors?.length) {
-        this.orderError = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.orderError = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.submitOrder;
         if (data.error) {
@@ -886,7 +886,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 (i: { productName: string; condition: string; requested: number; available: number }) =>
                   `${i.productName} (${i.condition}): requested ${i.requested}, only ${i.available} available`,
               )
-              .join("; ");
+              .join('; ');
             this.orderError = `${data.error}: ${details}`;
           } else {
             this.orderError = data.error;
@@ -896,11 +896,11 @@ export class OgsPage extends SignalWatcher(LitElement) {
         } else if (data.order) {
           this.orderSuccess = `Order ${data.order.orderNumber} created for $${data.order.totalAmount.toFixed(2)}`;
           cartState.set({ items: [] });
-          this.customerName = "";
+          this.customerName = '';
         }
       }
     } catch (e) {
-      this.orderError = e instanceof Error ? e.message : "Failed to submit order";
+      this.orderError = e instanceof Error ? e.message : 'Failed to submit order';
     } finally {
       this.submittingOrder = false;
     }
@@ -941,13 +941,13 @@ export class OgsPage extends SignalWatcher(LitElement) {
   private renderAuthDialog() {
     return html`
       <wa-dialog
-        label="${this.authMode === "signin" ? "Sign In" : "Sign Up"}"
+        label="${this.authMode === 'signin' ? 'Sign In' : 'Sign Up'}"
         ?open="${this.showAuthDialog}"
         @wa-after-hide="${this.closeAuthDialog}"
       >
         <div class="auth-form" @keydown="${this.handleAuthKeydown}">
           ${when(
-            this.authMode === "signup",
+            this.authMode === 'signup',
             () => html`
               <wa-input
                 label="Name"
@@ -980,7 +980,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
           <wa-input
             type="password"
             name="password"
-            autocomplete="${this.authMode === "signin" ? "current-password" : "new-password"}"
+            autocomplete="${this.authMode === 'signin' ? 'current-password' : 'new-password'}"
             label="Password"
             required
             password-toggle
@@ -992,7 +992,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
           </wa-input>
 
           ${when(
-            this.authMode === "signup",
+            this.authMode === 'signup',
             () => html`
               <wa-input
                 type="password"
@@ -1012,7 +1012,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
           ${this.authError ? html`<p class="auth-error">${this.authError}</p>` : nothing}
 
           <div class="auth-toggle">
-            ${this.authMode === "signin"
+            ${this.authMode === 'signin'
               ? html`Don't have an account? <a @click="${this.switchToSignUp}">Sign up</a>`
               : html`Already have an account? <a @click="${this.switchToSignIn}">Sign in</a>`}
           </div>
@@ -1020,38 +1020,38 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeAuthDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="brand" ?loading="${this.authLoading}" @click="${this.handleAuthSubmit}">
-          ${this.authMode === "signin" ? "Sign in" : "Sign up"}
+          ${this.authMode === 'signin' ? 'Sign in' : 'Sign up'}
         </wa-button>
       </wa-dialog>
     `;
   }
 
   private openAuthDialog() {
-    this.authMode = "signin";
-    this.authEmail = "";
-    this.authPassword = "";
-    this.authConfirmPassword = "";
-    this.authName = "";
-    this.authError = "";
+    this.authMode = 'signin';
+    this.authEmail = '';
+    this.authPassword = '';
+    this.authConfirmPassword = '';
+    this.authName = '';
+    this.authError = '';
     this.authLoading = false;
     this.showAuthDialog = true;
   }
 
   private closeAuthDialog() {
     this.showAuthDialog = false;
-    this.authError = "";
+    this.authError = '';
   }
 
   private switchToSignUp(event: Event) {
     event.preventDefault();
-    this.authMode = "signup";
-    this.authError = "";
+    this.authMode = 'signup';
+    this.authError = '';
   }
 
   private switchToSignIn(event: Event) {
     event.preventDefault();
-    this.authMode = "signin";
-    this.authError = "";
+    this.authMode = 'signin';
+    this.authError = '';
   }
 
   private handleAuthNameInput(event: Event) {
@@ -1071,31 +1071,31 @@ export class OgsPage extends SignalWatcher(LitElement) {
   }
 
   private handleAuthKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       event.preventDefault();
       this.handleAuthSubmit();
     }
   }
 
   private async handleAuthSubmit() {
-    this.authError = "";
+    this.authError = '';
     this.authLoading = true;
 
     try {
       const authClient = await getAuthClient();
-      if (this.authMode === "signin") {
+      if (this.authMode === 'signin') {
         const result = await authClient.signIn.email({
           email: this.authEmail,
           password: this.authPassword,
         });
         if (result.error) {
-          this.authError = result.error.message ?? "Sign in failed";
+          this.authError = result.error.message ?? 'Sign in failed';
         } else {
           window.location.reload();
         }
       } else {
         if (this.authPassword !== this.authConfirmPassword) {
-          this.authError = "Passwords do not match";
+          this.authError = 'Passwords do not match';
           this.authLoading = false;
           return;
         }
@@ -1105,14 +1105,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
           name: this.authName,
         });
         if (signUpResult.error) {
-          this.authError = signUpResult.error.message ?? "Sign up failed";
+          this.authError = signUpResult.error.message ?? 'Sign up failed';
         } else {
           // Better Auth auto-signs in after sign-up by default (autoSignIn: true)
           window.location.reload();
         }
       }
     } catch (e) {
-      this.authError = e instanceof Error ? e.message : "An unexpected error occurred";
+      this.authError = e instanceof Error ? e.message : 'An unexpected error occurred';
     } finally {
       this.authLoading = false;
     }
@@ -1123,18 +1123,18 @@ export class OgsPage extends SignalWatcher(LitElement) {
       const authClient = await getAuthClient();
       await authClient.signOut();
       // Clear session cookies to prevent stale session issues on next sign-in
-      Cookies.remove("better-auth.session_token");
-      Cookies.remove("better-auth.session_data");
-      window.location.href = "/";
+      Cookies.remove('better-auth.session_token');
+      Cookies.remove('better-auth.session_data');
+      window.location.href = '/';
     } catch (e) {
-      console.error("Sign out failed:", e);
+      console.error('Sign out failed:', e);
     }
   }
 
   handleThemePreferenceChange(event: Event) {
     const { value } = event.target as WaSelect;
-    if (value && typeof value === "string") {
-      Cookies.set("ogs-theme-preference", value);
+    if (value && typeof value === 'string') {
+      Cookies.set('ogs-theme-preference', value);
       this.themePreference = value;
     }
 
@@ -1143,24 +1143,24 @@ export class OgsPage extends SignalWatcher(LitElement) {
   }
 
   determineThemeColor() {
-    if (this.themePreference === "auto") {
-      const prefersDarkColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    if (this.themePreference === 'auto') {
+      const prefersDarkColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
       if (prefersDarkColorScheme.matches) {
-        document.querySelector("html")?.classList.add("wa-dark");
-        return "dark";
+        document.querySelector('html')?.classList.add('wa-dark');
+        return 'dark';
       } else {
-        document.querySelector("html")?.classList.remove("wa-dark");
-        return "light";
+        document.querySelector('html')?.classList.remove('wa-dark');
+        return 'light';
       }
     }
     return this.themePreference;
   }
 
   updateThemeClass() {
-    if (this.themeColor === "light") {
-      document.querySelector("html")?.classList.remove("wa-dark");
+    if (this.themeColor === 'light') {
+      document.querySelector('html')?.classList.remove('wa-dark');
     } else {
-      document.querySelector("html")?.classList.add("wa-dark");
+      document.querySelector('html')?.classList.add('wa-dark');
     }
   }
 
@@ -1169,7 +1169,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   }
 
   private renderNavLink(href: string, icon: string, label: string, activationKey: string) {
-    const isActive = this.activePage === activationKey || (this.activePage?.startsWith(activationKey + "/") ?? false);
+    const isActive = this.activePage === activationKey || (this.activePage?.startsWith(activationKey + '/') ?? false);
     return html`<a class="nav-link" href="${href}" ?current="${isActive}">
       <wa-icon name="${icon}" variant="solid"></wa-icon>
       ${label}

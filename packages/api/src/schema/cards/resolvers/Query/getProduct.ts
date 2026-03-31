@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
-import type { QueryResolvers } from "../../../types.generated";
-import { otcgs } from "../../../../db";
-import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
+import { eq } from 'drizzle-orm';
+import type { QueryResolvers } from '../../../types.generated';
+import { otcgs } from '../../../../db';
+import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
 
-export const getProduct: NonNullable<QueryResolvers["getProduct"]> = async (_parent, { productId }, _ctx) => {
+export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_parent, { productId }, _ctx) => {
   const id = Number.parseInt(productId, 10);
   if (Number.isNaN(id)) {
     throw new Error(`Invalid product id: ${productId}`);
@@ -44,7 +44,7 @@ export const getProduct: NonNullable<QueryResolvers["getProduct"]> = async (_par
   }
 
   // Determine if this is a single or sealed product
-  const hasRarityOrNumber = result.extendedData.some((d) => d.name === "Rarity" || d.name === "Number");
+  const hasRarityOrNumber = result.extendedData.some((d) => d.name === 'Rarity' || d.name === 'Number');
   const isSingle = hasRarityOrNumber;
   const isSealed = !hasRarityOrNumber;
 
@@ -71,18 +71,18 @@ export const getProduct: NonNullable<QueryResolvers["getProduct"]> = async (_par
 
   // Map game name from categoryId
   function getGameName(catId: number | null | undefined): string {
-    if (catId === 1) return "Magic";
-    if (catId === 2) return "Pokemon";
-    return "Unknown";
+    if (catId === 1) return 'Magic';
+    if (catId === 2) return 'Pokemon';
+    return 'Unknown';
   }
 
   return {
     id: result.id.toString(),
     name: result.name,
-    setName: result.group?.name ?? "Unknown Set",
+    setName: result.group?.name ?? 'Unknown Set',
     gameName: getGameName(result.categoryId),
     rarity: extendedDataMap.Rarity ?? null,
-    type: extendedDataMap.SubType ?? extendedDataMap["Card Type"] ?? null,
+    type: extendedDataMap.SubType ?? extendedDataMap['Card Type'] ?? null,
     text: extendedDataMap.OracleText ?? extendedDataMap.CardText ?? null,
     flavorText: extendedDataMap.FlavorText ?? null,
     finishes: result.prices.map((p) => p.subTypeName),

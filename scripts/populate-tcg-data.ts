@@ -1,6 +1,6 @@
 #!/usr/bin/env -S npx tsx
 
-import { tcgData } from "../packages/api/src/db/tcg-data/index";
+import { tcgData } from '../packages/api/src/db/tcg-data/index';
 import {
   category as dbCategory,
   group as dbGroup,
@@ -8,7 +8,7 @@ import {
   productPresaleInfo,
   productExtendedData,
   price,
-} from "../packages/api/src/db/tcg-data/schema";
+} from '../packages/api/src/db/tcg-data/schema';
 
 // Types for the API responses
 interface Category {
@@ -92,7 +92,7 @@ const categoryIdsToProcess = [MAGIC_CATEGORY_ID, POKEMON_CATEGORY_ID];
 
 async function fetchTcgData() {
   try {
-    const categoriesUrl = "https://tcgcsv.com/tcgplayer/categories";
+    const categoriesUrl = 'https://tcgcsv.com/tcgplayer/categories';
     console.log(`Fetching categories: ${categoriesUrl}`);
     const categoriesResponse = await fetch(categoriesUrl);
     if (!categoriesResponse.ok) {
@@ -171,7 +171,7 @@ async function fetchTcgData() {
         const products = productsData.results;
 
         if (products.length === 0) {
-          console.log("No products found");
+          console.log('No products found');
           continue;
         }
         console.log(`Creating ${products.length} products`);
@@ -284,7 +284,7 @@ async function fetchTcgData() {
       }
     }
   } catch (error) {
-    console.error("Error fetching TCG data:", error);
+    console.error('Error fetching TCG data:', error);
     process.exit(1);
   }
 }

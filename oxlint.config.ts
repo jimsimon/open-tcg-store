@@ -1,10 +1,10 @@
-import { defineConfig } from "oxlint";
+import { defineConfig } from 'oxlint';
 
 export default defineConfig({
   categories: {
-    correctness: "warn",
+    correctness: 'warn',
   },
   rules: {
-    "eslint/no-unused-vars": "error",
+    'eslint/no-unused-vars': 'error',
   },
 });

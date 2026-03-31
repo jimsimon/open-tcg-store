@@ -1,4 +1,4 @@
-import { workspaceRootSync } from "workspace-root";
+import { workspaceRootSync } from 'workspace-root';
 
 const workspaceRoot = workspaceRootSync()!;
 
@@ -22,23 +22,23 @@ export function render(pageDirectory: string, pageContent: unknown) {
             line-height: var(--wa-line-height-normal);
           }
         </style>
-        <link rel="stylesheet" href="${resolveModulePath("@fontsource/inconsolata/index.css")}"/>
+        <link rel="stylesheet" href="${resolveModulePath('@fontsource/inconsolata/index.css')}"/>
         <link
           rel="stylesheet"
-          href="${resolveModulePath("@awesome.me/webawesome/dist/styles/webawesome.css")}"
+          href="${resolveModulePath('@awesome.me/webawesome/dist/styles/webawesome.css')}"
         />
-        <link rel="stylesheet" href="${resolveModulePath("@awesome.me/webawesome/dist/styles/themes/awesome.css")}" />
+        <link rel="stylesheet" href="${resolveModulePath('@awesome.me/webawesome/dist/styles/themes/awesome.css')}" />
         <script type="module" src="/@vite/client"></script>
       </head>
       <body>
         ${pageContent}
         <script
           type="module"
-          src="${resolveModulePath("@lit-labs/ssr-client/lit-element-hydrate-support.js")}"
+          src="${resolveModulePath('@lit-labs/ssr-client/lit-element-hydrate-support.js')}"
         ></script>
         <script type="module">
-          import { setBasePath } from '${resolveModulePath("@awesome.me/webawesome")}';
-          setBasePath('${resolveModulePath("@awesome.me/webawesome")}');
+          import { setBasePath } from '${resolveModulePath('@awesome.me/webawesome')}';
+          setBasePath('${resolveModulePath('@awesome.me/webawesome')}');
         </script>
         <script
           type="module"
@@ -50,5 +50,5 @@ export function render(pageDirectory: string, pageContent: unknown) {
 }
 
 function resolveModulePath(module: string) {
-  return import.meta.resolve(module).replace(`file://${workspaceRoot}`, "");
+  return import.meta.resolve(module).replace(`file://${workspaceRoot}`, '');
 }

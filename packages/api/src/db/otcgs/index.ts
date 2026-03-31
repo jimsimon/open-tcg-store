@@ -1,18 +1,18 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
-import { databaseFile } from "./drizzle.config";
-import { databaseFile as tcgDataDatabaseFile } from "../tcg-data/drizzle.config";
-import * as schema from "./schema";
-import * as tcgDataSchema from "../tcg-data/schema";
-import * as tcgDataRelations from "../tcg-data/relations";
-import * as shoppingRelations from "./shopping-relations";
-import * as inventoryRelations from "./inventory-relations";
-import * as orderRelations from "./order-relations";
-export * from "./schema";
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
+import { databaseFile } from './drizzle.config';
+import { databaseFile as tcgDataDatabaseFile } from '../tcg-data/drizzle.config';
+import * as schema from './schema';
+import * as tcgDataSchema from '../tcg-data/schema';
+import * as tcgDataRelations from '../tcg-data/relations';
+import * as shoppingRelations from './shopping-relations';
+import * as inventoryRelations from './inventory-relations';
+import * as orderRelations from './order-relations';
+export * from './schema';
 
 const client = createClient({ url: databaseFile });
 // Strip the "file:" prefix for ATTACH DATABASE since it expects a plain file path
-const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, "");
+const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, '');
 await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 
 const otcgs = drizzle(client, {

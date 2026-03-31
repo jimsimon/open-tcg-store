@@ -1,12 +1,12 @@
-import { LitElement, css, html, nothing } from "lit";
-import { customElement, property, queryAssignedElements, state } from "lit/decorators.js";
+import { LitElement, css, html, nothing } from 'lit';
+import { customElement, property, queryAssignedElements, state } from 'lit/decorators.js';
 
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
 
-import { when } from "lit/directives/when.js";
+import { when } from 'lit/directives/when.js';
 
-@customElement("ogs-wizard")
+@customElement('ogs-wizard')
 export class OgsWizard extends LitElement {
   static styles = css`
     :host {
@@ -26,13 +26,13 @@ export class OgsWizard extends LitElement {
       justify-content: space-between;
     }
 
-    wa-button[variant="brand"] {
+    wa-button[variant='brand'] {
       margin-left: auto;
     }
   `;
 
   @state()
-  @queryAssignedElements({ flatten: true, selector: "ogs-wizard-item" })
+  @queryAssignedElements({ flatten: true, selector: 'ogs-wizard-item' })
   items: OgsWizardItem[] = [];
 
   @state()
@@ -72,12 +72,12 @@ export class OgsWizard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.addEventListener("keydown", this.handleKeyDown);
+    this.addEventListener('keydown', this.handleKeyDown);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener("keydown", this.handleKeyDown);
+    this.removeEventListener('keydown', this.handleKeyDown);
   }
 
   firstUpdated() {
@@ -99,16 +99,16 @@ export class OgsWizard extends LitElement {
   }
 
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== "Enter") return;
+    if (event.key !== 'Enter') return;
 
     const target = event.composedPath()[0] as HTMLElement;
     const tagName = target?.tagName?.toLowerCase();
 
     // Only handle Enter from input-like elements (native or web component internals)
-    if (tagName !== "input" && tagName !== "wa-input" && tagName !== "textarea") return;
+    if (tagName !== 'input' && tagName !== 'wa-input' && tagName !== 'textarea') return;
 
     // Don't advance if the target is a textarea (multiline input)
-    if (tagName === "textarea") return;
+    if (tagName === 'textarea') return;
 
     event.preventDefault();
 
@@ -136,7 +136,7 @@ export class OgsWizard extends LitElement {
   }
 
   save() {
-    const event = new Event("ogs-wizard-save-click", {
+    const event = new Event('ogs-wizard-save-click', {
       bubbles: true,
       composed: true,
     });
@@ -145,7 +145,7 @@ export class OgsWizard extends LitElement {
 
   updateItemVisibility() {
     for (let i = 0; i < this.items.length; i++) {
-      this.items[i].style.display = i !== this.activeIndex ? "none" : "block";
+      this.items[i].style.display = i !== this.activeIndex ? 'none' : 'block';
     }
   }
 
@@ -172,7 +172,7 @@ export class OgsWizard extends LitElement {
   }
 }
 
-@customElement("ogs-wizard-item")
+@customElement('ogs-wizard-item')
 export class OgsWizardItem extends LitElement {
   static styles = css`
     :host {
@@ -181,7 +181,7 @@ export class OgsWizardItem extends LitElement {
   `;
 
   @property()
-  heading: string = "";
+  heading: string = '';
 
   render() {
     return html`<slot></slot>`;

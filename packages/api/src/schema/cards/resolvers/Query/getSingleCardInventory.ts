@@ -1,18 +1,18 @@
-import { sql } from "drizzle-orm";
-import { otcgs } from "../../../../db";
-import { productExtendedData } from "../../../../db/tcg-data/schema";
-import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
-import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
+import { sql } from 'drizzle-orm';
+import { otcgs } from '../../../../db';
+import { productExtendedData } from '../../../../db/tcg-data/schema';
+import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from '../../../types.generated';
 
-export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
+export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
   _parent,
   { game, filters },
   _ctx,
 ) => {
   try {
-    if (game === "magic") {
+    if (game === 'magic') {
       return await getInventory(1, filters);
-    } else if (game === "pokemon") {
+    } else if (game === 'pokemon') {
       return await getInventory(2, filters);
     }
   } catch (e) {
@@ -87,8 +87,8 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
           .select({
             productId: inventoryItem.productId,
             condition: inventoryItem.condition,
-            totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as("total_quantity"),
-            lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as("lowest_price"),
+            totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+            lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
           })
           .from(inventoryItem)
           .where(
@@ -142,7 +142,7 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
         id: result.id.toString(),
         name: result.name,
         finishes: [subTypeName],
-        setName: result.group?.name || "Unknown Set",
+        setName: result.group?.name || 'Unknown Set',
         images: {
           small: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_200x200.jpg`,
           large: `https://tcgplayer-cdn.tcgplayer.com/product/${result.tcgpProductId}_in_1000x1000.jpg`,
@@ -150,11 +150,11 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
         inventory: [
           {
             type: subTypeName,
-            NM: getConditionInventory(result.id, "NM", marketPrice, midPrice),
-            LP: getConditionInventory(result.id, "LP", marketPrice, midPrice),
-            MP: getConditionInventory(result.id, "MP", marketPrice, midPrice),
-            HP: getConditionInventory(result.id, "HP", marketPrice, midPrice),
-            D: getConditionInventory(result.id, "D", marketPrice, midPrice),
+            NM: getConditionInventory(result.id, 'NM', marketPrice, midPrice),
+            LP: getConditionInventory(result.id, 'LP', marketPrice, midPrice),
+            MP: getConditionInventory(result.id, 'MP', marketPrice, midPrice),
+            HP: getConditionInventory(result.id, 'HP', marketPrice, midPrice),
+            D: getConditionInventory(result.id, 'D', marketPrice, midPrice),
           },
         ],
       });

@@ -1,6 +1,6 @@
-import { and, eq, sql, asc, inArray } from "drizzle-orm";
-import { cartItem, inventoryItem, order, orderItem, otcgs } from "../db";
-import { getOrCreateShoppingCart } from "./shopping-cart-service";
+import { and, eq, sql, asc, inArray } from 'drizzle-orm';
+import { cartItem, inventoryItem, order, orderItem, otcgs } from '../db';
+import { getOrCreateShoppingCart } from './shopping-cart-service';
 
 interface InsufficientItemInfo {
   productId: number;
@@ -88,14 +88,14 @@ function safeISOString(value: unknown): string {
   if (!value) return new Date().toISOString();
   if (value instanceof Date) {
     const iso = value.toISOString();
-    if (iso === "Invalid Date") return new Date().toISOString();
+    if (iso === 'Invalid Date') return new Date().toISOString();
     return iso;
   }
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const d = new Date(value);
     return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
   }
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     return new Date(value * 1000).toISOString();
   }
   return new Date().toISOString();
@@ -103,10 +103,10 @@ function safeISOString(value: unknown): string {
 
 function generateOrderNumber(): string {
   const now = new Date();
-  const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
   const randomPart = Math.floor(Math.random() * 10000)
     .toString()
-    .padStart(4, "0");
+    .padStart(4, '0');
   return `ORD-${datePart}-${randomPart}`;
 }
 
@@ -115,7 +115,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
   const cart = await getOrCreateShoppingCart(userId);
 
   if (cart.cartItems.length === 0) {
-    return { error: "Cart is empty" };
+    return { error: 'Cart is empty' };
   }
 
   // 2. Validate inventory availability — check total across ALL inventory records
@@ -165,7 +165,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
 
   if (insufficientItems.length > 0) {
     return {
-      error: "Insufficient inventory for one or more items",
+      error: 'Insufficient inventory for one or more items',
       insufficientItems,
     };
   }
@@ -180,7 +180,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
       orderNumber,
       customerName,
       userId,
-      status: "open",
+      status: 'open',
       totalAmount,
       createdAt: new Date(),
     })
@@ -266,7 +266,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
   };
 }
 
-export async function cancelOrder(orderId: number): Promise<{ order?: OrderResult["order"]; error?: string }> {
+export async function cancelOrder(orderId: number): Promise<{ order?: OrderResult['order']; error?: string }> {
   // 1. Find the order
   const existingOrder = await otcgs.query.order.findFirst({
     with: {
@@ -276,11 +276,11 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
   });
 
   if (!existingOrder) {
-    return { error: "Order not found" };
+    return { error: 'Order not found' };
   }
 
-  if (existingOrder.status === "cancelled") {
-    return { error: "Order is already cancelled" };
+  if (existingOrder.status === 'cancelled') {
+    return { error: 'Order is already cancelled' };
   }
 
   // 2. Return items to inventory — use inventoryItemId for precise restocking
@@ -320,7 +320,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
   }
 
   // 3. Update order status to cancelled
-  await otcgs.update(order).set({ status: "cancelled" }).where(eq(order.id, orderId));
+  await otcgs.update(order).set({ status: 'cancelled' }).where(eq(order.id, orderId));
 
   const items = mapOrderItems(existingOrder.orderItems);
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
@@ -330,7 +330,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
       id: existingOrder.id,
       orderNumber: existingOrder.orderNumber,
       customerName: existingOrder.customerName,
-      status: "cancelled",
+      status: 'cancelled',
       totalAmount: existingOrder.totalAmount,
       totalCostBasis,
       totalProfit,
@@ -343,10 +343,10 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
 export async function updateOrderStatus(
   orderId: number,
   newStatus: string,
-): Promise<{ order?: OrderResult["order"]; error?: string }> {
-  const validStatuses = ["open", "completed"];
+): Promise<{ order?: OrderResult['order']; error?: string }> {
+  const validStatuses = ['open', 'completed'];
   if (!validStatuses.includes(newStatus)) {
-    return { error: `Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(", ")}` };
+    return { error: `Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(', ')}` };
   }
 
   const existingOrder = await otcgs.query.order.findFirst({
@@ -355,11 +355,11 @@ export async function updateOrderStatus(
   });
 
   if (!existingOrder) {
-    return { error: "Order not found" };
+    return { error: 'Order not found' };
   }
 
-  if (existingOrder.status === "cancelled") {
-    return { error: "Cannot change status of a cancelled order" };
+  if (existingOrder.status === 'cancelled') {
+    return { error: 'Cannot change status of a cancelled order' };
   }
 
   if (existingOrder.status === newStatus) {

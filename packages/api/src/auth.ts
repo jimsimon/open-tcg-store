@@ -1,24 +1,24 @@
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAccessControl } from "better-auth/plugins/access";
-import { admin, anonymous } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
-import { otcgs } from "./db";
-import * as schema from "./db/otcgs/schema";
-import { cart } from "./db/otcgs/shopping-schema";
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { createAccessControl } from 'better-auth/plugins/access';
+import { admin, anonymous } from 'better-auth/plugins';
+import { eq } from 'drizzle-orm';
+import { otcgs } from './db';
+import * as schema from './db/otcgs/schema';
+import { cart } from './db/otcgs/shopping-schema';
 
 const statement = {
-  inventory: ["create", "read", "update", "delete"],
+  inventory: ['create', 'read', 'update', 'delete'],
 } as const;
 
 export const ac = createAccessControl(statement);
 
 const adminRole = ac.newRole({
-  inventory: ["create", "read", "update", "delete"],
+  inventory: ['create', 'read', 'update', 'delete'],
 });
 
 const employeeRole = ac.newRole({
-  inventory: ["create", "read", "update", "delete"],
+  inventory: ['create', 'read', 'update', 'delete'],
 });
 
 export const roles = {
@@ -27,12 +27,12 @@ export const roles = {
 };
 
 export const auth = betterAuth({
-  baseURL: "http://localhost:5174",
+  baseURL: 'http://localhost:5174',
   database: drizzleAdapter(otcgs, {
-    provider: "sqlite",
+    provider: 'sqlite',
     schema,
   }),
-  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? "http://localhost:5173").split(","),
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173').split(','),
   emailAndPassword: {
     enabled: true,
   },

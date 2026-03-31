@@ -1,15 +1,15 @@
-import { sql, eq } from "drizzle-orm";
-import type { QueryResolvers, Card } from "../../../types.generated";
-import { otcgs } from "../../../../db";
-import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
+import { sql, eq } from 'drizzle-orm';
+import type { QueryResolvers, Card } from '../../../types.generated';
+import { otcgs } from '../../../../db';
+import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
 
-export const getCard: NonNullable<QueryResolvers["getCard"]> = async (_parent, { game, cardId }, _ctx) => {
+export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, _ctx) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }
 
   try {
-    if (game === "magic" || game === "pokemon") {
+    if (game === 'magic' || game === 'pokemon') {
       return await getCardFromDb(Number.parseInt(cardId, 10));
     }
   } catch (e) {
@@ -58,8 +58,8 @@ async function getCardFromDb(cardId: number): Promise<NonNullable<Card>> {
   const inventoryData = await otcgs
     .select({
       condition: inventoryItem.condition,
-      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as("total_quantity"),
-      lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as("lowest_price"),
+      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+      lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(inventoryItem)
     .where(eq(inventoryItem.productId, cardId))
@@ -102,9 +102,9 @@ async function getCardFromDb(cardId: number): Promise<NonNullable<Card>> {
     id: result.id.toString(),
     name: result.name,
     finishes: result.prices.map((p) => p.subTypeName),
-    setName: result.group?.name || "Unknown Set",
+    setName: result.group?.name || 'Unknown Set',
     rarity: extendedDataMap.Rarity,
-    type: extendedDataMap.SubType ?? extendedDataMap["Card Type"],
+    type: extendedDataMap.SubType ?? extendedDataMap['Card Type'],
     text: extendedDataMap.OracleText ?? extendedDataMap.CardText,
     flavorText: extendedDataMap.FlavorText,
     images: {
@@ -113,11 +113,11 @@ async function getCardFromDb(cardId: number): Promise<NonNullable<Card>> {
     },
     inventory: result.prices.map((p) => ({
       type: p.subTypeName,
-      NM: getConditionInventory("NM", p.marketPrice, p.midPrice),
-      LP: getConditionInventory("LP", p.marketPrice, p.midPrice),
-      MP: getConditionInventory("MP", p.marketPrice, p.midPrice),
-      HP: getConditionInventory("HP", p.marketPrice, p.midPrice),
-      D: getConditionInventory("D", p.marketPrice, p.midPrice),
+      NM: getConditionInventory('NM', p.marketPrice, p.midPrice),
+      LP: getConditionInventory('LP', p.marketPrice, p.midPrice),
+      MP: getConditionInventory('MP', p.marketPrice, p.midPrice),
+      HP: getConditionInventory('HP', p.marketPrice, p.midPrice),
+      D: getConditionInventory('D', p.marketPrice, p.midPrice),
     })),
   };
 }

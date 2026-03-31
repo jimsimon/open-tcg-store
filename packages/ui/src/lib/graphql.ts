@@ -1,5 +1,5 @@
-import type { TypedDocumentString } from "../graphql/graphql";
-import { Exact } from "../graphql/graphql";
+import type { TypedDocumentString } from '../graphql/graphql';
+import { Exact } from '../graphql/graphql';
 
 interface ExecutionResult<T> {
   data: T;
@@ -25,12 +25,12 @@ export async function execute<TResult, TVariables>(
       ? []
       : [TVariables]
 ) {
-  const response = await fetch("http://localhost:5174/graphql", {
-    method: "POST",
-    credentials: "include",
+  const response = await fetch('http://localhost:5174/graphql', {
+    method: 'POST',
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "application/graphql-response+json",
+      'Content-Type': 'application/json',
+      Accept: 'application/graphql-response+json',
     },
     body: JSON.stringify({
       query,
@@ -39,7 +39,7 @@ export async function execute<TResult, TVariables>(
   });
 
   if (!response.ok) {
-    throw new Error("Network response was not ok");
+    throw new Error('Network response was not ok');
   }
 
   return response.json() as Promise<ExecutionResult<TResult>>;

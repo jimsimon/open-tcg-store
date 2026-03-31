@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development tsx --conditions=development src/server.ts",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
+    "lint": "oxlint --fix",
+    "lint:check": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "graphql:generate": "graphql-codegen",
@@ -49,6 +49,7 @@
     "@0no-co/graphqlsp": "^1.15.2",
     "@eddeee888/gcg-typescript-resolver-files": "^0.15.0",
     "@graphql-codegen/cli": "^6.2.1",
+    "@graphql-codegen/client-preset": "5.2.4",
     "@types/cli-progress": "3.11.6",
     "@types/js-cookie": "3.0.6",
     "@types/koa": "^3.0.2",

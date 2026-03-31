@@ -1,15 +1,15 @@
-import { LitElement, css, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import "../../components/ogs-page.ts";
-import "../../components/ogs-wizard.ts";
-import "../../components/ogs-two-pane-panel.ts";
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import "@awesome.me/webawesome/dist/components/divider/divider.js";
-import "@awesome.me/webawesome/dist/components/input/input.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import { graphql } from "../../graphql/index.ts";
-import { execute } from "../../lib/graphql.ts";
+import { LitElement, css, html } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
+import { when } from 'lit/directives/when.js';
+import '../../components/ogs-page.ts';
+import '../../components/ogs-wizard.ts';
+import '../../components/ogs-two-pane-panel.ts';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import { graphql } from '../../graphql/index.ts';
+import { execute } from '../../lib/graphql.ts';
 
 interface User {
   firstName?: string;
@@ -17,7 +17,7 @@ interface User {
   password?: string;
 }
 
-@customElement("ogs-first-time-setup-page")
+@customElement('ogs-first-time-setup-page')
 export class FirstTimeSetupPage extends LitElement {
   static styles = css`
     :host {
@@ -48,7 +48,7 @@ export class FirstTimeSetupPage extends LitElement {
   };
 
   @state()
-  error = "";
+  error = '';
 
   render() {
     return html`
@@ -141,16 +141,16 @@ export class FirstTimeSetupPage extends LitElement {
 
   async handleSaveClick() {
     // Clear any previous error
-    this.error = "";
+    this.error = '';
 
     // Client-side validation
     const missingFields: string[] = [];
-    if (!this.user.firstName?.trim()) missingFields.push("First Name");
-    if (!this.user.email?.trim()) missingFields.push("E-mail Address");
-    if (!this.user.password) missingFields.push("Password");
+    if (!this.user.firstName?.trim()) missingFields.push('First Name');
+    if (!this.user.email?.trim()) missingFields.push('E-mail Address');
+    if (!this.user.password) missingFields.push('Password');
 
     if (missingFields.length > 0) {
-      this.error = `Please fill in the following required fields: ${missingFields.join(", ")}`;
+      this.error = `Please fill in the following required fields: ${missingFields.join(', ')}`;
       return;
     }
 
@@ -168,20 +168,20 @@ export class FirstTimeSetupPage extends LitElement {
           password: this.user.password!,
         },
         settings: {
-          country: "US",
-          state: "MI",
+          country: 'US',
+          state: 'MI',
         },
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(". ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join('. ');
       } else {
         // The server-side resolver signs in the user and forwards the session
         // cookie via the GraphQL response, so we can redirect immediately.
-        window.location.href = "/";
+        window.location.href = '/';
       }
     } catch (err) {
-      this.error = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
+      this.error = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
     }
   }
 }

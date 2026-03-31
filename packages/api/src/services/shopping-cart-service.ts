@@ -1,5 +1,5 @@
-import { cart, otcgs } from "../db";
-import { CartItemOutput } from "../schema/types.generated";
+import { cart, otcgs } from '../db';
+import { CartItemOutput } from '../schema/types.generated';
 
 export async function getOrCreateShoppingCart(userId: string) {
   const result = await otcgs.query.cart.findFirst({

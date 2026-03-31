@@ -1,7 +1,7 @@
-import { relations } from "drizzle-orm/relations";
-import { inventoryItem } from "./inventory-schema";
-import { user } from "./auth-schema";
-import { product } from "../tcg-data/schema";
+import { relations } from 'drizzle-orm/relations';
+import { inventoryItem } from './inventory-schema';
+import { user } from './auth-schema';
+import { product } from '../tcg-data/schema';
 
 export const inventoryItemRelations = relations(inventoryItem, ({ one }) => ({
   product: one(product, {
@@ -11,11 +11,11 @@ export const inventoryItemRelations = relations(inventoryItem, ({ one }) => ({
   createdByUser: one(user, {
     fields: [inventoryItem.createdBy],
     references: [user.id],
-    relationName: "inventoryCreatedBy",
+    relationName: 'inventoryCreatedBy',
   }),
   updatedByUser: one(user, {
     fields: [inventoryItem.updatedBy],
     references: [user.id],
-    relationName: "inventoryUpdatedBy",
+    relationName: 'inventoryUpdatedBy',
   }),
 }));

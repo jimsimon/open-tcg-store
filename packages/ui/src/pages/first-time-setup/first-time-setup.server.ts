@@ -1,4 +1,4 @@
-import type { RouterContext } from "@koa/router";
+import type { RouterContext } from '@koa/router';
 
 export function render(_ctx: RouterContext) {
   return `

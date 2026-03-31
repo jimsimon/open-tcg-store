@@ -1,22 +1,22 @@
-import { html, LitElement, nothing, type PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/input/input.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "@awesome.me/webawesome/dist/components/select/select.js";
-import "@awesome.me/webawesome/dist/components/option/option.js";
-import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
-import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import "@awesome.me/webawesome/dist/components/textarea/textarea.js";
-import "@awesome.me/webawesome/dist/components/divider/divider.js";
-import "../../components/ogs-page.ts";
-import { execute } from "../../lib/graphql.ts";
-import type WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
-import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { when } from 'lit/directives/when.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/select/select.js';
+import '@awesome.me/webawesome/dist/components/option/option.js';
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
+import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '../../components/ogs-page.ts';
+import { execute } from '../../lib/graphql.ts';
+import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
+import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
   type AddForm,
   type BulkEditForm,
@@ -35,23 +35,23 @@ import {
   renderMarketPrices,
   formatCurrency,
   computeInventoryStats,
-} from "../inventory/inventory-shared.ts";
+} from '../inventory/inventory-shared.ts';
 
 // --- Component ---
 
-@customElement("ogs-inventory-sealed-page")
+@customElement('ogs-inventory-sealed-page')
 export class OgsInventorySealedPage extends LitElement {
   static styles = sharedInventoryStyles;
 
   // --- Properties ---
 
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
 
   // Filter state (no condition or rarity for sealed)
-  @state() private gameFilter = "";
-  @state() private searchTerm = "";
+  @state() private gameFilter = '';
+  @state() private searchTerm = '';
 
   // Pagination state
   @state() private currentPage = 1;
@@ -62,7 +62,7 @@ export class OgsInventorySealedPage extends LitElement {
   // Data state
   @state() private inventoryItems: InventoryItem[] = [];
   @state() private loading = false;
-  @state() private error = "";
+  @state() private error = '';
 
   // Selection state
   @state() private selectedIds: Set<number> = new Set();
@@ -81,14 +81,14 @@ export class OgsInventorySealedPage extends LitElement {
   @state() private searchResults: ProductSearchResult[] = [];
   @state() private selectedProduct: ProductSearchResult | null = null;
   @state() private productSearchLoading = false;
-  @state() private productSearchTerm = "";
+  @state() private productSearchTerm = '';
   @state() private addForm: AddForm = {
     quantity: 1,
-    condition: "NM",
+    condition: 'NM',
     price: 0,
     costBasis: 0,
-    acquisitionDate: "",
-    notes: "",
+    acquisitionDate: '',
+    notes: '',
   };
 
   // Edit form state (no condition for sealed)
@@ -102,12 +102,12 @@ export class OgsInventorySealedPage extends LitElement {
 
   // Bulk edit form state (no condition for sealed)
   @state() private bulkEditForm: BulkEditForm = {
-    condition: "",
+    condition: '',
     quantity: null,
     price: null,
     costBasis: null,
-    acquisitionDate: "",
-    notes: "",
+    acquisitionDate: '',
+    notes: '',
   };
 
   // --- Debounced handlers ---
@@ -136,16 +136,16 @@ export class OgsInventorySealedPage extends LitElement {
 
   private focusFirstInput() {
     requestAnimationFrame(() => {
-      const input = this.shadowRoot?.querySelector<HTMLElement>(".filter-bar wa-input");
+      const input = this.shadowRoot?.querySelector<HTMLElement>('.filter-bar wa-input');
       input?.focus();
     });
   }
 
   private loadFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    this.searchTerm = params.get("search") ?? "";
-    this.gameFilter = params.get("game") ?? "";
-    const page = params.get("page");
+    this.searchTerm = params.get('search') ?? '';
+    this.gameFilter = params.get('game') ?? '';
+    const page = params.get('page');
     if (page) this.currentPage = Number.parseInt(page, 10) || 1;
   }
 
@@ -158,21 +158,21 @@ export class OgsInventorySealedPage extends LitElement {
         url.searchParams.delete(key);
       }
     };
-    setOrDelete("search", this.searchTerm);
-    setOrDelete("game", this.gameFilter);
+    setOrDelete('search', this.searchTerm);
+    setOrDelete('game', this.gameFilter);
     if (this.currentPage > 1) {
-      url.searchParams.set("page", String(this.currentPage));
+      url.searchParams.set('page', String(this.currentPage));
     } else {
-      url.searchParams.delete("page");
+      url.searchParams.delete('page');
     }
-    window.history.replaceState(null, "", url.toString());
+    window.history.replaceState(null, '', url.toString());
   }
 
   // --- Data fetching ---
 
   private async fetchInventory() {
     this.loading = true;
-    this.error = "";
+    this.error = '';
     this.updateQueryParams();
 
     const filters: Record<string, unknown> = {
@@ -189,7 +189,7 @@ export class OgsInventorySealedPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         const data = result.data.getInventory;
         this.inventoryItems = data.items;
@@ -198,7 +198,7 @@ export class OgsInventorySealedPage extends LitElement {
         this.currentPage = data.page;
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to load inventory";
+      this.error = e instanceof Error ? e.message : 'Failed to load inventory';
     } finally {
       this.loading = false;
     }
@@ -214,14 +214,14 @@ export class OgsInventorySealedPage extends LitElement {
     try {
       const result = await execute(SearchProductsQuery, { searchTerm: term });
       if (result?.errors?.length) {
-        console.error("Search error:", result.errors);
+        console.error('Search error:', result.errors);
         this.searchResults = [];
       } else {
         // Filter to sealed products only
         this.searchResults = result.data.searchProducts.filter((p) => p.isSealed);
       }
     } catch (e) {
-      console.error("Search failed:", e);
+      console.error('Search failed:', e);
       this.searchResults = [];
     } finally {
       this.productSearchLoading = false;
@@ -238,10 +238,10 @@ export class OgsInventorySealedPage extends LitElement {
 
   private handleFilterChange(field: string, event: Event) {
     const select = event.target as WaSelect;
-    const value = Array.isArray(select.value) ? select.value.join(",") : (select.value as string);
+    const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
 
     switch (field) {
-      case "game":
+      case 'game':
         this.gameFilter = value;
         break;
     }
@@ -292,11 +292,11 @@ export class OgsInventorySealedPage extends LitElement {
     this.selectedProduct = null;
     this.addForm = {
       quantity: 1,
-      condition: "NM",
+      condition: 'NM',
       price: 0,
       costBasis: 0,
-      acquisitionDate: "",
-      notes: "",
+      acquisitionDate: '',
+      notes: '',
     };
   }
 
@@ -304,7 +304,7 @@ export class OgsInventorySealedPage extends LitElement {
     this.showAddDialog = false;
     this.searchResults = [];
     this.selectedProduct = null;
-    this.productSearchTerm = "";
+    this.productSearchTerm = '';
   }
 
   private openEditDialog(item: InventoryItem) {
@@ -313,8 +313,8 @@ export class OgsInventorySealedPage extends LitElement {
       quantity: item.quantity,
       price: item.price,
       costBasis: item.costBasis ?? 0,
-      acquisitionDate: item.acquisitionDate ?? "",
-      notes: item.notes ?? "",
+      acquisitionDate: item.acquisitionDate ?? '',
+      notes: item.notes ?? '',
     };
     this.showEditDialog = true;
   }
@@ -336,12 +336,12 @@ export class OgsInventorySealedPage extends LitElement {
 
   private openBulkEditDialog() {
     this.bulkEditForm = {
-      condition: "",
+      condition: '',
       quantity: null,
       price: null,
       costBasis: null,
-      acquisitionDate: "",
-      notes: "",
+      acquisitionDate: '',
+      notes: '',
     };
     this.showBulkEditDialog = true;
   }
@@ -399,13 +399,13 @@ export class OgsInventorySealedPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         this.closeAddDialog();
         this.fetchInventory();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to add item";
+      this.error = e instanceof Error ? e.message : 'Failed to add item';
     }
   }
 
@@ -425,13 +425,13 @@ export class OgsInventorySealedPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         this.closeEditDialog();
         this.fetchInventory();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to update item";
+      this.error = e instanceof Error ? e.message : 'Failed to update item';
     }
   }
 
@@ -444,13 +444,13 @@ export class OgsInventorySealedPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         this.closeDeleteDialog();
         this.fetchInventory();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to delete item";
+      this.error = e instanceof Error ? e.message : 'Failed to delete item';
     }
   }
 
@@ -471,7 +471,7 @@ export class OgsInventorySealedPage extends LitElement {
       const result = await execute(BulkUpdateInventoryMutation, { input: input as any });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         this.closeBulkEditDialog();
         this.selectedIds = new Set();
@@ -479,7 +479,7 @@ export class OgsInventorySealedPage extends LitElement {
         this.fetchInventory();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to bulk update";
+      this.error = e instanceof Error ? e.message : 'Failed to bulk update';
     }
   }
 
@@ -493,7 +493,7 @@ export class OgsInventorySealedPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(", ");
+        this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         this.closeBulkDeleteDialog();
         this.selectedIds = new Set();
@@ -501,7 +501,7 @@ export class OgsInventorySealedPage extends LitElement {
         this.fetchInventory();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to bulk delete";
+      this.error = e instanceof Error ? e.message : 'Failed to bulk delete';
     }
   }
 
@@ -620,7 +620,7 @@ export class OgsInventorySealedPage extends LitElement {
         <wa-select
           placeholder="Game"
           .value="${this.gameFilter}"
-          @change="${(e: Event) => this.handleFilterChange("game", e)}"
+          @change="${(e: Event) => this.handleFilterChange('game', e)}"
           clearable
         >
           <wa-option value="">All Games</wa-option>
@@ -787,7 +787,7 @@ export class OgsInventorySealedPage extends LitElement {
                   (p) => html`
                     <wa-button
                       size="small"
-                      variant="${p === this.currentPage ? "brand" : "neutral"}"
+                      variant="${p === this.currentPage ? 'brand' : 'neutral'}"
                       ?data-current="${p === this.currentPage}"
                       @click="${() => this.goToPage(p)}"
                     >
@@ -819,7 +819,7 @@ export class OgsInventorySealedPage extends LitElement {
         label="Add Sealed Item"
         ?open="${this.showAddDialog}"
         @wa-after-hide="${(e: Event) => {
-          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeAddDialog();
+          if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeAddDialog();
         }}"
       >
         <wa-input
@@ -963,7 +963,7 @@ export class OgsInventorySealedPage extends LitElement {
         label="Edit Sealed Item"
         ?open="${this.showEditDialog}"
         @wa-after-hide="${(e: Event) => {
-          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeEditDialog();
+          if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeEditDialog();
         }}"
       >
         <div class="edit-item-header">
@@ -1019,7 +1019,7 @@ export class OgsInventorySealedPage extends LitElement {
           <wa-input
             label="Acquisition Date"
             type="date"
-            .value="${this.editForm.acquisitionDate ?? ""}"
+            .value="${this.editForm.acquisitionDate ?? ''}"
             @input="${(e: Event) => {
               this.editForm = { ...this.editForm, acquisitionDate: (e.target as WaInput).value as string };
             }}"
@@ -1028,12 +1028,12 @@ export class OgsInventorySealedPage extends LitElement {
           <wa-textarea
             label="Notes"
             maxlength="1000"
-            .value="${this.editForm.notes ?? ""}"
+            .value="${this.editForm.notes ?? ''}"
             @input="${(e: Event) => {
               this.editForm = { ...this.editForm, notes: (e.target as HTMLTextAreaElement).value };
             }}"
           >
-            <span slot="help-text">${(this.editForm.notes ?? "").length}/1000</span>
+            <span slot="help-text">${(this.editForm.notes ?? '').length}/1000</span>
           </wa-textarea>
 
           ${renderProfitSummary(this.editForm.price ?? 0, this.editForm.costBasis ?? 0, this.editForm.quantity ?? 1)}
@@ -1055,7 +1055,7 @@ export class OgsInventorySealedPage extends LitElement {
         label="Delete Item"
         ?open="${this.showDeleteDialog}"
         @wa-after-hide="${(e: Event) => {
-          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeDeleteDialog();
+          if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeDeleteDialog();
         }}"
       >
         <div class="delete-warning">
@@ -1083,7 +1083,7 @@ export class OgsInventorySealedPage extends LitElement {
         label="Bulk Edit Sealed"
         ?open="${this.showBulkEditDialog}"
         @wa-after-hide="${(e: Event) => {
-          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkEditDialog();
+          if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeBulkEditDialog();
         }}"
       >
         <p>Editing <strong>${this.selectedIds.size}</strong> selected items. Only filled fields will be updated.</p>
@@ -1161,7 +1161,7 @@ export class OgsInventorySealedPage extends LitElement {
         label="Bulk Delete"
         ?open="${this.showBulkDeleteDialog}"
         @wa-after-hide="${(e: Event) => {
-          if ((e.target as HTMLElement).tagName === "WA-DIALOG") this.closeBulkDeleteDialog();
+          if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeBulkDeleteDialog();
         }}"
       >
         <div class="delete-warning">

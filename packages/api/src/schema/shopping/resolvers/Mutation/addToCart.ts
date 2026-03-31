@@ -1,10 +1,10 @@
-import { sql } from "drizzle-orm";
-import { cartItem, otcgs } from "../../../../db";
-import { GraphqlContext } from "../../../../server";
-import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
-import type { MutationResolvers } from "./../../../types.generated";
+import { sql } from 'drizzle-orm';
+import { cartItem, otcgs } from '../../../../db';
+import { GraphqlContext } from '../../../../server';
+import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from '../../../../services/shopping-cart-service';
+import type { MutationResolvers } from './../../../types.generated';
 
-export const addToCart: NonNullable<MutationResolvers["addToCart"]> = async (_parent, arg, ctx: GraphqlContext) => {
+export const addToCart: NonNullable<MutationResolvers['addToCart']> = async (_parent, arg, ctx: GraphqlContext) => {
   const result = await otcgs.query.cart.findFirst({
     columns: {
       id: true,
@@ -25,7 +25,7 @@ export const addToCart: NonNullable<MutationResolvers["addToCart"]> = async (_pa
         set: { quantity: sql`${cartItem.quantity} + ${arg.cartItem.quantity}` },
       });
   } else {
-    throw new Error("Unable to find cart for user");
+    throw new Error('Unable to find cart for user');
   }
 
   const cartResult = await getOrCreateShoppingCart(ctx.auth.user.id);

@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from 'lit';
 
 // ============================================================
 // SHARED STYLES FOR PRODUCT PAGES
@@ -616,18 +616,18 @@ export const loadingStateStyles = css`
 // --- Helper: Get quantity badge class ---
 
 export function getQuantityBadgeClass(quantity: number | null | undefined): string {
-  if (!quantity || quantity <= 0) return "out-of-stock";
-  if (quantity <= 3) return "low-stock";
-  return "in-stock";
+  if (!quantity || quantity <= 0) return 'out-of-stock';
+  if (quantity <= 3) return 'low-stock';
+  return 'in-stock';
 }
 
 // --- Helper: Format currency ---
 
 export function formatCurrency(value: string | null | undefined, fromPrefix = true): string {
-  if (value == null) return "—";
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return "—";
-  return `${fromPrefix ? "$" : ""}${num.toFixed(2)}`;
+  if (value == null) return '—';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '—';
+  return `${fromPrefix ? '$' : ''}${num.toFixed(2)}`;
 }
 
 // --- Helper: Compute product stats ---

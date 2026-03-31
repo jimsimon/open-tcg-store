@@ -1,4 +1,4 @@
-import { signal } from "@lit-labs/signals";
+import { signal } from '@lit-labs/signals';
 
 export interface CartItem {
   inventoryItemId: number;

@@ -1,16 +1,16 @@
-import { css, html, LitElement, unsafeCSS } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "../../components/ogs-page.ts";
+import { css, html, LitElement, unsafeCSS } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '../../components/ogs-page.ts';
 
-@customElement("ogs-home-page")
+@customElement('ogs-home-page')
 export class HomePage extends LitElement {
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}

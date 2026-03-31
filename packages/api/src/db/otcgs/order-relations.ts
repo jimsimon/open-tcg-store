@@ -1,7 +1,7 @@
-import { relations } from "drizzle-orm/relations";
-import { order, orderItem } from "./order-schema";
-import { user } from "./auth-schema";
-import { product } from "../tcg-data/schema";
+import { relations } from 'drizzle-orm/relations';
+import { order, orderItem } from './order-schema';
+import { user } from './auth-schema';
+import { product } from '../tcg-data/schema';
 
 export const orderRelations = relations(order, ({ one, many }) => ({
   user: one(user, {

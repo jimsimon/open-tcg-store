@@ -1,10 +1,10 @@
-import { css, html, nothing, unsafeCSS } from "lit";
+import { css, html, nothing, unsafeCSS } from 'lit';
 import {
   type InventoryItem,
   type ProductSearchResult,
   type ProductPrice,
   TypedDocumentString,
-} from "../../graphql/graphql.ts";
+} from '../../graphql/graphql.ts';
 
 // --- GraphQL Operations ---
 
@@ -216,8 +216,8 @@ export function debounce<T extends (...args: any[]) => void>(fn: T, delay: numbe
 
 // --- Shared CSS Styles ---
 
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 
 export const sharedInventoryStyles = [
   css`
@@ -787,17 +787,17 @@ export function renderConditionBadge(condition: string | null | undefined) {
   if (!condition) return html`<span>—</span>`;
   const lower = condition.toLowerCase();
   const labels: Record<string, string> = {
-    nm: "Near Mint",
-    lp: "Lightly Played",
-    mp: "Mod. Played",
-    hp: "Heavily Played",
-    d: "Damaged",
+    nm: 'Near Mint',
+    lp: 'Lightly Played',
+    mp: 'Mod. Played',
+    hp: 'Heavily Played',
+    d: 'Damaged',
   };
   return html`<span class="condition-badge ${lower}">${labels[lower] ?? condition}</span>`;
 }
 
 export function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return "—";
+  if (value == null) return '—';
   return `$${value.toFixed(2)}`;
 }
 
@@ -810,15 +810,15 @@ export function renderProfitSummary(price: number, costBasis: number, quantity: 
 
   return html`
     <div class="profit-summary">
-      <div style="color: ${profitPerUnit >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
+      <div style="color: ${profitPerUnit >= 0 ? 'var(--wa-color-success-text)' : 'var(--wa-color-danger-text)'}">
         <wa-icon
-          name="${profitPerUnit >= 0 ? "arrow-trend-up" : "arrow-trend-down"}"
+          name="${profitPerUnit >= 0 ? 'arrow-trend-up' : 'arrow-trend-down'}"
           style="font-size: 0.875em;"
         ></wa-icon>
         P/L per unit: ${formatCurrency(profitPerUnit)}
       </div>
       <div>Margin: ${margin.toFixed(1)}%</div>
-      <div style="color: ${totalPL >= 0 ? "var(--wa-color-success-text)" : "var(--wa-color-danger-text)"}">
+      <div style="color: ${totalPL >= 0 ? 'var(--wa-color-success-text)' : 'var(--wa-color-danger-text)'}">
         Total P/L: ${formatCurrency(totalPL)}
       </div>
     </div>
@@ -835,9 +835,9 @@ export function renderMarketPrices(prices: ProductPrice[]) {
         (p: ProductPrice) => html`
           <div class="price-row">
             <span>${p.subTypeName}</span>
-            <span>Low: ${p.lowPrice != null ? `$${p.lowPrice.toFixed(2)}` : "—"}</span>
-            <span>Mid: ${p.midPrice != null ? `$${p.midPrice.toFixed(2)}` : "—"}</span>
-            <span>Market: ${p.marketPrice != null ? `$${p.marketPrice.toFixed(2)}` : "—"}</span>
+            <span>Low: ${p.lowPrice != null ? `$${p.lowPrice.toFixed(2)}` : '—'}</span>
+            <span>Mid: ${p.midPrice != null ? `$${p.midPrice.toFixed(2)}` : '—'}</span>
+            <span>Market: ${p.marketPrice != null ? `$${p.marketPrice.toFixed(2)}` : '—'}</span>
           </div>
         `,
       )}

@@ -1,2 +1,2 @@
-export * from "./otcgs/index.ts";
-export * from "./tcg-data/index.ts";
+export * from './otcgs/index.ts';
+export * from './tcg-data/index.ts';

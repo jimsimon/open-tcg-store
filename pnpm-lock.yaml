@@ -96,6 +96,9 @@ importers:
       '@graphql-codegen/cli':
         specifier: ^6.2.1
         version: 6.2.1(@types/node@24.3.1)(graphql@16.13.2)(typescript@6.0.2)
+      '@graphql-codegen/client-preset':
+        specifier: 5.2.4
+        version: 5.2.4(graphql@16.13.2)
       '@types/cli-progress':
         specifier: 3.11.6
         version: 3.11.6

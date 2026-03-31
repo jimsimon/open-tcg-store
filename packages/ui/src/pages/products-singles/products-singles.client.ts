@@ -1,24 +1,24 @@
-import { css, html, LitElement, nothing, unsafeCSS, type PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
-import "@awesome.me/webawesome/dist/components/button/button.js";
-import "@awesome.me/webawesome/dist/components/input/input.js";
-import "@awesome.me/webawesome/dist/components/card/card.js";
-import "@awesome.me/webawesome/dist/components/select/select.js";
-import "@awesome.me/webawesome/dist/components/option/option.js";
-import "@awesome.me/webawesome/dist/components/spinner/spinner.js";
-import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
-import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import nativeStyle from "@awesome.me/webawesome/dist/styles/native.css?inline";
-import utilityStyles from "@awesome.me/webawesome/dist/styles/utilities.css?inline";
-import "../../components/ogs-page.ts";
-import { execute } from "../../lib/graphql.ts";
-import type WaSelect from "@awesome.me/webawesome/dist/components/select/select.js";
-import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
-import { TypedDocumentString } from "../../graphql/graphql.ts";
-import "@awesome.me/webawesome/dist/components/callout/callout.js";
-import { cartState } from "../../lib/cart-state.ts";
+import { css, html, LitElement, nothing, unsafeCSS, type PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { when } from 'lit/directives/when.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/select/select.js';
+import '@awesome.me/webawesome/dist/components/option/option.js';
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
+import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
+import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import '../../components/ogs-page.ts';
+import { execute } from '../../lib/graphql.ts';
+import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
+import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { TypedDocumentString } from '../../graphql/graphql.ts';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import { cartState } from '../../lib/cart-state.ts';
 import {
   productPageStyles,
   filterBarStyles,
@@ -28,7 +28,7 @@ import {
   emptyStateStyles,
   loadingStateStyles,
   getQuantityBadgeClass,
-} from "../products/products-shared.ts";
+} from '../products/products-shared.ts';
 
 // --- Types ---
 
@@ -169,7 +169,7 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
 
 // --- Component ---
 
-@customElement("ogs-products-singles-page")
+@customElement('ogs-products-singles-page')
 export class OgsProductsSinglesPage extends LitElement {
   static styles = [
     css`
@@ -241,15 +241,15 @@ export class OgsProductsSinglesPage extends LitElement {
 
   // --- Properties ---
 
-  @property({ type: String }) userRole = "";
+  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = "";
+  @property({ type: String }) userName = '';
 
   // Filter state
-  @state() private gameFilter = "";
-  @state() private setFilter = "";
-  @state() private conditionFilter = "";
-  @state() private searchTerm = "";
+  @state() private gameFilter = '';
+  @state() private setFilter = '';
+  @state() private conditionFilter = '';
+  @state() private searchTerm = '';
   @state() private inStockOnly = true;
 
   // Sets data
@@ -268,9 +268,9 @@ export class OgsProductsSinglesPage extends LitElement {
   // Data state
   @state() private products: ProductListing[] = [];
   @state() private loading = false;
-  @state() private error = "";
-  @state() private cartMessage = "";
-  @state() private cartError = "";
+  @state() private error = '';
+  @state() private cartMessage = '';
+  @state() private cartError = '';
   @state() private addingToCart = false;
 
   // --- Debounced handlers ---
@@ -296,19 +296,19 @@ export class OgsProductsSinglesPage extends LitElement {
 
   private focusFirstInput() {
     requestAnimationFrame(() => {
-      const input = this.shadowRoot?.querySelector<HTMLElement>(".filter-bar wa-input");
+      const input = this.shadowRoot?.querySelector<HTMLElement>('.filter-bar wa-input');
       input?.focus();
     });
   }
 
   private loadFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    this.searchTerm = params.get("search") ?? "";
-    this.gameFilter = params.get("game") ?? "";
-    this.setFilter = params.get("set") ?? "";
-    this.conditionFilter = params.get("condition") ?? "";
-    this.inStockOnly = params.get("inStock") !== "false"; // defaults to true
-    const page = params.get("page");
+    this.searchTerm = params.get('search') ?? '';
+    this.gameFilter = params.get('game') ?? '';
+    this.setFilter = params.get('set') ?? '';
+    this.conditionFilter = params.get('condition') ?? '';
+    this.inStockOnly = params.get('inStock') !== 'false'; // defaults to true
+    const page = params.get('page');
     if (page) this.currentPage = Number.parseInt(page, 10) || 1;
   }
 
@@ -321,28 +321,28 @@ export class OgsProductsSinglesPage extends LitElement {
         url.searchParams.delete(key);
       }
     };
-    setOrDelete("search", this.searchTerm);
-    setOrDelete("game", this.gameFilter);
-    setOrDelete("set", this.setFilter);
-    setOrDelete("condition", this.conditionFilter);
+    setOrDelete('search', this.searchTerm);
+    setOrDelete('game', this.gameFilter);
+    setOrDelete('set', this.setFilter);
+    setOrDelete('condition', this.conditionFilter);
     if (!this.inStockOnly) {
-      url.searchParams.set("inStock", "false");
+      url.searchParams.set('inStock', 'false');
     } else {
-      url.searchParams.delete("inStock");
+      url.searchParams.delete('inStock');
     }
     if (this.currentPage > 1) {
-      url.searchParams.set("page", String(this.currentPage));
+      url.searchParams.set('page', String(this.currentPage));
     } else {
-      url.searchParams.delete("page");
+      url.searchParams.delete('page');
     }
-    window.history.replaceState(null, "", url.toString());
+    window.history.replaceState(null, '', url.toString());
   }
 
   // --- Data fetching ---
 
   private async fetchProducts() {
     this.loading = true;
-    this.error = "";
+    this.error = '';
     this.selectedConditions = new Map();
     this.updateQueryParams();
 
@@ -363,7 +363,7 @@ export class OgsProductsSinglesPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.error = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.getProductListings;
         this.products = data.items;
@@ -372,7 +372,7 @@ export class OgsProductsSinglesPage extends LitElement {
         this.currentPage = data.page;
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : "Failed to load products";
+      this.error = e instanceof Error ? e.message : 'Failed to load products';
     } finally {
       this.loading = false;
     }
@@ -406,9 +406,9 @@ export class OgsProductsSinglesPage extends LitElement {
 
   private handleGameFilterChange(event: Event) {
     const select = event.target as WaSelect;
-    const value = Array.isArray(select.value) ? select.value.join(",") : (select.value as string);
+    const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
     this.gameFilter = value;
-    this.setFilter = ""; // reset set when game changes
+    this.setFilter = ''; // reset set when game changes
     this.currentPage = 1;
     this.fetchSets();
     this.fetchProducts();
@@ -416,7 +416,7 @@ export class OgsProductsSinglesPage extends LitElement {
 
   private handleSetFilterChange(event: Event) {
     const select = event.target as WaSelect;
-    const value = Array.isArray(select.value) ? select.value.join(",") : (select.value as string);
+    const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
     this.setFilter = value;
     this.currentPage = 1;
     this.fetchProducts();
@@ -424,7 +424,7 @@ export class OgsProductsSinglesPage extends LitElement {
 
   private handleConditionFilterChange(event: Event) {
     const select = event.target as WaSelect;
-    const value = Array.isArray(select.value) ? select.value.join(",") : (select.value as string);
+    const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
     this.conditionFilter = value;
     this.currentPage = 1;
     this.fetchProducts();
@@ -454,7 +454,7 @@ export class OgsProductsSinglesPage extends LitElement {
     if (explicit) return explicit;
     // Default to first available condition
     if (product.conditionPrices.length > 0) return product.conditionPrices[0].condition;
-    return "";
+    return '';
   }
 
   private getDisplayPrice(product: ProductListing): {
@@ -487,12 +487,12 @@ export class OgsProductsSinglesPage extends LitElement {
   private async handleAddToCart(inventoryItemId: number, event: Event) {
     if (this.addingToCart) return;
     this.addingToCart = true;
-    this.cartMessage = "";
-    this.cartError = "";
+    this.cartMessage = '';
+    this.cartError = '';
 
     const btn = event.currentTarget as HTMLElement;
-    const container = btn?.closest(".cart-controls");
-    const input = container?.querySelector("wa-input") as WaInput | null;
+    const container = btn?.closest('.cart-controls');
+    const input = container?.querySelector('wa-input') as WaInput | null;
     const quantity = input ? Number.parseInt(input.value as string, 10) || 1 : 1;
 
     try {
@@ -501,16 +501,16 @@ export class OgsProductsSinglesPage extends LitElement {
       });
 
       if (result?.errors?.length) {
-        this.cartError = result.errors.map((e: { message: string }) => e.message).join(", ");
+        this.cartError = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        this.cartMessage = `Added ${quantity} item${quantity > 1 ? "s" : ""} to cart`;
+        this.cartMessage = `Added ${quantity} item${quantity > 1 ? 's' : ''} to cart`;
         cartState.set(result.data.addToCart);
         setTimeout(() => {
-          this.cartMessage = "";
+          this.cartMessage = '';
         }, 3000);
       }
     } catch (e) {
-      this.cartError = e instanceof Error ? e.message : "Failed to add to cart";
+      this.cartError = e instanceof Error ? e.message : 'Failed to add to cart';
     } finally {
       this.addingToCart = false;
     }
@@ -617,7 +617,7 @@ export class OgsProductsSinglesPage extends LitElement {
           <wa-option value="D">Damaged</wa-option>
         </wa-select>
         <div
-          class="in-stock-toggle ${this.inStockOnly ? "active" : ""}"
+          class="in-stock-toggle ${this.inStockOnly ? 'active' : ''}"
           @click="${() => {
             this.inStockOnly = !this.inStockOnly;
             this.currentPage = 1;
@@ -721,7 +721,7 @@ export class OgsProductsSinglesPage extends LitElement {
                   </td>
                   <td class="quantity-cell">
                     <span class="quantity-badge ${getQuantityBadgeClass(display.quantity)}">
-                      ${display.quantity > 0 ? display.quantity : "0"}
+                      ${display.quantity > 0 ? display.quantity : '0'}
                     </span>
                   </td>
                   <td class="price-cell">
@@ -795,7 +795,7 @@ export class OgsProductsSinglesPage extends LitElement {
             (p) => html`
               <wa-button
                 size="small"
-                variant="${p === this.currentPage ? "neutral" : "ghost"}"
+                variant="${p === this.currentPage ? 'neutral' : 'ghost'}"
                 ?data-current="${p === this.currentPage}"
                 @click="${() => this.goToPage(p)}"
               >
@@ -821,11 +821,11 @@ export class OgsProductsSinglesPage extends LitElement {
 
 function conditionLabel(condition: string): string {
   const labels: Record<string, string> = {
-    NM: "Near Mint",
-    LP: "Lightly Played",
-    MP: "Mod. Played",
-    HP: "Heavily Played",
-    D: "Damaged",
+    NM: 'Near Mint',
+    LP: 'Lightly Played',
+    MP: 'Mod. Played',
+    HP: 'Heavily Played',
+    D: 'Damaged',
   };
   return labels[condition] ?? condition;
 }
