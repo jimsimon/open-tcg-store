@@ -148,6 +148,11 @@ type Order {
   totalProfit: Float
 }
 
+input OrderFilters {
+  searchTerm: String
+  status: String
+}
+
 type OrderItem {
   condition: String!
   costBasis: Float
@@ -263,7 +268,7 @@ type ProductSearchResult {
 type Query {
   getCard(cardId: String!, game: String!): Card!
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
-  getOrders(pagination: PaginationInput): OrderPage!
+  getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
   getSets(filters: SetFilters, game: String!): [Set!]!

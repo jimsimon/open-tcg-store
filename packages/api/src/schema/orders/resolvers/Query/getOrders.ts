@@ -8,5 +8,11 @@ export const getOrders: NonNullable<QueryResolvers['getOrders']> = async (_paren
         pageSize: _arg.pagination.pageSize ?? undefined,
       }
     : null;
-  return getOrdersService(pagination);
+  const filters = _arg.filters
+    ? {
+        status: _arg.filters.status ?? undefined,
+        searchTerm: _arg.filters.searchTerm ?? undefined,
+      }
+    : null;
+  return getOrdersService(pagination, filters);
 };

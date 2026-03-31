@@ -239,6 +239,11 @@ export type Order = {
   totalProfit?: Maybe<Scalars['Float']['output']>;
 };
 
+export type OrderFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type OrderItem = {
   __typename?: 'OrderItem';
   condition: Scalars['String']['output'];
@@ -388,6 +393,7 @@ export type QueryGetInventoryArgs = {
 
 
 export type QueryGetOrdersArgs = {
+  filters?: InputMaybe<OrderFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 

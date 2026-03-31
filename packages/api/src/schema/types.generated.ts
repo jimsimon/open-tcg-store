@@ -239,6 +239,11 @@ export type Order = {
   totalProfit?: Maybe<Scalars['Float']['output']>;
 };
 
+export type OrderFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type OrderItem = {
   __typename?: 'OrderItem';
   condition: Scalars['String']['output'];
@@ -388,6 +393,7 @@ export type QuerygetInventoryArgs = {
 
 
 export type QuerygetOrdersArgs = {
+  filters?: InputMaybe<OrderFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
@@ -573,6 +579,7 @@ export type ResolversTypes = {
   InventoryPage: ResolverTypeWrapper<InventoryPage>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Order: ResolverTypeWrapper<Order>;
+  OrderFilters: OrderFilters;
   OrderItem: ResolverTypeWrapper<OrderItem>;
   OrderPage: ResolverTypeWrapper<OrderPage>;
   PaginationInput: PaginationInput;
@@ -620,6 +627,7 @@ export type ResolversParentTypes = {
   InventoryPage: InventoryPage;
   Mutation: Record<PropertyKey, never>;
   Order: Order;
+  OrderFilters: OrderFilters;
   OrderItem: OrderItem;
   OrderPage: OrderPage;
   PaginationInput: PaginationInput;

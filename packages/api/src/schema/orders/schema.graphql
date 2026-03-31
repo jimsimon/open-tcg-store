@@ -63,6 +63,11 @@ extend type Mutation {
   updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
 }
 
+input OrderFilters {
+  status: String
+  searchTerm: String
+}
+
 extend type Query {
-  getOrders(pagination: PaginationInput): OrderPage!
+  getOrders(pagination: PaginationInput, filters: OrderFilters): OrderPage!
 }

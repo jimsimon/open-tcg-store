@@ -1,4 +1,4 @@
-import { and, eq, sql, asc, inArray } from 'drizzle-orm';
+import { and, eq, sql, asc, inArray, like, or } from 'drizzle-orm';
 import { cartItem, inventoryItem, order, orderItem, otcgs } from '../db';
 import { getOrCreateShoppingCart } from './shopping-cart-service';
 
@@ -386,13 +386,29 @@ export async function updateOrderStatus(
   };
 }
 
-export async function getOrders(pagination?: { page?: number; pageSize?: number } | null) {
+export async function getOrders(
+  pagination?: { page?: number; pageSize?: number } | null,
+  filters?: { status?: string | null; searchTerm?: string | null } | null,
+) {
   const page = pagination?.page ?? 1;
   const pageSize = pagination?.pageSize ?? 25;
   const offset = (page - 1) * pageSize;
 
-  // Get total count
-  const [countResult] = await otcgs.select({ total: sql<number>`count(*)` }).from(order);
+  // Build where conditions
+  const conditions = [];
+  if (filters?.status) {
+    conditions.push(eq(order.status, filters.status));
+  }
+  if (filters?.searchTerm) {
+    const term = `%${filters.searchTerm}%`;
+    conditions.push(or(like(order.orderNumber, term), like(order.customerName, term))!);
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // Get total count with filters
+  const countQuery = otcgs.select({ total: sql<number>`count(*)` }).from(order);
+  const [countResult] = whereClause ? await countQuery.where(whereClause) : await countQuery;
   const totalCount = countResult?.total ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -401,6 +417,7 @@ export async function getOrders(pagination?: { page?: number; pageSize?: number 
     with: {
       orderItems: true,
     },
+    where: whereClause ? () => whereClause : undefined,
     orderBy: (order, { desc }) => [desc(order.createdAt)],
     limit: pageSize,
     offset,
