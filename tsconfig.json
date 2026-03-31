@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    "types": ["@vitest/browser/context"],
+    "types": ["vitest/browser"],
     // plugins
     "plugins": [
       {

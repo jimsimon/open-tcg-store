@@ -4,9 +4,9 @@ import * as schema from "./schema";
 import * as relations from "./relations";
 export * from "./schema";
 
-export const tcgData = drizzle(databaseFile, { 
+export const tcgData = drizzle(databaseFile, {
   schema: {
     ...schema,
     ...relations,
-  }
+  },
 });

@@ -83,7 +83,7 @@ describe("ogs-inventory-sealed-page", () => {
   });
 
   test("should display the filter bar with Search and Game filters only", async () => {
-    const searchInput = element.shadowRoot!.querySelector('wa-input[placeholder="Search products..."]');
+    const searchInput = element.shadowRoot!.querySelector('wa-input[placeholder="Search by name..."]');
     expect(searchInput).toBeTruthy();
 
     const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
@@ -155,7 +155,7 @@ describe("ogs-inventory-sealed-page", () => {
     editBtn!.click();
     await element.updateComplete;
 
-    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Edit Inventory Item"]');
+    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Edit Sealed Item"]');
     expect(dialog).toBeTruthy();
     expect(dialog?.hasAttribute("open")).toBe(true);
 
@@ -195,7 +195,7 @@ describe("ogs-inventory-sealed-page", () => {
     bulkEditBtn!.click();
     await element.updateComplete;
 
-    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Bulk Edit Sealed Inventory"]');
+    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Bulk Edit Sealed"]');
     expect(dialog).toBeTruthy();
     expect(dialog?.hasAttribute("open")).toBe(true);
 
@@ -227,7 +227,7 @@ describe("ogs-inventory-sealed-page", () => {
   test("should display empty state when no items", async () => {
     const emptyState = element.shadowRoot!.querySelector(".empty-state");
     expect(emptyState).toBeTruthy();
-    expect(emptyState?.textContent).toContain("No sealed inventory items found");
+    expect(emptyState?.textContent).toContain("No sealed products found");
   });
 
   test("should display pagination controls when multiple pages", async () => {
@@ -247,8 +247,12 @@ describe("ogs-inventory-sealed-page", () => {
     expect(pagination).toBeTruthy();
 
     const paginationButtons = pagination!.querySelectorAll("wa-button");
-    const buttonTexts = Array.from(paginationButtons).map((b) => b.textContent?.trim());
-    expect(buttonTexts).toContain("Previous");
-    expect(buttonTexts).toContain("Next");
+    expect(paginationButtons.length).toBeGreaterThanOrEqual(3); // prev + page numbers + next
+
+    // Previous/Next buttons use chevron icons instead of text
+    const prevButton = pagination!.querySelector('wa-button:first-of-type wa-icon[name="chevron-left"]');
+    const nextButton = pagination!.querySelector('wa-button:last-of-type wa-icon[name="chevron-right"]');
+    expect(prevButton).toBeTruthy();
+    expect(nextButton).toBeTruthy();
   });
 });

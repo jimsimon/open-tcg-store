@@ -648,9 +648,7 @@ export class OgsProductsSinglesPage extends LitElement {
     if (this.products.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
-          <div class="empty-state-icon">
-            <wa-icon name="id-card" style="font-size: 2rem;"></wa-icon>
-          </div>
+          <wa-icon name="id-card"></wa-icon>
           <h3>No cards found</h3>
           <p>Try adjusting your filters or uncheck "In Stock Only" to see all cards.</p>
         </div>

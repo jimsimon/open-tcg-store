@@ -675,11 +675,11 @@ export class OgsInventorySinglesPage extends LitElement {
     return html`
       <div class="action-bar">
         <wa-button variant="brand" @click="${this.openAddDialog}">
-          <wa-icon slot="prefix" name="plus"></wa-icon>
+          <wa-icon slot="start" name="plus"></wa-icon>
           Add Single
         </wa-button>
         <wa-button variant="neutral" href="/inventory/import">
-          <wa-icon slot="prefix" name="upload"></wa-icon>
+          <wa-icon slot="start" name="upload"></wa-icon>
           Import
         </wa-button>
         ${when(
@@ -689,11 +689,11 @@ export class OgsInventorySinglesPage extends LitElement {
         )}
         <div class="action-bar-spacer"></div>
         <wa-button variant="neutral" ?disabled="${selectionCount === 0}" @click="${this.openBulkEditDialog}">
-          <wa-icon slot="prefix" name="pencil"></wa-icon>
+          <wa-icon slot="start" name="pencil"></wa-icon>
           Bulk Edit
         </wa-button>
         <wa-button variant="danger" ?disabled="${selectionCount === 0}" @click="${this.openBulkDeleteDialog}">
-          <wa-icon slot="prefix" name="trash"></wa-icon>
+          <wa-icon slot="start" name="trash"></wa-icon>
           Bulk Delete
         </wa-button>
       </div>
@@ -710,7 +710,7 @@ export class OgsInventorySinglesPage extends LitElement {
           <h3>No singles found</h3>
           <p>Add singles to your inventory or adjust your search filters.</p>
           <wa-button variant="brand" @click="${this.openAddDialog}">
-            <wa-icon slot="prefix" name="plus"></wa-icon>
+            <wa-icon slot="start" name="plus"></wa-icon>
             Add Your First Single
           </wa-button>
         </div>
@@ -1143,7 +1143,7 @@ export class OgsInventorySinglesPage extends LitElement {
 
         <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="danger" @click="${this.submitDeleteItem}">
-          <wa-icon slot="prefix" name="trash"></wa-icon>
+          <wa-icon slot="start" name="trash"></wa-icon>
           Delete
         </wa-button>
       </wa-dialog>
@@ -1266,7 +1266,7 @@ export class OgsInventorySinglesPage extends LitElement {
 
         <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeBulkDeleteDialog}">Cancel</wa-button>
         <wa-button slot="footer" variant="danger" @click="${this.submitBulkDelete}">
-          <wa-icon slot="prefix" name="trash"></wa-icon>
+          <wa-icon slot="start" name="trash"></wa-icon>
           Delete ${this.selectedIds.size} Items
         </wa-button>
       </wa-dialog>

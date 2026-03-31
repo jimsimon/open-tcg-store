@@ -4,7 +4,7 @@ import {
   mapToGraphqlShoppingCart,
 } from "../../../../services/shopping-cart-service";
 import type { QueryResolvers } from "./../../../types.generated";
-export const getShoppingCart: NonNullable<QueryResolvers['getShoppingCart']> = async (
+export const getShoppingCart: NonNullable<QueryResolvers["getShoppingCart"]> = async (
   _parent,
   _arg,
   ctx: GraphqlContext,

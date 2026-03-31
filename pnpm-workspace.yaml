@@ -1,5 +1,8 @@
 packages:
-  - "packages/*"
+  - packages/*
+
+onlyBuiltDependencies:
+  - esbuild
 
 publicHoistPattern:
-  - "@lit-labs/*"
+  - '@lit-labs/*'

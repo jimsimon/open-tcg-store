@@ -1,6 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
-import '@awesome.me/webawesome/dist/components/divider/divider.js'
+import "@awesome.me/webawesome/dist/components/divider/divider.js";
 
 @customElement("ogs-two-pane-panel")
 export class OgsTwoPanePanel extends LitElement {

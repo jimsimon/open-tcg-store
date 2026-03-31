@@ -27,6 +27,7 @@ export const roles = {
 };
 
 export const auth = betterAuth({
+  baseURL: "http://localhost:5174",
   database: drizzleAdapter(otcgs, {
     provider: "sqlite",
     schema,

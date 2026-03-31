@@ -3,6 +3,7 @@
 ## Core Technologies
 
 ### Frontend
+
 - **Lit**: Modern, lightweight web component framework
 - **TypeScript**: Type-safe JavaScript development
 - **Web Awesome**: UI component library for consistent design
@@ -10,18 +11,21 @@
 - **Lit SSR**: Server-side rendering for Lit components
 
 ### Backend
+
 - **Koa.js**: Web framework for Node.js
 - **GraphQL**: API schema and query language
 - **Better Auth**: Authentication and session management
 - **Drizzle ORM**: TypeScript-first ORM for PostgreSQL
 
 ### Database
+
 - **PostgreSQL**: Primary database for production
 - **libsql**: SQLite-compatible database for development
 - **Drizzle ORM**: TypeScript-first ORM with comprehensive relations
 - **Drizzle Kit**: Database schema management and migrations
 
 ### Development Tools
+
 - **Biome**: Linter and code formatter
 - **Prettier**: Code formatting
 - **GraphQL Codegen**: Type-safe GraphQL code generation
@@ -31,12 +35,14 @@
 ## Testing Framework
 
 ### Vitest Configuration
+
 - **Browser Testing**: Uses Playwright for browser-based tests
 - **Node.js Testing**: Uses Node.js environment for server-side tests
 - **Test Location**: Test files are co-located with source files (`.test.ts` suffix)
 - **Coverage**: V8 coverage provider with HTML, JSON, and text reporters
 
 ### Test Scripts
+
 ```json
 {
   "test": "vitest",
@@ -49,6 +55,7 @@
 ```
 
 ### Test Dependencies
+
 ```json
 {
   "vitest": "^latest",
@@ -58,6 +65,7 @@
 ```
 
 ### Test Structure
+
 - **Component Tests**: Browser-based tests for Lit components using Vitest's browser mode
 - **Page Tests**: Browser-based tests for page components
 - **Database Tests**: Node.js tests for database operations
@@ -66,6 +74,7 @@
 ## Key Dependencies
 
 ### Monorepo Dependencies
+
 ```json
 {
   "lit": "^3.3.1",
@@ -83,6 +92,7 @@
 ```
 
 ### Development Dependencies
+
 ```json
 {
   "@biomejs/biome": "^2.2.2",
@@ -96,6 +106,7 @@
 ```
 
 ## Technical Constraints
+
 - **TypeScript required**: All code must be type-safe
 - **Modern JavaScript**: ES2022 target with ESNext modules
 - **Component-based architecture**: All UI elements are Lit custom elements
@@ -104,6 +115,7 @@
 - **Testing**: Vitest for both browser and Node.js environments
 
 ## Build System
+
 - **Development**: Vite dev server with HMR
 - **Production**: TypeScript compilation + Vite build
 - **Code Generation**: GraphQL codegen for types and resolvers
@@ -112,6 +124,7 @@
 - **Development Orchestration**: Tilt for coordinated multi-service development
 
 ## Environment Setup
+
 - **Node.js**: Version specified in `.nvmrc`
 - **TypeScript**: Strict mode enabled
 - **Database**: libsql (SQLite-compatible) for development
@@ -120,6 +133,7 @@
 - **Package Management**: pnpm with workspace support
 
 ## GraphQL Architecture
+
 - **Schema-First Design**: GraphQL schemas define API contracts
 - **Type Generation**: Automatic TypeScript type generation from schemas
 - **Resolver Pattern**: Clean separation of concerns in resolvers

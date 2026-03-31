@@ -1,9 +1,6 @@
-/// <reference types="vitest/config" />
-import { defineConfig } from "vite";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { globSync } from "glob";
+import { defineConfig } from "vitest/config";
 import { workspaceRootSync } from "workspace-root";
+import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
   server: { middlewareMode: true },
@@ -17,22 +14,6 @@ export default defineConfig({
     resolve: {
       conditions: ["development", "browser"],
       externalConditions: ["development", "browser"],
-    },
-  },
-  build: {
-    rollupOptions: {
-      input: {
-        ...Object.fromEntries(
-          globSync("pages/**/*.client.ts").map((file) => [
-            // This removes `src/` as well as the file extension from each
-            // file, so e.g. src/nested/foo.js becomes nested/foo
-            path.relative("src", file.slice(0, file.length - path.extname(file).length)),
-            // This expands the relative paths to absolute paths, so e.g.
-            // src/nested/foo becomes /project/src/nested/foo.js
-            fileURLToPath(new URL(file, import.meta.url)),
-          ]),
-        ),
-      },
     },
   },
   optimizeDeps: {
@@ -57,7 +38,7 @@ export default defineConfig({
           include: ["src/components/**/*.test.ts", "src/**/*.client.test.ts"],
           browser: {
             enabled: true,
-            provider: "playwright",
+            provider: playwright(),
             instances: [{ browser: "chromium", headless: true }],
           },
         },

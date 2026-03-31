@@ -9,7 +9,7 @@ function assertInventoryAccess(ctx: GraphqlContext) {
   }
 }
 
-export const updateInventoryItem: NonNullable<MutationResolvers['updateInventoryItem']> = async (
+export const updateInventoryItem: NonNullable<MutationResolvers["updateInventoryItem"]> = async (
   _parent,
   args,
   ctx: GraphqlContext,

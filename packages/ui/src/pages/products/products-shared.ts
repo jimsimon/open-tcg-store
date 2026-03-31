@@ -562,40 +562,32 @@ export const emptyStateStyles = css`
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 4rem 2rem;
     text-align: center;
+    padding: 4rem 2rem;
+    color: var(--wa-color-text-muted);
     background: var(--wa-color-surface-raised);
-    border: 2px dashed var(--wa-color-border-quiet);
-    border-radius: 16px;
-    margin: 1.5rem 0;
+    border: 2px dashed var(--wa-color-surface-border);
+    border-radius: var(--wa-border-radius-l);
+    margin: 0.5rem 0;
   }
 
-  .empty-state-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-quiet);
-    margin-bottom: 1.5rem;
-    font-size: 2rem;
-    box-shadow: 0 2px 8px var(--wa-color-shadow);
+  .empty-state > wa-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
   }
 
   .empty-state h3 {
     margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: var(--wa-font-size-xl);
+    font-weight: 700;
     color: var(--wa-color-text-normal);
   }
 
   .empty-state p {
-    margin: 0;
-    font-size: 0.9375rem;
-    color: var(--wa-color-text-quiet);
-    max-width: 360px;
+    margin: 0 0 1.5rem 0;
+    max-width: 400px;
+    margin-inline: auto;
   }
 `;
 

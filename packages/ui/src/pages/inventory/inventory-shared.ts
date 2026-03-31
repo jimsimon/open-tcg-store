@@ -231,6 +231,12 @@ export const sharedInventoryStyles = [
       box-sizing: border-box;
     }
 
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     /* --- Page Header --- */
 
     .page-header {
@@ -353,12 +359,14 @@ export const sharedInventoryStyles = [
     }
 
     .filter-bar wa-input {
-      flex: 1;
+      flex: 1 1 0%;
       min-width: 200px;
     }
 
     .filter-bar wa-select {
+      flex: 0 0 auto;
       min-width: 150px;
+      width: auto;
     }
 
     /* --- Action Bar --- */
@@ -371,8 +379,13 @@ export const sharedInventoryStyles = [
       align-items: center;
     }
 
+    .action-bar wa-button {
+      flex: 0 0 auto;
+    }
+
     .action-bar-spacer {
-      flex: 1;
+      flex: 1 1 0%;
+      min-width: 0;
     }
 
     .selection-indicator {
@@ -534,12 +547,20 @@ export const sharedInventoryStyles = [
     }
 
     .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
       padding: 4rem 2rem;
       color: var(--wa-color-text-muted);
+      background: var(--wa-color-surface-raised);
+      border: 2px dashed var(--wa-color-surface-border);
+      border-radius: var(--wa-border-radius-l);
+      margin: 0.5rem 0;
     }
 
-    .empty-state wa-icon {
+    .empty-state > wa-icon {
       font-size: 4rem;
       margin-bottom: 1rem;
       opacity: 0.5;

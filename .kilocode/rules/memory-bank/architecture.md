@@ -1,9 +1,11 @@
 # Architecture: OpenTCGS System Design
 
 ## System Architecture Overview
+
 OpenTCGS is a full-stack web application built with a modern monorepo architecture using pnpm workspaces. The system follows a client-server model with server-side rendering (SSR) using Lit and Koa.js, featuring separate API and UI packages with comprehensive GraphQL integration.
 
 ### Core Components
+
 1. **Frontend**: Lit-based web components with Web Awesome UI framework
 2. **Backend**: Koa.js server with GraphQL API
 3. **Database**: PostgreSQL with Drizzle ORM (using libsql/sqlite for development)
@@ -13,6 +15,7 @@ OpenTCGS is a full-stack web application built with a modern monorepo architectu
 7. **Development Orchestration**: Tilt for multi-service development
 
 ## Monorepo Structure
+
 ```
 packages/
 ├── api/                   # Backend API package
@@ -95,6 +98,7 @@ packages/
 ```
 
 ## Data Flow
+
 1. **Request**: HTTP request to Koa.js server
 2. **Routing**: Koa router determines appropriate page handler
 3. **SSR**: Server-side render page using Lit components
@@ -103,12 +107,14 @@ packages/
 6. **API**: Client communicates via GraphQL endpoints
 
 ## Component Architecture
+
 - **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees); cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission
 - **Page Components**: Each page has server.ts and client.ts files
 - **Custom Elements**: All components use Lit custom elements
 - **Web Awesome**: UI components from Web Awesome framework
 
 ### Inventory Page Components
+
 - **Filters Bar**: Condition dropdown, product type filter (singles/sealed), search input
 - **Data Table**: Sortable columns with product name, condition, quantity, price, cost basis, updated date
 - **Bulk Actions**: Select-all checkbox, bulk update and bulk delete operations
@@ -117,6 +123,7 @@ packages/
 - **Empty State**: Guidance when no inventory items exist
 
 ## Authentication Flow
+
 1. First-time setup creates admin user via Better Auth
 2. Subsequent logins use email/password authentication
 3. Anonymous users supported for guest shopping
@@ -125,6 +132,7 @@ packages/
 6. Protected routes enforced by middleware
 
 ## Database Schema
+
 - **Authentication**: Better Auth provides user, session, account tables with anonymous user support
 - **TCG Data**: Complete schema for categories, groups, products, prices, presale info, and extended data
 - **Shopping Cart**: Cart and cart item tables with user and inventory item relations, unique constraint on cartId+inventoryItemId
@@ -134,6 +142,7 @@ packages/
 - **Adapter**: Drizzle ORM with libsql (SQLite-compatible) for development
 
 ## Shopping Cart Architecture
+
 - **Service Layer**: `shopping-cart-service.ts` abstracts business logic from GraphQL resolvers
 - **Inventory Item Tracking**: Cart items reference `inventoryItemId` (FK to inventory_item.id) instead of productId+condition, enabling precise inventory tracking
 - **GraphQL Operations**: Complete CRUD operations (addToCart, removeFromCart, updateItemInCart, clearCart, checkoutWithCart, getShoppingCart)
@@ -143,6 +152,7 @@ packages/
 - **Type Safety**: Full TypeScript integration with generated GraphQL types
 
 ## Inventory Management Architecture
+
 - **Service Layer**: `inventory-service.ts` abstracts all inventory business logic from GraphQL resolvers
 - **GraphQL Operations**: Full CRUD (addInventoryItem, updateInventoryItem, deleteInventoryItem) plus bulk operations (bulkUpdateInventory, bulkDeleteInventory), paginated queries (getInventory), and product search (searchProducts)
 - **Access Control**: Employee role required for all inventory mutations via Better Auth access control plugin
@@ -152,6 +162,7 @@ packages/
 - **Type Safety**: Full TypeScript integration with generated GraphQL types
 
 ## Build System
+
 - **Development**: Vite dev server with hot module replacement
 - **Production**: TypeScript compilation + Vite build
 - **Code Generation**: GraphQL codegen for types and resolvers
@@ -159,6 +170,7 @@ packages/
 - **Development Orchestration**: Tilt for multi-service development workflow
 
 ## Testing Framework
+
 - **Component Tests**: Browser-based tests using Vitest's browser mode with Playwright
 - **Page Tests**: Browser-based tests for page components
 - **Database Tests**: Node.js tests for database operations

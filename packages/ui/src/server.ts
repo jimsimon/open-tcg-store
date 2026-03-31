@@ -59,10 +59,12 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   // Already has a session from the global middleware
   if (ctx.state.auth) return next();
 
-  await authClient.signIn.anonymous({
+  const origin = ctx.headers.origin || `${ctx.protocol}://${ctx.host}`;
+  const signInResult = await authClient.signIn.anonymous({
     fetchOptions: {
       headers: {
         Cookie: ctx.headers.cookie,
+        Origin: origin,
       } as Record<string, string>,
       onSuccess: (successCtx) => {
         // Copy Set-Cookie headers from the sign-in response to the browser response
@@ -111,6 +113,13 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
       },
     },
   });
+
+  if (signInResult.error) {
+    console.error("Anonymous sign-in failed:", signInResult.error);
+    throw new Error(
+      `Anonymous sign-in failed: ${signInResult.error.message ?? signInResult.error.code ?? "unknown error"}`,
+    );
+  }
 
   const getSessionResponse = await getSession(ctx);
   if (!getSessionResponse.data) {

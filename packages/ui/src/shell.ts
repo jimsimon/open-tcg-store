@@ -1,4 +1,3 @@
-import { html } from "lit";
 import { workspaceRootSync } from "workspace-root";
 
 const workspaceRoot = workspaceRootSync()!;

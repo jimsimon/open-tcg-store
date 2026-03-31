@@ -2,14 +2,9 @@ import { sql, and, like, eq, exists } from "drizzle-orm";
 import { otcgs } from "../../../../db";
 import { product, productExtendedData } from "../../../../db/tcg-data/schema";
 import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
-import type {
-  InputMaybe,
-  ProductListingFilters,
-  ProductListingPagination,
-  QueryResolvers,
-} from "../../../types.generated";
+import type { InputMaybe, ProductListingFilters, QueryResolvers } from "../../../types.generated";
 
-export const getProductListings: NonNullable<QueryResolvers['getProductListings']> = async (
+export const getProductListings: NonNullable<QueryResolvers["getProductListings"]> = async (
   _parent,
   { filters, pagination },
   _ctx,

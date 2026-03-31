@@ -3,7 +3,7 @@ import type { QueryResolvers, Card } from "../../../types.generated";
 import { otcgs } from "../../../../db";
 import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
 
-export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, _ctx) => {
+export const getCard: NonNullable<QueryResolvers["getCard"]> = async (_parent, { game, cardId }, _ctx) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }

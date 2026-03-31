@@ -1,15 +1,15 @@
-import { expect, test } from 'vitest'
-import { otcgs } from './index'
-import { user } from './otcgs/auth-schema'
+import { expect, test } from "vitest";
+import { otcgs } from "./index";
+import { user } from "./otcgs/auth-schema";
 
-test('database connection is established', async () => {
+test("database connection is established", async () => {
   // Test that we can execute a simple query
-  const result = await otcgs.select().from(user).limit(1)
-  expect(Array.isArray(result)).toBe(true)
-})
+  const result = await otcgs.select().from(user).limit(1);
+  expect(Array.isArray(result)).toBe(true);
+});
 
-test('database can handle basic operations', async () => {
+test("database can handle basic operations", async () => {
   // Test that we can perform a simple select query
-  const result = await otcgs.select().from(user).limit(1)
-  expect(result).toBeDefined()
-})
+  const result = await otcgs.select().from(user).limit(1);
+  expect(result).toBeDefined();
+});

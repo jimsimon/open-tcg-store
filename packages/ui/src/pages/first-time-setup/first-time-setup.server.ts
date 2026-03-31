@@ -1,6 +1,6 @@
 import type { RouterContext } from "@koa/router";
 
-export function render(ctx: RouterContext) {
+export function render(_ctx: RouterContext) {
   return `
     <ogs-first-time-setup-page></ogs-first-time-setup-page>
   `;

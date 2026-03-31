@@ -179,11 +179,11 @@ export class OgsInventoryImportPage extends LitElement {
 
           <div class="nav-links">
             <wa-button variant="neutral" href="/inventory/singles">
-              <wa-icon slot="prefix" name="id-card"></wa-icon>
+              <wa-icon slot="start" name="id-card"></wa-icon>
               Back to Singles
             </wa-button>
             <wa-button variant="neutral" href="/inventory/sealed">
-              <wa-icon slot="prefix" name="package"></wa-icon>
+              <wa-icon slot="start" name="package"></wa-icon>
               Back to Sealed
             </wa-button>
           </div>

@@ -10,7 +10,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Helper: build a chainable mock that resolves to `rows` at the end of the chain.
 function chainable(rows: unknown[] = []) {
   const chain: Record<string, unknown> = {};
-  const self = () => chain;
   for (const method of [
     "select",
     "from",
@@ -96,7 +95,7 @@ vi.mock("drizzle-orm", () => {
   // Tagged templates receive (strings[], ...values) and the result needs .as().
   const sqlResult = () => ({ type: "sql", as: vi.fn().mockReturnValue({ type: "sql-alias" }) });
   const sqlFn = Object.assign(
-    vi.fn((...args: unknown[]) => sqlResult()),
+    vi.fn((..._args: unknown[]) => sqlResult()),
     {
       raw: vi.fn(),
     },

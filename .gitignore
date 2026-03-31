@@ -28,3 +28,9 @@ pgdata
 
 # App Files
 sqlite-data
+
+# Working documents
+plans/
+
+# Debugging directories and files
+screenshots/

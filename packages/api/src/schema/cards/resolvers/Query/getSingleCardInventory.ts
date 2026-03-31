@@ -1,10 +1,10 @@
-import { sql, eq, and, like } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { otcgs } from "../../../../db";
 import { productExtendedData } from "../../../../db/tcg-data/schema";
 import { inventoryItem } from "../../../../db/otcgs/inventory-schema";
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from "../../../types.generated";
 
-export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
+export const getSingleCardInventory: NonNullable<QueryResolvers["getSingleCardInventory"]> = async (
   _parent,
   { game, filters },
   _ctx,

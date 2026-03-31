@@ -722,7 +722,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
               ?disabled="${!this.customerName.trim() || this.updatingCartItem}"
               @click="${this.handleSubmitOrder}"
             >
-              <wa-icon slot="prefix" name="check"></wa-icon>
+              <wa-icon slot="start" name="check"></wa-icon>
               Submit Order
             </wa-button>
           `,

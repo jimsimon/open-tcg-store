@@ -1,4 +1,4 @@
-import type   { ProductListingResolvers } from './../../types.generated';
-    export const ProductListing: ProductListingResolvers = {
-    /* Implement ProductListing resolver logic here */
-  };
+import type { ProductListingResolvers } from "./../../types.generated";
+export const ProductListing: ProductListingResolvers = {
+  /* Implement ProductListing resolver logic here */
+};

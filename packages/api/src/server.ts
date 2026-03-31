@@ -5,7 +5,7 @@ import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import Koa from "koa";
 import mount from "koa-mount";
 import koaCors from "@koa/cors";
-import { createHandler, RequestContext } from "graphql-http/lib/use/koa";
+import { createHandler } from "graphql-http/lib/use/koa";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { resolvers } from "./schema/resolvers.generated.ts";
 import type { Resolvers } from "./schema/types.generated.ts";

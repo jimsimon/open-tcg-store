@@ -458,9 +458,7 @@ export class OgsProductsSealedPage extends LitElement {
     if (this.products.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
-          <div class="empty-state-icon">
-            <wa-icon name="box" style="font-size: 2rem;"></wa-icon>
-          </div>
+          <wa-icon name="box"></wa-icon>
           <h3>No sealed products found</h3>
           <p>Try adjusting your filters or uncheck "In Stock Only" to see all products.</p>
         </div>

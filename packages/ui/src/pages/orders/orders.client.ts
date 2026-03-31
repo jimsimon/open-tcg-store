@@ -187,6 +187,12 @@ export class OrdersPage extends LitElement {
         box-sizing: border-box;
       }
 
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
       .page-header {
         display: flex;
         align-items: center;
@@ -596,7 +602,7 @@ export class OrdersPage extends LitElement {
                           ?disabled="${this.updatingStatusOrderId !== null}"
                           @click="${(e: Event) => this.handleUpdateStatus(order.id, "completed", e)}"
                         >
-                          <wa-icon slot="prefix" name="check"></wa-icon>
+                          <wa-icon slot="start" name="check"></wa-icon>
                           Complete
                         </wa-button>
                       `
@@ -609,7 +615,7 @@ export class OrdersPage extends LitElement {
                           ?disabled="${this.updatingStatusOrderId !== null}"
                           @click="${(e: Event) => this.handleUpdateStatus(order.id, "open", e)}"
                         >
-                          <wa-icon slot="prefix" name="rotate-left"></wa-icon>
+                          <wa-icon slot="start" name="rotate-left"></wa-icon>
                           Re-open
                         </wa-button>
                       `}
@@ -623,7 +629,7 @@ export class OrdersPage extends LitElement {
                           ?disabled="${this.cancellingOrderId !== null}"
                           @click="${(e: Event) => this.openCancelDialog(order, e)}"
                         >
-                          <wa-icon slot="prefix" name="xmark"></wa-icon>
+                          <wa-icon slot="start" name="xmark"></wa-icon>
                           Cancel
                         </wa-button>
                       `
@@ -706,7 +712,7 @@ export class OrdersPage extends LitElement {
           ?loading="${this.cancellingOrderId !== null}"
           @click="${this.confirmCancelOrder}"
         >
-          <wa-icon slot="prefix" name="xmark"></wa-icon>
+          <wa-icon slot="start" name="xmark"></wa-icon>
           Cancel Order
         </wa-button>
       </wa-dialog>

@@ -1,7 +1,7 @@
 {
   "name": "@open-tcgs/api",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development tsx --conditions=development src/server.ts",
@@ -10,8 +10,6 @@
     "db:push:main": "drizzle-kit push --config ./src/db/otcgs/drizzle.config.ts",
     "db:push:tcg-data": "drizzle-kit push --config ./src/db/tcg-data/drizzle.config.ts"
   },
-  "dependencies": {
-  },
-  "devDependencies": {
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

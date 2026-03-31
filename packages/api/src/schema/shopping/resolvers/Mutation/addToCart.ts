@@ -4,7 +4,7 @@ import { GraphqlContext } from "../../../../server";
 import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from "../../../../services/shopping-cart-service";
 import type { MutationResolvers } from "./../../../types.generated";
 
-export const addToCart: NonNullable<MutationResolvers['addToCart']> = async (_parent, arg, ctx: GraphqlContext) => {
+export const addToCart: NonNullable<MutationResolvers["addToCart"]> = async (_parent, arg, ctx: GraphqlContext) => {
   const result = await otcgs.query.cart.findFirst({
     columns: {
       id: true,
