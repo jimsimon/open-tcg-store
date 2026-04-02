@@ -4,6 +4,7 @@
 import    { getCard as Query_getCard } from './cards/resolvers/Query/getCard';
 import    { getIntegrationSettings as Query_getIntegrationSettings } from './settings/resolvers/Query/getIntegrationSettings';
 import    { getInventory as Query_getInventory } from './inventory/resolvers/Query/getInventory';
+import    { getInventoryItemDetails as Query_getInventoryItemDetails } from './inventory/resolvers/Query/getInventoryItemDetails';
 import    { getOrders as Query_getOrders } from './orders/resolvers/Query/getOrders';
 import    { getProduct as Query_getProduct } from './cards/resolvers/Query/getProduct';
 import    { getProductListings as Query_getProductListings } from './cards/resolvers/Query/getProductListings';
@@ -36,7 +37,7 @@ import    { updateShopifyIntegration as Mutation_updateShopifyIntegration } from
 import    { updateStoreSettings as Mutation_updateStoreSettings } from './settings/resolvers/Mutation/updateStoreSettings';
 import    { updateStripeIntegration as Mutation_updateStripeIntegration } from './settings/resolvers/Mutation/updateStripeIntegration';
     export const resolvers: Resolvers = {
-      Query: { getBackupSettings: Query_getBackupSettings,getCard: Query_getCard,getIntegrationSettings: Query_getIntegrationSettings,getInventory: Query_getInventory,getOrders: Query_getOrders,getProduct: Query_getProduct,getProductListings: Query_getProductListings,getSets: Query_getSets,getShoppingCart: Query_getShoppingCart,getSingleCardInventory: Query_getSingleCardInventory,getStoreSettings: Query_getStoreSettings,isSetupPending: Query_isSetupPending,lookupSalesTax: Query_lookupSalesTax,searchProducts: Query_searchProducts },
+      Query: { getBackupSettings: Query_getBackupSettings,getCard: Query_getCard,getIntegrationSettings: Query_getIntegrationSettings,getInventory: Query_getInventory,getInventoryItemDetails: Query_getInventoryItemDetails,getOrders: Query_getOrders,getProduct: Query_getProduct,getProductListings: Query_getProductListings,getSets: Query_getSets,getShoppingCart: Query_getShoppingCart,getSingleCardInventory: Query_getSingleCardInventory,getStoreSettings: Query_getStoreSettings,isSetupPending: Query_isSetupPending,lookupSalesTax: Query_lookupSalesTax,searchProducts: Query_searchProducts },
       Mutation: { addInventoryItem: Mutation_addInventoryItem,addToCart: Mutation_addToCart,bulkDeleteInventory: Mutation_bulkDeleteInventory,bulkUpdateInventory: Mutation_bulkUpdateInventory,cancelOrder: Mutation_cancelOrder,checkoutWithCart: Mutation_checkoutWithCart,clearCart: Mutation_clearCart,deleteInventoryItem: Mutation_deleteInventoryItem,firstTimeSetup: Mutation_firstTimeSetup,removeFromCart: Mutation_removeFromCart,submitOrder: Mutation_submitOrder,triggerBackup: Mutation_triggerBackup,triggerRestore: Mutation_triggerRestore,updateBackupSettings: Mutation_updateBackupSettings,updateInventoryItem: Mutation_updateInventoryItem,updateItemInCart: Mutation_updateItemInCart,updateOrderStatus: Mutation_updateOrderStatus,updateQuickBooksIntegration: Mutation_updateQuickBooksIntegration,updateShopifyIntegration: Mutation_updateShopifyIntegration,updateStoreSettings: Mutation_updateStoreSettings,updateStripeIntegration: Mutation_updateStripeIntegration },
       
       

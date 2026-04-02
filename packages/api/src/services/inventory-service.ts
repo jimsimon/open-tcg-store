@@ -1,4 +1,4 @@
-import { eq, and, like, sql, inArray, isNull } from 'drizzle-orm';
+import { eq, and, like, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import type {
@@ -10,6 +10,8 @@ import type {
   UpdateInventoryItemInput,
   BulkUpdateInventoryInput,
   ProductSearchResult,
+  GroupedInventoryItem,
+  GroupedInventoryPage,
 } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +20,53 @@ import type {
 
 function formatDate(d: Date | null | undefined): string | null {
   return d ? d.toISOString() : null;
+}
+
+/** Return today's date as YYYY-MM-DD. */
+function todayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Condition to filter out soft-deleted items */
+function notDeleted() {
+  return isNull(inventoryItem.deletedAt);
+}
+
+/** Condition to filter out items with zero quantity */
+function hasQuantity() {
+  return gt(inventoryItem.quantity, 0);
+}
+
+/**
+ * Validate required fields for add/update operations.
+ * All fields except "notes" should be required when adding.
+ */
+function validateAddInput(input: AddInventoryItemInput): void {
+  if (!input.productId) throw new Error('productId is required');
+  if (!input.condition) throw new Error('condition is required');
+  if (input.quantity == null || input.quantity < 1) throw new Error('quantity is required and must be at least 1');
+  if (input.price == null) throw new Error('price is required');
+  if (input.costBasis == null) throw new Error('costBasis is required');
+  if (!input.acquisitionDate) throw new Error('acquisitionDate is required');
+
+  const validConditions = ['NM', 'LP', 'MP', 'HP', 'D'];
+  if (!validConditions.includes(input.condition)) {
+    throw new Error(`Invalid condition: ${input.condition}. Must be one of: ${validConditions.join(', ')}`);
+  }
+}
+
+function validateUpdateInput(input: UpdateInventoryItemInput): void {
+  if (!input.id) throw new Error('id is required');
+
+  if (input.condition != null) {
+    const validConditions = ['NM', 'LP', 'MP', 'HP', 'D'];
+    if (!validConditions.includes(input.condition)) {
+      throw new Error(`Invalid condition: ${input.condition}. Must be one of: ${validConditions.join(', ')}`);
+    }
+  }
+  if (input.quantity != null && input.quantity < 0) {
+    throw new Error('quantity must be non-negative');
+  }
 }
 
 /**
@@ -74,8 +123,8 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
     condition: string;
     quantity: number;
     price: number;
-    costBasis: number | null;
-    acquisitionDate: Date | null;
+    costBasis: number;
+    acquisitionDate: string;
     notes: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -97,8 +146,8 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
     condition: r.condition,
     quantity: r.quantity,
     price: r.price,
-    costBasis: r.costBasis ?? null,
-    acquisitionDate: formatDate(r.acquisitionDate),
+    costBasis: r.costBasis,
+    acquisitionDate: r.acquisitionDate,
     notes: r.notes ?? null,
     createdAt: formatDate(r.createdAt) ?? new Date().toISOString(),
     updatedAt: formatDate(r.updatedAt) ?? new Date().toISOString(),
@@ -106,19 +155,14 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
 }
 
 // ---------------------------------------------------------------------------
-// 1. getInventoryItems
+// Shared filter conditions builder
 // ---------------------------------------------------------------------------
 
-export async function getInventoryItems(
-  filters?: InventoryFilters | null,
-  pagination?: PaginationInput | null,
-): Promise<InventoryPage> {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
-
-  // Build WHERE conditions
+function buildFilterConditions(filters?: InventoryFilters | null) {
   const conditions: ReturnType<typeof eq>[] = [];
+
+  // Always exclude soft-deleted items
+  conditions.push(notDeleted());
 
   if (filters?.gameName) {
     conditions.push(like(category.seoCategoryName, `${filters.gameName.toLowerCase()}%`));
@@ -148,7 +192,6 @@ export async function getInventoryItems(
   const includeSealed = filters?.includeSealed;
 
   if (includeSingles === true && includeSealed !== true) {
-    // Only singles – must have Rarity or Number extended data
     conditions.push(
       sql`EXISTS (
         SELECT 1 FROM ${productExtendedData}
@@ -157,7 +200,6 @@ export async function getInventoryItems(
       )`,
     );
   } else if (includeSealed === true && includeSingles !== true) {
-    // Only sealed – must NOT have Rarity or Number extended data
     conditions.push(
       sql`NOT EXISTS (
         SELECT 1 FROM ${productExtendedData}
@@ -166,9 +208,130 @@ export async function getInventoryItems(
       )`,
     );
   }
-  // When both true or both null/undefined → include all (no filter)
 
+  return conditions;
+}
+
+// ---------------------------------------------------------------------------
+// 1. getInventoryItems — Returns GROUPED inventory (by productId + condition)
+// ---------------------------------------------------------------------------
+
+export async function getInventoryItems(
+  filters?: InventoryFilters | null,
+  pagination?: PaginationInput | null,
+): Promise<GroupedInventoryPage> {
+  const page = pagination?.page ?? 1;
+  const pageSize = pagination?.pageSize ?? 25;
+  const offset = (page - 1) * pageSize;
+
+  const conditions = buildFilterConditions(filters);
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // Grouped query: group by productId + condition, filter out groups with 0 total quantity
+  const groupedQuery = otcgs
+    .select({
+      productId: inventoryItem.productId,
+      productName: product.name,
+      gameName: category.name,
+      setName: group.name,
+      condition: inventoryItem.condition,
+      totalQuantity: sql<number>`SUM(${inventoryItem.quantity})`.as('total_quantity'),
+      lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
+      highestPrice: sql<number | null>`MAX(${inventoryItem.price})`.as('highest_price'),
+      entryCount: sql<number>`COUNT(${inventoryItem.id})`.as('entry_count'),
+      rarity: sql<string | null>`(
+        SELECT ${productExtendedData.value}
+        FROM ${productExtendedData}
+        WHERE ${productExtendedData.productId} = ${product.id}
+          AND ${productExtendedData.name} = 'Rarity'
+        LIMIT 1
+      )`.as('rarity'),
+      isSingle: sql<boolean>`(
+        EXISTS (
+          SELECT 1 FROM ${productExtendedData}
+          WHERE ${productExtendedData.productId} = ${product.id}
+            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
+        )
+      )`.as('is_single'),
+    })
+    .from(inventoryItem)
+    .innerJoin(product, eq(inventoryItem.productId, product.id))
+    .leftJoin(group, eq(product.groupId, group.id))
+    .leftJoin(category, eq(product.categoryId, category.id))
+    .where(whereClause)
+    .groupBy(inventoryItem.productId, inventoryItem.condition)
+    .having(sql`SUM(${inventoryItem.quantity}) > 0`);
+
+  // Count query: wrap the grouped query to count distinct groups
+  const countQuery = otcgs
+    .select({ total: sql<number>`count(*)` })
+    .from(
+      sql`(
+        SELECT ${inventoryItem.productId}, ${inventoryItem.condition}
+        FROM ${inventoryItem}
+        INNER JOIN ${product} ON ${inventoryItem.productId} = ${product.id}
+        LEFT JOIN ${group} ON ${product.groupId} = ${group.id}
+        LEFT JOIN ${category} ON ${product.categoryId} = ${category.id}
+        ${whereClause ? sql`WHERE ${whereClause}` : sql``}
+        GROUP BY ${inventoryItem.productId}, ${inventoryItem.condition}
+        HAVING SUM(${inventoryItem.quantity}) > 0
+      ) AS grouped`,
+    );
+
+  const [countResult] = await countQuery;
+  const totalCount = Number(countResult?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // Data query with pagination
+  const rows = await groupedQuery.limit(pageSize).offset(offset);
+
+  const items: GroupedInventoryItem[] = rows.map((r) => {
+    const isSingle = Boolean(r.isSingle);
+    return {
+      productId: r.productId,
+      productName: r.productName ?? '',
+      gameName: r.gameName ?? '',
+      setName: r.setName ?? '',
+      rarity: r.rarity ?? null,
+      isSingle,
+      isSealed: !isSingle,
+      condition: r.condition,
+      totalQuantity: r.totalQuantity,
+      lowestPrice: r.lowestPrice ?? null,
+      highestPrice: r.highestPrice ?? null,
+      entryCount: r.entryCount,
+    };
+  });
+
+  return {
+    items,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 1b. getInventoryItemDetails — Returns individual entries for a product+condition
+// ---------------------------------------------------------------------------
+
+export async function getInventoryItemDetails(
+  productId: number,
+  condition: string,
+  pagination?: PaginationInput | null,
+): Promise<InventoryPage> {
+  const page = pagination?.page ?? 1;
+  const pageSize = pagination?.pageSize ?? 25;
+  const offset = (page - 1) * pageSize;
+
+  const conditions = [
+    eq(inventoryItem.productId, productId),
+    eq(inventoryItem.condition, condition),
+    notDeleted(),
+    hasQuantity(),
+  ];
+  const whereClause = and(...conditions);
 
   // Count query
   const [countResult] = await otcgs
@@ -199,7 +362,9 @@ export async function getInventoryItems(
 // ---------------------------------------------------------------------------
 
 export async function getInventoryItemById(id: number): Promise<InventoryItem | null> {
-  const rows = await baseInventoryQuery().where(eq(inventoryItem.id, id)).limit(1);
+  const rows = await baseInventoryQuery()
+    .where(and(eq(inventoryItem.id, id), notDeleted()))
+    .limit(1);
 
   if (rows.length === 0) return null;
   return mapRow(rows[0] as unknown as Record<string, unknown>);
@@ -210,17 +375,17 @@ export async function getInventoryItemById(id: number): Promise<InventoryItem | 
 // ---------------------------------------------------------------------------
 
 export async function addInventoryItem(input: AddInventoryItemInput, userId: string): Promise<InventoryItem> {
-  // Check for existing row with same productId + condition + costBasis
+  // Validate required fields
+  validateAddInput(input);
+
+  // Check for existing row with same productId + condition + costBasis + acquisitionDate
   const duplicateConditions = [
     eq(inventoryItem.productId, input.productId),
     eq(inventoryItem.condition, input.condition),
+    eq(inventoryItem.costBasis, input.costBasis),
+    eq(inventoryItem.acquisitionDate, input.acquisitionDate),
+    notDeleted(),
   ];
-
-  if (input.costBasis != null) {
-    duplicateConditions.push(eq(inventoryItem.costBasis, input.costBasis));
-  } else {
-    duplicateConditions.push(isNull(inventoryItem.costBasis));
-  }
 
   const [existing] = await otcgs
     .select()
@@ -252,8 +417,8 @@ export async function addInventoryItem(input: AddInventoryItemInput, userId: str
       condition: input.condition,
       quantity: input.quantity,
       price: input.price,
-      costBasis: input.costBasis ?? null,
-      acquisitionDate: input.acquisitionDate ? new Date(input.acquisitionDate) : null,
+      costBasis: input.costBasis,
+      acquisitionDate: input.acquisitionDate,
       notes: input.notes ?? null,
       createdBy: userId,
       updatedBy: userId,
@@ -270,28 +435,36 @@ export async function addInventoryItem(input: AddInventoryItemInput, userId: str
 // ---------------------------------------------------------------------------
 
 export async function updateInventoryItem(input: UpdateInventoryItemInput, userId: string): Promise<InventoryItem> {
+  validateUpdateInput(input);
+
   const changingCondition = input.condition != null;
   const changingCostBasis = input.costBasis !== undefined;
+  const changingAcquisitionDate = input.acquisitionDate !== undefined;
 
-  // If condition or costBasis is changing, check for merge with an existing row
-  if (changingCondition || changingCostBasis) {
+  // If any unique-key field is changing, check for merge with an existing row
+  if (changingCondition || changingCostBasis || changingAcquisitionDate) {
     // Fetch the current item so we can compute the effective unique-key tuple
-    const [currentItem] = await otcgs.select().from(inventoryItem).where(eq(inventoryItem.id, input.id)).limit(1);
+    const [currentItem] = await otcgs
+      .select()
+      .from(inventoryItem)
+      .where(and(eq(inventoryItem.id, input.id), notDeleted()))
+      .limit(1);
 
     if (currentItem) {
       const effectiveCondition = input.condition ?? currentItem.condition;
-      const effectiveCostBasis = changingCostBasis ? (input.costBasis ?? null) : currentItem.costBasis;
+      const effectiveCostBasis = changingCostBasis ? (input.costBasis ?? 0) : currentItem.costBasis;
+      const effectiveAcquisitionDate = changingAcquisitionDate
+        ? (input.acquisitionDate ?? todayDateString())
+        : currentItem.acquisitionDate;
 
-      // Look for an existing row with the same (productId, condition, costBasis) tuple
+      // Look for an existing row with the same unique tuple
       const dupConditions = [
         eq(inventoryItem.productId, currentItem.productId),
         eq(inventoryItem.condition, effectiveCondition),
+        eq(inventoryItem.costBasis, effectiveCostBasis),
+        eq(inventoryItem.acquisitionDate, effectiveAcquisitionDate),
+        notDeleted(),
       ];
-      if (effectiveCostBasis != null) {
-        dupConditions.push(eq(inventoryItem.costBasis, effectiveCostBasis));
-      } else {
-        dupConditions.push(isNull(inventoryItem.costBasis));
-      }
 
       const [existingMatch] = await otcgs
         .select()
@@ -304,8 +477,11 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
         const effectiveQuantity = input.quantity ?? currentItem.quantity;
         const mergedQuantity = existingMatch.quantity + effectiveQuantity;
 
-        // Delete the item being edited (it will be absorbed into the match)
-        await otcgs.delete(inventoryItem).where(eq(inventoryItem.id, input.id));
+        // Soft-delete the item being edited (it will be absorbed into the match)
+        await otcgs
+          .update(inventoryItem)
+          .set({ deletedAt: new Date(), quantity: 0, updatedBy: userId, updatedAt: new Date() })
+          .where(eq(inventoryItem.id, input.id));
 
         // Update the surviving row with merged quantity and any other provided fields
         const mergeUpdates: Record<string, unknown> = {
@@ -314,9 +490,6 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
           updatedAt: new Date(),
         };
         if (input.price != null) mergeUpdates.price = input.price;
-        if (input.acquisitionDate !== undefined) {
-          mergeUpdates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
-        }
         if (input.notes !== undefined) mergeUpdates.notes = input.notes ?? null;
 
         await otcgs.update(inventoryItem).set(mergeUpdates).where(eq(inventoryItem.id, existingMatch.id));
@@ -335,9 +508,9 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
   if (input.condition != null) updates.condition = input.condition;
   if (input.quantity != null) updates.quantity = input.quantity;
   if (input.price != null) updates.price = input.price;
-  if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? null;
+  if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? 0;
   if (input.acquisitionDate !== undefined) {
-    updates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
+    updates.acquisitionDate = input.acquisitionDate || todayDateString();
   }
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
@@ -347,11 +520,14 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
 }
 
 // ---------------------------------------------------------------------------
-// 5. deleteInventoryItem
+// 5. deleteInventoryItem — SOFT DELETE
 // ---------------------------------------------------------------------------
 
 export async function deleteInventoryItem(id: number): Promise<boolean> {
-  await otcgs.delete(inventoryItem).where(eq(inventoryItem.id, id));
+  await otcgs
+    .update(inventoryItem)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(inventoryItem.id, id));
   return true;
 }
 
@@ -365,10 +541,10 @@ export async function bulkUpdateInventoryItems(
 ): Promise<InventoryItem[]> {
   const changingCondition = input.condition != null;
   const changingCostBasis = input.costBasis !== undefined;
+  const changingAcquisitionDate = input.acquisitionDate !== undefined;
 
-  // If the update changes condition or costBasis, we may need to merge rows
-  // that would end up with the same (productId, condition, costBasis) tuple.
-  if (changingCondition || changingCostBasis) {
+  // If the update changes unique-key fields, we may need to merge rows
+  if (changingCondition || changingCostBasis || changingAcquisitionDate) {
     return bulkUpdateWithMerge(input, userId);
   }
 
@@ -380,62 +556,74 @@ export async function bulkUpdateInventoryItems(
 
   if (input.quantity != null) updates.quantity = input.quantity;
   if (input.price != null) updates.price = input.price;
-  if (input.acquisitionDate !== undefined) {
-    updates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
-  }
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
   await otcgs.update(inventoryItem).set(updates).where(inArray(inventoryItem.id, input.ids));
 
   // Fetch all updated items
-  const rows = await baseInventoryQuery().where(inArray(inventoryItem.id, input.ids));
+  const rows = await baseInventoryQuery().where(and(inArray(inventoryItem.id, input.ids), notDeleted()));
   return rows.map((r) => mapRow(r as unknown as Record<string, unknown>));
 }
 
 /**
- * Handle bulk updates that change unique-key fields (condition or costBasis).
- * When multiple items would end up with the same (productId, condition, costBasis)
+ * Handle bulk updates that change unique-key fields (condition, costBasis, or acquisitionDate).
+ * When multiple items would end up with the same (productId, condition, costBasis, acquisitionDate)
  * tuple, merge them by summing quantities and keeping one row.
  */
 async function bulkUpdateWithMerge(input: BulkUpdateInventoryInput, userId: string): Promise<InventoryItem[]> {
   // 1. Fetch current state of all items being updated
-  const currentItems = await otcgs.select().from(inventoryItem).where(inArray(inventoryItem.id, input.ids));
+  const currentItems = await otcgs
+    .select()
+    .from(inventoryItem)
+    .where(and(inArray(inventoryItem.id, input.ids), notDeleted()));
 
   type ItemRow = (typeof currentItems)[number];
   interface MergeGroup {
     productId: number;
     effectiveCondition: string;
-    effectiveCostBasis: number | null;
+    effectiveCostBasis: number;
+    effectiveAcquisitionDate: string;
     items: ItemRow[];
   }
 
-  // 2. Group items by their resulting (productId, condition, costBasis) tuple
+  // 2. Group items by their resulting unique tuple
   const groups = new Map<string, MergeGroup>();
   for (const item of currentItems) {
     const effectiveCondition = input.condition ?? item.condition;
-    const effectiveCostBasis = input.costBasis !== undefined ? (input.costBasis ?? null) : item.costBasis;
-    const key = `${item.productId}\0${effectiveCondition}\0${effectiveCostBasis}`;
+    const effectiveCostBasis = input.costBasis !== undefined ? (input.costBasis ?? 0) : item.costBasis;
+    const effectiveAcquisitionDate =
+      input.acquisitionDate !== undefined
+        ? (input.acquisitionDate || todayDateString())
+        : item.acquisitionDate;
+    const key = `${item.productId}\0${effectiveCondition}\0${effectiveCostBasis}\0${effectiveAcquisitionDate}`;
 
-    let group = groups.get(key);
-    if (!group) {
-      group = { productId: item.productId, effectiveCondition, effectiveCostBasis, items: [] };
-      groups.set(key, group);
+    let g = groups.get(key);
+    if (!g) {
+      g = { productId: item.productId, effectiveCondition, effectiveCostBasis, effectiveAcquisitionDate, items: [] };
+      groups.set(key, g);
     }
-    group.items.push(item);
+    g.items.push(item);
   }
 
   const now = new Date();
   const survivingIds: number[] = [];
   const updateSetIds = new Set(input.ids);
 
-  for (const { productId, effectiveCondition, effectiveCostBasis, items } of groups.values()) {
+  for (const {
+    productId,
+    effectiveCondition,
+    effectiveCostBasis,
+    effectiveAcquisitionDate,
+    items,
+  } of groups.values()) {
     // Check if there's an existing row (not in the update set) with the same tuple
-    const dupConditions = [eq(inventoryItem.productId, productId), eq(inventoryItem.condition, effectiveCondition)];
-    if (effectiveCostBasis != null) {
-      dupConditions.push(eq(inventoryItem.costBasis, effectiveCostBasis));
-    } else {
-      dupConditions.push(isNull(inventoryItem.costBasis));
-    }
+    const dupConditions = [
+      eq(inventoryItem.productId, productId),
+      eq(inventoryItem.condition, effectiveCondition),
+      eq(inventoryItem.costBasis, effectiveCostBasis),
+      eq(inventoryItem.acquisitionDate, effectiveAcquisitionDate),
+      notDeleted(),
+    ];
 
     const [existingMatch] = await otcgs
       .select()
@@ -463,17 +651,20 @@ async function bulkUpdateWithMerge(input: BulkUpdateInventoryInput, userId: stri
       updatedAt: now,
     };
     if (input.condition != null) updates.condition = input.condition;
-    if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? null;
-    if (input.price != null) updates.price = input.price;
+    if (input.costBasis !== undefined) updates.costBasis = input.costBasis ?? 0;
     if (input.acquisitionDate !== undefined) {
-      updates.acquisitionDate = input.acquisitionDate ? new Date(input.acquisitionDate) : null;
+      updates.acquisitionDate = input.acquisitionDate || todayDateString();
     }
+    if (input.price != null) updates.price = input.price;
     if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
-    // Delete the merged items first (before updating survivor to avoid constraint issues)
-    const idsToDelete = itemsToMerge.map((item) => item.id);
-    if (idsToDelete.length > 0) {
-      await otcgs.delete(inventoryItem).where(inArray(inventoryItem.id, idsToDelete));
+    // Soft-delete the merged items (before updating survivor to avoid constraint issues)
+    const idsToSoftDelete = itemsToMerge.map((item) => item.id);
+    if (idsToSoftDelete.length > 0) {
+      await otcgs
+        .update(inventoryItem)
+        .set({ deletedAt: now, quantity: 0, updatedBy: userId, updatedAt: now })
+        .where(inArray(inventoryItem.id, idsToSoftDelete));
     }
 
     await otcgs.update(inventoryItem).set(updates).where(eq(inventoryItem.id, survivor.id));
@@ -481,16 +672,20 @@ async function bulkUpdateWithMerge(input: BulkUpdateInventoryInput, userId: stri
   }
 
   // Fetch all surviving items
-  const rows = await baseInventoryQuery().where(inArray(inventoryItem.id, survivingIds));
+  const rows = await baseInventoryQuery().where(and(inArray(inventoryItem.id, survivingIds), notDeleted()));
   return rows.map((r) => mapRow(r as unknown as Record<string, unknown>));
 }
 
 // ---------------------------------------------------------------------------
-// 7. bulkDeleteInventoryItems
+// 7. bulkDeleteInventoryItems — SOFT DELETE
 // ---------------------------------------------------------------------------
 
 export async function bulkDeleteInventoryItems(ids: number[]): Promise<boolean> {
-  await otcgs.delete(inventoryItem).where(inArray(inventoryItem.id, ids));
+  const now = new Date();
+  await otcgs
+    .update(inventoryItem)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(inArray(inventoryItem.id, ids));
   return true;
 }
 

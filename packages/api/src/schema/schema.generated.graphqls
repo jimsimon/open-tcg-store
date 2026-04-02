@@ -1,7 +1,7 @@
 input AddInventoryItemInput {
-  acquisitionDate: String
+  acquisitionDate: String!
   condition: String!
-  costBasis: Float
+  costBasis: Float!
   notes: String
   price: Float!
   productId: Int!
@@ -89,6 +89,29 @@ type ConditionInventory {
   quantity: Int!
 }
 
+type GroupedInventoryItem {
+  condition: String!
+  entryCount: Int!
+  gameName: String!
+  highestPrice: Float
+  isSealed: Boolean!
+  isSingle: Boolean!
+  lowestPrice: Float
+  productId: Int!
+  productName: String!
+  rarity: String
+  setName: String!
+  totalQuantity: Int!
+}
+
+type GroupedInventoryPage {
+  items: [GroupedInventoryItem!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
 type InsufficientItem {
   available: Int!
   condition: String!
@@ -114,9 +137,9 @@ input InventoryFilters {
 }
 
 type InventoryItem {
-  acquisitionDate: String
-  condition: String
-  costBasis: Float
+  acquisitionDate: String!
+  condition: String!
+  costBasis: Float!
   createdAt: String!
   gameName: String!
   id: Int!
@@ -297,7 +320,8 @@ type Query {
   getBackupSettings: BackupSettings!
   getCard(cardId: String!, game: String!): Card!
   getIntegrationSettings: IntegrationSettings!
-  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): GroupedInventoryPage!
+  getInventoryItemDetails(condition: String!, pagination: PaginationInput, productId: Int!): InventoryPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!

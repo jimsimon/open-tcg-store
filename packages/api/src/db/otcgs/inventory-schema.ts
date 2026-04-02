@@ -10,9 +10,10 @@ export const inventoryItem = sqliteTable(
     condition: text('condition').notNull(), // NM, LP, MP, HP, D
     quantity: integer('quantity').notNull().default(0),
     price: real('price').notNull(),
-    costBasis: real('cost_basis'),
-    acquisitionDate: integer('acquisition_date', { mode: 'timestamp' }),
+    costBasis: real('cost_basis').notNull().default(0),
+    acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     notes: text('notes', { length: 1000 }),
+    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),
@@ -23,12 +24,18 @@ export const inventoryItem = sqliteTable(
     updatedBy: text('updated_by'),
   },
   (table) => [
-    uniqueIndex('inventory_item_product_condition_cost_idx').on(table.productId, table.condition, table.costBasis),
+    uniqueIndex('inventory_item_product_condition_cost_acqdate_idx').on(
+      table.productId,
+      table.condition,
+      table.costBasis,
+      table.acquisitionDate,
+    ),
     index('inventory_item_product_id_idx').on(table.productId),
     index('inventory_item_condition_idx').on(table.condition),
     index('inventory_item_price_idx').on(table.price),
     index('inventory_item_cost_basis_idx').on(table.costBasis),
     index('inventory_item_created_at_idx').on(table.createdAt),
+    index('inventory_item_deleted_at_idx').on(table.deletedAt),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [user.id],

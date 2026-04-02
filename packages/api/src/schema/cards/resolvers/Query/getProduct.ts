@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull, gt } from 'drizzle-orm';
 import type { QueryResolvers } from '../../../types.generated';
 import { otcgs } from '../../../../db';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
@@ -57,7 +57,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
     {} as Record<string, string>,
   );
 
-  // Fetch actual inventory records for this product
+  // Fetch actual inventory records for this product (exclude soft-deleted and zero-qty)
   const inventoryRecords = await otcgs
     .select({
       id: inventoryItem.id,
@@ -66,7 +66,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
       price: inventoryItem.price,
     })
     .from(inventoryItem)
-    .where(eq(inventoryItem.productId, id))
+    .where(and(eq(inventoryItem.productId, id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0)))
     .orderBy(inventoryItem.price);
 
   // Map game name from categoryId

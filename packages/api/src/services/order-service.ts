@@ -1,6 +1,11 @@
-import { and, eq, sql, asc, inArray, like, or } from 'drizzle-orm';
+import { and, eq, sql, asc, inArray, like, or, isNull, gt } from 'drizzle-orm';
 import { cartItem, inventoryItem, order, orderItem, otcgs } from '../db';
 import { getOrCreateShoppingCart } from './shopping-cart-service';
+
+/** Return today's date as YYYY-MM-DD. */
+function todayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 interface InsufficientItemInfo {
   productId: number;
@@ -118,7 +123,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
     return { error: 'Cart is empty' };
   }
 
-  // 2. Validate inventory availability — check total across ALL inventory records
+  // 2. Validate inventory availability — check total across ALL non-deleted inventory records
   //    for the same product+condition (not just the specific inventoryItemId in the cart)
   const insufficientItems: InsufficientItemInfo[] = [];
   const cartItemsWithInventory: {
@@ -135,11 +140,17 @@ export async function submitOrder(userId: string, customerName: string): Promise
 
     const inv = ci.inventoryItem;
 
-    // Check total available across all inventory records for this product+condition
+    // Check total available across all non-deleted inventory records for this product+condition
     const [totalResult] = await otcgs
       .select({ total: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)` })
       .from(inventoryItem)
-      .where(and(eq(inventoryItem.productId, inv.product.id), eq(inventoryItem.condition, inv.condition)));
+      .where(
+        and(
+          eq(inventoryItem.productId, inv.product.id),
+          eq(inventoryItem.condition, inv.condition),
+          isNull(inventoryItem.deletedAt),
+        ),
+      );
 
     const totalAvailable = totalResult?.total ?? 0;
 
@@ -187,8 +198,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
     .returning();
 
   // 4. Decrement inventory using FIFO (oldest first by createdAt) for tax purposes.
-  //    The cart's inventoryItemId determines product+condition+price, but we consume
-  //    from the oldest inventory records first to maintain proper cost basis tracking.
+  //    Only consider non-deleted items with quantity > 0.
   const allOrderItemValues: {
     orderId: number;
     inventoryItemId: number;
@@ -201,7 +211,8 @@ export async function submitOrder(userId: string, customerName: string): Promise
   }[] = [];
 
   for (const item of cartItemsWithInventory) {
-    // Get ALL inventory records for this product+condition, ordered by createdAt ASC (FIFO)
+    // Get ALL non-deleted inventory records for this product+condition with quantity > 0,
+    // ordered by createdAt ASC (FIFO)
     const fifoRecords = await otcgs
       .select({
         id: inventoryItem.id,
@@ -209,7 +220,14 @@ export async function submitOrder(userId: string, customerName: string): Promise
         costBasis: inventoryItem.costBasis,
       })
       .from(inventoryItem)
-      .where(and(eq(inventoryItem.productId, item.productId), eq(inventoryItem.condition, item.condition)))
+      .where(
+        and(
+          eq(inventoryItem.productId, item.productId),
+          eq(inventoryItem.condition, item.condition),
+          isNull(inventoryItem.deletedAt),
+          gt(inventoryItem.quantity, 0),
+        ),
+      )
       .orderBy(asc(inventoryItem.createdAt));
 
     let remaining = item.quantity;
@@ -284,13 +302,39 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
   }
 
   // 2. Return items to inventory — use inventoryItemId for precise restocking
+  //    Also un-soft-delete items that were soft-deleted if they are being restored
   for (const oi of existingOrder.orderItems) {
     if (oi.inventoryItemId) {
-      // Restock the exact inventory record that was decremented
-      await otcgs
-        .update(inventoryItem)
-        .set({ quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`, updatedAt: new Date() })
-        .where(eq(inventoryItem.id, oi.inventoryItemId));
+      // Check if the inventory item was soft-deleted
+      const [invItem] = await otcgs
+        .select({ id: inventoryItem.id, deletedAt: inventoryItem.deletedAt })
+        .from(inventoryItem)
+        .where(eq(inventoryItem.id, oi.inventoryItemId))
+        .limit(1);
+
+      if (invItem) {
+        // Restock the exact inventory record, and undo soft-delete if needed
+        const updateSet: Record<string, unknown> = {
+          quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`,
+          updatedAt: new Date(),
+        };
+        if (invItem.deletedAt) {
+          updateSet.deletedAt = null;
+        }
+        await otcgs.update(inventoryItem).set(updateSet).where(eq(inventoryItem.id, oi.inventoryItemId));
+      } else {
+        // Inventory record was hard-deleted (shouldn't happen with soft-delete, but handle gracefully)
+        await otcgs.insert(inventoryItem).values({
+          productId: oi.productId,
+          condition: oi.condition,
+          quantity: oi.quantity,
+          price: oi.unitPrice,
+          costBasis: oi.costBasis ?? 0,
+          acquisitionDate: todayDateString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
     } else {
       // Legacy order items without inventoryItemId — fall back to finding a matching record
       const records = await otcgs
@@ -301,9 +345,14 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
         .limit(1);
 
       if (records.length > 0) {
+        // Restock and undo soft-delete
         await otcgs
           .update(inventoryItem)
-          .set({ quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`, updatedAt: new Date() })
+          .set({
+            quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`,
+            updatedAt: new Date(),
+            deletedAt: null,
+          })
           .where(eq(inventoryItem.id, records[0].id));
       } else {
         // No matching inventory record exists — create one
@@ -312,6 +361,8 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
           condition: oi.condition,
           quantity: oi.quantity,
           price: oi.unitPrice,
+          costBasis: oi.costBasis ?? 0,
+          acquisitionDate: todayDateString(),
           createdAt: new Date(),
           updatedAt: new Date(),
         });

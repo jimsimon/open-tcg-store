@@ -3,6 +3,7 @@ import {
   type InventoryItem,
   type ProductSearchResult,
   type ProductPrice,
+  type GroupedInventoryItem,
   TypedDocumentString,
 } from '../../graphql/graphql.ts';
 
@@ -11,6 +12,53 @@ import {
 export const GetInventoryQuery = new TypedDocumentString(`
   query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
     getInventory(filters: $filters, pagination: $pagination) {
+      items {
+        productId
+        productName
+        gameName
+        setName
+        rarity
+        isSingle
+        isSealed
+        condition
+        totalQuantity
+        lowestPrice
+        highestPrice
+        entryCount
+      }
+      totalCount
+      page
+      pageSize
+      totalPages
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    getInventory: {
+      items: GroupedInventoryItem[];
+      totalCount: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    };
+  },
+  {
+    filters?: {
+      gameName?: string | null;
+      setName?: string | null;
+      rarity?: string | null;
+      condition?: string | null;
+      searchTerm?: string | null;
+      includeSingles?: boolean | null;
+      includeSealed?: boolean | null;
+    } | null;
+    pagination?: { page?: number | null; pageSize?: number | null } | null;
+  }
+>;
+
+export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
+  query GetInventoryItemDetails($productId: Int!, $condition: String!, $pagination: PaginationInput) {
+    getInventoryItemDetails(productId: $productId, condition: $condition, pagination: $pagination) {
       items {
         id
         productId
@@ -37,7 +85,7 @@ export const GetInventoryQuery = new TypedDocumentString(`
   }
 `) as unknown as TypedDocumentString<
   {
-    getInventory: {
+    getInventoryItemDetails: {
       items: InventoryItem[];
       totalCount: number;
       page: number;
@@ -46,15 +94,8 @@ export const GetInventoryQuery = new TypedDocumentString(`
     };
   },
   {
-    filters?: {
-      gameName?: string | null;
-      setName?: string | null;
-      rarity?: string | null;
-      condition?: string | null;
-      searchTerm?: string | null;
-      includeSingles?: boolean | null;
-      includeSealed?: boolean | null;
-    } | null;
+    productId: number;
+    condition: string;
     pagination?: { page?: number | null; pageSize?: number | null } | null;
   }
 >;
@@ -110,8 +151,8 @@ export const AddInventoryItemMutation = new TypedDocumentString(`
       condition: string;
       quantity: number;
       price: number;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
+      costBasis: number;
+      acquisitionDate: string;
       notes?: string | null;
     };
   }
@@ -447,6 +488,17 @@ export const sharedInventoryStyles = [
       font-size: var(--wa-font-size-s);
     }
 
+    /* --- Clickable row --- */
+
+    .clickable-row {
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .clickable-row:hover {
+      background-color: var(--wa-color-surface-alt) !important;
+    }
+
     /* --- Condition Badge --- */
 
     .condition-badge {
@@ -778,6 +830,70 @@ export const sharedInventoryStyles = [
       font-size: var(--wa-font-size-s);
       color: var(--wa-color-text-muted);
     }
+
+    /* --- Cost basis warning --- */
+
+    .cost-basis-warning {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1rem;
+      background: var(--wa-color-warning-container);
+      border-radius: var(--wa-border-radius-l);
+    }
+
+    .cost-basis-warning wa-icon {
+      font-size: 1.5rem;
+      color: var(--wa-color-warning-text);
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+
+    .cost-basis-warning-text p {
+      margin: 0;
+    }
+
+    .cost-basis-warning-text p:first-child {
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .cost-basis-warning-text p:last-child {
+      font-size: var(--wa-font-size-s);
+      color: var(--wa-color-text-muted);
+    }
+
+    /* --- Validation error --- */
+
+    .validation-error {
+      color: var(--wa-color-danger-text);
+      font-size: var(--wa-font-size-xs);
+      margin-top: 0.25rem;
+    }
+
+    /* --- Breadcrumb --- */
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: var(--wa-font-size-s);
+      color: var(--wa-color-text-muted);
+    }
+
+    .breadcrumb a {
+      color: var(--wa-color-brand-text);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .breadcrumb wa-icon {
+      font-size: 0.75rem;
+    }
   `,
 ];
 
@@ -845,6 +961,20 @@ export function renderMarketPrices(prices: ProductPrice[]) {
   `;
 }
 
+export function computeGroupedInventoryStats(items: GroupedInventoryItem[]) {
+  let totalItems = 0;
+  let totalQuantity = 0;
+  let totalEntries = 0;
+
+  for (const item of items) {
+    totalItems++;
+    totalQuantity += item.totalQuantity;
+    totalEntries += item.entryCount;
+  }
+
+  return { totalItems, totalQuantity, totalEntries };
+}
+
 export function computeInventoryStats(items: InventoryItem[]) {
   let totalItems = 0;
   let totalQuantity = 0;
@@ -863,5 +993,11 @@ export function computeInventoryStats(items: InventoryItem[]) {
   return { totalItems, totalQuantity, totalValue, totalCost };
 }
 
+/** Get today's date as YYYY-MM-DD string */
+export function getTodayDateString(): string {
+  const now = new Date();
+  return now.toISOString().slice(0, 10);
+}
+
 // Re-export types for convenience
-export type { InventoryItem, ProductSearchResult, ProductPrice };
+export type { InventoryItem, ProductSearchResult, ProductPrice, GroupedInventoryItem };

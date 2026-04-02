@@ -302,14 +302,14 @@ describe('inventory-service', () => {
       });
       mockOtcgs.insert.mockReturnValue(insChain);
 
-      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 2, price: 9.99 }, 'user-1');
+      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(42);
       expect(mockOtcgs.insert).toHaveBeenCalled();
     });
 
-    it('should merge with existing item when same productId + condition + costBasis', async () => {
+    it('should merge with existing item when same productId + condition + costBasis + acquisitionDate', async () => {
       // Duplicate check → finds existing row
       const dupCheckChain = chainable([{ id: 10, quantity: 3, price: 5.0 }]);
       // Update chain
@@ -325,7 +325,7 @@ describe('inventory-service', () => {
       mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await addInventoryItem(
-        { productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5.0 },
+        { productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5.0, acquisitionDate: '2026-01-01' },
         'user-1',
       );
 
@@ -336,11 +336,11 @@ describe('inventory-service', () => {
       expect(mockOtcgs.insert).not.toHaveBeenCalled();
     });
 
-    it('should handle null costBasis as distinct from non-null', async () => {
-      // Duplicate check with null costBasis → no match
+    it('should handle zero costBasis correctly', async () => {
+      // Duplicate check with zero costBasis → no match
       const dupCheckChain = chainable([]);
       const insChain = chainable([{ id: 55 }]);
-      const fetchChain = chainable([fakeRow({ id: 55, costBasis: null })]);
+      const fetchChain = chainable([fakeRow({ id: 55, costBasis: 0 })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
@@ -349,10 +349,10 @@ describe('inventory-service', () => {
       });
       mockOtcgs.insert.mockReturnValue(insChain);
 
-      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 1, price: 5.0 }, 'user-1');
+      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 1, price: 5.0, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
 
       expect(result).toBeDefined();
-      expect(result.costBasis).toBeNull();
+      expect(result.costBasis).toBe(0);
       expect(mockOtcgs.insert).toHaveBeenCalled();
     });
   });

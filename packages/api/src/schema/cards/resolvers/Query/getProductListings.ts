@@ -1,4 +1,4 @@
-import { sql, and, like, eq, exists } from 'drizzle-orm';
+import { sql, and, like, eq, exists, isNull, gt } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { product, productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
@@ -66,7 +66,8 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
             and(
               eq(inventoryItem.productId, product.id),
               eq(inventoryItem.condition, conditionFilter),
-              sql`${inventoryItem.quantity} > 0`,
+              gt(inventoryItem.quantity, 0),
+              isNull(inventoryItem.deletedAt),
             ),
           ),
       ),
@@ -114,7 +115,10 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(product)
-    .leftJoin(inventoryItem, eq(inventoryItem.productId, product.id))
+    .leftJoin(
+      inventoryItem,
+      and(eq(inventoryItem.productId, product.id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0)),
+    )
     .where(whereClause)
     .groupBy(product.id);
 
@@ -195,7 +199,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     return 'Unknown';
   }
 
-  // Fetch per-condition pricing for all product IDs
+  // Fetch per-condition pricing for all product IDs (exclude soft-deleted and zero-qty)
   // We need the inventory item with the lowest price per product+condition for the inventoryItemId
   const conditionPricesRaw =
     productIds.length > 0
@@ -208,10 +212,14 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
           })
           .from(inventoryItem)
           .where(
-            sql`${inventoryItem.productId} IN (${sql.join(
-              productIds.map((id) => sql`${id}`),
-              sql`, `,
-            )})`,
+            and(
+              sql`${inventoryItem.productId} IN (${sql.join(
+                productIds.map((id) => sql`${id}`),
+                sql`, `,
+              )})`,
+              isNull(inventoryItem.deletedAt),
+              gt(inventoryItem.quantity, 0),
+            ),
           )
           .groupBy(inventoryItem.productId, inventoryItem.condition)
       : [];
@@ -228,10 +236,14 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
           })
           .from(inventoryItem)
           .where(
-            sql`${inventoryItem.productId} IN (${sql.join(
-              productIds.map((id) => sql`${id}`),
-              sql`, `,
-            )}) AND ${inventoryItem.quantity} > 0`,
+            and(
+              sql`${inventoryItem.productId} IN (${sql.join(
+                productIds.map((id) => sql`${id}`),
+                sql`, `,
+              )})`,
+              gt(inventoryItem.quantity, 0),
+              isNull(inventoryItem.deletedAt),
+            ),
           )
           .orderBy(inventoryItem.price)
       : [];

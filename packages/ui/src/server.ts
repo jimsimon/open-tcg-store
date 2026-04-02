@@ -65,6 +65,20 @@ async function requireAdmin(ctx: Context, next: Next) {
 }
 
 /**
+ * Middleware that requires the user to have an admin or employee role.
+ * Returns 403 Forbidden for other users.
+ */
+async function requireEmployee(ctx: Context, next: Next) {
+  const role = ctx.state.auth?.user?.role;
+  if (role !== 'admin' && role !== 'employee') {
+    ctx.status = 403;
+    ctx.body = 'Forbidden: Admin or employee access required';
+    return;
+  }
+  return next();
+}
+
+/**
  * Middleware that ensures the user has a session, creating an anonymous one if needed.
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
@@ -192,6 +206,16 @@ const router = new Router()
   })
   .get('inventory-sealed', '/inventory/sealed', async (ctx) => {
     return renderPage(ctx, 'inventory-sealed');
+  })
+  .get('inventory-singles-detail', '/inventory/singles/:productId/:condition', async (ctx) => {
+    await requireEmployee(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'inventory-detail');
+  })
+  .get('inventory-sealed-detail', '/inventory/sealed/:productId/:condition', async (ctx) => {
+    await requireEmployee(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'inventory-detail');
   })
   .get('import-inventory', '/inventory/import', async (ctx) => {
     return renderPage(ctx, 'inventory-import');

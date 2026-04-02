@@ -17,9 +17,9 @@ export type Scalars = {
 };
 
 export type AddInventoryItemInput = {
-  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  acquisitionDate: Scalars['String']['input'];
   condition: Scalars['String']['input'];
-  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  costBasis: Scalars['Float']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   price: Scalars['Float']['input'];
   productId: Scalars['Int']['input'];
@@ -115,6 +115,31 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type GroupedInventoryItem = {
+  __typename?: 'GroupedInventoryItem';
+  condition: Scalars['String']['output'];
+  entryCount: Scalars['Int']['output'];
+  gameName: Scalars['String']['output'];
+  highestPrice?: Maybe<Scalars['Float']['output']>;
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  lowestPrice?: Maybe<Scalars['Float']['output']>;
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+};
+
+export type GroupedInventoryPage = {
+  __typename?: 'GroupedInventoryPage';
+  items: Array<GroupedInventoryItem>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type InsufficientItem = {
   __typename?: 'InsufficientItem';
   available: Scalars['Int']['output'];
@@ -143,9 +168,9 @@ export type InventoryFilters = {
 
 export type InventoryItem = {
   __typename?: 'InventoryItem';
-  acquisitionDate?: Maybe<Scalars['String']['output']>;
-  condition?: Maybe<Scalars['String']['output']>;
-  costBasis?: Maybe<Scalars['Float']['output']>;
+  acquisitionDate: Scalars['String']['output'];
+  condition: Scalars['String']['output'];
+  costBasis: Scalars['Float']['output'];
   createdAt: Scalars['String']['output'];
   gameName: Scalars['String']['output'];
   id: Scalars['Int']['output'];
@@ -431,7 +456,8 @@ export type Query = {
   getBackupSettings: BackupSettings;
   getCard: Card;
   getIntegrationSettings: IntegrationSettings;
-  getInventory: InventoryPage;
+  getInventory: GroupedInventoryPage;
+  getInventoryItemDetails: InventoryPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
@@ -454,6 +480,13 @@ export type QuerygetCardArgs = {
 export type QuerygetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QuerygetInventoryItemDetailsArgs = {
+  condition: Scalars['String']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+  productId: Scalars['Int']['input'];
 };
 
 
@@ -723,6 +756,8 @@ export type ResolversTypes = {
   CartItemOutput: ResolverTypeWrapper<CartItemOutput>;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
+  GroupedInventoryItem: ResolverTypeWrapper<GroupedInventoryItem>;
+  GroupedInventoryPage: ResolverTypeWrapper<GroupedInventoryPage>;
   InsufficientItem: ResolverTypeWrapper<InsufficientItem>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
   InventoryFilters: InventoryFilters;
@@ -785,6 +820,8 @@ export type ResolversParentTypes = {
   CartItemOutput: CartItemOutput;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
+  GroupedInventoryItem: GroupedInventoryItem;
+  GroupedInventoryPage: GroupedInventoryPage;
   InsufficientItem: InsufficientItem;
   IntegrationSettings: IntegrationSettings;
   InventoryFilters: InventoryFilters;
@@ -891,6 +928,29 @@ export type ConditionInventoryResolvers<ContextType = any, ParentType extends Re
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type GroupedInventoryItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['GroupedInventoryItem'] = ResolversParentTypes['GroupedInventoryItem']> = {
+  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  entryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  highestPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  lowestPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalQuantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
+export type GroupedInventoryPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['GroupedInventoryPage'] = ResolversParentTypes['GroupedInventoryPage']> = {
+  items?: Resolver<Array<ResolversTypes['GroupedInventoryItem']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type InsufficientItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem']> = {
   available?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -906,9 +966,9 @@ export type IntegrationSettingsResolvers<ContextType = any, ParentType extends R
 };
 
 export type InventoryItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryItem'] = ResolversParentTypes['InventoryItem']> = {
-  acquisitionDate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  condition?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  costBasis?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  acquisitionDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  costBasis?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1064,7 +1124,8 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
-  getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
+  getInventory?: Resolver<ResolversTypes['GroupedInventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
+  getInventoryItemDetails?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, RequireFields<QuerygetInventoryItemDetailsArgs, 'condition' | 'productId'>>;
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
@@ -1145,6 +1206,8 @@ export type Resolvers<ContextType = any> = {
   CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
+  GroupedInventoryItem?: GroupedInventoryItemResolvers<ContextType>;
+  GroupedInventoryPage?: GroupedInventoryPageResolvers<ContextType>;
   InsufficientItem?: InsufficientItemResolvers<ContextType>;
   IntegrationSettings?: IntegrationSettingsResolvers<ContextType>;
   InventoryItem?: InventoryItemResolvers<ContextType>;

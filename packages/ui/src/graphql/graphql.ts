@@ -17,9 +17,9 @@ export type Scalars = {
 };
 
 export type AddInventoryItemInput = {
-  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  acquisitionDate: Scalars['String']['input'];
   condition: Scalars['String']['input'];
-  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  costBasis: Scalars['Float']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   price: Scalars['Float']['input'];
   productId: Scalars['Int']['input'];
@@ -115,6 +115,31 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type GroupedInventoryItem = {
+  __typename?: 'GroupedInventoryItem';
+  condition: Scalars['String']['output'];
+  entryCount: Scalars['Int']['output'];
+  gameName: Scalars['String']['output'];
+  highestPrice?: Maybe<Scalars['Float']['output']>;
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  lowestPrice?: Maybe<Scalars['Float']['output']>;
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+};
+
+export type GroupedInventoryPage = {
+  __typename?: 'GroupedInventoryPage';
+  items: Array<GroupedInventoryItem>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type InsufficientItem = {
   __typename?: 'InsufficientItem';
   available: Scalars['Int']['output'];
@@ -143,9 +168,9 @@ export type InventoryFilters = {
 
 export type InventoryItem = {
   __typename?: 'InventoryItem';
-  acquisitionDate?: Maybe<Scalars['String']['output']>;
-  condition?: Maybe<Scalars['String']['output']>;
-  costBasis?: Maybe<Scalars['Float']['output']>;
+  acquisitionDate: Scalars['String']['output'];
+  condition: Scalars['String']['output'];
+  costBasis: Scalars['Float']['output'];
   createdAt: Scalars['String']['output'];
   gameName: Scalars['String']['output'];
   id: Scalars['Int']['output'];
@@ -431,7 +456,8 @@ export type Query = {
   getBackupSettings: BackupSettings;
   getCard: Card;
   getIntegrationSettings: IntegrationSettings;
-  getInventory: InventoryPage;
+  getInventory: GroupedInventoryPage;
+  getInventoryItemDetails: InventoryPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
@@ -454,6 +480,13 @@ export type QueryGetCardArgs = {
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryGetInventoryItemDetailsArgs = {
+  condition: Scalars['String']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+  productId: Scalars['Int']['input'];
 };
 
 

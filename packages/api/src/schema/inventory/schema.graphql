@@ -7,14 +7,37 @@ type InventoryItem {
   rarity: String
   isSingle: Boolean!
   isSealed: Boolean!
-  condition: String
+  condition: String!
   quantity: Int!
   price: Float!
-  costBasis: Float
-  acquisitionDate: String
+  costBasis: Float!
+  acquisitionDate: String!
   notes: String
   createdAt: String!
   updatedAt: String!
+}
+
+type GroupedInventoryItem {
+  productId: Int!
+  productName: String!
+  gameName: String!
+  setName: String!
+  rarity: String
+  isSingle: Boolean!
+  isSealed: Boolean!
+  condition: String!
+  totalQuantity: Int!
+  lowestPrice: Float
+  highestPrice: Float
+  entryCount: Int!
+}
+
+type GroupedInventoryPage {
+  items: [GroupedInventoryItem!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
 }
 
 type InventoryPage {
@@ -45,8 +68,8 @@ input AddInventoryItemInput {
   condition: String!
   quantity: Int!
   price: Float!
-  costBasis: Float
-  acquisitionDate: String
+  costBasis: Float!
+  acquisitionDate: String!
   notes: String
 }
 
@@ -75,7 +98,8 @@ input BulkDeleteInventoryInput {
 }
 
 extend type Query {
-  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): GroupedInventoryPage!
+  getInventoryItemDetails(productId: Int!, condition: String!, pagination: PaginationInput): InventoryPage!
   searchProducts(searchTerm: String!, game: String): [ProductSearchResult!]!
 }
 
