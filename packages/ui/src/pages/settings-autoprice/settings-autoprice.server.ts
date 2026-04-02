@@ -1,11 +1,6 @@
 import type { RouterContext } from '@koa/router';
-import { escapeHtml } from '../../lib/html-escape';
+import { renderPageAttributes } from '../../lib/server-helpers';
 
 export function render(ctx: RouterContext) {
-  const userRole = ctx.state.auth?.user?.role ?? '';
-  const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
-  const userName = ctx.state.auth?.user?.name ?? '';
-  return `
-    <ogs-settings-autoprice-page userRole="${escapeHtml(userRole)}" ${isAnonymous ? 'isAnonymous' : ''} userName="${escapeHtml(userName)}" activePage="settings/autoprice" showUserMenu></ogs-settings-autoprice-page>
-  `;
+  return `<ogs-settings-autoprice-page ${renderPageAttributes(ctx, { activePage: 'settings/autoprice' })}></ogs-settings-autoprice-page>`;
 }

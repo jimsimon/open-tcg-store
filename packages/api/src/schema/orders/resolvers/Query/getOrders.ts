@@ -1,7 +1,11 @@
+import { GraphqlContext } from '../../../../server';
+import { assertPermission, getOrganizationId } from '../../../../lib/assert-permission';
 import { getOrders as getOrdersService } from '../../../../services/order-service';
 import type { QueryResolvers } from './../../../types.generated';
 
-export const getOrders: NonNullable<QueryResolvers['getOrders']> = async (_parent, _arg, _ctx) => {
+export const getOrders: NonNullable<QueryResolvers['getOrders']> = async (_parent, _arg, ctx: GraphqlContext) => {
+  await assertPermission(ctx, { order: ['read'] });
+  const organizationId = getOrganizationId(ctx);
   const pagination = _arg.pagination
     ? {
         page: _arg.pagination.page ?? undefined,
@@ -14,5 +18,5 @@ export const getOrders: NonNullable<QueryResolvers['getOrders']> = async (_paren
         searchTerm: _arg.filters.searchTerm ?? undefined,
       }
     : null;
-  return getOrdersService(pagination, filters);
+  return getOrdersService(organizationId, pagination, filters);
 };

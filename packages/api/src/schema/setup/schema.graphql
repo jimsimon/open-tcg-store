@@ -4,13 +4,24 @@ input UserDetails {
   password: String!
 }
 
-input Settings {
-  country: String!
+input InitialStoreLocation {
+  name: String!
+  slug: String!
+  street1: String!
+  street2: String
+  city: String!
   state: String!
+  zip: String!
+  phone: String
+}
+
+input CompanySettings {
+  companyName: String!
+  ein: String!
 }
 
 extend type Mutation {
-  firstTimeSetup(userDetails: UserDetails!, settings: Settings!): String!
+  firstTimeSetup(userDetails: UserDetails!, company: CompanySettings!, store: InitialStoreLocation!): String!
 }
 
 extend type Query {

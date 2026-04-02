@@ -32,6 +32,7 @@ export const cart = sqliteTable(
   'cart',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    organizationId: text('organization_id').notNull(),
     userId: text('user_id').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .default(sql`(CURRENT_TIMESTAMP)`)
@@ -49,7 +50,9 @@ export const cart = sqliteTable(
       foreignColumns: [user.id],
       name: 'product_category_id_fkey',
     }),
+    unique('cart_user_org_uniq').on(table.userId, table.organizationId),
     index('cart_id_idx').on(table.id),
+    index('cart_org_id_idx').on(table.organizationId),
     index('cart_user_id_idx').on(table.userId),
     index('cart_created_at_idx').on(table.createdAt),
     index('cart_last_updated_at_idx').on(table.lastUpdatedAt),

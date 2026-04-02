@@ -8,6 +8,18 @@ input AddInventoryItemInput {
   quantity: Int!
 }
 
+input AddStoreLocationInput {
+  city: String!
+  hours: [StoreHoursInput!]
+  name: String!
+  phone: String
+  slug: String!
+  state: String!
+  street1: String!
+  street2: String
+  zip: String!
+}
+
 type BackupResult {
   message: String
   success: Boolean!
@@ -75,6 +87,11 @@ type CartItemOutput {
   unitPrice: Float!
 }
 
+input CompanySettings {
+  companyName: String!
+  ein: String!
+}
+
 type ConditionInventories {
   D: ConditionInventory
   HP: ConditionInventory
@@ -97,6 +114,7 @@ type GroupedInventoryItem {
   isSealed: Boolean!
   isSingle: Boolean!
   lowestPrice: Float
+  organizationId: String!
   productId: Int!
   productName: String!
   rarity: String
@@ -110,6 +128,17 @@ type GroupedInventoryPage {
   pageSize: Int!
   totalCount: Int!
   totalPages: Int!
+}
+
+input InitialStoreLocation {
+  city: String!
+  name: String!
+  phone: String
+  slug: String!
+  state: String!
+  street1: String!
+  street2: String
+  zip: String!
 }
 
 type InsufficientItem {
@@ -131,6 +160,7 @@ input InventoryFilters {
   gameName: String
   includeSealed: Boolean
   includeSingles: Boolean
+  organizationId: String
   rarity: String
   searchTerm: String
   setName: String
@@ -146,6 +176,7 @@ type InventoryItem {
   isSealed: Boolean!
   isSingle: Boolean!
   notes: String
+  organizationId: String!
   price: Float!
   productId: Int!
   productName: String!
@@ -165,6 +196,7 @@ type InventoryPage {
 
 type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
+  addStoreLocation(input: AddStoreLocationInput!): StoreLocation!
   addToCart(cartItem: CartItemInput!): ShoppingCart!
   bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
   bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
@@ -172,8 +204,10 @@ type Mutation {
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
   deleteInventoryItem(id: Int!): Boolean!
-  firstTimeSetup(settings: Settings!, userDetails: UserDetails!): String!
+  firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
+  removeStoreLocation(id: String!): Boolean!
+  setActiveStoreLocation(organizationId: String!): Boolean!
   submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   triggerBackup: BackupResult!
   triggerRestore(provider: String!): RestoreResult!
@@ -183,6 +217,7 @@ type Mutation {
   updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
   updateQuickBooksIntegration(input: UpdateQuickBooksIntegrationInput!): QuickBooksIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
+  updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
   updateStoreSettings(input: UpdateStoreSettingsInput!): StoreSettings!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
 }
@@ -193,6 +228,7 @@ type Order {
   id: Int!
   items: [OrderItem!]!
   orderNumber: String!
+  organizationId: String!
   status: String!
   totalAmount: Float!
   totalCostBasis: Float
@@ -200,6 +236,7 @@ type Order {
 }
 
 input OrderFilters {
+  organizationId: String
   searchTerm: String
   status: String
 }
@@ -317,17 +354,29 @@ type ProductSearchResult {
 }
 
 type Query {
+  getActiveStoreLocation: StoreLocation
+
+  """
+  Public list of all stores — no auth required. Used by anonymous users on product pages.
+  """
+  getAllStoreLocations: [StoreLocation!]!
   getBackupSettings: BackupSettings!
   getCard(cardId: String!, game: String!): Card!
+
+  """
+  Stores the current user is assigned to (for authenticated employees/managers/owners)
+  """
+  getEmployeeStoreLocations: [StoreLocation!]!
   getIntegrationSettings: IntegrationSettings!
   getInventory(filters: InventoryFilters, pagination: PaginationInput): GroupedInventoryPage!
   getInventoryItemDetails(condition: String!, pagination: PaginationInput, productId: Int!): InventoryPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
-  getProduct(productId: String!): ProductDetail!
-  getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
+  getProduct(organizationId: String, productId: String!): ProductDetail!
+  getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
+  getStoreLocation(id: String!): StoreLocation
   getStoreSettings: StoreSettings!
   isSetupPending: Boolean!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
@@ -360,11 +409,6 @@ input SetFilters {
   searchTerm: String
 }
 
-input Settings {
-  country: String!
-  state: String!
-}
-
 type ShopifyIntegration {
   enabled: Boolean!
   hasApiKey: Boolean!
@@ -373,6 +417,7 @@ type ShopifyIntegration {
 
 type ShoppingCart {
   items: [CartItemOutput!]!
+  organizationId: String
 }
 
 input SingleCardFilters {
@@ -382,15 +427,35 @@ input SingleCardFilters {
   setCode: String
 }
 
-type StoreSettings {
-  city: String
-  ein: String
-  salesTaxRate: Float
-  state: String
-  storeName: String
-  street1: String
+type StoreHours {
+  closeTime: String
+  dayOfWeek: Int!
+  openTime: String
+}
+
+input StoreHoursInput {
+  closeTime: String
+  dayOfWeek: Int!
+  openTime: String
+}
+
+type StoreLocation {
+  city: String!
+  createdAt: String!
+  hours: [StoreHours!]!
+  id: String!
+  name: String!
+  phone: String
+  slug: String!
+  state: String!
+  street1: String!
   street2: String
-  zip: String
+  zip: String!
+}
+
+type StoreSettings {
+  companyName: String
+  ein: String
 }
 
 type StripeIntegration {
@@ -400,6 +465,7 @@ type StripeIntegration {
 
 input SubmitOrderInput {
   customerName: String!
+  organizationId: String!
 }
 
 type SubmitOrderResult {
@@ -440,14 +506,21 @@ input UpdateShopifyIntegrationInput {
   shopDomain: String
 }
 
-input UpdateStoreSettingsInput {
+input UpdateStoreLocationInput {
   city: String
-  ein: String
+  hours: [StoreHoursInput!]
+  id: String!
+  name: String
+  phone: String
   state: String
-  storeName: String
   street1: String
   street2: String
   zip: String
+}
+
+input UpdateStoreSettingsInput {
+  companyName: String
+  ein: String
 }
 
 input UpdateStripeIntegrationInput {

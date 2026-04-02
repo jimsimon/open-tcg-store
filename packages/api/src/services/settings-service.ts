@@ -37,37 +37,20 @@ async function ensureSettingsRow() {
 // ---------------------------------------------------------------------------
 
 export interface StoreSettingsResult {
-  storeName: string | null;
-  street1: string | null;
-  street2: string | null;
-  city: string | null;
-  state: string | null;
-  zip: string | null;
+  companyName: string | null;
   ein: string | null;
-  salesTaxRate: number | null;
 }
 
 export async function getStoreSettings(): Promise<StoreSettingsResult> {
   const row = await ensureSettingsRow();
   return {
-    storeName: row.storeName,
-    street1: row.street1,
-    street2: row.street2,
-    city: row.city,
-    state: row.state,
-    zip: row.zip,
+    companyName: row.companyName,
     ein: row.ein,
-    salesTaxRate: row.salesTaxRate,
   };
 }
 
 export interface UpdateStoreSettingsInput {
-  storeName?: string | null;
-  street1?: string | null;
-  street2?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip?: string | null;
+  companyName?: string | null;
   ein?: string | null;
 }
 
@@ -82,28 +65,8 @@ export async function updateStoreSettings(
     updatedBy: userId,
   };
 
-  if (input.storeName !== undefined) updates.storeName = input.storeName;
-  if (input.street1 !== undefined) updates.street1 = input.street1;
-  if (input.street2 !== undefined) updates.street2 = input.street2;
-  if (input.city !== undefined) updates.city = input.city;
-  if (input.zip !== undefined) updates.zip = input.zip;
+  if (input.companyName !== undefined) updates.companyName = input.companyName;
   if (input.ein !== undefined) updates.ein = input.ein;
-
-  // If state changes, auto-populate sales tax rate
-  if (input.state !== undefined) {
-    updates.state = input.state;
-    if (input.state) {
-      try {
-        const tax = await SalesTax.getSalesTax('US', input.state);
-        updates.salesTaxRate = tax.rate;
-      } catch {
-        // If lookup fails, set to null
-        updates.salesTaxRate = null;
-      }
-    } else {
-      updates.salesTaxRate = null;
-    }
-  }
 
   await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
 

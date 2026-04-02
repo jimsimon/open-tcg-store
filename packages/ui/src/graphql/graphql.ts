@@ -26,6 +26,18 @@ export type AddInventoryItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type AddStoreLocationInput = {
+  city: Scalars['String']['input'];
+  hours?: InputMaybe<Array<StoreHoursInput>>;
+  name: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+  slug: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+  street1: Scalars['String']['input'];
+  street2?: InputMaybe<Scalars['String']['input']>;
+  zip: Scalars['String']['input'];
+};
+
 export type BackupResult = {
   __typename?: 'BackupResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -99,6 +111,11 @@ export type CartItemOutput = {
   unitPrice: Scalars['Float']['output'];
 };
 
+export type CompanySettings = {
+  companyName: Scalars['String']['input'];
+  ein: Scalars['String']['input'];
+};
+
 export type ConditionInventories = {
   __typename?: 'ConditionInventories';
   D?: Maybe<ConditionInventory>;
@@ -124,6 +141,7 @@ export type GroupedInventoryItem = {
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   lowestPrice?: Maybe<Scalars['Float']['output']>;
+  organizationId: Scalars['String']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
@@ -138,6 +156,17 @@ export type GroupedInventoryPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type InitialStoreLocation = {
+  city: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+  slug: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+  street1: Scalars['String']['input'];
+  street2?: InputMaybe<Scalars['String']['input']>;
+  zip: Scalars['String']['input'];
 };
 
 export type InsufficientItem = {
@@ -161,6 +190,7 @@ export type InventoryFilters = {
   gameName?: InputMaybe<Scalars['String']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
   includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   setName?: InputMaybe<Scalars['String']['input']>;
@@ -177,6 +207,7 @@ export type InventoryItem = {
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   notes?: Maybe<Scalars['String']['output']>;
+  organizationId: Scalars['String']['output'];
   price: Scalars['Float']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
@@ -198,6 +229,7 @@ export type InventoryPage = {
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
+  addStoreLocation: StoreLocation;
   addToCart: ShoppingCart;
   bulkDeleteInventory: Scalars['Boolean']['output'];
   bulkUpdateInventory: Array<InventoryItem>;
@@ -207,6 +239,8 @@ export type Mutation = {
   deleteInventoryItem: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
+  removeStoreLocation: Scalars['Boolean']['output'];
+  setActiveStoreLocation: Scalars['Boolean']['output'];
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
   triggerRestore: RestoreResult;
@@ -216,6 +250,7 @@ export type Mutation = {
   updateOrderStatus: UpdateOrderStatusResult;
   updateQuickBooksIntegration: QuickBooksIntegration;
   updateShopifyIntegration: ShopifyIntegration;
+  updateStoreLocation: StoreLocation;
   updateStoreSettings: StoreSettings;
   updateStripeIntegration: StripeIntegration;
 };
@@ -223,6 +258,11 @@ export type Mutation = {
 
 export type MutationAddInventoryItemArgs = {
   input: AddInventoryItemInput;
+};
+
+
+export type MutationAddStoreLocationArgs = {
+  input: AddStoreLocationInput;
 };
 
 
@@ -252,13 +292,24 @@ export type MutationDeleteInventoryItemArgs = {
 
 
 export type MutationFirstTimeSetupArgs = {
-  settings: Settings;
+  company: CompanySettings;
+  store: InitialStoreLocation;
   userDetails: UserDetails;
 };
 
 
 export type MutationRemoveFromCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationRemoveStoreLocationArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type MutationSetActiveStoreLocationArgs = {
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -303,6 +354,11 @@ export type MutationUpdateShopifyIntegrationArgs = {
 };
 
 
+export type MutationUpdateStoreLocationArgs = {
+  input: UpdateStoreLocationInput;
+};
+
+
 export type MutationUpdateStoreSettingsArgs = {
   input: UpdateStoreSettingsInput;
 };
@@ -319,6 +375,7 @@ export type Order = {
   id: Scalars['Int']['output'];
   items: Array<OrderItem>;
   orderNumber: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
   status: Scalars['String']['output'];
   totalAmount: Scalars['Float']['output'];
   totalCostBasis?: Maybe<Scalars['Float']['output']>;
@@ -326,6 +383,7 @@ export type Order = {
 };
 
 export type OrderFilters = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
 };
@@ -453,8 +511,13 @@ export type ProductSearchResult = {
 
 export type Query = {
   __typename?: 'Query';
+  getActiveStoreLocation?: Maybe<StoreLocation>;
+  /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
+  getAllStoreLocations: Array<StoreLocation>;
   getBackupSettings: BackupSettings;
   getCard: Card;
+  /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
+  getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
   getInventory: GroupedInventoryPage;
   getInventoryItemDetails: InventoryPage;
@@ -464,6 +527,7 @@ export type Query = {
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
+  getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
@@ -497,12 +561,14 @@ export type QueryGetOrdersArgs = {
 
 
 export type QueryGetProductArgs = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['String']['input'];
 };
 
 
 export type QueryGetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<ProductListingPagination>;
 };
 
@@ -516,6 +582,11 @@ export type QueryGetSetsArgs = {
 export type QueryGetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
+};
+
+
+export type QueryGetStoreLocationArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -560,11 +631,6 @@ export type SetFilters = {
   searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type Settings = {
-  country: Scalars['String']['input'];
-  state: Scalars['String']['input'];
-};
-
 export type ShopifyIntegration = {
   __typename?: 'ShopifyIntegration';
   enabled: Scalars['Boolean']['output'];
@@ -575,6 +641,7 @@ export type ShopifyIntegration = {
 export type ShoppingCart = {
   __typename?: 'ShoppingCart';
   items: Array<CartItemOutput>;
+  organizationId?: Maybe<Scalars['String']['output']>;
 };
 
 export type SingleCardFilters = {
@@ -584,16 +651,38 @@ export type SingleCardFilters = {
   setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StoreHours = {
+  __typename?: 'StoreHours';
+  closeTime?: Maybe<Scalars['String']['output']>;
+  dayOfWeek: Scalars['Int']['output'];
+  openTime?: Maybe<Scalars['String']['output']>;
+};
+
+export type StoreHoursInput = {
+  closeTime?: InputMaybe<Scalars['String']['input']>;
+  dayOfWeek: Scalars['Int']['input'];
+  openTime?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StoreLocation = {
+  __typename?: 'StoreLocation';
+  city: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  hours: Array<StoreHours>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  slug: Scalars['String']['output'];
+  state: Scalars['String']['output'];
+  street1: Scalars['String']['output'];
+  street2?: Maybe<Scalars['String']['output']>;
+  zip: Scalars['String']['output'];
+};
+
 export type StoreSettings = {
   __typename?: 'StoreSettings';
-  city?: Maybe<Scalars['String']['output']>;
+  companyName?: Maybe<Scalars['String']['output']>;
   ein?: Maybe<Scalars['String']['output']>;
-  salesTaxRate?: Maybe<Scalars['Float']['output']>;
-  state?: Maybe<Scalars['String']['output']>;
-  storeName?: Maybe<Scalars['String']['output']>;
-  street1?: Maybe<Scalars['String']['output']>;
-  street2?: Maybe<Scalars['String']['output']>;
-  zip?: Maybe<Scalars['String']['output']>;
 };
 
 export type StripeIntegration = {
@@ -604,6 +693,7 @@ export type StripeIntegration = {
 
 export type SubmitOrderInput = {
   customerName: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
 };
 
 export type SubmitOrderResult = {
@@ -646,14 +736,21 @@ export type UpdateShopifyIntegrationInput = {
   shopDomain?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type UpdateStoreSettingsInput = {
+export type UpdateStoreLocationInput = {
   city?: InputMaybe<Scalars['String']['input']>;
-  ein?: InputMaybe<Scalars['String']['input']>;
+  hours?: InputMaybe<Array<StoreHoursInput>>;
+  id: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<Scalars['String']['input']>;
-  storeName?: InputMaybe<Scalars['String']['input']>;
   street1?: InputMaybe<Scalars['String']['input']>;
   street2?: InputMaybe<Scalars['String']['input']>;
   zip?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStoreSettingsInput = {
+  companyName?: InputMaybe<Scalars['String']['input']>;
+  ein?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateStripeIntegrationInput = {
@@ -674,7 +771,8 @@ export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart:
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
-  settings: Settings;
+  company: CompanySettings;
+  store: InitialStoreLocation;
 }>;
 
 
@@ -720,8 +818,8 @@ export const GetShoppingCartQueryDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
 export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
-    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {
-  firstTimeSetup(userDetails: $userDetails, settings: $settings)
+    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {
+  firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`

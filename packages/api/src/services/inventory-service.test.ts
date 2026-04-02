@@ -54,6 +54,7 @@ vi.mock('../db/otcgs/index', () => ({
   otcgs: mockOtcgs,
   inventoryItem: {
     id: 'inventory_item.id',
+    organizationId: 'inventory_item.organization_id',
     productId: 'inventory_item.product_id',
     condition: 'inventory_item.condition',
     quantity: 'inventory_item.quantity',
@@ -131,10 +132,11 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** A realistic row shape returned by baseInventoryQuery. */
+/** A realistic row shape returned by baseInventoryQuery (detail / single-row queries). */
 function fakeRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
+    organizationId: 'test-org-id',
     productId: 100,
     productName: 'Black Lotus',
     gameName: 'Magic',
@@ -147,6 +149,25 @@ function fakeRow(overrides: Record<string, unknown> = {}) {
     notes: 'Graded',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-06-01'),
+    rarity: 'Mythic Rare',
+    isSingle: 1,
+    ...overrides,
+  };
+}
+
+/** A realistic row shape returned by the grouped getInventoryItems query. */
+function fakeGroupedRow(overrides: Record<string, unknown> = {}) {
+  return {
+    organizationId: 'test-org-id',
+    productId: 100,
+    productName: 'Black Lotus',
+    gameName: 'Magic',
+    setName: 'Alpha',
+    condition: 'NM',
+    totalQuantity: 4,
+    lowestPrice: 50000,
+    highestPrice: 50000,
+    entryCount: 1,
     rarity: 'Mythic Rare',
     isSingle: 1,
     ...overrides,
@@ -175,19 +196,19 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('getInventoryItems', () => {
     it('should return paginated results with default pagination', async () => {
-      // First call: count query → returns total
+      // First select() call builds the grouped data query, second builds the count query.
+      // The count query is awaited first, then the data query.
+      const dataChain = chainable([fakeGroupedRow({ productId: 1 }), fakeGroupedRow({ productId: 2 })]);
       const countChain = chainable([{ total: 2 }]);
-      // Second call: data query → returns rows
-      const dataChain = chainable([fakeRow({ id: 1 }), fakeRow({ id: 2 })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        // First select is the count query, second is the data query
-        return callIndex === 1 ? countChain : dataChain;
+        // First select builds grouped query, second builds count query
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems();
+      const result = await getInventoryItems('test-org-id');
 
       expect(result).toBeDefined();
       expect(result.page).toBe(1);
@@ -198,48 +219,48 @@ describe('inventory-service', () => {
     });
 
     it('should apply search filter', async () => {
+      const dataChain = chainable([fakeGroupedRow({ productName: 'Charizard' })]);
       const countChain = chainable([{ total: 1 }]);
-      const dataChain = chainable([fakeRow({ productName: 'Charizard' })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        return callIndex === 1 ? countChain : dataChain;
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems({ searchTerm: 'Charizard' });
+      const result = await getInventoryItems('test-org-id', { searchTerm: 'Charizard' });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].productName).toBe('Charizard');
     });
 
     it('should apply condition filter', async () => {
+      const dataChain = chainable([fakeGroupedRow({ condition: 'LP' })]);
       const countChain = chainable([{ total: 1 }]);
-      const dataChain = chainable([fakeRow({ condition: 'LP' })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        return callIndex === 1 ? countChain : dataChain;
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems({ condition: 'LP' });
+      const result = await getInventoryItems('test-org-id', { condition: 'LP' });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].condition).toBe('LP');
     });
 
     it('should apply product type filter for singles', async () => {
+      const dataChain = chainable([fakeGroupedRow({ isSingle: 1 })]);
       const countChain = chainable([{ total: 1 }]);
-      const dataChain = chainable([fakeRow({ isSingle: 1 })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        return callIndex === 1 ? countChain : dataChain;
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems({ includeSingles: true, includeSealed: false });
+      const result = await getInventoryItems('test-org-id', { includeSingles: true, includeSealed: false });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].isSingle).toBe(true);
@@ -247,16 +268,16 @@ describe('inventory-service', () => {
     });
 
     it('should apply product type filter for sealed', async () => {
+      const dataChain = chainable([fakeGroupedRow({ isSingle: 0 })]);
       const countChain = chainable([{ total: 1 }]);
-      const dataChain = chainable([fakeRow({ isSingle: 0 })]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        return callIndex === 1 ? countChain : dataChain;
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems({ includeSealed: true, includeSingles: false });
+      const result = await getInventoryItems('test-org-id', { includeSealed: true, includeSingles: false });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].isSingle).toBe(false);
@@ -264,16 +285,16 @@ describe('inventory-service', () => {
     });
 
     it('should return correct pagination metadata', async () => {
+      const dataChain = chainable(Array.from({ length: 25 }, (_, i) => fakeGroupedRow({ productId: i + 26 })));
       const countChain = chainable([{ total: 75 }]);
-      const dataChain = chainable(Array.from({ length: 25 }, (_, i) => fakeRow({ id: i + 26 })));
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        return callIndex === 1 ? countChain : dataChain;
+        return callIndex === 1 ? dataChain : countChain;
       });
 
-      const result = await getInventoryItems(null, { page: 2, pageSize: 25 });
+      const result = await getInventoryItems('test-org-id', null, { page: 2, pageSize: 25 });
 
       expect(result.page).toBe(2);
       expect(result.pageSize).toBe(25);
@@ -302,7 +323,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.insert.mockReturnValue(insChain);
 
-      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
+      const result = await addInventoryItem('test-org-id', { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(42);
@@ -325,7 +346,8 @@ describe('inventory-service', () => {
       mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await addInventoryItem(
-        { productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5.0, acquisitionDate: '2026-01-01' },
+        'test-org-id',
+        { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5.0, acquisitionDate: '2026-01-01' },
         'user-1',
       );
 
@@ -349,7 +371,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.insert.mockReturnValue(insChain);
 
-      const result = await addInventoryItem({ productId: 100, condition: 'NM', quantity: 1, price: 5.0, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
+      const result = await addInventoryItem('test-org-id', { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 1, price: 5.0, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
 
       expect(result).toBeDefined();
       expect(result.costBasis).toBe(0);
@@ -400,9 +422,7 @@ describe('inventory-service', () => {
       const dupCheckChain = chainable([
         { id: 2, productId: 100, condition: 'NM', costBasis: 20.0, quantity: 5, price: 6.0 },
       ]);
-      // Delete chain for removing the edited item
-      const delChain = chainable([]);
-      // Update chain for the surviving item
+      // Update chain for the soft-delete and surviving item update
       const updChain = chainable([]);
       // Final fetch of the surviving item
       const fetchChain = chainable([fakeRow({ id: 2, quantity: 8, costBasis: 20.0 })]);
@@ -414,19 +434,18 @@ describe('inventory-service', () => {
         if (selectCallIndex === 2) return dupCheckChain; // duplicate check
         return fetchChain; // getInventoryItemById for the survivor
       });
-      mockOtcgs.delete.mockReturnValue(delChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await updateInventoryItem({ id: 1, costBasis: 20.0 }, 'user-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(2);
-      // The edited item (id=1) should have been deleted
-      expect(mockOtcgs.delete).toHaveBeenCalled();
-      // The surviving item (id=2) should have been updated with merged quantity
+      // Both soft-delete and merge update use otcgs.update
       expect(mockOtcgs.update).toHaveBeenCalled();
-      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.quantity).toBe(8); // 5 (existing) + 3 (from edited item)
+      // The first set call is the soft-delete; the last is the merge update
+      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
+      const mergeSetCall = setCalls[setCalls.length - 1][0];
+      expect(mergeSetCall.quantity).toBe(8); // 5 (existing) + 3 (from edited item)
     });
 
     it('should merge with existing item when condition change creates duplicate tuple', async () => {
@@ -438,7 +457,6 @@ describe('inventory-service', () => {
       const dupCheckChain = chainable([
         { id: 3, productId: 100, condition: 'LP', costBasis: 10.0, quantity: 7, price: 4.0 },
       ]);
-      const delChain = chainable([]);
       const updChain = chainable([]);
       const fetchChain = chainable([fakeRow({ id: 3, quantity: 9, condition: 'LP' })]);
 
@@ -449,17 +467,18 @@ describe('inventory-service', () => {
         if (selectCallIndex === 2) return dupCheckChain;
         return fetchChain;
       });
-      mockOtcgs.delete.mockReturnValue(delChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await updateInventoryItem({ id: 1, condition: 'LP' }, 'user-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(3);
-      expect(mockOtcgs.delete).toHaveBeenCalled();
+      // Soft-delete and merge both use update
       expect(mockOtcgs.update).toHaveBeenCalled();
-      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.quantity).toBe(9); // 7 (existing) + 2 (from edited item)
+      // The first set call is the soft-delete; the last is the merge update
+      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
+      const mergeSetCall = setCalls[setCalls.length - 1][0];
+      expect(mergeSetCall.quantity).toBe(9); // 7 (existing) + 2 (from edited item)
     });
 
     it('should use input quantity when merging if quantity is provided', async () => {
@@ -471,7 +490,6 @@ describe('inventory-service', () => {
       const dupCheckChain = chainable([
         { id: 2, productId: 100, condition: 'NM', costBasis: 20.0, quantity: 5, price: 6.0 },
       ]);
-      const delChain = chainable([]);
       const updChain = chainable([]);
       const fetchChain = chainable([fakeRow({ id: 2, quantity: 15 })]);
 
@@ -482,16 +500,18 @@ describe('inventory-service', () => {
         if (selectCallIndex === 2) return dupCheckChain;
         return fetchChain;
       });
-      mockOtcgs.delete.mockReturnValue(delChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
       // Provide explicit quantity=10 along with costBasis change
       const result = await updateInventoryItem({ id: 1, costBasis: 20.0, quantity: 10 }, 'user-1');
 
       expect(result).toBeDefined();
-      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      // The first set call is the soft-delete (sets deletedAt, quantity: 0),
+      // the second set call is the merge update on the surviving item
+      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
+      const mergeSetCall = setCalls[setCalls.length - 1][0];
       // Should use input quantity (10) instead of current item quantity (3)
-      expect(setCall.quantity).toBe(15); // 5 (existing) + 10 (input override)
+      expect(mergeSetCall.quantity).toBe(15); // 5 (existing) + 10 (input override)
     });
 
     it('should not merge when costBasis change does not create a duplicate', async () => {
@@ -529,18 +549,18 @@ describe('inventory-service', () => {
   // deleteInventoryItem
   // -----------------------------------------------------------------------
   describe('deleteInventoryItem', () => {
-    it('should delete an item by id', async () => {
-      const delChain = chainable([]);
-      mockOtcgs.delete.mockReturnValue(delChain);
+    it('should soft-delete an item by id using update', async () => {
+      const updChain = chainable([]);
+      mockOtcgs.update.mockReturnValue(updChain);
 
       await deleteInventoryItem(1);
 
-      expect(mockOtcgs.delete).toHaveBeenCalled();
+      expect(mockOtcgs.update).toHaveBeenCalled();
     });
 
     it('should return true on successful deletion', async () => {
-      const delChain = chainable([]);
-      mockOtcgs.delete.mockReturnValue(delChain);
+      const updChain = chainable([]);
+      mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await deleteInventoryItem(1);
 
@@ -587,14 +607,14 @@ describe('inventory-service', () => {
   // bulkDeleteInventoryItems
   // -----------------------------------------------------------------------
   describe('bulkDeleteInventoryItems', () => {
-    it('should delete multiple items by ids', async () => {
-      const delChain = chainable([]);
-      mockOtcgs.delete.mockReturnValue(delChain);
+    it('should soft-delete multiple items by ids using update', async () => {
+      const updChain = chainable([]);
+      mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await bulkDeleteInventoryItems([1, 2, 3]);
 
       expect(result).toBe(true);
-      expect(mockOtcgs.delete).toHaveBeenCalled();
+      expect(mockOtcgs.update).toHaveBeenCalled();
     });
   });
 

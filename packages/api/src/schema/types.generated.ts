@@ -26,6 +26,18 @@ export type AddInventoryItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type AddStoreLocationInput = {
+  city: Scalars['String']['input'];
+  hours?: InputMaybe<Array<StoreHoursInput>>;
+  name: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+  slug: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+  street1: Scalars['String']['input'];
+  street2?: InputMaybe<Scalars['String']['input']>;
+  zip: Scalars['String']['input'];
+};
+
 export type BackupResult = {
   __typename?: 'BackupResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -99,6 +111,11 @@ export type CartItemOutput = {
   unitPrice: Scalars['Float']['output'];
 };
 
+export type CompanySettings = {
+  companyName: Scalars['String']['input'];
+  ein: Scalars['String']['input'];
+};
+
 export type ConditionInventories = {
   __typename?: 'ConditionInventories';
   D?: Maybe<ConditionInventory>;
@@ -124,6 +141,7 @@ export type GroupedInventoryItem = {
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   lowestPrice?: Maybe<Scalars['Float']['output']>;
+  organizationId: Scalars['String']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
@@ -138,6 +156,17 @@ export type GroupedInventoryPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type InitialStoreLocation = {
+  city: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+  slug: Scalars['String']['input'];
+  state: Scalars['String']['input'];
+  street1: Scalars['String']['input'];
+  street2?: InputMaybe<Scalars['String']['input']>;
+  zip: Scalars['String']['input'];
 };
 
 export type InsufficientItem = {
@@ -161,6 +190,7 @@ export type InventoryFilters = {
   gameName?: InputMaybe<Scalars['String']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
   includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   setName?: InputMaybe<Scalars['String']['input']>;
@@ -177,6 +207,7 @@ export type InventoryItem = {
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   notes?: Maybe<Scalars['String']['output']>;
+  organizationId: Scalars['String']['output'];
   price: Scalars['Float']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
@@ -198,6 +229,7 @@ export type InventoryPage = {
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
+  addStoreLocation: StoreLocation;
   addToCart: ShoppingCart;
   bulkDeleteInventory: Scalars['Boolean']['output'];
   bulkUpdateInventory: Array<InventoryItem>;
@@ -207,6 +239,8 @@ export type Mutation = {
   deleteInventoryItem: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
+  removeStoreLocation: Scalars['Boolean']['output'];
+  setActiveStoreLocation: Scalars['Boolean']['output'];
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
   triggerRestore: RestoreResult;
@@ -216,6 +250,7 @@ export type Mutation = {
   updateOrderStatus: UpdateOrderStatusResult;
   updateQuickBooksIntegration: QuickBooksIntegration;
   updateShopifyIntegration: ShopifyIntegration;
+  updateStoreLocation: StoreLocation;
   updateStoreSettings: StoreSettings;
   updateStripeIntegration: StripeIntegration;
 };
@@ -223,6 +258,11 @@ export type Mutation = {
 
 export type MutationaddInventoryItemArgs = {
   input: AddInventoryItemInput;
+};
+
+
+export type MutationaddStoreLocationArgs = {
+  input: AddStoreLocationInput;
 };
 
 
@@ -252,13 +292,24 @@ export type MutationdeleteInventoryItemArgs = {
 
 
 export type MutationfirstTimeSetupArgs = {
-  settings: Settings;
+  company: CompanySettings;
+  store: InitialStoreLocation;
   userDetails: UserDetails;
 };
 
 
 export type MutationremoveFromCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationremoveStoreLocationArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type MutationsetActiveStoreLocationArgs = {
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -303,6 +354,11 @@ export type MutationupdateShopifyIntegrationArgs = {
 };
 
 
+export type MutationupdateStoreLocationArgs = {
+  input: UpdateStoreLocationInput;
+};
+
+
 export type MutationupdateStoreSettingsArgs = {
   input: UpdateStoreSettingsInput;
 };
@@ -319,6 +375,7 @@ export type Order = {
   id: Scalars['Int']['output'];
   items: Array<OrderItem>;
   orderNumber: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
   status: Scalars['String']['output'];
   totalAmount: Scalars['Float']['output'];
   totalCostBasis?: Maybe<Scalars['Float']['output']>;
@@ -326,6 +383,7 @@ export type Order = {
 };
 
 export type OrderFilters = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
 };
@@ -453,8 +511,13 @@ export type ProductSearchResult = {
 
 export type Query = {
   __typename?: 'Query';
+  getActiveStoreLocation?: Maybe<StoreLocation>;
+  /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
+  getAllStoreLocations: Array<StoreLocation>;
   getBackupSettings: BackupSettings;
   getCard: Card;
+  /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
+  getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
   getInventory: GroupedInventoryPage;
   getInventoryItemDetails: InventoryPage;
@@ -464,6 +527,7 @@ export type Query = {
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
+  getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
@@ -497,12 +561,14 @@ export type QuerygetOrdersArgs = {
 
 
 export type QuerygetProductArgs = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['String']['input'];
 };
 
 
 export type QuerygetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
+  organizationId?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<ProductListingPagination>;
 };
 
@@ -516,6 +582,11 @@ export type QuerygetSetsArgs = {
 export type QuerygetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
+};
+
+
+export type QuerygetStoreLocationArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -560,11 +631,6 @@ export type SetFilters = {
   searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type Settings = {
-  country: Scalars['String']['input'];
-  state: Scalars['String']['input'];
-};
-
 export type ShopifyIntegration = {
   __typename?: 'ShopifyIntegration';
   enabled: Scalars['Boolean']['output'];
@@ -575,6 +641,7 @@ export type ShopifyIntegration = {
 export type ShoppingCart = {
   __typename?: 'ShoppingCart';
   items: Array<CartItemOutput>;
+  organizationId?: Maybe<Scalars['String']['output']>;
 };
 
 export type SingleCardFilters = {
@@ -584,16 +651,38 @@ export type SingleCardFilters = {
   setCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StoreHours = {
+  __typename?: 'StoreHours';
+  closeTime?: Maybe<Scalars['String']['output']>;
+  dayOfWeek: Scalars['Int']['output'];
+  openTime?: Maybe<Scalars['String']['output']>;
+};
+
+export type StoreHoursInput = {
+  closeTime?: InputMaybe<Scalars['String']['input']>;
+  dayOfWeek: Scalars['Int']['input'];
+  openTime?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StoreLocation = {
+  __typename?: 'StoreLocation';
+  city: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  hours: Array<StoreHours>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  slug: Scalars['String']['output'];
+  state: Scalars['String']['output'];
+  street1: Scalars['String']['output'];
+  street2?: Maybe<Scalars['String']['output']>;
+  zip: Scalars['String']['output'];
+};
+
 export type StoreSettings = {
   __typename?: 'StoreSettings';
-  city?: Maybe<Scalars['String']['output']>;
+  companyName?: Maybe<Scalars['String']['output']>;
   ein?: Maybe<Scalars['String']['output']>;
-  salesTaxRate?: Maybe<Scalars['Float']['output']>;
-  state?: Maybe<Scalars['String']['output']>;
-  storeName?: Maybe<Scalars['String']['output']>;
-  street1?: Maybe<Scalars['String']['output']>;
-  street2?: Maybe<Scalars['String']['output']>;
-  zip?: Maybe<Scalars['String']['output']>;
 };
 
 export type StripeIntegration = {
@@ -604,6 +693,7 @@ export type StripeIntegration = {
 
 export type SubmitOrderInput = {
   customerName: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
 };
 
 export type SubmitOrderResult = {
@@ -646,14 +736,21 @@ export type UpdateShopifyIntegrationInput = {
   shopDomain?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type UpdateStoreSettingsInput = {
+export type UpdateStoreLocationInput = {
   city?: InputMaybe<Scalars['String']['input']>;
-  ein?: InputMaybe<Scalars['String']['input']>;
+  hours?: InputMaybe<Array<StoreHoursInput>>;
+  id: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
   state?: InputMaybe<Scalars['String']['input']>;
-  storeName?: InputMaybe<Scalars['String']['input']>;
   street1?: InputMaybe<Scalars['String']['input']>;
   street2?: InputMaybe<Scalars['String']['input']>;
   zip?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStoreSettingsInput = {
+  companyName?: InputMaybe<Scalars['String']['input']>;
+  ein?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateStripeIntegrationInput = {
@@ -744,6 +841,7 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  AddStoreLocationInput: AddStoreLocationInput;
   BackupResult: ResolverTypeWrapper<BackupResult>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   BackupSettings: ResolverTypeWrapper<BackupSettings>;
@@ -754,10 +852,12 @@ export type ResolversTypes = {
   CardImages: ResolverTypeWrapper<CardImages>;
   CartItemInput: CartItemInput;
   CartItemOutput: ResolverTypeWrapper<CartItemOutput>;
+  CompanySettings: CompanySettings;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
   GroupedInventoryItem: ResolverTypeWrapper<GroupedInventoryItem>;
   GroupedInventoryPage: ResolverTypeWrapper<GroupedInventoryPage>;
+  InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: ResolverTypeWrapper<InsufficientItem>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
   InventoryFilters: InventoryFilters;
@@ -784,10 +884,12 @@ export type ResolversTypes = {
   SalesTaxLookupResult: ResolverTypeWrapper<SalesTaxLookupResult>;
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
-  Settings: Settings;
   ShopifyIntegration: ResolverTypeWrapper<ShopifyIntegration>;
   ShoppingCart: ResolverTypeWrapper<ShoppingCart>;
   SingleCardFilters: SingleCardFilters;
+  StoreHours: ResolverTypeWrapper<StoreHours>;
+  StoreHoursInput: StoreHoursInput;
+  StoreLocation: ResolverTypeWrapper<StoreLocation>;
   StoreSettings: ResolverTypeWrapper<StoreSettings>;
   StripeIntegration: ResolverTypeWrapper<StripeIntegration>;
   SubmitOrderInput: SubmitOrderInput;
@@ -797,6 +899,7 @@ export type ResolversTypes = {
   UpdateOrderStatusResult: ResolverTypeWrapper<UpdateOrderStatusResult>;
   UpdateQuickBooksIntegrationInput: UpdateQuickBooksIntegrationInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
+  UpdateStoreLocationInput: UpdateStoreLocationInput;
   UpdateStoreSettingsInput: UpdateStoreSettingsInput;
   UpdateStripeIntegrationInput: UpdateStripeIntegrationInput;
   UserDetails: UserDetails;
@@ -808,6 +911,7 @@ export type ResolversParentTypes = {
   String: Scalars['String']['output'];
   Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
+  AddStoreLocationInput: AddStoreLocationInput;
   BackupResult: BackupResult;
   Boolean: Scalars['Boolean']['output'];
   BackupSettings: BackupSettings;
@@ -818,10 +922,12 @@ export type ResolversParentTypes = {
   CardImages: CardImages;
   CartItemInput: CartItemInput;
   CartItemOutput: CartItemOutput;
+  CompanySettings: CompanySettings;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
   GroupedInventoryItem: GroupedInventoryItem;
   GroupedInventoryPage: GroupedInventoryPage;
+  InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: InsufficientItem;
   IntegrationSettings: IntegrationSettings;
   InventoryFilters: InventoryFilters;
@@ -848,10 +954,12 @@ export type ResolversParentTypes = {
   SalesTaxLookupResult: SalesTaxLookupResult;
   Set: Set;
   SetFilters: SetFilters;
-  Settings: Settings;
   ShopifyIntegration: ShopifyIntegration;
   ShoppingCart: ShoppingCart;
   SingleCardFilters: SingleCardFilters;
+  StoreHours: StoreHours;
+  StoreHoursInput: StoreHoursInput;
+  StoreLocation: StoreLocation;
   StoreSettings: StoreSettings;
   StripeIntegration: StripeIntegration;
   SubmitOrderInput: SubmitOrderInput;
@@ -861,6 +969,7 @@ export type ResolversParentTypes = {
   UpdateOrderStatusResult: UpdateOrderStatusResult;
   UpdateQuickBooksIntegrationInput: UpdateQuickBooksIntegrationInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
+  UpdateStoreLocationInput: UpdateStoreLocationInput;
   UpdateStoreSettingsInput: UpdateStoreSettingsInput;
   UpdateStripeIntegrationInput: UpdateStripeIntegrationInput;
   UserDetails: UserDetails;
@@ -936,6 +1045,7 @@ export type GroupedInventoryItemResolvers<ContextType = any, ParentType extends 
   isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lowestPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -975,6 +1085,7 @@ export type InventoryItemResolvers<ContextType = any, ParentType extends Resolve
   isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   notes?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -994,6 +1105,7 @@ export type InventoryPageResolvers<ContextType = any, ParentType extends Resolve
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
+  addStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationaddStoreLocationArgs, 'input'>>;
   addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
   bulkDeleteInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationbulkDeleteInventoryArgs, 'input'>>;
   bulkUpdateInventory?: Resolver<Array<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<MutationbulkUpdateInventoryArgs, 'input'>>;
@@ -1001,8 +1113,10 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
-  firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'settings' | 'userDetails'>>;
+  firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'userDetails'>>;
   removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
+  removeStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationremoveStoreLocationArgs, 'id'>>;
+  setActiveStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationsetActiveStoreLocationArgs, 'organizationId'>>;
   submitOrder?: Resolver<ResolversTypes['SubmitOrderResult'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
   triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
@@ -1012,6 +1126,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateOrderStatus?: Resolver<ResolversTypes['UpdateOrderStatusResult'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
   updateQuickBooksIntegration?: Resolver<ResolversTypes['QuickBooksIntegration'], ParentType, ContextType, RequireFields<MutationupdateQuickBooksIntegrationArgs, 'input'>>;
   updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
+  updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;
   updateStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType, RequireFields<MutationupdateStoreSettingsArgs, 'input'>>;
   updateStripeIntegration?: Resolver<ResolversTypes['StripeIntegration'], ParentType, ContextType, RequireFields<MutationupdateStripeIntegrationArgs, 'input'>>;
 };
@@ -1022,6 +1137,7 @@ export type OrderResolvers<ContextType = any, ParentType extends ResolversParent
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   items?: Resolver<Array<ResolversTypes['OrderItem']>, ParentType, ContextType>;
   orderNumber?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   totalAmount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   totalCostBasis?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
@@ -1121,8 +1237,11 @@ export type ProductSearchResultResolvers<ContextType = any, ParentType extends R
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  getActiveStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
+  getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
+  getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['GroupedInventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
   getInventoryItemDetails?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, RequireFields<QuerygetInventoryItemDetailsArgs, 'condition' | 'productId'>>;
@@ -1132,6 +1251,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
+  getStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType, RequireFields<QuerygetStoreLocationArgs, 'id'>>;
   getStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lookupSalesTax?: Resolver<ResolversTypes['SalesTaxLookupResult'], ParentType, ContextType, RequireFields<QuerylookupSalesTaxArgs, 'countryCode' | 'stateCode'>>;
@@ -1168,17 +1288,32 @@ export type ShopifyIntegrationResolvers<ContextType = any, ParentType extends Re
 
 export type ShoppingCartResolvers<ContextType = any, ParentType extends ResolversParentTypes['ShoppingCart'] = ResolversParentTypes['ShoppingCart']> = {
   items?: Resolver<Array<ResolversTypes['CartItemOutput']>, ParentType, ContextType>;
+  organizationId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+};
+
+export type StoreHoursResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreHours'] = ResolversParentTypes['StoreHours']> = {
+  closeTime?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  dayOfWeek?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  openTime?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+};
+
+export type StoreLocationResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreLocation'] = ResolversParentTypes['StoreLocation']> = {
+  city?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  hours?: Resolver<Array<ResolversTypes['StoreHours']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  state?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  street1?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  street2?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  zip?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
 export type StoreSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreSettings'] = ResolversParentTypes['StoreSettings']> = {
-  city?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  companyName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   ein?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  salesTaxRate?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
-  state?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  storeName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  street1?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  street2?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  zip?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
 export type StripeIntegrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['StripeIntegration'] = ResolversParentTypes['StripeIntegration']> = {
@@ -1230,6 +1365,8 @@ export type Resolvers<ContextType = any> = {
   Set?: SetResolvers<ContextType>;
   ShopifyIntegration?: ShopifyIntegrationResolvers<ContextType>;
   ShoppingCart?: ShoppingCartResolvers<ContextType>;
+  StoreHours?: StoreHoursResolvers<ContextType>;
+  StoreLocation?: StoreLocationResolvers<ContextType>;
   StoreSettings?: StoreSettingsResolvers<ContextType>;
   StripeIntegration?: StripeIntegrationResolvers<ContextType>;
   SubmitOrderResult?: SubmitOrderResultResolvers<ContextType>;

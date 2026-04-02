@@ -1,5 +1,6 @@
 type Order {
   id: Int!
+  organizationId: String!
   orderNumber: String!
   customerName: String!
   status: String!
@@ -30,6 +31,7 @@ type OrderPage {
 }
 
 input SubmitOrderInput {
+  organizationId: String!
   customerName: String!
 }
 
@@ -64,6 +66,7 @@ extend type Mutation {
 }
 
 input OrderFilters {
+  organizationId: String
   status: String
   searchTerm: String
 }

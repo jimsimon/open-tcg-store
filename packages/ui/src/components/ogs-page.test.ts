@@ -48,6 +48,7 @@ describe('ogs-page', () => {
 
   test('does not show Dashboard and Orders links for non-employee/admin users', async () => {
     element.userRole = 'user';
+    element.canManageInventory = false;
     await element.updateComplete;
 
     const links = element.shadowRoot!.querySelectorAll('a.nav-link');
@@ -60,6 +61,7 @@ describe('ogs-page', () => {
 
   test('shows Dashboard and Orders links for employee role', async () => {
     element.userRole = 'employee';
+    element.canManageInventory = true;
     await element.updateComplete;
 
     const links = element.shadowRoot!.querySelectorAll('a.nav-link');
@@ -231,6 +233,7 @@ describe('ogs-page', () => {
   describe('inventory navigation', () => {
     test('does not show inventory, dashboard, or orders links for non-employee/admin users', async () => {
       element.userRole = 'user';
+      element.canManageInventory = false;
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a');
@@ -247,6 +250,7 @@ describe('ogs-page', () => {
 
     test('shows inventory section with parent link and Singles/Sealed sub-links for employee role', async () => {
       element.userRole = 'employee';
+      element.canManageInventory = true;
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a');
@@ -270,6 +274,8 @@ describe('ogs-page', () => {
 
     test('shows inventory section with Singles and Sealed links for admin role', async () => {
       element.userRole = 'admin';
+      element.canManageInventory = true;
+      element.canAccessSettings = true;
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a.nav-sub-link');
@@ -282,6 +288,7 @@ describe('ogs-page', () => {
 
     test('highlights Singles sub-link when activePage is inventory/singles', async () => {
       element.userRole = 'employee';
+      element.canManageInventory = true;
       element.activePage = 'inventory/singles';
       await element.updateComplete;
 
@@ -292,6 +299,7 @@ describe('ogs-page', () => {
 
     test('highlights Sealed sub-link when activePage is inventory/sealed', async () => {
       element.userRole = 'employee';
+      element.canManageInventory = true;
       element.activePage = 'inventory/sealed';
       await element.updateComplete;
 
@@ -302,6 +310,7 @@ describe('ogs-page', () => {
 
     test('highlights Inventory parent link when activePage is inventory/singles', async () => {
       element.userRole = 'employee';
+      element.canManageInventory = true;
       element.activePage = 'inventory/singles';
       await element.updateComplete;
 

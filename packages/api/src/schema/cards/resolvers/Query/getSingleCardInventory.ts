@@ -2,18 +2,22 @@ import { sql } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
+import type { GraphqlContext } from '../../../../server';
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from '../../../types.generated';
 
 export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardInventory']> = async (
   _parent,
   { game, filters },
-  _ctx,
+  ctx: GraphqlContext,
 ) => {
+  const organizationId = getOrganizationIdOptional(ctx);
+
   try {
     if (game === 'magic') {
-      return await getInventory(1, filters);
+      return await getInventory(1, filters, organizationId);
     } else if (game === 'pokemon') {
-      return await getInventory(2, filters);
+      return await getInventory(2, filters, organizationId);
     }
   } catch (e) {
     console.error(e);
@@ -22,7 +26,7 @@ export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardIn
   throw new Error(`Unsupported game: ${game}`);
 };
 
-async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFilters>) {
+async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFilters>, organizationId: string | null) {
   const includeSingles = filters?.includeSingles;
   const includeSealed = filters?.includeSealed;
 
@@ -95,7 +99,7 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
             sql`${inventoryItem.productId} IN (${sql.join(
               productIds.map((id) => sql`${id}`),
               sql`, `,
-            )})`,
+            )}) ${organizationId ? sql`AND ${inventoryItem.organizationId} = ${organizationId}` : sql``}`,
           )
           .groupBy(inventoryItem.productId, inventoryItem.condition)
       : [];

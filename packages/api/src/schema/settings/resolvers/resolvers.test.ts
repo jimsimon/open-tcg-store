@@ -16,6 +16,8 @@ const {
   mockUpdateQuickBooksIntegration,
   mockPerformBackup,
   mockPerformRestore,
+  mockAssertPermission,
+  mockGetUserId,
 } = vi.hoisted(() => ({
   mockGetStoreSettings: vi.fn(),
   mockUpdateStoreSettings: vi.fn(),
@@ -28,6 +30,8 @@ const {
   mockUpdateQuickBooksIntegration: vi.fn(),
   mockPerformBackup: vi.fn(),
   mockPerformRestore: vi.fn(),
+  mockAssertPermission: vi.fn(),
+  mockGetUserId: vi.fn().mockReturnValue('admin-1'),
 }));
 
 vi.mock('../../../services/settings-service', () => ({
@@ -45,6 +49,11 @@ vi.mock('../../../services/settings-service', () => ({
 vi.mock('../../../services/backup-service', () => ({
   performBackup: mockPerformBackup,
   performRestore: mockPerformRestore,
+}));
+
+vi.mock('../../../lib/assert-permission', () => ({
+  assertPermission: mockAssertPermission,
+  getUserId: mockGetUserId,
 }));
 
 // ---------------------------------------------------------------------------
@@ -82,24 +91,36 @@ const updateQuickBooksIntegration = _updateQuickBooksIntegration as (...args: un
 // ---------------------------------------------------------------------------
 
 function adminContext() {
+  // Configure assertPermission to succeed for admin
+  mockAssertPermission.mockResolvedValue(undefined);
+  mockGetUserId.mockReturnValue('admin-1');
   return {
     auth: {
       user: { id: 'admin-1', role: 'admin' },
+      session: { activeOrganizationId: 'org-1' },
     },
+    req: { headers: {} },
   };
 }
 
 function employeeContext() {
+  // Configure assertPermission to reject for employees
+  mockAssertPermission.mockRejectedValue(new Error('Unauthorized: Insufficient permissions'));
   return {
     auth: {
       user: { id: 'emp-1', role: 'employee' },
+      session: { activeOrganizationId: 'org-1' },
     },
+    req: { headers: {} },
   };
 }
 
 function anonymousContext() {
+  // Configure assertPermission to reject for anonymous
+  mockAssertPermission.mockRejectedValue(new Error('Unauthorized: Insufficient permissions'));
   return {
     auth: null,
+    req: { headers: {} },
   };
 }
 
@@ -118,74 +139,74 @@ describe('settings resolvers', () => {
   describe('access control', () => {
     it('should reject non-admin users for getStoreSettings', async () => {
       await expect(getStoreSettings({}, {}, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject anonymous users for getStoreSettings', async () => {
       await expect(getStoreSettings({}, {}, anonymousContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for getBackupSettings', async () => {
       await expect(getBackupSettings({}, {}, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for getIntegrationSettings', async () => {
       await expect(getIntegrationSettings({}, {}, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for lookupSalesTax', async () => {
       await expect(lookupSalesTax({}, { countryCode: 'US', stateCode: 'MI' }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for updateStoreSettings', async () => {
-      await expect(updateStoreSettings({}, { input: { storeName: 'Test' } }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+      await expect(updateStoreSettings({}, { input: { companyName: 'Test' } }, employeeContext(), {})).rejects.toThrow(
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for updateBackupSettings', async () => {
       await expect(updateBackupSettings({}, { input: { provider: 'dropbox' } }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for triggerBackup', async () => {
       await expect(triggerBackup({}, {}, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for triggerRestore', async () => {
       await expect(triggerRestore({}, { provider: 'google_drive' }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for updateStripeIntegration', async () => {
       await expect(updateStripeIntegration({}, { input: { enabled: true } }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for updateShopifyIntegration', async () => {
       await expect(updateShopifyIntegration({}, { input: { enabled: true } }, employeeContext(), {})).rejects.toThrow(
-        'Unauthorized: Settings access requires admin role',
+        'Unauthorized: Insufficient permissions',
       );
     });
 
     it('should reject non-admin users for updateQuickBooksIntegration', async () => {
       await expect(
         updateQuickBooksIntegration({}, { input: { enabled: true } }, employeeContext(), {}),
-      ).rejects.toThrow('Unauthorized: Settings access requires admin role');
+      ).rejects.toThrow('Unauthorized: Insufficient permissions');
     });
   });
 
@@ -194,7 +215,7 @@ describe('settings resolvers', () => {
   // -----------------------------------------------------------------------
   describe('getStoreSettings resolver', () => {
     it('should return store settings for admin', async () => {
-      const mockResult = { storeName: 'My Store', state: 'MI', salesTaxRate: 0.06 };
+      const mockResult = { companyName: 'My Store', ein: '12-3456789' };
       mockGetStoreSettings.mockResolvedValue(mockResult);
 
       const result = await getStoreSettings({}, {}, adminContext(), {});
@@ -254,8 +275,8 @@ describe('settings resolvers', () => {
   // -----------------------------------------------------------------------
   describe('updateStoreSettings resolver', () => {
     it('should update store settings for admin', async () => {
-      const input = { storeName: 'Updated Store' };
-      const mockResult = { storeName: 'Updated Store', salesTaxRate: 0.06 };
+      const input = { companyName: 'Updated Store' };
+      const mockResult = { companyName: 'Updated Store', ein: null };
       mockUpdateStoreSettings.mockResolvedValue(mockResult);
 
       const result = await updateStoreSettings({}, { input }, adminContext(), {});

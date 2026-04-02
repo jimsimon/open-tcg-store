@@ -31,6 +31,13 @@ import { TypedDocumentString } from '../graphql/graphql';
 import logoSvg from '../assets/logo.svg?raw';
 import { cartState } from '../lib/cart-state';
 import type { CartItem } from '../lib/cart-state';
+import {
+  storeList,
+  activeStoreId,
+  initActiveStoreFromCookie,
+  setActiveStoreCookie,
+  type StoreInfo,
+} from '../lib/store-context';
 
 // Lazy-load authClient to avoid potential SSR issues
 let _authClient: typeof import('../auth-client').authClient | undefined;
@@ -116,7 +123,39 @@ const SubmitOrderMutation = new TypedDocumentString(`
       }[];
     };
   },
-  { input: { customerName: string } }
+  { input: { organizationId: string; customerName: string } }
+>;
+
+// --- GraphQL Queries for Store Locations ---
+
+const GetAllStoreLocationsQuery = new TypedDocumentString(`
+  query GetAllStoreLocations {
+    getAllStoreLocations {
+      id
+      name
+      slug
+      city
+      state
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { getAllStoreLocations: StoreInfo[] },
+  Record<string, never>
+>;
+
+const GetEmployeeStoreLocationsQuery = new TypedDocumentString(`
+  query GetEmployeeStoreLocations {
+    getEmployeeStoreLocations {
+      id
+      name
+      slug
+      city
+      state
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { getEmployeeStoreLocations: StoreInfo[] },
+  Record<string, never>
 >;
 
 @customElement('ogs-page')
@@ -427,12 +466,18 @@ export class OgsPage extends SignalWatcher(LitElement) {
         color: var(--wa-color-success-text);
         margin-bottom: var(--wa-space-s);
       }
+
+      .store-selector {
+        min-width: 180px;
+        max-width: 250px;
+      }
     `,
   ];
 
   @property({ type: String })
   activePage?: string;
 
+  /** @deprecated Use permission flags instead. Kept for backward compat during migration. */
   @property({ type: String })
   userRole = '';
 
@@ -450,6 +495,27 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
   @property({ type: String })
   userName = '';
+
+  /** Whether to show the store selector dropdown in the header */
+  @property({ type: Boolean })
+  showStoreSelector = false;
+
+  /** Permission flags — set by server-side render or client-side check */
+  @property({ type: Boolean })
+  canManageInventory = false;
+
+  @property({ type: Boolean })
+  canAccessSettings = false;
+
+  @property({ type: Boolean })
+  canManageStoreLocations = false;
+
+  @property({ type: Boolean })
+  canManageUsers = false;
+
+  /** The active organization ID, passed from server-side or session */
+  @property({ type: String })
+  activeOrganizationId = '';
 
   @state()
   themePreference = Cookies.get('ogs-theme-preference') || 'auto';
@@ -511,7 +577,47 @@ export class OgsPage extends SignalWatcher(LitElement) {
   connectedCallback(): void {
     super.connectedCallback();
     this.fetchCart();
+    this.initStoreContext();
     window.addEventListener('scroll', this.boundHandleScroll, { passive: true });
+  }
+
+  private async initStoreContext() {
+    // Initialize from cookie for anonymous users
+    initActiveStoreFromCookie();
+
+    // If we have an activeOrganizationId from the server, use it
+    if (this.activeOrganizationId) {
+      activeStoreId.set(this.activeOrganizationId);
+    }
+
+    // Fetch store list if the selector is shown
+    if (this.showStoreSelector) {
+      await this.fetchStoreList();
+    }
+  }
+
+  private async fetchStoreList() {
+    try {
+      if (this.isAnonymous) {
+        // Anonymous users get the full public list
+        const result = await execute(GetAllStoreLocationsQuery);
+        if (result?.data?.getAllStoreLocations) {
+          storeList.set(result.data.getAllStoreLocations);
+          // Auto-select first store if none selected
+          if (!activeStoreId.get() && result.data.getAllStoreLocations.length > 0) {
+            setActiveStoreCookie(result.data.getAllStoreLocations[0].id);
+          }
+        }
+      } else {
+        // Authenticated users get their assigned stores
+        const result = await execute(GetEmployeeStoreLocationsQuery);
+        if (result?.data?.getEmployeeStoreLocations) {
+          storeList.set(result.data.getEmployeeStoreLocations);
+        }
+      }
+    } catch {
+      // Silently fail — store list will be empty
+    }
   }
 
   disconnectedCallback(): void {
@@ -609,6 +715,25 @@ export class OgsPage extends SignalWatcher(LitElement) {
               System
             </wa-option>
           </wa-select>
+          ${this.showStoreSelector && storeList.get().length > 0
+            ? html`
+                <wa-select
+                  class="store-selector"
+                  appearance="filled"
+                  value="${activeStoreId.get() ?? ''}"
+                  placement="bottom"
+                  @change="${this.handleStoreChange}"
+                >
+                  <wa-icon slot="start" name="store" variant="regular"></wa-icon>
+                  <span slot="label" class="wa-visually-hidden">Select Store</span>
+                  ${storeList.get().map(
+                    (store) => html`
+                      <wa-option value="${store.id}">${store.name}</wa-option>
+                    `,
+                  )}
+                </wa-select>
+              `
+            : nothing}
           ${this.showCartButton
             ? html`
                 <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
@@ -631,7 +756,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
               ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
               ${this.renderNavSubLink('/products/sealed', 'Sealed', 'products/sealed')}
               ${when(
-                this.userRole === 'admin' || this.userRole === 'employee',
+                this.canManageInventory,
                 () => html`
                   <wa-divider></wa-divider>
                   <div class="nav-section-label">Management</div>
@@ -644,17 +769,24 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 `,
               )}
               ${when(
-                this.userRole === 'admin',
+                this.canAccessSettings,
                 () => html`
                   <wa-divider></wa-divider>
                   <div class="nav-section-label">Settings</div>
 
                   ${this.renderNavLink('/settings/general', 'gear', 'Settings', 'settings')}
                   ${this.renderNavSubLink('/settings/general', 'General', 'settings/general')}
+                  ${when(
+                    this.canManageStoreLocations,
+                    () => this.renderNavSubLink('/settings/locations', 'Store Locations', 'settings/locations'),
+                  )}
                   ${this.renderNavSubLink('/settings/backup', 'Backup & Restore', 'settings/backup')}
                   ${this.renderNavSubLink('/settings/autoprice', 'Autoprice', 'settings/autoprice')}
                   ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
-                  ${this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users')}
+                  ${when(
+                    this.canManageUsers,
+                    () => this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users'),
+                  )}
                 `,
               )}
             </nav>
@@ -667,6 +799,35 @@ export class OgsPage extends SignalWatcher(LitElement) {
       </div>
       ${this.renderAuthDialog()} ${this.renderCartDrawer()}
     `;
+  }
+
+  // --- Store Selector ---
+
+  private async handleStoreChange(e: Event) {
+    const select = e.target as WaSelect;
+    const newStoreId = select.value as string;
+    if (!newStoreId || newStoreId === activeStoreId.get()) return;
+
+    if (this.isAnonymous) {
+      // Anonymous users: just update the cookie
+      setActiveStoreCookie(newStoreId);
+    } else {
+      // Authenticated users: update the session via better-auth
+      try {
+        const authClient = await getAuthClient();
+        await authClient.organization.setActive({ organizationId: newStoreId });
+        activeStoreId.set(newStoreId);
+      } catch (err) {
+        console.error('Failed to set active store:', err);
+        return;
+      }
+    }
+
+    // Re-fetch cart for the new store
+    await this.fetchCart();
+
+    // Dispatch event so page components can re-fetch their data
+    this.dispatchEvent(new CustomEvent('store-changed', { detail: { storeId: newStoreId }, bubbles: true, composed: true }));
   }
 
   // --- Cart Drawer ---
@@ -885,8 +1046,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
     this.orderError = '';
 
     try {
+      const currentStoreId = activeStoreId.get();
+      if (!currentStoreId) {
+        this.orderError = 'Please select a store before submitting an order.';
+        this.submittingOrder = false;
+        return;
+      }
       const result = await execute(SubmitOrderMutation, {
-        input: { customerName: this.customerName.trim() },
+        input: { organizationId: currentStoreId, customerName: this.customerName.trim() },
       });
 
       if (result?.errors?.length) {

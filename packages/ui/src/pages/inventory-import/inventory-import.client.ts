@@ -122,9 +122,10 @@ export class OgsInventoryImportPage extends LitElement {
 
       .nav-links {
         display: flex;
-        gap: 0.75rem;
+        gap: var(--wa-space-m);
         flex-wrap: wrap;
         justify-content: center;
+        margin-top: var(--wa-space-m);
       }
     `,
   ];
@@ -132,6 +133,11 @@ export class OgsInventoryImportPage extends LitElement {
   @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
+  @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canAccessSettings = false;
+  @property({ type: Boolean }) canManageStoreLocations = false;
+  @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: String }) activeOrganizationId = '';
 
   render() {
     return html`
@@ -140,6 +146,11 @@ export class OgsInventoryImportPage extends LitElement {
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
+        ?canManageInventory="${this.canManageInventory}"
+        ?canAccessSettings="${this.canAccessSettings}"
+        ?canManageStoreLocations="${this.canManageStoreLocations}"
+        ?canManageUsers="${this.canManageUsers}"
+        activeOrganizationId="${this.activeOrganizationId}"
       >
         <div class="page-header">
           <div class="page-header-icon">
@@ -178,11 +189,11 @@ export class OgsInventoryImportPage extends LitElement {
           </div>
 
           <div class="nav-links">
-            <wa-button variant="neutral" href="/inventory/singles">
+            <wa-button appearance="outlined" variant="neutral" href="/inventory/singles">
               <wa-icon slot="start" name="id-card"></wa-icon>
               Back to Singles
             </wa-button>
-            <wa-button variant="neutral" href="/inventory/sealed">
+            <wa-button appearance="outlined" variant="neutral" href="/inventory/sealed">
               <wa-icon slot="start" name="package"></wa-icon>
               Back to Sealed
             </wa-button>

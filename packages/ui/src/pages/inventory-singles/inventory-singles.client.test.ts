@@ -68,6 +68,7 @@ describe('ogs-inventory-singles-page', () => {
     mockExecute.mockResolvedValue(mockInventoryResponse());
 
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
     document.body.appendChild(element);
     await element.updateComplete;
   });
@@ -98,17 +99,14 @@ describe('ogs-inventory-singles-page', () => {
     expect(typeSelect).toBeFalsy();
   });
 
-  test('should display the action bar with Add, Import, Bulk Edit, Bulk Delete buttons', async () => {
+  test('should display the action bar with Import button', async () => {
     const actionBar = element.shadowRoot!.querySelector('.action-bar');
     expect(actionBar).toBeTruthy();
 
     const buttons = actionBar!.querySelectorAll('wa-button');
     const buttonTexts = Array.from(buttons).map((b) => b.textContent?.trim());
 
-    expect(buttonTexts).toContain('Add Single');
     expect(buttonTexts).toContain('Import');
-    expect(buttonTexts).toContain('Bulk Edit');
-    expect(buttonTexts).toContain('Bulk Delete');
   });
 
   test('should render the inventory table with Rarity and Condition columns', async () => {
@@ -117,6 +115,7 @@ describe('ogs-inventory-singles-page', () => {
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -132,68 +131,24 @@ describe('ogs-inventory-singles-page', () => {
     expect(headers).toContain('Rarity');
     expect(headers).toContain('Condition');
     expect(headers).toContain('Qty');
-    expect(headers).toContain('Price');
-    expect(headers).toContain('Cost Basis');
-    expect(headers).toContain('Actions');
+    expect(headers).toContain('Price Range');
+    expect(headers).toContain('Entries');
   });
 
-  test('should open edit dialog with Condition field when edit button is clicked', async () => {
+  test('should render clickable rows that navigate to detail page', async () => {
     const items = [makeFakeItem()];
     mockExecute.mockResolvedValue(mockInventoryResponse(items, 1, 1));
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const actionCells = element.shadowRoot!.querySelectorAll('.actions-cell');
-    expect(actionCells.length).toBeGreaterThan(0);
-
-    const editBtn = actionCells[0].querySelector('wa-button');
-    editBtn!.click();
-    await element.updateComplete;
-
-    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Edit Single"]');
-    expect(dialog).toBeTruthy();
-    expect(dialog?.hasAttribute('open')).toBe(true);
-
-    // Should have Condition select in the edit dialog
-    const conditionSelect = dialog!.querySelector('wa-select[label="Condition"]');
-    expect(conditionSelect).toBeTruthy();
-  });
-
-  test('should open bulk edit dialog with Condition field', async () => {
-    const items = [makeFakeItem({ id: 1 })];
-    mockExecute.mockResolvedValue(mockInventoryResponse(items, 1, 1));
-
-    element.remove();
-    element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    // Select all items
-    const headerCheckbox = element.shadowRoot!.querySelector('thead wa-checkbox');
-    headerCheckbox!.dispatchEvent(new Event('change', { bubbles: true }));
-    await element.updateComplete;
-
-    // Click bulk edit
-    const actionBar = element.shadowRoot!.querySelector('.action-bar');
-    const buttons = Array.from(actionBar!.querySelectorAll('wa-button'));
-    const bulkEditBtn = buttons.find((b) => b.textContent?.trim().startsWith('Bulk Edit'));
-    bulkEditBtn!.click();
-    await element.updateComplete;
-
-    const dialog = element.shadowRoot!.querySelector('wa-dialog[label="Bulk Edit Singles"]');
-    expect(dialog).toBeTruthy();
-    expect(dialog?.hasAttribute('open')).toBe(true);
-
-    // Should have Condition select in the bulk edit dialog
-    const conditionSelect = dialog!.querySelector('wa-select[label="Condition"]');
-    expect(conditionSelect).toBeTruthy();
+    const clickableRows = element.shadowRoot!.querySelectorAll('.clickable-row');
+    expect(clickableRows.length).toBeGreaterThan(0);
   });
 
   test('should show loading spinner when loading', async () => {
@@ -201,6 +156,7 @@ describe('ogs-inventory-singles-page', () => {
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
     document.body.appendChild(element);
     await new Promise((r) => setTimeout(r, 50));
 
@@ -220,6 +176,7 @@ describe('ogs-inventory-singles-page', () => {
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

@@ -16,13 +16,13 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": typeof types.GetShoppingCartQueryDocument,
-    "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
-    "\n    query IsSetupPending {\n      isSetupPending\n    }\n  ": typeof types.IsSetupPendingDocument,
+    "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {\n        firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
+    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": typeof types.IsSetupPendingDocument,
 };
 const documents: Documents = {
     "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": types.GetShoppingCartQueryDocument,
-    "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    ": types.FirstTimeSetupMutationDocument,
-    "\n    query IsSetupPending {\n      isSetupPending\n    }\n  ": types.IsSetupPendingDocument,
+    "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {\n        firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)\n      }\n    ": types.FirstTimeSetupMutationDocument,
+    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": types.IsSetupPendingDocument,
 };
 
 /**
@@ -32,11 +32,11 @@ export function graphql(source: "\n      query GetShoppingCartQuery {\n        g
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $settings: Settings!) {\n        firstTimeSetup(userDetails: $userDetails, settings: $settings)\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
+export function graphql(source: "\n      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {\n        firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    query IsSetupPending {\n      isSetupPending\n    }\n  "): typeof import('./graphql').IsSetupPendingDocument;
+export function graphql(source: "\n      query IsSetupPending {\n        isSetupPending\n      }\n    "): typeof import('./graphql').IsSetupPendingDocument;
 
 
 export function graphql(source: string) {

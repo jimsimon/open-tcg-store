@@ -1,12 +1,6 @@
 type StoreSettings {
-  storeName: String
-  street1: String
-  street2: String
-  city: String
-  state: String
-  zip: String
+  companyName: String
   ein: String
-  salesTaxRate: Float
 }
 
 type BackupSettings {
@@ -59,12 +53,7 @@ type RestoreResult {
 }
 
 input UpdateStoreSettingsInput {
-  storeName: String
-  street1: String
-  street2: String
-  city: String
-  state: String
-  zip: String
+  companyName: String
   ein: String
 }
 

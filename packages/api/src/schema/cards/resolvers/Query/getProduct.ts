@@ -2,12 +2,15 @@ import { eq, and, isNull, gt } from 'drizzle-orm';
 import type { QueryResolvers } from '../../../types.generated';
 import { otcgs } from '../../../../db';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
+import type { GraphqlContext } from '../../../../server';
 
-export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_parent, { productId }, _ctx) => {
+export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_parent, { productId }, ctx: GraphqlContext) => {
   const id = Number.parseInt(productId, 10);
   if (Number.isNaN(id)) {
     throw new Error(`Invalid product id: ${productId}`);
   }
+  const organizationId = getOrganizationIdOptional(ctx);
 
   const result = await otcgs.query.product.findFirst({
     columns: {
@@ -66,7 +69,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
       price: inventoryItem.price,
     })
     .from(inventoryItem)
-    .where(and(eq(inventoryItem.productId, id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0)))
+    .where(and(eq(inventoryItem.productId, id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0), organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined))
     .orderBy(inventoryItem.price);
 
   // Map game name from categoryId

@@ -188,6 +188,12 @@ export class ProductDetailsPage extends LitElement {
   @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
+  @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canAccessSettings = false;
+  @property({ type: Boolean }) canManageStoreLocations = false;
+  @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: String }) activeOrganizationId = '';
+  @property({ type: Boolean }) showStoreSelector = false;
 
   @property()
   private productId: string = '';
@@ -277,6 +283,13 @@ export class ProductDetailsPage extends LitElement {
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
+        ?canManageInventory="${this.canManageInventory}"
+        ?canAccessSettings="${this.canAccessSettings}"
+        ?canManageStoreLocations="${this.canManageStoreLocations}"
+        ?canManageUsers="${this.canManageUsers}"
+        activeOrganizationId="${this.activeOrganizationId}"
+        ?showStoreSelector="${this.showStoreSelector}"
+        @store-changed="${() => this.fetchProduct()}"
       >
         ${when(
           this.loading,

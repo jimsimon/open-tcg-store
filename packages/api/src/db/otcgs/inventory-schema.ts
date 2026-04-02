@@ -6,6 +6,7 @@ export const inventoryItem = sqliteTable(
   'inventory_item',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    organizationId: text('organization_id').notNull(),
     productId: integer('product_id').notNull(),
     condition: text('condition').notNull(), // NM, LP, MP, HP, D
     quantity: integer('quantity').notNull().default(0),
@@ -24,12 +25,14 @@ export const inventoryItem = sqliteTable(
     updatedBy: text('updated_by'),
   },
   (table) => [
-    uniqueIndex('inventory_item_product_condition_cost_acqdate_idx').on(
+    uniqueIndex('inventory_item_org_product_condition_cost_acqdate_idx').on(
+      table.organizationId,
       table.productId,
       table.condition,
       table.costBasis,
       table.acquisitionDate,
     ),
+    index('inventory_item_org_id_idx').on(table.organizationId),
     index('inventory_item_product_id_idx').on(table.productId),
     index('inventory_item_condition_idx').on(table.condition),
     index('inventory_item_price_idx').on(table.price),

@@ -46,14 +46,8 @@ vi.mock('../db/otcgs/index', () => ({
 vi.mock('../db/otcgs/settings-schema', () => ({
   storeSettings: {
     id: 'store_settings.id',
-    storeName: 'store_settings.store_name',
-    street1: 'store_settings.street1',
-    street2: 'store_settings.street2',
-    city: 'store_settings.city',
-    state: 'store_settings.state',
-    zip: 'store_settings.zip',
+    companyName: 'store_settings.company_name',
     ein: 'store_settings.ein',
-    salesTaxRate: 'store_settings.sales_tax_rate',
     backupProvider: 'store_settings.backup_provider',
     backupFrequency: 'store_settings.backup_frequency',
     lastBackupAt: 'store_settings.last_backup_at',
@@ -126,14 +120,8 @@ import {
 function fakeSettingsRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
-    storeName: 'Test Store',
-    street1: '123 Main St',
-    street2: null,
-    city: 'Anytown',
-    state: 'MI',
-    zip: '48001',
+    companyName: 'Test Store',
     ein: '12-3456789',
-    salesTaxRate: 0.06,
     backupProvider: 'google_drive',
     backupFrequency: 'daily',
     lastBackupAt: new Date('2025-01-15T10:00:00Z'),
@@ -180,13 +168,8 @@ describe('settings-service', () => {
       const result = await getStoreSettings();
 
       expect(result).toBeDefined();
-      expect(result.storeName).toBe('Test Store');
-      expect(result.street1).toBe('123 Main St');
-      expect(result.city).toBe('Anytown');
-      expect(result.state).toBe('MI');
-      expect(result.zip).toBe('48001');
+      expect(result.companyName).toBe('Test Store');
       expect(result.ein).toBe('12-3456789');
-      expect(result.salesTaxRate).toBe(0.06);
     });
 
     it('should create settings row if none exists', async () => {
@@ -207,23 +190,16 @@ describe('settings-service', () => {
     it('should return null fields when not set', async () => {
       selectChain = chainable([
         fakeSettingsRow({
-          storeName: null,
-          street1: null,
-          street2: null,
-          city: null,
-          state: null,
-          zip: null,
+          companyName: null,
           ein: null,
-          salesTaxRate: null,
         }),
       ]);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
       const result = await getStoreSettings();
 
-      expect(result.storeName).toBeNull();
-      expect(result.street1).toBeNull();
-      expect(result.salesTaxRate).toBeNull();
+      expect(result.companyName).toBeNull();
+      expect(result.ein).toBeNull();
     });
   });
 
@@ -231,63 +207,29 @@ describe('settings-service', () => {
   // updateStoreSettings
   // -----------------------------------------------------------------------
   describe('updateStoreSettings', () => {
-    it('should update store name', async () => {
-      const result = await updateStoreSettings({ storeName: 'New Store Name' }, 'admin-1');
+    it('should update company name', async () => {
+      const result = await updateStoreSettings({ companyName: 'New Store Name' }, 'admin-1');
 
       expect(mockOtcgs.update).toHaveBeenCalled();
       expect(result).toBeDefined();
-      expect(result.storeName).toBe('Test Store'); // Returns from the mock select
+      expect(result.companyName).toBe('Test Store'); // Returns from the mock select
     });
 
-    it('should update address fields', async () => {
+    it('should update ein field', async () => {
       await updateStoreSettings(
         {
-          street1: '456 Oak Ave',
-          street2: 'Suite 100',
-          city: 'Detroit',
-          zip: '48226',
+          ein: '98-7654321',
         },
         'admin-1',
       );
 
       expect(mockOtcgs.update).toHaveBeenCalled();
       const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.street1).toBe('456 Oak Ave');
-      expect(setCall.street2).toBe('Suite 100');
-      expect(setCall.city).toBe('Detroit');
-      expect(setCall.zip).toBe('48226');
-    });
-
-    it('should auto-populate sales tax when state changes', async () => {
-      mockGetSalesTax.mockResolvedValue({ rate: 0.0625, type: 'state', currency: 'USD' });
-
-      await updateStoreSettings({ state: 'CA' }, 'admin-1');
-
-      expect(mockGetSalesTax).toHaveBeenCalledWith('US', 'CA');
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.state).toBe('CA');
-      expect(setCall.salesTaxRate).toBe(0.0625);
-    });
-
-    it('should set salesTaxRate to null when state is cleared', async () => {
-      await updateStoreSettings({ state: '' }, 'admin-1');
-
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.state).toBe('');
-      expect(setCall.salesTaxRate).toBeNull();
-    });
-
-    it('should set salesTaxRate to null when tax lookup fails', async () => {
-      mockGetSalesTax.mockRejectedValue(new Error('Lookup failed'));
-
-      await updateStoreSettings({ state: 'XX' }, 'admin-1');
-
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.salesTaxRate).toBeNull();
+      expect(setCall.ein).toBe('98-7654321');
     });
 
     it('should set updatedBy and updatedAt', async () => {
-      await updateStoreSettings({ storeName: 'Updated' }, 'user-42');
+      await updateStoreSettings({ companyName: 'Updated' }, 'user-42');
 
       const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(setCall.updatedBy).toBe('user-42');
@@ -295,13 +237,11 @@ describe('settings-service', () => {
     });
 
     it('should only include provided fields in update', async () => {
-      await updateStoreSettings({ storeName: 'Only Name' }, 'admin-1');
+      await updateStoreSettings({ companyName: 'Only Name' }, 'admin-1');
 
       const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.storeName).toBe('Only Name');
+      expect(setCall.companyName).toBe('Only Name');
       // Fields not provided should not be in the update
-      expect(setCall.street1).toBeUndefined();
-      expect(setCall.city).toBeUndefined();
       expect(setCall.ein).toBeUndefined();
     });
   });

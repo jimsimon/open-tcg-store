@@ -183,6 +183,12 @@ export class OrdersPage extends LitElement {
   @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
+  @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canAccessSettings = false;
+  @property({ type: Boolean }) canManageStoreLocations = false;
+  @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: String }) activeOrganizationId = '';
+  @property({ type: Boolean }) showStoreSelector = false;
 
   @state() orders: Order[] = [];
   @state() loading = true;
@@ -781,6 +787,13 @@ export class OrdersPage extends LitElement {
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
+        ?canManageInventory="${this.canManageInventory}"
+        ?canAccessSettings="${this.canAccessSettings}"
+        ?canManageStoreLocations="${this.canManageStoreLocations}"
+        ?canManageUsers="${this.canManageUsers}"
+        activeOrganizationId="${this.activeOrganizationId}"
+        ?showStoreSelector="${this.showStoreSelector}"
+        @store-changed="${() => this.fetchOrders()}"
       >
         ${this.renderPageHeader()} ${this.renderStatsBar()} ${this.renderFilterBar()}
         ${when(

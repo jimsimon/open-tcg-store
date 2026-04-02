@@ -119,6 +119,6 @@ extend type Query {
   getSingleCardInventory(game: String!, filters: SingleCardFilters): [Card!]!
   getSets(game: String!, filters: SetFilters): [Set!]!
   getCard(game: String!, cardId: String!): Card!
-  getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination): ProductListingPage!
-  getProduct(productId: String!): ProductDetail!
+  getProductListings(filters: ProductListingFilters, pagination: ProductListingPagination, organizationId: String): ProductListingPage!
+  getProduct(productId: String!, organizationId: String): ProductDetail!
 }

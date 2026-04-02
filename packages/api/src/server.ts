@@ -24,6 +24,8 @@ import {
 
 export type GraphqlContext = {
   auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+  /** The active organization (store) ID from the session, or null if not set */
+  organizationId: string | null;
   req: IncomingMessage;
   res: import('koa').Response;
 };
@@ -54,10 +56,12 @@ app.use(
     createHandler({
       schema,
       context: async (req) => {
+        const session = await auth.api.getSession({
+          headers: fromNodeHeaders(req.raw.headers),
+        });
         return {
-          auth: await auth.api.getSession({
-            headers: fromNodeHeaders(req.raw.headers),
-          }),
+          auth: session,
+          organizationId: (session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | null ?? null,
           req: req.raw,
           res: req.context.res,
         } as GraphqlContext;

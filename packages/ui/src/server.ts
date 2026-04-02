@@ -51,31 +51,46 @@ function getSession(ctx: Context) {
 }
 
 /**
- * Middleware that requires the user to have an admin role.
- * Returns 403 Forbidden for non-admin users.
+ * Creates middleware that checks if the user has a specific permission.
+ *
+ * During the migration period, we derive permissions from the global user.role
+ * field since the organization-based hasPermission() requires an active org
+ * which may not be set yet (e.g. if the user just signed in before org auto-select
+ * takes effect, or if the better-auth session cache doesn't include the org yet).
+ *
+ * Once all users are fully migrated to org-based roles, this should use
+ * authClient.organization.hasPermission() instead.
  */
-async function requireAdmin(ctx: Context, next: Next) {
-  const role = ctx.state.auth?.user?.role;
-  if (role !== 'admin') {
-    ctx.status = 403;
-    ctx.body = 'Forbidden: Admin access required';
-    return;
-  }
-  return next();
-}
+function requirePermission(resource: string, action: string) {
+  return async (ctx: Context, next: Next) => {
+    if (!ctx.state.auth?.user) {
+      ctx.status = 403;
+      ctx.body = 'Forbidden: Authentication required';
+      return;
+    }
 
-/**
- * Middleware that requires the user to have an admin or employee role.
- * Returns 403 Forbidden for other users.
- */
-async function requireEmployee(ctx: Context, next: Next) {
-  const role = ctx.state.auth?.user?.role;
-  if (role !== 'admin' && role !== 'employee') {
-    ctx.status = 403;
-    ctx.body = 'Forbidden: Admin or employee access required';
-    return;
-  }
-  return next();
+    const userRole = ctx.state.auth.user.role;
+
+    // Derive permissions from role during migration period.
+    // owner/admin get full access, admin (store manager) gets read access to settings,
+    // member/employee gets inventory/order access only.
+    const permissionMap: Record<string, Record<string, string[]>> = {
+      storeSettings: { read: ['admin', 'owner'], update: ['admin', 'owner'] },
+      storeLocations: { read: ['admin', 'owner'], create: ['admin', 'owner'], update: ['admin', 'owner'], delete: ['admin', 'owner'] },
+      userManagement: { read: ['admin', 'owner'], create: ['admin', 'owner'], update: ['admin', 'owner'], delete: ['admin', 'owner'] },
+      inventory: { read: ['admin', 'owner', 'employee', 'member'], create: ['admin', 'owner', 'employee', 'member'], update: ['admin', 'owner', 'employee', 'member'], delete: ['admin', 'owner', 'employee', 'member'] },
+      order: { read: ['admin', 'owner', 'employee', 'member'], create: ['admin', 'owner', 'employee', 'member'], update: ['admin', 'owner', 'employee', 'member'], cancel: ['admin', 'owner', 'employee', 'member'] },
+    };
+
+    const allowedRoles = permissionMap[resource]?.[action] ?? [];
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      ctx.status = 403;
+      ctx.body = 'Forbidden: Insufficient permissions';
+      return;
+    }
+
+    return next();
+  };
 }
 
 /**
@@ -165,6 +180,7 @@ const router = new Router()
         throw redirectUrlOrError;
       }
       ctx.redirect(redirectUrlOrError);
+      return; // Don't continue to route handler after redirect
     }
     return next();
   })
@@ -208,20 +224,20 @@ const router = new Router()
     return renderPage(ctx, 'inventory-sealed');
   })
   .get('inventory-singles-detail', '/inventory/singles/:productId/:condition', async (ctx) => {
-    await requireEmployee(ctx, async () => {});
+    await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');
   })
   .get('inventory-sealed-detail', '/inventory/sealed/:productId/:condition', async (ctx) => {
-    await requireEmployee(ctx, async () => {});
+    await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');
   })
   .get('import-inventory', '/inventory/import', async (ctx) => {
     return renderPage(ctx, 'inventory-import');
   })
-  // Settings routes - admin only
-  .use('/settings', requireAdmin)
+  // Settings routes - require storeSettings:read permission
+  .use('/settings', requirePermission('storeSettings', 'read'))
   .get('settings-redirect', '/settings', async (ctx) => {
     ctx.redirect('/settings/general');
   })
@@ -236,6 +252,9 @@ const router = new Router()
   })
   .get('settings-integrations', '/settings/integrations', async (ctx) => {
     return renderPage(ctx, 'settings-integrations');
+  })
+  .get('settings-locations', '/settings/locations', async (ctx) => {
+    return renderPage(ctx, 'settings-locations');
   })
   .get('settings-users', '/settings/users', async (ctx) => {
     return renderPage(ctx, 'settings-users');
@@ -264,17 +283,26 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
 }
 
 async function isSetupPending() {
-  const IsSetupPendingQuery = graphql(`
-    query IsSetupPending {
-      isSetupPending
+  try {
+    const IsSetupPendingQuery = graphql(`
+      query IsSetupPending {
+        isSetupPending
+      }
+    `);
+
+    const result = await execute(IsSetupPendingQuery);
+
+    if (result?.errors?.length) {
+      console.error('isSetupPending query errors:', JSON.stringify(result.errors));
+      // If we can't determine setup status, assume it IS pending (safer to redirect
+      // to setup than to let users through to a broken app with no data)
+      return true;
     }
-  `);
 
-  const result = await execute(IsSetupPendingQuery);
-
-  if (result?.errors?.length) {
-    console.log({ result });
-  } else {
     return result.data.isSetupPending;
+  } catch (err) {
+    // API server may not be running yet during startup — assume setup is needed
+    console.error('isSetupPending check failed:', err);
+    return true;
   }
 }

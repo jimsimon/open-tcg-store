@@ -77,6 +77,7 @@ function baseInventoryQuery() {
   return otcgs
     .select({
       id: inventoryItem.id,
+      organizationId: inventoryItem.organizationId,
       productId: inventoryItem.productId,
       productName: product.name,
       gameName: category.name,
@@ -116,6 +117,7 @@ function baseInventoryQuery() {
 function mapRow(row: Record<string, unknown>): InventoryItem {
   const r = row as {
     id: number;
+    organizationId: string;
     productId: number;
     productName: string;
     gameName: string | null;
@@ -136,6 +138,7 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
 
   return {
     id: r.id,
+    organizationId: r.organizationId,
     productId: r.productId,
     productName: r.productName ?? '',
     gameName: r.gameName ?? '',
@@ -158,10 +161,11 @@ function mapRow(row: Record<string, unknown>): InventoryItem {
 // Shared filter conditions builder
 // ---------------------------------------------------------------------------
 
-function buildFilterConditions(filters?: InventoryFilters | null) {
+function buildFilterConditions(organizationId: string, filters?: InventoryFilters | null) {
   const conditions: ReturnType<typeof eq>[] = [];
 
-  // Always exclude soft-deleted items
+  // Always scope to organization and exclude soft-deleted items
+  conditions.push(eq(inventoryItem.organizationId, organizationId));
   conditions.push(notDeleted());
 
   if (filters?.gameName) {
@@ -217,6 +221,7 @@ function buildFilterConditions(filters?: InventoryFilters | null) {
 // ---------------------------------------------------------------------------
 
 export async function getInventoryItems(
+  organizationId: string,
   filters?: InventoryFilters | null,
   pagination?: PaginationInput | null,
 ): Promise<GroupedInventoryPage> {
@@ -224,12 +229,13 @@ export async function getInventoryItems(
   const pageSize = pagination?.pageSize ?? 25;
   const offset = (page - 1) * pageSize;
 
-  const conditions = buildFilterConditions(filters);
+  const conditions = buildFilterConditions(organizationId, filters);
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   // Grouped query: group by productId + condition, filter out groups with 0 total quantity
   const groupedQuery = otcgs
     .select({
+      organizationId: inventoryItem.organizationId,
       productId: inventoryItem.productId,
       productName: product.name,
       gameName: category.name,
@@ -288,6 +294,7 @@ export async function getInventoryItems(
   const items: GroupedInventoryItem[] = rows.map((r) => {
     const isSingle = Boolean(r.isSingle);
     return {
+      organizationId: r.organizationId,
       productId: r.productId,
       productName: r.productName ?? '',
       gameName: r.gameName ?? '',
@@ -317,6 +324,7 @@ export async function getInventoryItems(
 // ---------------------------------------------------------------------------
 
 export async function getInventoryItemDetails(
+  organizationId: string,
   productId: number,
   condition: string,
   pagination?: PaginationInput | null,
@@ -326,6 +334,7 @@ export async function getInventoryItemDetails(
   const offset = (page - 1) * pageSize;
 
   const conditions = [
+    eq(inventoryItem.organizationId, organizationId),
     eq(inventoryItem.productId, productId),
     eq(inventoryItem.condition, condition),
     notDeleted(),
@@ -374,12 +383,17 @@ export async function getInventoryItemById(id: number): Promise<InventoryItem | 
 // 3. addInventoryItem
 // ---------------------------------------------------------------------------
 
-export async function addInventoryItem(input: AddInventoryItemInput, userId: string): Promise<InventoryItem> {
+export async function addInventoryItem(
+  organizationId: string,
+  input: AddInventoryItemInput,
+  userId: string,
+): Promise<InventoryItem> {
   // Validate required fields
   validateAddInput(input);
 
-  // Check for existing row with same productId + condition + costBasis + acquisitionDate
+  // Check for existing row with same org + productId + condition + costBasis + acquisitionDate
   const duplicateConditions = [
+    eq(inventoryItem.organizationId, organizationId),
     eq(inventoryItem.productId, input.productId),
     eq(inventoryItem.condition, input.condition),
     eq(inventoryItem.costBasis, input.costBasis),
@@ -413,6 +427,7 @@ export async function addInventoryItem(input: AddInventoryItemInput, userId: str
   const [inserted] = await otcgs
     .insert(inventoryItem)
     .values({
+      organizationId,
       productId: input.productId,
       condition: input.condition,
       quantity: input.quantity,
@@ -457,8 +472,9 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
         ? (input.acquisitionDate ?? todayDateString())
         : currentItem.acquisitionDate;
 
-      // Look for an existing row with the same unique tuple
+      // Look for an existing row with the same unique tuple (scoped by org)
       const dupConditions = [
+        eq(inventoryItem.organizationId, currentItem.organizationId),
         eq(inventoryItem.productId, currentItem.productId),
         eq(inventoryItem.condition, effectiveCondition),
         eq(inventoryItem.costBasis, effectiveCostBasis),
@@ -616,8 +632,10 @@ async function bulkUpdateWithMerge(input: BulkUpdateInventoryInput, userId: stri
     effectiveAcquisitionDate,
     items,
   } of groups.values()) {
-    // Check if there's an existing row (not in the update set) with the same tuple
+    // Check if there's an existing row (not in the update set) with the same tuple (org-scoped)
+    const orgId = items[0].organizationId;
     const dupConditions = [
+      eq(inventoryItem.organizationId, orgId),
       eq(inventoryItem.productId, productId),
       eq(inventoryItem.condition, effectiveCondition),
       eq(inventoryItem.costBasis, effectiveCostBasis),

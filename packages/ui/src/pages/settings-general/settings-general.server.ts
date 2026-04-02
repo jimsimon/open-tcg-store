@@ -1,11 +1,6 @@
 import type { RouterContext } from '@koa/router';
-import { escapeHtml } from '../../lib/html-escape';
+import { renderPageAttributes } from '../../lib/server-helpers';
 
 export function render(ctx: RouterContext) {
-  const userRole = ctx.state.auth?.user?.role ?? '';
-  const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
-  const userName = ctx.state.auth?.user?.name ?? '';
-  return `
-    <ogs-settings-general-page userRole="${escapeHtml(userRole)}" ${isAnonymous ? 'isAnonymous' : ''} userName="${escapeHtml(userName)}" activePage="settings/general" showUserMenu></ogs-settings-general-page>
-  `;
+  return `<ogs-settings-general-page ${renderPageAttributes(ctx, { activePage: 'settings/general' })}></ogs-settings-general-page>`;
 }

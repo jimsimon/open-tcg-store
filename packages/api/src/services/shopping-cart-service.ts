@@ -1,7 +1,8 @@
+import { and } from 'drizzle-orm';
 import { cart, otcgs } from '../db';
 import { CartItemOutput } from '../schema/types.generated';
 
-export async function getOrCreateShoppingCart(userId: string) {
+export async function getOrCreateShoppingCart(organizationId: string, userId: string) {
   const result = await otcgs.query.cart.findFirst({
     with: {
       cartItems: {
@@ -31,7 +32,7 @@ export async function getOrCreateShoppingCart(userId: string) {
         },
       },
     },
-    where: (cart, { eq }) => eq(cart.userId, userId),
+    where: (cart, { eq }) => and(eq(cart.organizationId, organizationId), eq(cart.userId, userId)),
   });
 
   if (result) {
@@ -40,6 +41,7 @@ export async function getOrCreateShoppingCart(userId: string) {
     const [insertResult] = await otcgs
       .insert(cart)
       .values({
+        organizationId,
         userId,
       })
       .returning();
@@ -68,5 +70,5 @@ export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof g
     };
   });
 
-  return { items };
+  return { organizationId: cart.organizationId, items };
 }

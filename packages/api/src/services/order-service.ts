@@ -29,6 +29,7 @@ interface OrderItemResult {
 interface OrderResult {
   order?: {
     id: number;
+    organizationId: string;
     orderNumber: string;
     customerName: string;
     status: string;
@@ -115,9 +116,9 @@ function generateOrderNumber(): string {
   return `ORD-${datePart}-${randomPart}`;
 }
 
-export async function submitOrder(userId: string, customerName: string): Promise<OrderResult> {
+export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderResult> {
   // 1. Get the user's cart with items (includes inventoryItem join)
-  const cart = await getOrCreateShoppingCart(userId);
+  const cart = await getOrCreateShoppingCart(organizationId, userId);
 
   if (cart.cartItems.length === 0) {
     return { error: 'Cart is empty' };
@@ -140,12 +141,13 @@ export async function submitOrder(userId: string, customerName: string): Promise
 
     const inv = ci.inventoryItem;
 
-    // Check total available across all non-deleted inventory records for this product+condition
+    // Check total available across all non-deleted inventory records for this product+condition (org-scoped)
     const [totalResult] = await otcgs
       .select({ total: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)` })
       .from(inventoryItem)
       .where(
         and(
+          eq(inventoryItem.organizationId, organizationId),
           eq(inventoryItem.productId, inv.product.id),
           eq(inventoryItem.condition, inv.condition),
           isNull(inventoryItem.deletedAt),
@@ -188,6 +190,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
   const [insertedOrder] = await otcgs
     .insert(order)
     .values({
+      organizationId,
       orderNumber,
       customerName,
       userId,
@@ -211,7 +214,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
   }[] = [];
 
   for (const item of cartItemsWithInventory) {
-    // Get ALL non-deleted inventory records for this product+condition with quantity > 0,
+    // Get ALL non-deleted inventory records for this product+condition with quantity > 0 (org-scoped),
     // ordered by createdAt ASC (FIFO)
     const fifoRecords = await otcgs
       .select({
@@ -222,6 +225,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
       .from(inventoryItem)
       .where(
         and(
+          eq(inventoryItem.organizationId, organizationId),
           eq(inventoryItem.productId, item.productId),
           eq(inventoryItem.condition, item.condition),
           isNull(inventoryItem.deletedAt),
@@ -272,6 +276,7 @@ export async function submitOrder(userId: string, customerName: string): Promise
   return {
     order: {
       id: insertedOrder.id,
+      organizationId: insertedOrder.organizationId,
       orderNumber: insertedOrder.orderNumber,
       customerName: insertedOrder.customerName,
       status: insertedOrder.status,
@@ -325,6 +330,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
       } else {
         // Inventory record was hard-deleted (shouldn't happen with soft-delete, but handle gracefully)
         await otcgs.insert(inventoryItem).values({
+          organizationId: existingOrder.organizationId,
           productId: oi.productId,
           condition: oi.condition,
           quantity: oi.quantity,
@@ -340,7 +346,13 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
       const records = await otcgs
         .select({ id: inventoryItem.id })
         .from(inventoryItem)
-        .where(and(eq(inventoryItem.productId, oi.productId), eq(inventoryItem.condition, oi.condition)))
+        .where(
+          and(
+            eq(inventoryItem.organizationId, existingOrder.organizationId),
+            eq(inventoryItem.productId, oi.productId),
+            eq(inventoryItem.condition, oi.condition),
+          ),
+        )
         .orderBy(asc(inventoryItem.createdAt))
         .limit(1);
 
@@ -357,6 +369,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
       } else {
         // No matching inventory record exists — create one
         await otcgs.insert(inventoryItem).values({
+          organizationId: existingOrder.organizationId,
           productId: oi.productId,
           condition: oi.condition,
           quantity: oi.quantity,
@@ -379,6 +392,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
   return {
     order: {
       id: existingOrder.id,
+      organizationId: existingOrder.organizationId,
       orderNumber: existingOrder.orderNumber,
       customerName: existingOrder.customerName,
       status: 'cancelled',
@@ -425,6 +439,7 @@ export async function updateOrderStatus(
   return {
     order: {
       id: existingOrder.id,
+      organizationId: existingOrder.organizationId,
       orderNumber: existingOrder.orderNumber,
       customerName: existingOrder.customerName,
       status: newStatus,
@@ -438,6 +453,7 @@ export async function updateOrderStatus(
 }
 
 export async function getOrders(
+  organizationId: string,
   pagination?: { page?: number; pageSize?: number } | null,
   filters?: { status?: string | null; searchTerm?: string | null } | null,
 ) {
@@ -445,8 +461,8 @@ export async function getOrders(
   const pageSize = pagination?.pageSize ?? 25;
   const offset = (page - 1) * pageSize;
 
-  // Build where conditions
-  const conditions = [];
+  // Build where conditions (always scope by organization)
+  const conditions = [eq(order.organizationId, organizationId)];
   if (filters?.status) {
     conditions.push(eq(order.status, filters.status));
   }
@@ -480,6 +496,7 @@ export async function getOrders(
       const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
       return {
         id: o.id,
+        organizationId: o.organizationId,
         orderNumber: o.orderNumber,
         customerName: o.customerName,
         status: o.status,

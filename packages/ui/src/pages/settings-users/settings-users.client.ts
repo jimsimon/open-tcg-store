@@ -14,6 +14,8 @@ import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import { TypedDocumentString } from '../../graphql/graphql';
+import { execute } from '../../lib/graphql';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -29,6 +31,19 @@ async function getAuthClient() {
   return _authClient;
 }
 
+// --- GraphQL Queries ---
+
+const GetStoresQuery = new TypedDocumentString(`
+  query GetStoresForUserMgmt {
+    getEmployeeStoreLocations { id name }
+  }
+`) as unknown as TypedDocumentString<
+  { getEmployeeStoreLocations: { id: string; name: string }[] },
+  Record<string, never>
+>;
+
+// --- Types ---
+
 interface UserRecord {
   id: string;
   name: string;
@@ -40,11 +55,46 @@ interface UserRecord {
   isAnonymous: boolean;
 }
 
+// --- Helpers ---
+
+/** Map a role value to a display label. */
+function roleLabel(role: string | null): string {
+  switch (role) {
+    case 'owner':
+    case 'admin':
+      return 'Owner';
+    case 'member':
+    case 'employee':
+      return 'Employee';
+    default:
+      return 'Store Manager';
+  }
+}
+
+/** Map a role value to a badge variant. */
+function roleBadgeVariant(role: string | null): string {
+  switch (role) {
+    case 'owner':
+    case 'admin':
+      return 'danger';
+    case 'member':
+    case 'employee':
+      return 'neutral';
+    default:
+      return 'brand';
+  }
+}
+
 @customElement('ogs-settings-users-page')
 export class OgsSettingsUsersPage extends LitElement {
   @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
+  @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canAccessSettings = false;
+  @property({ type: Boolean }) canManageStoreLocations = false;
+  @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: String }) activeOrganizationId = '';
 
   static styles = [
     css`
@@ -321,6 +371,7 @@ export class OgsSettingsUsersPage extends LitElement {
   ];
 
   @state() users: UserRecord[] = [];
+  @state() stores: { id: string; name: string }[] = [];
   @state() loading = true;
   @state() hideDeactivated = true;
   @state() showAddDialog = false;
@@ -329,9 +380,11 @@ export class OgsSettingsUsersPage extends LitElement {
   @state() addName = '';
   @state() addEmail = '';
   @state() addPassword = '';
-  @state() addRole = 'employee';
+  @state() addRole = 'member';
+  @state() addStoreIds: string[] = [];
   @state() editName = '';
   @state() editRole = '';
+  @state() editStoreIds: string[] = [];
   @state() saving = false;
   @state() successMessage = '';
   @state() errorMessage = '';
@@ -339,6 +392,7 @@ export class OgsSettingsUsersPage extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.loadUsers();
+    this.loadStores();
   }
 
   async loadUsers() {
@@ -359,6 +413,18 @@ export class OgsSettingsUsersPage extends LitElement {
     }
   }
 
+  async loadStores() {
+    try {
+      const result = await execute(GetStoresQuery);
+      if (result.data?.getEmployeeStoreLocations) {
+        this.stores = result.data.getEmployeeStoreLocations;
+      }
+    } catch (e) {
+      // Store list is non-critical; log but don't block the page
+      console.error('Failed to load stores for user management', e);
+    }
+  }
+
   get filteredUsers(): UserRecord[] {
     if (this.hideDeactivated) {
       return this.users.filter((u) => !u.banned);
@@ -370,8 +436,8 @@ export class OgsSettingsUsersPage extends LitElement {
     const total = this.users.length;
     const active = this.users.filter((u) => !u.banned).length;
     const deactivated = this.users.filter((u) => u.banned).length;
-    const admins = this.users.filter((u) => u.role === 'admin').length;
-    return { total, active, deactivated, admins };
+    const owners = this.users.filter((u) => u.role === 'admin' || u.role === 'owner').length;
+    return { total, active, deactivated, owners };
   }
 
   async handleAddUser() {
@@ -384,18 +450,35 @@ export class OgsSettingsUsersPage extends LitElement {
         email: this.addEmail,
         password: this.addPassword,
         name: this.addName,
-        role: this.addRole as 'admin' | 'employee',
+        role: this.addRole as 'admin' | 'member',
       });
 
       if (result.error) {
         this.errorMessage = result.error.message ?? 'Failed to create user';
       } else {
+        // Add user to selected store organizations
+        const newUserId = (result.data as unknown as { id: string })?.id;
+        if (newUserId && this.addStoreIds.length > 0) {
+          for (const storeId of this.addStoreIds) {
+            try {
+              await authClient.organization.addMember({
+                userId: newUserId,
+                role: this.addRole as 'owner' | 'admin' | 'member',
+                organizationId: storeId,
+              });
+            } catch (memberErr) {
+              console.error(`Failed to add user to store ${storeId}`, memberErr);
+            }
+          }
+        }
+
         this.successMessage = `User ${this.addName} created successfully`;
         this.showAddDialog = false;
         this.addName = '';
         this.addEmail = '';
         this.addPassword = '';
-        this.addRole = 'employee';
+        this.addRole = 'member';
+        this.addStoreIds = [];
         await this.loadUsers();
         setTimeout(() => {
           this.successMessage = '';
@@ -411,7 +494,8 @@ export class OgsSettingsUsersPage extends LitElement {
   openEditDialog(user: UserRecord) {
     this.editingUser = user;
     this.editName = user.name;
-    this.editRole = user.role ?? 'user';
+    this.editRole = user.role ?? 'member';
+    this.editStoreIds = [];
     this.showEditDialog = true;
   }
 
@@ -423,10 +507,10 @@ export class OgsSettingsUsersPage extends LitElement {
     try {
       const authClient = await getAuthClient();
 
-      // Set role
+      // Set global role (admin plugin compat)
       const roleResult = await authClient.admin.setRole({
         userId: this.editingUser.id,
-        role: this.editRole as 'admin' | 'employee',
+        role: this.editRole as 'admin' | 'member',
       });
 
       if (roleResult.error) {
@@ -486,10 +570,15 @@ export class OgsSettingsUsersPage extends LitElement {
     return html`
       <ogs-page
         activePage="settings/users"
-        ?showUserMenu="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
+        ?canManageInventory="${this.canManageInventory}"
+        ?canAccessSettings="${this.canAccessSettings}"
+        ?canManageStoreLocations="${this.canManageStoreLocations}"
+        ?canManageUsers="${this.canManageUsers}"
+        activeOrganizationId="${this.activeOrganizationId}"
+        showUserMenu
       >
         ${this.renderPageHeader()}
         ${when(
@@ -557,8 +646,8 @@ export class OgsSettingsUsersPage extends LitElement {
             <wa-icon name="shield-halved"></wa-icon>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Admins</span>
-            <span class="stat-value">${stats.admins}</span>
+            <span class="stat-label">Owners</span>
+            <span class="stat-value">${stats.owners}</span>
           </div>
         </div>
       </div>
@@ -660,8 +749,8 @@ export class OgsSettingsUsersPage extends LitElement {
                     <td><strong>${user.name}</strong></td>
                     <td>${user.email}</td>
                     <td>
-                      <wa-badge variant="${user.role === 'admin' ? 'brand' : 'neutral'}">
-                        ${user.role ?? 'user'}
+                      <wa-badge variant="${roleBadgeVariant(user.role)}">
+                        ${roleLabel(user.role)}
                       </wa-badge>
                     </td>
                     <td>${new Date(user.createdAt).toLocaleDateString()}</td>
@@ -752,8 +841,20 @@ export class OgsSettingsUsersPage extends LitElement {
               this.addRole = (e.target as HTMLSelectElement).value;
             }}"
           >
-            <wa-option value="employee">Employee</wa-option>
-            <wa-option value="admin">Admin</wa-option>
+            <wa-option value="owner">Owner</wa-option>
+            <wa-option value="admin">Store Manager</wa-option>
+            <wa-option value="member">Employee</wa-option>
+          </wa-select>
+          <wa-select
+            label="Store Assignment"
+            multiple
+            .value="${this.addStoreIds}"
+            @change="${(e: Event) => {
+              const select = e.target as HTMLSelectElement;
+              this.addStoreIds = Array.from((select as unknown as { value: string[] }).value);
+            }}"
+          >
+            ${this.stores.map((s) => html`<wa-option value="${s.id}">${s.name}</wa-option>`)}
           </wa-select>
         </div>
         <wa-button
@@ -800,9 +901,20 @@ export class OgsSettingsUsersPage extends LitElement {
                   this.editRole = (e.target as HTMLSelectElement).value;
                 }}"
               >
-                <wa-option value="user">User</wa-option>
-                <wa-option value="employee">Employee</wa-option>
-                <wa-option value="admin">Admin</wa-option>
+                <wa-option value="owner">Owner</wa-option>
+                <wa-option value="admin">Store Manager</wa-option>
+                <wa-option value="member">Employee</wa-option>
+              </wa-select>
+              <wa-select
+                label="Store Assignment"
+                multiple
+                .value="${this.editStoreIds}"
+                @change="${(e: Event) => {
+                  const select = e.target as HTMLSelectElement;
+                  this.editStoreIds = Array.from((select as unknown as { value: string[] }).value);
+                }}"
+              >
+                ${this.stores.map((s) => html`<wa-option value="${s.id}">${s.name}</wa-option>`)}
               </wa-select>
             </div>
             <wa-button

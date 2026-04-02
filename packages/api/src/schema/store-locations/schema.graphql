@@ -1,0 +1,65 @@
+type StoreLocation {
+  id: String!
+  name: String!
+  slug: String!
+  street1: String!
+  street2: String
+  city: String!
+  state: String!
+  zip: String!
+  phone: String
+  hours: [StoreHours!]!
+  createdAt: String!
+}
+
+type StoreHours {
+  dayOfWeek: Int!
+  openTime: String
+  closeTime: String
+}
+
+input StoreHoursInput {
+  dayOfWeek: Int!
+  openTime: String
+  closeTime: String
+}
+
+input AddStoreLocationInput {
+  name: String!
+  slug: String!
+  street1: String!
+  street2: String
+  city: String!
+  state: String!
+  zip: String!
+  phone: String
+  hours: [StoreHoursInput!]
+}
+
+input UpdateStoreLocationInput {
+  id: String!
+  name: String
+  street1: String
+  street2: String
+  city: String
+  state: String
+  zip: String
+  phone: String
+  hours: [StoreHoursInput!]
+}
+
+extend type Query {
+  """Stores the current user is assigned to (for authenticated employees/managers/owners)"""
+  getEmployeeStoreLocations: [StoreLocation!]!
+  """Public list of all stores — no auth required. Used by anonymous users on product pages."""
+  getAllStoreLocations: [StoreLocation!]!
+  getStoreLocation(id: String!): StoreLocation
+  getActiveStoreLocation: StoreLocation
+}
+
+extend type Mutation {
+  addStoreLocation(input: AddStoreLocationInput!): StoreLocation!
+  updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
+  removeStoreLocation(id: String!): Boolean!
+  setActiveStoreLocation(organizationId: String!): Boolean!
+}

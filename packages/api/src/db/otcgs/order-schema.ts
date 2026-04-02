@@ -6,6 +6,7 @@ export const order = sqliteTable(
   'order',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    organizationId: text('organization_id').notNull(),
     orderNumber: text('order_number').notNull(),
     customerName: text('customer_name').notNull(),
     userId: text('user_id').notNull(),
@@ -16,7 +17,8 @@ export const order = sqliteTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex('order_number_idx').on(table.orderNumber),
+    uniqueIndex('order_org_number_idx').on(table.organizationId, table.orderNumber),
+    index('order_org_id_idx').on(table.organizationId),
     index('order_user_id_idx').on(table.userId),
     index('order_created_at_idx').on(table.createdAt),
     index('order_status_idx').on(table.status),

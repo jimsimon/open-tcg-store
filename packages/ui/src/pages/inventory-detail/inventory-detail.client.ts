@@ -46,6 +46,12 @@ export class OgsInventoryDetailPage extends LitElement {
   @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
+  @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canAccessSettings = false;
+  @property({ type: Boolean }) canManageStoreLocations = false;
+  @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: String }) activeOrganizationId = '';
+  @property({ type: Boolean }) showStoreSelector = false;
   @property({ type: String }) productId = '';
   @property({ type: String }) condition = '';
   @property({ type: String }) inventoryType = 'singles';
@@ -518,6 +524,13 @@ export class OgsInventoryDetailPage extends LitElement {
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
+        ?canManageInventory="${this.canManageInventory}"
+        ?canAccessSettings="${this.canAccessSettings}"
+        ?canManageStoreLocations="${this.canManageStoreLocations}"
+        ?canManageUsers="${this.canManageUsers}"
+        activeOrganizationId="${this.activeOrganizationId}"
+        ?showStoreSelector="${this.showStoreSelector}"
+        @store-changed="${() => this.fetchDetails()}"
       >
         ${this.renderBreadcrumb()} ${this.renderPageHeader(productName)} ${this.renderStatsBar()}
         ${this.renderActionBar()}
@@ -716,7 +729,7 @@ export class OgsInventoryDetailPage extends LitElement {
   }
 
   private renderPagination() {
-    if (this.totalPages <= 0) return nothing;
+    if (this.totalPages <= 0 || this.totalCount <= 0) return nothing;
     const start = (this.currentPage - 1) * this.pageSize + 1;
     const end = Math.min(this.currentPage * this.pageSize, this.totalCount);
     const pages: number[] = [];
@@ -791,40 +804,45 @@ export class OgsInventoryDetailPage extends LitElement {
           `,
         )}
 
-        <wa-input
-          label="Search Product"
-          placeholder="Type to search products..."
-          .value="${this.productSearchTerm}"
-          @input="${this.handleProductSearchInput}"
-        >
-          <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
-          ${when(this.productSearchLoading, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
-        </wa-input>
-
         ${when(
-          this.searchResults.length > 0 && !this.selectedProduct,
+          !this.selectedProduct,
           () => html`
-            <div class="search-results">
-              ${this.searchResults.map(
-                (p) => html`
-                  <div class="search-result-item" @click="${() => this.selectProduct(p)}">
-                    ${when(
-                      p.imageUrl,
-                      () => html`<img src="${p.imageUrl}" alt="${p.name}" />`,
-                      () =>
-                        html`<wa-icon
-                          name="image"
-                          style="font-size: 2rem; color: var(--wa-color-neutral-400);"
-                        ></wa-icon>`,
-                    )}
-                    <div class="result-info">
-                      <strong>${p.name}</strong>
-                      <small>${p.gameName} — ${p.setName}</small>
-                    </div>
-                  </div>
-                `,
-              )}
-            </div>
+            <wa-input
+              label="Search Product"
+              placeholder="Type to search products..."
+              .value="${this.productSearchTerm}"
+              @input="${this.handleProductSearchInput}"
+            >
+              <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
+              ${when(this.productSearchLoading, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
+            </wa-input>
+
+            ${when(
+              this.searchResults.length > 0,
+              () => html`
+                <div class="search-results">
+                  ${this.searchResults.map(
+                    (p) => html`
+                      <div class="search-result-item" @click="${() => this.selectProduct(p)}">
+                        ${when(
+                          p.imageUrl,
+                          () => html`<img src="${p.imageUrl}" alt="${p.name}" />`,
+                          () =>
+                            html`<wa-icon
+                              name="image"
+                              style="font-size: 2rem; color: var(--wa-color-neutral-400);"
+                            ></wa-icon>`,
+                        )}
+                        <div class="result-info">
+                          <strong>${p.name}</strong>
+                          <small>${p.gameName} — ${p.setName}</small>
+                        </div>
+                      </div>
+                    `,
+                  )}
+                </div>
+              `,
+            )}
           `,
         )}
         ${when(

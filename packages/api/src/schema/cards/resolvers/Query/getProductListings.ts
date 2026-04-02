@@ -2,18 +2,21 @@ import { sql, and, like, eq, exists, isNull, gt } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { product, productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
+import type { GraphqlContext } from '../../../../server';
 import type { InputMaybe, ProductListingFilters, QueryResolvers } from '../../../types.generated';
 
 export const getProductListings: NonNullable<QueryResolvers['getProductListings']> = async (
   _parent,
   { filters, pagination },
-  _ctx,
+  ctx: GraphqlContext,
 ) => {
   const page = pagination?.page ?? 1;
   const pageSize = pagination?.pageSize ?? 25;
   const offset = (page - 1) * pageSize;
+  const organizationId = getOrganizationIdOptional(ctx);
 
-  const { items, totalCount } = await queryProductListings(filters, pageSize, offset);
+  const { items, totalCount } = await queryProductListings(filters, pageSize, offset, organizationId);
 
   return {
     items,
@@ -24,7 +27,7 @@ export const getProductListings: NonNullable<QueryResolvers['getProductListings'
   };
 };
 
-async function queryProductListings(filters: InputMaybe<ProductListingFilters>, limit: number, offset: number) {
+async function queryProductListings(filters: InputMaybe<ProductListingFilters>, limit: number, offset: number, organizationId: string | null) {
   const includeSingles = filters?.includeSingles;
   const includeSealed = filters?.includeSealed;
   const inStockOnly = filters?.inStockOnly ?? false;
@@ -68,6 +71,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
               eq(inventoryItem.condition, conditionFilter),
               gt(inventoryItem.quantity, 0),
               isNull(inventoryItem.deletedAt),
+              organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           ),
       ),
@@ -117,7 +121,12 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     .from(product)
     .leftJoin(
       inventoryItem,
-      and(eq(inventoryItem.productId, product.id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0)),
+      and(
+        eq(inventoryItem.productId, product.id),
+        isNull(inventoryItem.deletedAt),
+        gt(inventoryItem.quantity, 0),
+        organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
+      ),
     )
     .where(whereClause)
     .groupBy(product.id);
@@ -126,6 +135,9 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
   const queryWithHaving = inStockOnly ? baseQuery.having(sql`SUM(${inventoryItem.quantity}) > 0`) : baseQuery;
 
   // Get total count first (without pagination)
+  const orgJoinCondition = organizationId
+    ? sql`AND ${inventoryItem.organizationId} = ${organizationId}`
+    : sql``;
   const countQuery = otcgs
     .select({
       count: sql<number>`COUNT(*)`.as('count'),
@@ -135,7 +147,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
         ? sql`(
             SELECT ${product.id}
             FROM ${product}
-            LEFT JOIN ${inventoryItem} ON ${inventoryItem.productId} = ${product.id}
+            LEFT JOIN ${inventoryItem} ON ${inventoryItem.productId} = ${product.id} ${orgJoinCondition}
             ${whereClause ? sql`WHERE ${whereClause}` : sql``}
             GROUP BY ${product.id}
             HAVING SUM(${inventoryItem.quantity}) > 0
@@ -219,6 +231,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
               )})`,
               isNull(inventoryItem.deletedAt),
               gt(inventoryItem.quantity, 0),
+              organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           )
           .groupBy(inventoryItem.productId, inventoryItem.condition)
@@ -243,6 +256,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
               )})`,
               gt(inventoryItem.quantity, 0),
               isNull(inventoryItem.deletedAt),
+              organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           )
           .orderBy(inventoryItem.price)

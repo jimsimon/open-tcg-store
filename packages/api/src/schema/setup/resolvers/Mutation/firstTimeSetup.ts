@@ -4,23 +4,23 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { eq } from 'drizzle-orm';
 import { otcgs } from '../../../../db/index.ts';
 import { user as userTable } from '../../../../db/otcgs/schema.ts';
+import { storeSettings } from '../../../../db/otcgs/settings-schema.ts';
 import { GraphqlContext } from '../../../../server.ts';
 
 export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
   _parent,
-  { userDetails },
+  args,
   ctx: GraphqlContext,
 ) => {
   let createdUserId: string | undefined;
 
   try {
-    // Use asResponse to get the Set-Cookie headers from the signup response,
-    // which we forward to the browser so the user is automatically signed in.
+    // 1. Create the admin user account
     const signUpResponse = await auth.api.signUpEmail({
       body: {
-        email: userDetails.email,
-        password: userDetails.password,
-        name: userDetails.firstName,
+        email: args.userDetails.email,
+        password: args.userDetails.password,
+        name: args.userDetails.firstName,
       },
       headers: fromNodeHeaders(ctx.req.headers),
       asResponse: true,
@@ -38,9 +38,24 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
       throw new Error('Failed to create user account');
     }
 
-    // Directly update the role in the database since no admin exists yet
-    // to authorize the setRole API call during first-time setup
+    // 2. Set the global user.role to 'admin' so the admin() plugin's APIs work
+    // (listUsers, banUser, etc.). The organization membership handles app-level permissions.
     await otcgs.update(userTable).set({ role: 'admin' }).where(eq(userTable.id, createdUserId));
+
+    // 3. Save company settings (companyName + ein) to store_settings
+    await otcgs
+      .insert(storeSettings)
+      .values({
+        companyName: args.company.companyName,
+        ein: args.company.ein,
+      })
+      .onConflictDoUpdate({
+        target: storeSettings.id,
+        set: {
+          companyName: args.company.companyName,
+          ein: args.company.ein,
+        },
+      });
 
     // Forward Set-Cookie headers from the signup response to the browser
     const setCookies = signUpResponse.headers.getSetCookie();
@@ -48,11 +63,47 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
       ctx.res.append('Set-Cookie', cookie);
     }
 
-    console.log('Initial admin user has been created successfully.');
-    return createdUserId;
+    // Build headers from the sign-up session cookies so org creation
+    // is authenticated as the newly created user.
+    const signUpHeaders = new Headers();
+    for (const cookie of setCookies) {
+      signUpHeaders.append('cookie', cookie);
+    }
+
+    // 4. Create the first organization (store location)
+    const orgResponse = await auth.api.createOrganization({
+      body: {
+        name: args.store.name,
+        slug: args.store.slug,
+        street1: args.store.street1,
+        street2: args.store.street2 || '',
+        city: args.store.city,
+        state: args.store.state,
+        zip: args.store.zip,
+        phone: args.store.phone || '',
+      },
+      headers: signUpHeaders,
+    });
+
+    if (!orgResponse) {
+      throw new Error('Failed to create organization');
+    }
+
+    // 5. Set the newly created organization as the user's active organization
+    await auth.api.setActiveOrganization({
+      headers: signUpHeaders,
+      body: {
+        organizationId: orgResponse.id,
+      },
+    });
+
+    console.log('Initial admin user and organization have been created successfully.');
+
+    // 6. Return the session token
+    return signUpData.token;
   } catch (error) {
-    // If the user was created but a subsequent step failed, clean up the
-    // partially created user so setup can be retried cleanly
+    // Rollback: if the user was created but a subsequent step failed, clean up
+    // the partially created user so setup can be retried cleanly.
     if (createdUserId) {
       try {
         await otcgs.delete(userTable).where(eq(userTable.id, createdUserId));

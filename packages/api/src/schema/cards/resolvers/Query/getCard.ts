@@ -1,16 +1,20 @@
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 import type { QueryResolvers, Card } from '../../../types.generated';
 import { otcgs } from '../../../../db';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
+import type { GraphqlContext } from '../../../../server';
 
-export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, _ctx) => {
+export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, ctx: GraphqlContext) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }
 
+  const organizationId = getOrganizationIdOptional(ctx);
+
   try {
     if (game === 'magic' || game === 'pokemon') {
-      return await getCardFromDb(Number.parseInt(cardId, 10));
+      return await getCardFromDb(Number.parseInt(cardId, 10), organizationId);
     }
   } catch (e) {
     console.error(e);
@@ -20,7 +24,7 @@ export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, {
   throw new Error(`Unsupported game: ${game}`);
 };
 
-async function getCardFromDb(cardId: number): Promise<NonNullable<Card>> {
+async function getCardFromDb(cardId: number, organizationId: string | null): Promise<NonNullable<Card>> {
   const result = await otcgs.query.product.findFirst({
     columns: {
       id: true,
@@ -62,7 +66,12 @@ async function getCardFromDb(cardId: number): Promise<NonNullable<Card>> {
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(inventoryItem)
-    .where(eq(inventoryItem.productId, cardId))
+    .where(
+      and(
+        eq(inventoryItem.productId, cardId),
+        organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
+      ),
+    )
     .groupBy(inventoryItem.condition);
 
   // Build a map of condition -> { quantity, price }

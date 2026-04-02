@@ -1,18 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const storeSettings = sqliteTable('store_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
 
-  // Store Info
-  storeName: text('store_name'),
-  street1: text('street1'),
-  street2: text('street2'),
-  city: text('city'),
-  state: text('state'),
-  zip: text('zip'),
+  // Company Info (address/tax moved to store_location)
+  companyName: text('company_name'),
   ein: text('ein'),
-  salesTaxRate: real('sales_tax_rate'),
 
   // Backup Settings
   backupProvider: text('backup_provider'),

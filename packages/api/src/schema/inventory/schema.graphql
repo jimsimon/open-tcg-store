@@ -1,5 +1,6 @@
 type InventoryItem {
   id: Int!
+  organizationId: String!
   productId: Int!
   productName: String!
   gameName: String!
@@ -18,6 +19,7 @@ type InventoryItem {
 }
 
 type GroupedInventoryItem {
+  organizationId: String!
   productId: Int!
   productName: String!
   gameName: String!
@@ -49,6 +51,7 @@ type InventoryPage {
 }
 
 input InventoryFilters {
+  organizationId: String
   gameName: String
   setName: String
   rarity: String
