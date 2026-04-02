@@ -104,7 +104,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: ^1.15.2
-        version: 1.15.2(graphql@16.13.2)(typescript@6.0.2)
+        version: 1.15.3(graphql@16.13.2)(typescript@6.0.2)
       '@eddeee888/gcg-typescript-resolver-files':
         specifier: ^0.15.0
         version: 0.15.0(graphql@16.13.2)
@@ -190,11 +190,11 @@ packages:
       graphql:
         optional: true
 
-  '@0no-co/graphqlsp@1.15.2':
-    resolution: {integrity: sha512-Ys031WnS3sTQQBtRTkQsYnw372OlW72ais4sp0oh2UMPRNyxxnq85zRfU4PIdoy9kWriysPT5BYAkgIxhbonFA==}
+  '@0no-co/graphqlsp@1.15.3':
+    resolution: {integrity: sha512-rap58Wh1qbRnGpPGwB60P6rvKF6G+mgo1kPeDySWIAcqkGMjuyQdrZPcHS6w7mKOT8i/f1UQmjow6+7vfuEXKw==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.0.0
+      typescript: ^5.0.0 || ^6.0.0
 
   '@ardatan/relay-compiler@13.0.0':
     resolution: {integrity: sha512-ite4+xng5McO8MflWCi0un0YmnorTujsDnfPfhzYzAgoJ+jkI1pZj6jtmTl8Jptyi1H+Pa0zlatJIsxDD++ETA==}
@@ -1034,11 +1034,11 @@ packages:
   '@fontsource/inconsolata@5.2.8':
     resolution: {integrity: sha512-lIZW+WOZYpUH91g9r6rYYhfTmptF3YPPM54ZOs8IYVeeL4SeiAu4tfj7mdr8llYEq31DLYgi6JtGIJa192gB0Q==}
 
-  '@gql.tada/internal@1.0.8':
-    resolution: {integrity: sha512-XYdxJhtHC5WtZfdDqtKjcQ4d7R1s0d1rnlSs3OcBEUbYiPoJJfZU7tWsVXuv047Z6msvmr4ompJ7eLSK5Km57g==}
+  '@gql.tada/internal@1.0.9':
+    resolution: {integrity: sha512-Bp8yi+kLrzIJ3l5Dfxhz48H4OCH2LCX+pShaPcJgh+oiBt6clrjUKDYNDD3Z78aDQ3+Tyrxe4dd0MfLgpSLPPg==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.0.0
+      typescript: ^5.0.0 || ^6.0.0
 
   '@graphiql/plugin-doc-explorer@0.4.1':
     resolution: {integrity: sha512-+ram1dDDGMqJn/f9n5I8E6grTvxcM9JZYt/HhtYLuCvkN8kERI6/E3zBHBshhIUnQZoXioZ03fAzXg7JOn0Kyg==}
@@ -5373,9 +5373,9 @@ snapshots:
     optionalDependencies:
       graphql: 16.13.2
 
-  '@0no-co/graphqlsp@1.15.2(graphql@16.13.2)(typescript@6.0.2)':
+  '@0no-co/graphqlsp@1.15.3(graphql@16.13.2)(typescript@6.0.2)':
     dependencies:
-      '@gql.tada/internal': 1.0.8(graphql@16.13.2)(typescript@6.0.2)
+      '@gql.tada/internal': 1.0.9(graphql@16.13.2)(typescript@6.0.2)
       graphql: 16.13.2
       typescript: 6.0.2
 
@@ -6171,7 +6171,7 @@ snapshots:
 
   '@fontsource/inconsolata@5.2.8': {}
 
-  '@gql.tada/internal@1.0.8(graphql@16.13.2)(typescript@6.0.2)':
+  '@gql.tada/internal@1.0.9(graphql@16.13.2)(typescript@6.0.2)':
     dependencies:
       '@0no-co/graphql.web': 1.2.0(graphql@16.13.2)
       graphql: 16.13.2
