@@ -34,3 +34,6 @@ plans/
 
 # Debugging directories and files
 screenshots/
+
+# Typescript Files
+*.tsbuildinfo
