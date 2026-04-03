@@ -18,7 +18,7 @@
     "test:browser:run": "vitest run --browser"
   },
   "dependencies": {
-    "@awesome.me/webawesome": "3.4.0",
+    "@awesome.me/webawesome": "3.5.0",
     "@better-auth/cli": "^1.4.21",
     "@fontsource/inconsolata": "5.2.8",
     "@graphql-tools/schema": "^10.0.31",
