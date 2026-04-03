@@ -48,11 +48,9 @@ function makeFakeSealedItem(overrides: Record<string, unknown> = {}) {
     isSingle: false,
     isSealed: true,
     condition: 'NM',
-    quantity: 2,
     price: 500000,
-    costBasis: 400000,
-    acquisitionDate: '2024-01-15T00:00:00.000Z',
-    notes: 'Factory sealed',
+    totalQuantity: 2,
+    entryCount: 1,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-06-01T00:00:00.000Z',
     ...overrides,
@@ -131,7 +129,7 @@ describe('ogs-inventory-sealed-page', () => {
     expect(headers).not.toContain('Rarity');
     expect(headers).not.toContain('Condition');
     expect(headers).toContain('Qty');
-    expect(headers).toContain('Price Range');
+    expect(headers).toContain('Price');
     expect(headers).toContain('Entries');
   });
 

@@ -1,7 +1,8 @@
-import { eq, and, isNull, gt } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import type { QueryResolvers } from '../../../types.generated';
 import { otcgs } from '../../../../db';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 
@@ -60,16 +61,24 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
     {} as Record<string, string>,
   );
 
-  // Fetch actual inventory records for this product (exclude soft-deleted and zero-qty)
+  // Fetch parent inventory items with derived quantity from stock
   const inventoryRecords = await otcgs
     .select({
       id: inventoryItem.id,
       condition: inventoryItem.condition,
-      quantity: inventoryItem.quantity,
       price: inventoryItem.price,
+      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
     })
     .from(inventoryItem)
-    .where(and(eq(inventoryItem.productId, id), isNull(inventoryItem.deletedAt), gt(inventoryItem.quantity, 0), organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined))
+    .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
+    .where(
+      and(
+        eq(inventoryItem.productId, id),
+        organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
+      ),
+    )
+    .groupBy(inventoryItem.id)
+    .having(sql`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0`)
     .orderBy(inventoryItem.price);
 
   // Map game name from categoryId
@@ -98,7 +107,7 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
     inventoryRecords: inventoryRecords.map((r) => ({
       inventoryItemId: r.id,
       condition: r.condition,
-      quantity: r.quantity,
+      quantity: r.totalQuantity,
       price: r.price,
     })),
   };

@@ -1,9 +1,9 @@
 import { css, html, nothing, unsafeCSS } from 'lit';
 import {
   type InventoryItem,
+  type InventoryItemStock,
   type ProductSearchResult,
   type ProductPrice,
-  type GroupedInventoryItem,
   TypedDocumentString,
 } from '../../graphql/graphql.ts';
 
@@ -13,6 +13,7 @@ export const GetInventoryQuery = new TypedDocumentString(`
   query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
     getInventory(filters: $filters, pagination: $pagination) {
       items {
+        id
         productId
         productName
         gameName
@@ -21,9 +22,8 @@ export const GetInventoryQuery = new TypedDocumentString(`
         isSingle
         isSealed
         condition
+        price
         totalQuantity
-        lowestPrice
-        highestPrice
         entryCount
       }
       totalCount
@@ -35,7 +35,7 @@ export const GetInventoryQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     getInventory: {
-      items: GroupedInventoryItem[];
+      items: InventoryItem[];
       totalCount: number;
       page: number;
       pageSize: number;
@@ -56,21 +56,35 @@ export const GetInventoryQuery = new TypedDocumentString(`
   }
 >;
 
+export const GetInventoryItemQuery = new TypedDocumentString(`
+  query GetInventoryItem($id: Int!) {
+    getInventoryItem(id: $id) {
+      id
+      productId
+      productName
+      gameName
+      setName
+      rarity
+      isSingle
+      isSealed
+      condition
+      price
+      totalQuantity
+      entryCount
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { getInventoryItem: InventoryItem | null },
+  { id: number }
+>;
+
 export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
-  query GetInventoryItemDetails($productId: Int!, $condition: String!, $pagination: PaginationInput) {
-    getInventoryItemDetails(productId: $productId, condition: $condition, pagination: $pagination) {
+  query GetInventoryItemDetails($inventoryItemId: Int!, $pagination: PaginationInput) {
+    getInventoryItemDetails(inventoryItemId: $inventoryItemId, pagination: $pagination) {
       items {
         id
-        productId
-        productName
-        gameName
-        setName
-        rarity
-        isSingle
-        isSealed
-        condition
+        inventoryItemId
         quantity
-        price
         costBasis
         acquisitionDate
         notes
@@ -86,7 +100,7 @@ export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     getInventoryItemDetails: {
-      items: InventoryItem[];
+      items: InventoryItemStock[];
       totalCount: number;
       page: number;
       pageSize: number;
@@ -94,8 +108,7 @@ export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
     };
   },
   {
-    productId: number;
-    condition: string;
+    inventoryItemId: number;
     pagination?: { page?: number | null; pageSize?: number | null } | null;
   }
 >;
@@ -136,11 +149,9 @@ export const AddInventoryItemMutation = new TypedDocumentString(`
       setName
       rarity
       condition
-      quantity
       price
-      costBasis
-      acquisitionDate
-      notes
+      totalQuantity
+      entryCount
     }
   }
 `) as unknown as TypedDocumentString<
@@ -164,15 +175,10 @@ export const UpdateInventoryItemMutation = new TypedDocumentString(`
       id
       productId
       productName
-      gameName
-      setName
-      rarity
       condition
-      quantity
       price
-      costBasis
-      acquisitionDate
-      notes
+      totalQuantity
+      entryCount
     }
   }
 `) as unknown as TypedDocumentString<
@@ -181,11 +187,7 @@ export const UpdateInventoryItemMutation = new TypedDocumentString(`
     input: {
       id: number;
       condition?: string | null;
-      quantity?: number | null;
       price?: number | null;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
     };
   }
 >;
@@ -196,20 +198,49 @@ export const DeleteInventoryItemMutation = new TypedDocumentString(`
   }
 `) as unknown as TypedDocumentString<{ deleteInventoryItem: boolean }, { id: number }>;
 
-export const BulkUpdateInventoryMutation = new TypedDocumentString(`
-  mutation BulkUpdateInventory($input: BulkUpdateInventoryInput!) {
-    bulkUpdateInventory(input: $input) {
+// --- Stock-level mutations ---
+
+export const AddStockMutation = new TypedDocumentString(`
+  mutation AddStock($input: AddStockInput!) {
+    addStock(input: $input) {
       id
+      inventoryItemId
+      quantity
+      costBasis
+      acquisitionDate
+      notes
     }
   }
 `) as unknown as TypedDocumentString<
-  { bulkUpdateInventory: { id: number }[] },
+  { addStock: InventoryItemStock },
   {
     input: {
-      ids: number[];
-      condition?: string | null;
+      inventoryItemId: number;
+      quantity: number;
+      costBasis: number;
+      acquisitionDate: string;
+      notes?: string | null;
+    };
+  }
+>;
+
+export const UpdateStockMutation = new TypedDocumentString(`
+  mutation UpdateStock($input: UpdateStockInput!) {
+    updateStock(input: $input) {
+      id
+      inventoryItemId
+      quantity
+      costBasis
+      acquisitionDate
+      notes
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { updateStock: InventoryItemStock },
+  {
+    input: {
+      id: number;
       quantity?: number | null;
-      price?: number | null;
       costBasis?: number | null;
       acquisitionDate?: string | null;
       notes?: string | null;
@@ -217,11 +248,36 @@ export const BulkUpdateInventoryMutation = new TypedDocumentString(`
   }
 >;
 
-export const BulkDeleteInventoryMutation = new TypedDocumentString(`
-  mutation BulkDeleteInventory($input: BulkDeleteInventoryInput!) {
-    bulkDeleteInventory(input: $input)
+export const DeleteStockMutation = new TypedDocumentString(`
+  mutation DeleteStock($id: Int!) {
+    deleteStock(id: $id)
   }
-`) as unknown as TypedDocumentString<{ bulkDeleteInventory: boolean }, { input: { ids: number[] } }>;
+`) as unknown as TypedDocumentString<{ deleteStock: boolean }, { id: number }>;
+
+export const BulkUpdateStockMutation = new TypedDocumentString(`
+  mutation BulkUpdateStock($input: BulkUpdateStockInput!) {
+    bulkUpdateStock(input: $input) {
+      id
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { bulkUpdateStock: { id: number }[] },
+  {
+    input: {
+      ids: number[];
+      quantity?: number | null;
+      costBasis?: number | null;
+      acquisitionDate?: string | null;
+      notes?: string | null;
+    };
+  }
+>;
+
+export const BulkDeleteStockMutation = new TypedDocumentString(`
+  mutation BulkDeleteStock($input: BulkDeleteStockInput!) {
+    bulkDeleteStock(input: $input)
+  }
+`) as unknown as TypedDocumentString<{ bulkDeleteStock: boolean }, { input: { ids: number[] } }>;
 
 // --- Interfaces ---
 
@@ -235,9 +291,7 @@ export interface AddForm {
 }
 
 export interface BulkEditForm {
-  condition: string;
   quantity: number | null;
-  price: number | null;
   costBasis: number | null;
   acquisitionDate: string;
   notes: string;
@@ -961,7 +1015,7 @@ export function renderMarketPrices(prices: ProductPrice[]) {
   `;
 }
 
-export function computeGroupedInventoryStats(items: GroupedInventoryItem[]) {
+export function computeInventoryListStats(items: InventoryItem[]) {
   let totalItems = 0;
   let totalQuantity = 0;
   let totalEntries = 0;
@@ -975,22 +1029,18 @@ export function computeGroupedInventoryStats(items: GroupedInventoryItem[]) {
   return { totalItems, totalQuantity, totalEntries };
 }
 
-export function computeInventoryStats(items: InventoryItem[]) {
-  let totalItems = 0;
+export function computeStockStats(items: InventoryItemStock[]) {
+  let totalEntries = 0;
   let totalQuantity = 0;
-  let totalValue = 0;
   let totalCost = 0;
 
   for (const item of items) {
-    totalItems++;
+    totalEntries++;
     totalQuantity += item.quantity;
-    totalValue += item.price * item.quantity;
-    if (item.costBasis != null) {
-      totalCost += item.costBasis * item.quantity;
-    }
+    totalCost += item.costBasis * item.quantity;
   }
 
-  return { totalItems, totalQuantity, totalValue, totalCost };
+  return { totalEntries, totalQuantity, totalCost };
 }
 
 /** Get today's date as YYYY-MM-DD string */
@@ -1000,4 +1050,4 @@ export function getTodayDateString(): string {
 }
 
 // Re-export types for convenience
-export type { InventoryItem, ProductSearchResult, ProductPrice, GroupedInventoryItem };
+export type { InventoryItem, InventoryItemStock, ProductSearchResult, ProductPrice };

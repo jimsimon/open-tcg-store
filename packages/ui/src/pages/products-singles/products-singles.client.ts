@@ -539,6 +539,7 @@ export class OgsProductsSinglesPage extends LitElement {
         activeOrganizationId="${this.activeOrganizationId}"
         ?showStoreSelector="${this.showStoreSelector}"
         @store-changed="${() => this.fetchProducts()}"
+        @order-submitted="${() => this.fetchProducts()}"
       >
         ${this.renderPageHeader()} ${this.renderFilterBar()}
         ${this.cartMessage

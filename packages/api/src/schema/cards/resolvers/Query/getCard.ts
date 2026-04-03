@@ -2,6 +2,7 @@ import { sql, eq, and } from 'drizzle-orm';
 import type { QueryResolvers, Card } from '../../../types.generated';
 import { otcgs } from '../../../../db';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 
@@ -59,20 +60,22 @@ async function getCardFromDb(cardId: number, organizationId: string | null): Pro
   }
 
   // Fetch real inventory data grouped by condition
+  // Price is on parent inventoryItem, quantity derived from stock
   const inventoryData = await otcgs
     .select({
       condition: inventoryItem.condition,
-      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(inventoryItem)
+    .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
     .where(
       and(
         eq(inventoryItem.productId, cardId),
         organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
       ),
     )
-    .groupBy(inventoryItem.condition);
+    .groupBy(inventoryItem.id);
 
   // Build a map of condition -> { quantity, price }
   const inventoryMap = new Map(

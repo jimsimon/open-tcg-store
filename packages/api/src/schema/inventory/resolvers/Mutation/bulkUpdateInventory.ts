@@ -1,14 +1,8 @@
-import type { GraphqlContext } from '../../../../server';
-import { assertPermission, getUserId } from '../../../../lib/assert-permission';
-import { bulkUpdateInventoryItems } from '../../../../services/inventory-service';
-import type { MutationResolvers } from './../../../types.generated';
+// This resolver is no longer used. Bulk operations now target stock entries
+// via bulkUpdateStock. This file is kept for backwards compatibility with
+// any code that may still import it, but the GraphQL schema no longer
+// defines a bulkUpdateInventory mutation.
 
-export const bulkUpdateInventory: NonNullable<MutationResolvers['bulkUpdateInventory']> = async (
-  _parent,
-  args,
-  ctx: GraphqlContext,
-) => {
-  await assertPermission(ctx, { inventory: ['update'] });
-  const userId = getUserId(ctx);
-  return await bulkUpdateInventoryItems(args.input, userId);
+export const bulkUpdateInventory = async () => {
+  throw new Error('bulkUpdateInventory has been replaced by bulkUpdateStock');
 };

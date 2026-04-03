@@ -15,27 +15,23 @@ import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
-import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
-  type AddForm,
   type BulkEditForm,
   type InventoryItem,
-  type ProductSearchResult,
+  type InventoryItemStock,
+  GetInventoryItemQuery,
   GetInventoryItemDetailsQuery,
-  SearchProductsQuery,
-  AddInventoryItemMutation,
-  UpdateInventoryItemMutation,
-  DeleteInventoryItemMutation,
-  BulkUpdateInventoryMutation,
-  BulkDeleteInventoryMutation,
-  debounce,
+  AddStockMutation,
+  UpdateStockMutation,
+  DeleteStockMutation,
+  BulkUpdateStockMutation,
+  BulkDeleteStockMutation,
   sharedInventoryStyles,
-  renderProfitSummary,
-  renderMarketPrices,
   renderConditionBadge,
   formatCurrency,
-  computeInventoryStats,
+  renderProfitSummary,
+  computeStockStats,
   getTodayDateString,
 } from '../inventory/inventory-shared.ts';
 
@@ -52,8 +48,7 @@ export class OgsInventoryDetailPage extends LitElement {
   @property({ type: Boolean }) canManageUsers = false;
   @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
-  @property({ type: String }) productId = '';
-  @property({ type: String }) condition = '';
+  @property({ type: String }) inventoryItemId = '';
   @property({ type: String }) inventoryType = 'singles';
 
   // Pagination
@@ -63,7 +58,8 @@ export class OgsInventoryDetailPage extends LitElement {
   @state() private totalPages = 0;
 
   // Data
-  @state() private inventoryItems: InventoryItem[] = [];
+  @state() private parentItem: InventoryItem | null = null;
+  @state() private stockEntries: InventoryItemStock[] = [];
   @state() private loading = false;
   @state() private error = '';
 
@@ -71,29 +67,21 @@ export class OgsInventoryDetailPage extends LitElement {
   @state() private selectedIds: Set<number> = new Set();
   @state() private selectAll = false;
 
-  // Add dialog
+  // Add stock dialog
   @state() private showAddDialog = false;
-  @state() private searchResults: ProductSearchResult[] = [];
-  @state() private selectedProduct: ProductSearchResult | null = null;
-  @state() private productSearchLoading = false;
-  @state() private productSearchTerm = '';
-  @state() private addForm: AddForm = {
+  @state() private addForm = {
     quantity: 1,
-    condition: 'NM',
-    price: 0,
     costBasis: 0,
     acquisitionDate: '',
     notes: '',
   };
   @state() private addValidationErrors: string[] = [];
 
-  // Edit dialog
+  // Edit stock dialog
   @state() private showEditDialog = false;
-  @state() private editingItem: InventoryItem | null = null;
+  @state() private editingStock: InventoryItemStock | null = null;
   @state() private editForm: Partial<{
-    condition: string;
     quantity: number;
-    price: number;
     costBasis: number;
     acquisitionDate: string;
     notes: string;
@@ -102,15 +90,13 @@ export class OgsInventoryDetailPage extends LitElement {
 
   // Delete dialog
   @state() private showDeleteDialog = false;
-  @state() private deletingItem: InventoryItem | null = null;
+  @state() private deletingStock: InventoryItemStock | null = null;
 
   // Bulk edit/delete dialogs
   @state() private showBulkEditDialog = false;
   @state() private showBulkDeleteDialog = false;
   @state() private bulkEditForm: BulkEditForm = {
-    condition: '',
     quantity: null,
-    price: null,
     costBasis: null,
     acquisitionDate: '',
     notes: '',
@@ -120,26 +106,19 @@ export class OgsInventoryDetailPage extends LitElement {
   @state() private showCostBasisWarning = false;
   @state() private pendingAction: (() => Promise<void>) | null = null;
 
-  private debouncedProductSearch = debounce((term: string) => {
-    this.searchProducts(term);
-  }, 300);
-
   connectedCallback() {
     super.connectedCallback();
     this.fetchDetails();
   }
 
-  private get numericProductId(): number {
-    return Number.parseInt(this.productId, 10);
+  private get numericInventoryItemId(): number {
+    return Number.parseInt(this.inventoryItemId, 10);
   }
 
   private get backUrl(): string {
     return this.inventoryType === 'sealed' ? '/inventory/sealed' : '/inventory/singles';
   }
 
-  private get isSingles(): boolean {
-    return this.inventoryType === 'singles';
-  }
 
   // --- Data Fetching ---
 
@@ -147,16 +126,26 @@ export class OgsInventoryDetailPage extends LitElement {
     this.loading = true;
     this.error = '';
     try {
-      const result = await execute(GetInventoryItemDetailsQuery, {
-        productId: this.numericProductId,
-        condition: this.condition,
-        pagination: { page: this.currentPage, pageSize: this.pageSize },
-      });
-      if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(', ');
+      // Fetch parent item info and stock entries in parallel
+      const [parentResult, stockResult] = await Promise.all([
+        execute(GetInventoryItemQuery, { id: this.numericInventoryItemId }),
+        execute(GetInventoryItemDetailsQuery, {
+          inventoryItemId: this.numericInventoryItemId,
+          pagination: { page: this.currentPage, pageSize: this.pageSize },
+        }),
+      ]);
+
+      if (parentResult?.errors?.length) {
+        this.error = parentResult.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        const data = result.data.getInventoryItemDetails;
-        this.inventoryItems = data.items;
+        this.parentItem = parentResult.data.getInventoryItem;
+      }
+
+      if (stockResult?.errors?.length) {
+        this.error = stockResult.errors.map((e: { message: string }) => e.message).join(', ');
+      } else {
+        const data = stockResult.data.getInventoryItemDetails;
+        this.stockEntries = data.items;
         this.totalCount = data.totalCount;
         this.totalPages = data.totalPages;
         this.currentPage = data.page;
@@ -168,50 +157,21 @@ export class OgsInventoryDetailPage extends LitElement {
     }
   }
 
-  private async searchProducts(term: string) {
-    if (!term || term.length < 2) {
-      this.searchResults = [];
-      return;
-    }
-    this.productSearchLoading = true;
-    try {
-      const result = await execute(SearchProductsQuery, { searchTerm: term });
-      if (result?.errors?.length) {
-        this.searchResults = [];
-      } else {
-        this.searchResults = this.isSingles
-          ? result.data.searchProducts.filter((p) => p.isSingle)
-          : result.data.searchProducts.filter((p) => p.isSealed);
-      }
-    } catch {
-      this.searchResults = [];
-    } finally {
-      this.productSearchLoading = false;
-    }
-  }
-
   // --- Validation ---
 
   private validateAddForm(): string[] {
     const errors: string[] = [];
-    if (!this.selectedProduct) errors.push('Please select a product');
     if (this.addForm.quantity < 1) errors.push('Quantity must be at least 1');
-    if (this.addForm.price == null || this.addForm.price < 0) errors.push('Price is required');
     if (this.addForm.costBasis == null) errors.push('Cost basis is required');
     if (!this.addForm.acquisitionDate) errors.push('Acquisition date is required');
-    if (!this.addForm.condition) errors.push('Condition is required');
     return errors;
   }
 
   private validateEditForm(): string[] {
     const errors: string[] = [];
-    if (this.editForm.quantity == null || this.editForm.quantity < 0) errors.push('Quantity is required and must be non-negative');
-    if (this.editForm.price == null || this.editForm.price < 0) errors.push('Price is required and must be non-negative');
+    if (this.editForm.quantity == null || this.editForm.quantity < 0) errors.push('Quantity must be non-negative');
     if (this.editForm.costBasis == null) errors.push('Cost basis is required');
     if (!this.editForm.acquisitionDate) errors.push('Acquisition date is required');
-    if (!this.editForm.condition) errors.push('Condition is required');
-    if (this.editForm.condition != null && !['NM', 'LP', 'MP', 'HP', 'D'].includes(this.editForm.condition))
-      errors.push('Invalid condition');
     return errors;
   }
 
@@ -222,7 +182,7 @@ export class OgsInventoryDetailPage extends LitElement {
       this.selectedIds = new Set();
       this.selectAll = false;
     } else {
-      this.selectedIds = new Set(this.inventoryItems.map((item) => item.id));
+      this.selectedIds = new Set(this.stockEntries.map((item) => item.id));
       this.selectAll = true;
     }
     this.requestUpdate();
@@ -233,7 +193,7 @@ export class OgsInventoryDetailPage extends LitElement {
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     this.selectedIds = newSet;
-    this.selectAll = newSet.size === this.inventoryItems.length && this.inventoryItems.length > 0;
+    this.selectAll = newSet.size === this.stockEntries.length && this.stockEntries.length > 0;
   }
 
   // --- Pagination ---
@@ -249,77 +209,51 @@ export class OgsInventoryDetailPage extends LitElement {
   // --- Dialog handlers ---
 
   private openAddDialog() {
-    const firstItem = this.inventoryItems[0];
     this.showAddDialog = true;
-    this.searchResults = [];
-    this.selectedProduct = null;
-    this.productSearchTerm = '';
     this.addValidationErrors = [];
     this.addForm = {
       quantity: 1,
-      condition: this.condition || firstItem?.condition || 'NM',
-      price: firstItem?.price ?? 0,
       costBasis: 0,
       acquisitionDate: getTodayDateString(),
       notes: '',
     };
-
-    // Auto-select the current product if we have items
-    if (firstItem) {
-      this.selectedProduct = {
-        id: firstItem.productId,
-        name: firstItem.productName,
-        gameName: firstItem.gameName,
-        setName: firstItem.setName,
-        rarity: firstItem.rarity ?? null,
-        imageUrl: null,
-        isSingle: firstItem.isSingle,
-        isSealed: firstItem.isSealed,
-        prices: [],
-      };
-    }
   }
 
   private closeAddDialog() {
     this.showAddDialog = false;
-    this.searchResults = [];
-    this.selectedProduct = null;
-    this.productSearchTerm = '';
     this.addValidationErrors = [];
   }
 
-  private openEditDialog(item: InventoryItem) {
-    this.editingItem = item;
+  private openEditDialog(stock: InventoryItemStock) {
+    this.editingStock = stock;
     this.editValidationErrors = [];
     this.editForm = {
-      condition: item.condition ?? 'NM',
-      quantity: item.quantity,
-      price: item.price,
-      costBasis: item.costBasis ?? 0,
-      acquisitionDate: item.acquisitionDate ? item.acquisitionDate.slice(0, 10) : '',
-      notes: item.notes ?? '',
+      quantity: stock.quantity,
+      costBasis: stock.costBasis ?? 0,
+      acquisitionDate: stock.acquisitionDate ? stock.acquisitionDate.slice(0, 10) : '',
+      notes: stock.notes ?? '',
     };
     this.showEditDialog = true;
   }
 
   private closeEditDialog() {
     this.showEditDialog = false;
-    this.editingItem = null;
+    this.editingStock = null;
     this.editValidationErrors = [];
   }
 
-  private openDeleteDialog(item: InventoryItem) {
-    this.deletingItem = item;
+  private openDeleteDialog(stock: InventoryItemStock) {
+    this.deletingStock = stock;
     this.showDeleteDialog = true;
   }
 
   private closeDeleteDialog() {
     this.showDeleteDialog = false;
-    this.deletingItem = null;
+    this.deletingStock = null;
   }
 
   private openBulkEditDialog() {
-    this.bulkEditForm = { condition: '', quantity: null, price: null, costBasis: null, acquisitionDate: '', notes: '' };
+    this.bulkEditForm = { quantity: null, costBasis: null, acquisitionDate: '', notes: '' };
     this.showBulkEditDialog = true;
   }
 
@@ -333,25 +267,6 @@ export class OgsInventoryDetailPage extends LitElement {
 
   private closeBulkDeleteDialog() {
     this.showBulkDeleteDialog = false;
-  }
-
-  // --- Product search ---
-
-  private handleProductSearchInput(event: Event) {
-    const input = event.target as WaInput;
-    this.productSearchTerm = input.value as string;
-    this.debouncedProductSearch(this.productSearchTerm);
-  }
-
-  private selectProduct(product: ProductSearchResult) {
-    this.selectedProduct = product;
-    this.searchResults = [];
-    const firstPrice = product.prices?.[0];
-    if (firstPrice?.marketPrice) {
-      this.addForm = { ...this.addForm, price: firstPrice.marketPrice };
-    } else if (firstPrice?.midPrice) {
-      this.addForm = { ...this.addForm, price: firstPrice.midPrice };
-    }
   }
 
   // --- Cost basis warning flow ---
@@ -380,7 +295,7 @@ export class OgsInventoryDetailPage extends LitElement {
 
   // --- Mutations ---
 
-  private async submitAddItem() {
+  private async submitAddStock() {
     const errors = this.validateAddForm();
     if (errors.length > 0) {
       this.addValidationErrors = errors;
@@ -389,33 +304,31 @@ export class OgsInventoryDetailPage extends LitElement {
 
     const doAdd = async () => {
       try {
-        const result = await execute(AddInventoryItemMutation, {
+        const result = await execute(AddStockMutation, {
           input: {
-            productId: this.selectedProduct!.id,
-            condition: this.addForm.condition,
+            inventoryItemId: this.numericInventoryItemId,
             quantity: this.addForm.quantity,
-            price: this.addForm.price,
             costBasis: this.addForm.costBasis,
             acquisitionDate: this.addForm.acquisitionDate,
             notes: this.addForm.notes || null,
           },
         });
         if (result?.errors?.length) {
-          this.error = result.errors.map((e) => e.message).join(', ');
+          this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
         } else {
           this.closeAddDialog();
           this.fetchDetails();
         }
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Failed to add item';
+        this.error = e instanceof Error ? e.message : 'Failed to add stock entry';
       }
     };
 
     this.checkCostBasisAndExecute(this.addForm.costBasis, doAdd);
   }
 
-  private async submitEditItem() {
-    if (!this.editingItem) return;
+  private async submitEditStock() {
+    if (!this.editingStock) return;
     const errors = this.validateEditForm();
     if (errors.length > 0) {
       this.editValidationErrors = errors;
@@ -424,43 +337,41 @@ export class OgsInventoryDetailPage extends LitElement {
 
     const doEdit = async () => {
       try {
-        const result = await execute(UpdateInventoryItemMutation, {
+        const result = await execute(UpdateStockMutation, {
           input: {
-            id: this.editingItem!.id,
-            condition: this.editForm.condition ?? null,
+            id: this.editingStock!.id,
             quantity: this.editForm.quantity ?? null,
-            price: this.editForm.price ?? null,
             costBasis: this.editForm.costBasis ?? null,
             acquisitionDate: this.editForm.acquisitionDate || null,
             notes: this.editForm.notes ?? null,
           },
         });
         if (result?.errors?.length) {
-          this.error = result.errors.map((e) => e.message).join(', ');
+          this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
         } else {
           this.closeEditDialog();
           this.fetchDetails();
         }
       } catch (e) {
-        this.error = e instanceof Error ? e.message : 'Failed to update item';
+        this.error = e instanceof Error ? e.message : 'Failed to update stock entry';
       }
     };
 
     this.checkCostBasisAndExecute(this.editForm.costBasis ?? -1, doEdit);
   }
 
-  private async submitDeleteItem() {
-    if (!this.deletingItem) return;
+  private async submitDeleteStock() {
+    if (!this.deletingStock) return;
     try {
-      const result = await execute(DeleteInventoryItemMutation, { id: this.deletingItem.id });
+      const result = await execute(DeleteStockMutation, { id: this.deletingStock.id });
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(', ');
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         this.closeDeleteDialog();
         this.fetchDetails();
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Failed to delete item';
+      this.error = e instanceof Error ? e.message : 'Failed to delete stock entry';
     }
   }
 
@@ -469,18 +380,16 @@ export class OgsInventoryDetailPage extends LitElement {
     if (ids.length === 0) return;
 
     const input: Record<string, unknown> = { ids };
-    if (this.bulkEditForm.condition) input.condition = this.bulkEditForm.condition;
     if (this.bulkEditForm.quantity != null) input.quantity = this.bulkEditForm.quantity;
-    if (this.bulkEditForm.price != null) input.price = this.bulkEditForm.price;
     if (this.bulkEditForm.costBasis != null) input.costBasis = this.bulkEditForm.costBasis;
     if (this.bulkEditForm.acquisitionDate) input.acquisitionDate = this.bulkEditForm.acquisitionDate;
     if (this.bulkEditForm.notes) input.notes = this.bulkEditForm.notes;
 
     try {
       // biome-ignore lint/suspicious/noExplicitAny: GraphQL input flexibility
-      const result = await execute(BulkUpdateInventoryMutation, { input: input as any });
+      const result = await execute(BulkUpdateStockMutation, { input: input as any });
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(', ');
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         this.closeBulkEditDialog();
         this.selectedIds = new Set();
@@ -496,9 +405,9 @@ export class OgsInventoryDetailPage extends LitElement {
     const ids = Array.from(this.selectedIds);
     if (ids.length === 0) return;
     try {
-      const result = await execute(BulkDeleteInventoryMutation, { input: { ids } });
+      const result = await execute(BulkDeleteStockMutation, { input: { ids } });
       if (result?.errors?.length) {
-        this.error = result.errors.map((e) => e.message).join(', ');
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         this.closeBulkDeleteDialog();
         this.selectedIds = new Set();
@@ -513,8 +422,7 @@ export class OgsInventoryDetailPage extends LitElement {
   // --- Render ---
 
   render() {
-    const firstItem = this.inventoryItems[0];
-    const productName = firstItem?.productName ?? 'Inventory Item';
+    const productName = this.parentItem?.productName ?? 'Inventory Item';
     const activePage = this.inventoryType === 'sealed' ? 'inventory/sealed' : 'inventory/singles';
 
     return html`
@@ -548,7 +456,7 @@ export class OgsInventoryDetailPage extends LitElement {
           () => html`
             <div class="loading-container">
               <wa-spinner style="font-size: 2rem;"></wa-spinner>
-              <span>Loading inventory entries...</span>
+              <span>Loading stock entries...</span>
             </div>
           `,
           () => this.renderTable(),
@@ -565,7 +473,7 @@ export class OgsInventoryDetailPage extends LitElement {
       <div class="breadcrumb">
         <a href="${this.backUrl}">${label}</a>
         <wa-icon name="chevron-right"></wa-icon>
-        <span>Item Details</span>
+        <span>Stock Entries</span>
       </div>
     `;
   }
@@ -580,8 +488,13 @@ export class OgsInventoryDetailPage extends LitElement {
         <div class="page-header-content">
           <h2>${productName}</h2>
           <p>
-            Condition: ${renderConditionBadge(this.condition)}
-            ${this.inventoryItems[0] ? html` — ${this.inventoryItems[0].gameName} / ${this.inventoryItems[0].setName}` : ''}
+            ${this.parentItem
+              ? html`
+                  Condition: ${renderConditionBadge(this.parentItem.condition)}
+                  — Price: <strong>${formatCurrency(this.parentItem.price)}</strong>
+                  — ${this.parentItem.gameName} / ${this.parentItem.setName}
+                `
+              : ''}
           </p>
         </div>
       </div>
@@ -589,7 +502,7 @@ export class OgsInventoryDetailPage extends LitElement {
   }
 
   private renderStatsBar() {
-    const stats = computeInventoryStats(this.inventoryItems);
+    const stats = computeStockStats(this.stockEntries);
     return html`
       <div class="stats-bar">
         <div class="stat-card">
@@ -611,15 +524,6 @@ export class OgsInventoryDetailPage extends LitElement {
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon success">
-            <wa-icon name="tag"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Total Value</span>
-            <span class="stat-value">${formatCurrency(stats.totalValue)}</span>
-          </div>
-        </div>
-        <div class="stat-card">
           <div class="stat-icon warning">
             <wa-icon name="chart-line"></wa-icon>
           </div>
@@ -638,7 +542,7 @@ export class OgsInventoryDetailPage extends LitElement {
       <div class="action-bar">
         <wa-button variant="brand" @click="${this.openAddDialog}">
           <wa-icon slot="start" name="plus"></wa-icon>
-          Add Entry
+          Add Stock Entry
         </wa-button>
         ${when(
           selectionCount > 0,
@@ -659,12 +563,12 @@ export class OgsInventoryDetailPage extends LitElement {
   }
 
   private renderTable() {
-    if (this.inventoryItems.length === 0 && !this.loading) {
+    if (this.stockEntries.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
           <wa-icon name="box-open"></wa-icon>
-          <h3>No entries found</h3>
-          <p>Add inventory entries or go back to the inventory list.</p>
+          <h3>No stock entries</h3>
+          <p>Add stock entries to track inventory lots for this item.</p>
           <wa-button variant="brand" @click="${this.openAddDialog}">
             <wa-icon slot="start" name="plus"></wa-icon>
             Add First Entry
@@ -683,37 +587,35 @@ export class OgsInventoryDetailPage extends LitElement {
                   <wa-checkbox .checked="${this.selectAll}" @change="${this.toggleSelectAll}"></wa-checkbox>
                 </th>
                 <th>Acquisition Date</th>
-                ${this.isSingles ? html`<th>Condition</th>` : nothing}
                 <th class="quantity-cell" style="width: 60px;">Qty</th>
-                <th class="price-cell" style="width: 90px;">Price</th>
                 <th class="price-cell" style="width: 90px;">Cost Basis</th>
+                <th>Notes</th>
                 <th style="width: 100px;">Actions</th>
               </tr>
             </thead>
             <tbody>
-              ${this.inventoryItems.map(
-                (item) => html`
+              ${this.stockEntries.map(
+                (stock) => html`
                   <tr>
                     <td>
                       <wa-checkbox
-                        .checked="${this.selectedIds.has(item.id)}"
-                        @change="${() => this.toggleItemSelection(item.id)}"
+                        .checked="${this.selectedIds.has(stock.id)}"
+                        @change="${() => this.toggleItemSelection(stock.id)}"
                       ></wa-checkbox>
                     </td>
-                    <td>${item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString() : '—'}</td>
-                    ${this.isSingles ? html`<td>${renderConditionBadge(item.condition)}</td>` : nothing}
-                    <td class="quantity-cell"><strong>${item.quantity}</strong></td>
-                    <td class="price-cell"><strong>${formatCurrency(item.price)}</strong></td>
-                    <td class="price-cell">${formatCurrency(item.costBasis)}</td>
+                    <td>${stock.acquisitionDate ? new Date(`${stock.acquisitionDate.slice(0, 10)}T00:00:00`).toLocaleDateString() : '—'}</td>
+                    <td class="quantity-cell"><strong>${stock.quantity}</strong></td>
+                    <td class="price-cell">${formatCurrency(stock.costBasis)}</td>
+                    <td>${stock.notes || '—'}</td>
                     <td class="actions-cell">
-                      <wa-button size="small" variant="neutral" title="Edit" @click="${() => this.openEditDialog(item)}">
+                      <wa-button size="small" variant="neutral" title="Edit" @click="${() => this.openEditDialog(stock)}">
                         <wa-icon name="pencil"></wa-icon>
                       </wa-button>
                       <wa-button
                         size="small"
                         variant="neutral"
                         title="Delete"
-                        @click="${() => this.openDeleteDialog(item)}"
+                        @click="${() => this.openDeleteDialog(stock)}"
                       >
                         <wa-icon name="trash"></wa-icon>
                       </wa-button>
@@ -783,12 +685,12 @@ export class OgsInventoryDetailPage extends LitElement {
     `;
   }
 
-  // --- Add Dialog ---
+  // --- Add Stock Dialog ---
 
   private renderAddDialog() {
     return html`
       <wa-dialog
-        label="Add Inventory Entry"
+        label="Add Stock Entry"
         ?open="${this.showAddDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeAddDialog();
@@ -804,177 +706,76 @@ export class OgsInventoryDetailPage extends LitElement {
           `,
         )}
 
-        ${when(
-          !this.selectedProduct,
-          () => html`
+        <div class="form-fields">
+          <div class="form-row">
             <wa-input
-              label="Search Product"
-              placeholder="Type to search products..."
-              .value="${this.productSearchTerm}"
-              @input="${this.handleProductSearchInput}"
-            >
-              <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
-              ${when(this.productSearchLoading, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
-            </wa-input>
+              label="Quantity *"
+              type="number"
+              min="1"
+              required
+              .value="${String(this.addForm.quantity)}"
+              @input="${(e: Event) => {
+                this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
+              }}"
+            ></wa-input>
 
-            ${when(
-              this.searchResults.length > 0,
-              () => html`
-                <div class="search-results">
-                  ${this.searchResults.map(
-                    (p) => html`
-                      <div class="search-result-item" @click="${() => this.selectProduct(p)}">
-                        ${when(
-                          p.imageUrl,
-                          () => html`<img src="${p.imageUrl}" alt="${p.name}" />`,
-                          () =>
-                            html`<wa-icon
-                              name="image"
-                              style="font-size: 2rem; color: var(--wa-color-neutral-400);"
-                            ></wa-icon>`,
-                        )}
-                        <div class="result-info">
-                          <strong>${p.name}</strong>
-                          <small>${p.gameName} — ${p.setName}</small>
-                        </div>
-                      </div>
-                    `,
-                  )}
-                </div>
-              `,
-            )}
-          `,
-        )}
-        ${when(
-          this.selectedProduct,
-          () => html`
-            <div class="selected-product">
-              ${when(
-                this.selectedProduct!.imageUrl,
-                () =>
-                  html`<img
-                    src="${this.selectedProduct!.imageUrl}"
-                    alt="${this.selectedProduct!.name}"
-                    class="product-image"
-                  />`,
-              )}
-              <div class="selected-product-info">
-                <h3>${this.selectedProduct!.name}</h3>
-                <p>${this.selectedProduct!.gameName} — ${this.selectedProduct!.setName}</p>
-                ${renderMarketPrices(this.selectedProduct!.prices)}
-              </div>
-            </div>
+            <wa-input
+              label="Cost Basis *"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              .value="${String(this.addForm.costBasis)}"
+              @input="${(e: Event) => {
+                this.addForm = {
+                  ...this.addForm,
+                  costBasis: Number.parseFloat((e.target as WaInput).value as string) || 0,
+                };
+              }}"
+            ></wa-input>
+          </div>
 
-            <div class="form-fields">
-              <div class="form-row">
-                <wa-input
-                  label="Quantity *"
-                  type="number"
-                  min="1"
-                  required
-                  .value="${String(this.addForm.quantity)}"
-                  @input="${(e: Event) => {
-                    this.addForm = { ...this.addForm, quantity: Number((e.target as WaInput).value) || 1 };
-                  }}"
-                ></wa-input>
+          <wa-input
+            label="Acquisition Date *"
+            type="date"
+            required
+            .value="${this.addForm.acquisitionDate}"
+            @input="${(e: Event) => {
+              this.addForm = { ...this.addForm, acquisitionDate: (e.target as WaInput).value as string };
+            }}"
+          ></wa-input>
 
-                ${this.isSingles
-                  ? html`
-                      <wa-select
-                        label="Condition *"
-                        required
-                        .value="${this.addForm.condition}"
-                        @change="${(e: Event) => {
-                          const val = (e.target as WaSelect).value;
-                          this.addForm = {
-                            ...this.addForm,
-                            condition: (Array.isArray(val) ? val[0] : val) as string,
-                          };
-                        }}"
-                      >
-                        <wa-option value="NM">Near Mint</wa-option>
-                        <wa-option value="LP">Lightly Played</wa-option>
-                        <wa-option value="MP">Moderately Played</wa-option>
-                        <wa-option value="HP">Heavily Played</wa-option>
-                        <wa-option value="D">Damaged</wa-option>
-                      </wa-select>
-                    `
-                  : nothing}
-              </div>
+          <wa-textarea
+            label="Notes"
+            maxlength="1000"
+            .value="${this.addForm.notes}"
+            @input="${(e: Event) => {
+              this.addForm = { ...this.addForm, notes: (e.target as HTMLTextAreaElement).value };
+            }}"
+          >
+            <span slot="help-text">${this.addForm.notes.length}/1000</span>
+          </wa-textarea>
 
-              <div class="form-row">
-                <wa-input
-                  label="Price *"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  .value="${String(this.addForm.price)}"
-                  @input="${(e: Event) => {
-                    this.addForm = {
-                      ...this.addForm,
-                      price: Number.parseFloat((e.target as WaInput).value as string) || 0,
-                    };
-                  }}"
-                ></wa-input>
-
-                <wa-input
-                  label="Cost Basis *"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  .value="${String(this.addForm.costBasis)}"
-                  @input="${(e: Event) => {
-                    this.addForm = {
-                      ...this.addForm,
-                      costBasis: Number.parseFloat((e.target as WaInput).value as string) || 0,
-                    };
-                  }}"
-                ></wa-input>
-              </div>
-
-              <wa-input
-                label="Acquisition Date *"
-                type="date"
-                required
-                .value="${this.addForm.acquisitionDate}"
-                @input="${(e: Event) => {
-                  this.addForm = { ...this.addForm, acquisitionDate: (e.target as WaInput).value as string };
-                }}"
-              ></wa-input>
-
-              <wa-textarea
-                label="Notes"
-                maxlength="1000"
-                .value="${this.addForm.notes}"
-                @input="${(e: Event) => {
-                  this.addForm = { ...this.addForm, notes: (e.target as HTMLTextAreaElement).value };
-                }}"
-              >
-                <span slot="help-text">${this.addForm.notes.length}/1000</span>
-              </wa-textarea>
-
-              ${renderProfitSummary(this.addForm.price, this.addForm.costBasis, this.addForm.quantity)}
-            </div>
-          `,
-        )}
+          ${this.parentItem
+            ? renderProfitSummary(this.parentItem.price, this.addForm.costBasis, this.addForm.quantity)
+            : nothing}
+        </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeAddDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="brand" ?disabled="${!this.selectedProduct}" @click="${this.submitAddItem}">
-          Add Entry
+        <wa-button slot="footer" variant="brand" @click="${this.submitAddStock}">
+          Add Stock Entry
         </wa-button>
       </wa-dialog>
     `;
   }
 
-  // --- Edit Dialog ---
+  // --- Edit Stock Dialog ---
 
   private renderEditDialog() {
-    if (!this.editingItem) return nothing;
+    if (!this.editingStock) return nothing;
     return html`
       <wa-dialog
-        label="Edit Entry"
+        label="Edit Stock Entry"
         ?open="${this.showEditDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeEditDialog();
@@ -990,38 +791,10 @@ export class OgsInventoryDetailPage extends LitElement {
           `,
         )}
 
-        <div class="edit-item-header">
-          <wa-icon name="${this.isSingles ? 'id-card' : 'box'}"></wa-icon>
-          <div class="edit-item-header-info">
-            <h3>${this.editingItem.productName}</h3>
-            <p>${this.editingItem.gameName} — ${this.editingItem.setName}</p>
-          </div>
-        </div>
-
         <div class="form-fields">
           <div class="form-row">
-            ${this.isSingles
-              ? html`
-                  <wa-select
-                    autofocus
-                    label="Condition *"
-                    required
-                    .value="${this.editForm.condition ?? ''}"
-                    @change="${(e: Event) => {
-                      const val = (e.target as WaSelect).value;
-                      this.editForm = { ...this.editForm, condition: (Array.isArray(val) ? val[0] : val) as string };
-                    }}"
-                  >
-                    <wa-option value="NM">Near Mint</wa-option>
-                    <wa-option value="LP">Lightly Played</wa-option>
-                    <wa-option value="MP">Moderately Played</wa-option>
-                    <wa-option value="HP">Heavily Played</wa-option>
-                    <wa-option value="D">Damaged</wa-option>
-                  </wa-select>
-                `
-              : nothing}
-
             <wa-input
+              autofocus
               label="Quantity *"
               type="number"
               min="0"
@@ -1029,23 +802,6 @@ export class OgsInventoryDetailPage extends LitElement {
               .value="${String(this.editForm.quantity ?? 1)}"
               @input="${(e: Event) => {
                 this.editForm = { ...this.editForm, quantity: Number((e.target as WaInput).value) || 0 };
-              }}"
-            ></wa-input>
-          </div>
-
-          <div class="form-row">
-            <wa-input
-              label="Price *"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              .value="${String(this.editForm.price ?? 0)}"
-              @input="${(e: Event) => {
-                this.editForm = {
-                  ...this.editForm,
-                  price: Number.parseFloat((e.target as WaInput).value as string) || 0,
-                };
               }}"
             ></wa-input>
 
@@ -1086,11 +842,13 @@ export class OgsInventoryDetailPage extends LitElement {
             <span slot="help-text">${(this.editForm.notes ?? '').length}/1000</span>
           </wa-textarea>
 
-          ${renderProfitSummary(this.editForm.price ?? 0, this.editForm.costBasis ?? 0, this.editForm.quantity ?? 1)}
+          ${this.parentItem
+            ? renderProfitSummary(this.parentItem.price, this.editForm.costBasis ?? 0, this.editForm.quantity ?? 1)
+            : nothing}
         </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeEditDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="brand" @click="${this.submitEditItem}">Save Changes</wa-button>
+        <wa-button slot="footer" variant="brand" @click="${this.submitEditStock}">Save Changes</wa-button>
       </wa-dialog>
     `;
   }
@@ -1098,10 +856,10 @@ export class OgsInventoryDetailPage extends LitElement {
   // --- Delete Dialog ---
 
   private renderDeleteDialog() {
-    if (!this.deletingItem) return nothing;
+    if (!this.deletingStock) return nothing;
     return html`
       <wa-dialog
-        label="Delete Entry"
+        label="Delete Stock Entry"
         ?open="${this.showDeleteDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeDeleteDialog();
@@ -1110,12 +868,12 @@ export class OgsInventoryDetailPage extends LitElement {
         <div class="delete-warning">
           <wa-icon name="triangle-exclamation"></wa-icon>
           <div class="delete-warning-text">
-            <p>Delete this entry for <span class="delete-confirm-name">${this.deletingItem.productName}</span>?</p>
-            <p>Qty: ${this.deletingItem.quantity}, Price: ${formatCurrency(this.deletingItem.price)}, Cost: ${formatCurrency(this.deletingItem.costBasis)}</p>
+            <p>Delete this stock entry?</p>
+            <p>Qty: ${this.deletingStock.quantity}, Cost: ${formatCurrency(this.deletingStock.costBasis)}, Date: ${this.deletingStock.acquisitionDate}</p>
           </div>
         </div>
         <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="danger" @click="${this.submitDeleteItem}">
+        <wa-button slot="footer" variant="danger" @click="${this.submitDeleteStock}">
           <wa-icon slot="start" name="trash"></wa-icon>
           Delete
         </wa-button>
@@ -1128,7 +886,7 @@ export class OgsInventoryDetailPage extends LitElement {
   private renderBulkEditDialog() {
     return html`
       <wa-dialog
-        label="Bulk Edit Entries"
+        label="Bulk Edit Stock Entries"
         ?open="${this.showBulkEditDialog}"
         @wa-after-hide="${(e: Event) => {
           if ((e.target as HTMLElement).tagName === 'WA-DIALOG') this.closeBulkEditDialog();
@@ -1136,30 +894,6 @@ export class OgsInventoryDetailPage extends LitElement {
       >
         <p>Editing <strong>${this.selectedIds.size}</strong> selected entries. Only filled fields will be updated.</p>
         <div class="form-fields">
-          ${this.isSingles
-            ? html`
-                <wa-select
-                  label="Condition"
-                  placeholder="Leave unchanged"
-                  .value="${this.bulkEditForm.condition}"
-                  clearable
-                  @change="${(e: Event) => {
-                    const val = (e.target as WaSelect).value;
-                    this.bulkEditForm = {
-                      ...this.bulkEditForm,
-                      condition: (Array.isArray(val) ? val[0] : val) as string,
-                    };
-                  }}"
-                >
-                  <wa-option value="NM">Near Mint</wa-option>
-                  <wa-option value="LP">Lightly Played</wa-option>
-                  <wa-option value="MP">Moderately Played</wa-option>
-                  <wa-option value="HP">Heavily Played</wa-option>
-                  <wa-option value="D">Damaged</wa-option>
-                </wa-select>
-              `
-            : nothing}
-
           <div class="form-row">
             <wa-input
               label="Quantity"
@@ -1172,29 +906,17 @@ export class OgsInventoryDetailPage extends LitElement {
               }}"
             ></wa-input>
             <wa-input
-              label="Price"
+              label="Cost Basis"
               type="number"
               step="0.01"
               min="0"
               placeholder="Leave unchanged"
               @input="${(e: Event) => {
                 const val = (e.target as WaInput).value;
-                this.bulkEditForm = { ...this.bulkEditForm, price: val ? Number.parseFloat(val as string) : null };
+                this.bulkEditForm = { ...this.bulkEditForm, costBasis: val ? Number.parseFloat(val as string) : null };
               }}"
             ></wa-input>
           </div>
-
-          <wa-input
-            label="Cost Basis"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Leave unchanged"
-            @input="${(e: Event) => {
-              const val = (e.target as WaInput).value;
-              this.bulkEditForm = { ...this.bulkEditForm, costBasis: val ? Number.parseFloat(val as string) : null };
-            }}"
-          ></wa-input>
 
           <wa-input
             label="Acquisition Date"
@@ -1235,7 +957,7 @@ export class OgsInventoryDetailPage extends LitElement {
         <div class="delete-warning">
           <wa-icon name="triangle-exclamation"></wa-icon>
           <div class="delete-warning-text">
-            <p>Delete <strong>${this.selectedIds.size}</strong> selected entries?</p>
+            <p>Delete <strong>${this.selectedIds.size}</strong> selected stock entries?</p>
             <p>This will mark the entries as deleted.</p>
           </div>
         </div>

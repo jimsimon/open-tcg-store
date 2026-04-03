@@ -2,9 +2,18 @@
 
 ## Current Work Focus
 
-Settings pages implementation completed. Full admin settings section with 5 sub-pages: General, Backup & Restore, Autoprice (stub), Integrations, and User Accounts.
+Inventory schema restructuring completed. Price moved from per-lot to per-product+condition level. `inventory_item` is now a parent table (one per productId+condition with price), and `inventory_item_stock` is a child table (many per parent with quantity, costBasis, acquisitionDate, notes).
 
 ## Recent Changes
+
+- **Inventory Schema Restructuring (2026-04-03)**: Split inventory_item into parent + stock
+  - **Database**: New `inventory_item_stock` table; removed `quantity`, `costBasis`, `acquisitionDate`, `notes` from `inventory_item`; unique constraint changed to `(orgId, productId, condition)`; added `inventoryItemStockId` to `order_item` for FIFO lot tracking
+  - **GraphQL**: Removed `GroupedInventoryItem`/`GroupedInventoryPage`; added `InventoryItemStock` type and `InventoryStockPage`; added stock mutations (`addStock`, `updateStock`, `deleteStock`, `bulkUpdateStock`, `bulkDeleteStock`); `getInventoryItemDetails` now takes `inventoryItemId` and returns stock entries
+  - **Services**: Major rewrite of `inventory-service.ts` (parent+stock creation, condition merge, stock CRUD/bulk ops); updated `shopping-cart-service.ts` (derives qty from stock SUM); updated `order-service.ts` (FIFO on stock entries, `inventoryItemStockId` tracking, restocking via stock entries)
+  - **Card Resolvers**: All 4 card query resolvers updated to JOIN through stock for quantity derivation
+  - **Inventory Resolvers**: New resolvers for stock mutations; `getInventoryItem(id)` query added
+  - **UI**: Inventory list pages show single Price (not range); detail page shows stock entries with parent price in header; all dialogs/bulk ops work on stock entries
+  - **Tests**: 229 tests pass (service tests + UI tests fully updated for new schema)
 
 - **Settings Pages (2026-03-31)**: Complete settings section implementation
   - **Database**: New `store_settings` wide table with store info, backup config, integration credentials, OAuth tokens
@@ -49,9 +58,9 @@ Settings pages implementation completed. Full admin settings section with 5 sub-
 - **Order System**: ✅ Complete (database, service, GraphQL API, UI page)
 - **TCG Data Schema**: ✅ Categories, groups, products, prices with relations
 - **Card Details UI**: ✅ Implemented with cart functionality
-- **Inventory Backend**: ✅ Complete GraphQL API with service layer
-- **Inventory UI**: ✅ Full-featured page with filters, search, pagination, bulk actions
-- **Inventory Tests**: ✅ 34 test cases (20 service + 14 UI component)
+- **Inventory Backend**: ✅ Complete GraphQL API with service layer (parent inventory_item + child inventory_item_stock)
+- **Inventory UI**: ✅ Full-featured pages (singles list, sealed list, detail with stock entries, bulk ops)
+- **Inventory Tests**: ✅ 229 tests pass (service + UI fully updated for parent/stock schema)
 - **Cards Page**: ✅ With product type filtering (singles vs sealed)
 - **Orders UI**: ✅ Paginated table with expandable order item details
 - **Settings - General**: ✅ Store name, address, EIN, auto sales tax rate

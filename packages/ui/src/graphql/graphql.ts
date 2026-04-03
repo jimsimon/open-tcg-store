@@ -26,6 +26,14 @@ export type AddInventoryItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type AddStockInput = {
+  acquisitionDate: Scalars['String']['input'];
+  costBasis: Scalars['Float']['input'];
+  inventoryItemId: Scalars['Int']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  quantity: Scalars['Int']['input'];
+};
+
 export type AddStoreLocationInput = {
   city: Scalars['String']['input'];
   hours?: InputMaybe<Array<StoreHoursInput>>;
@@ -55,17 +63,15 @@ export type BackupSettings = {
   provider?: Maybe<Scalars['String']['output']>;
 };
 
-export type BulkDeleteInventoryInput = {
+export type BulkDeleteStockInput = {
   ids: Array<Scalars['Int']['input']>;
 };
 
-export type BulkUpdateInventoryInput = {
+export type BulkUpdateStockInput = {
   acquisitionDate?: InputMaybe<Scalars['String']['input']>;
-  condition?: InputMaybe<Scalars['String']['input']>;
   costBasis?: InputMaybe<Scalars['Float']['input']>;
   ids: Array<Scalars['Int']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
-  price?: InputMaybe<Scalars['Float']['input']>;
   quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -132,32 +138,6 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
-export type GroupedInventoryItem = {
-  __typename?: 'GroupedInventoryItem';
-  condition: Scalars['String']['output'];
-  entryCount: Scalars['Int']['output'];
-  gameName: Scalars['String']['output'];
-  highestPrice?: Maybe<Scalars['Float']['output']>;
-  isSealed: Scalars['Boolean']['output'];
-  isSingle: Scalars['Boolean']['output'];
-  lowestPrice?: Maybe<Scalars['Float']['output']>;
-  organizationId: Scalars['String']['output'];
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-  totalQuantity: Scalars['Int']['output'];
-};
-
-export type GroupedInventoryPage = {
-  __typename?: 'GroupedInventoryPage';
-  items: Array<GroupedInventoryItem>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
-
 export type InitialStoreLocation = {
   city: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -198,22 +178,32 @@ export type InventoryFilters = {
 
 export type InventoryItem = {
   __typename?: 'InventoryItem';
-  acquisitionDate: Scalars['String']['output'];
   condition: Scalars['String']['output'];
-  costBasis: Scalars['Float']['output'];
   createdAt: Scalars['String']['output'];
+  entryCount: Scalars['Int']['output'];
   gameName: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
-  notes?: Maybe<Scalars['String']['output']>;
   organizationId: Scalars['String']['output'];
   price: Scalars['Float']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
-  quantity: Scalars['Int']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
   setName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type InventoryItemStock = {
+  __typename?: 'InventoryItemStock';
+  acquisitionDate: Scalars['String']['output'];
+  costBasis: Scalars['Float']['output'];
+  createdAt: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  inventoryItemId: Scalars['Int']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  quantity: Scalars['Int']['output'];
   updatedAt: Scalars['String']['output'];
 };
 
@@ -226,17 +216,28 @@ export type InventoryPage = {
   totalPages: Scalars['Int']['output'];
 };
 
+export type InventoryStockPage = {
+  __typename?: 'InventoryStockPage';
+  items: Array<InventoryItemStock>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
+  addStock: InventoryItemStock;
   addStoreLocation: StoreLocation;
   addToCart: ShoppingCart;
-  bulkDeleteInventory: Scalars['Boolean']['output'];
-  bulkUpdateInventory: Array<InventoryItem>;
+  bulkDeleteStock: Scalars['Boolean']['output'];
+  bulkUpdateStock: Array<InventoryItemStock>;
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
   deleteInventoryItem: Scalars['Boolean']['output'];
+  deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
@@ -250,6 +251,7 @@ export type Mutation = {
   updateOrderStatus: UpdateOrderStatusResult;
   updateQuickBooksIntegration: QuickBooksIntegration;
   updateShopifyIntegration: ShopifyIntegration;
+  updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
   updateStoreSettings: StoreSettings;
   updateStripeIntegration: StripeIntegration;
@@ -258,6 +260,11 @@ export type Mutation = {
 
 export type MutationAddInventoryItemArgs = {
   input: AddInventoryItemInput;
+};
+
+
+export type MutationAddStockArgs = {
+  input: AddStockInput;
 };
 
 
@@ -271,13 +278,13 @@ export type MutationAddToCartArgs = {
 };
 
 
-export type MutationBulkDeleteInventoryArgs = {
-  input: BulkDeleteInventoryInput;
+export type MutationBulkDeleteStockArgs = {
+  input: BulkDeleteStockInput;
 };
 
 
-export type MutationBulkUpdateInventoryArgs = {
-  input: BulkUpdateInventoryInput;
+export type MutationBulkUpdateStockArgs = {
+  input: BulkUpdateStockInput;
 };
 
 
@@ -287,6 +294,11 @@ export type MutationCancelOrderArgs = {
 
 
 export type MutationDeleteInventoryItemArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteStockArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -351,6 +363,11 @@ export type MutationUpdateQuickBooksIntegrationArgs = {
 
 export type MutationUpdateShopifyIntegrationArgs = {
   input: UpdateShopifyIntegrationInput;
+};
+
+
+export type MutationUpdateStockArgs = {
+  input: UpdateStockInput;
 };
 
 
@@ -519,8 +536,9 @@ export type Query = {
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
-  getInventory: GroupedInventoryPage;
-  getInventoryItemDetails: InventoryPage;
+  getInventory: InventoryPage;
+  getInventoryItem?: Maybe<InventoryItem>;
+  getInventoryItemDetails: InventoryStockPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
@@ -547,10 +565,14 @@ export type QueryGetInventoryArgs = {
 };
 
 
+export type QueryGetInventoryItemArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type QueryGetInventoryItemDetailsArgs = {
-  condition: Scalars['String']['input'];
+  inventoryItemId: Scalars['Int']['input'];
   pagination?: InputMaybe<PaginationInput>;
-  productId: Scalars['Int']['input'];
 };
 
 
@@ -709,13 +731,9 @@ export type UpdateBackupSettingsInput = {
 };
 
 export type UpdateInventoryItemInput = {
-  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
   condition?: InputMaybe<Scalars['String']['input']>;
-  costBasis?: InputMaybe<Scalars['Float']['input']>;
   id: Scalars['Int']['input'];
-  notes?: InputMaybe<Scalars['String']['input']>;
   price?: InputMaybe<Scalars['Float']['input']>;
-  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateOrderStatusResult = {
@@ -734,6 +752,14 @@ export type UpdateShopifyIntegrationInput = {
   apiKey?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   shopDomain?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStockInput = {
+  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
+  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  id: Scalars['Int']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateStoreLocationInput = {

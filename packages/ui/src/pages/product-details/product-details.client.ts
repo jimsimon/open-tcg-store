@@ -290,6 +290,7 @@ export class ProductDetailsPage extends LitElement {
         activeOrganizationId="${this.activeOrganizationId}"
         ?showStoreSelector="${this.showStoreSelector}"
         @store-changed="${() => this.fetchProduct()}"
+        @order-submitted="${() => this.fetchProduct()}"
       >
         ${when(
           this.loading,

@@ -48,11 +48,9 @@ function makeFakeItem(overrides: Record<string, unknown> = {}) {
     isSingle: true,
     isSealed: false,
     condition: 'NM',
-    quantity: 4,
     price: 50000,
-    costBasis: 40000,
-    acquisitionDate: '2024-01-15T00:00:00.000Z',
-    notes: 'Graded',
+    totalQuantity: 4,
+    entryCount: 1,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-06-01T00:00:00.000Z',
     ...overrides,
@@ -131,7 +129,7 @@ describe('ogs-inventory-singles-page', () => {
     expect(headers).toContain('Rarity');
     expect(headers).toContain('Condition');
     expect(headers).toContain('Qty');
-    expect(headers).toContain('Price Range');
+    expect(headers).toContain('Price');
     expect(headers).toContain('Entries');
   });
 

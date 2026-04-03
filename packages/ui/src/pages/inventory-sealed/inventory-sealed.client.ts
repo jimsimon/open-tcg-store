@@ -17,7 +17,7 @@ import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
   type AddForm,
-  type GroupedInventoryItem,
+  type InventoryItem,
   type ProductSearchResult,
   GetInventoryQuery,
   SearchProductsQuery,
@@ -27,7 +27,7 @@ import {
   renderMarketPrices,
   renderProfitSummary,
   formatCurrency,
-  computeGroupedInventoryStats,
+  computeInventoryListStats,
   getTodayDateString,
 } from '../inventory/inventory-shared.ts';
 
@@ -60,7 +60,7 @@ export class OgsInventorySealedPage extends LitElement {
   @state() private totalPages = 0;
 
   // Data state
-  @state() private inventoryItems: GroupedInventoryItem[] = [];
+  @state() private inventoryItems: InventoryItem[] = [];
   @state() private loading = false;
   @state() private error = '';
 
@@ -339,8 +339,8 @@ export class OgsInventorySealedPage extends LitElement {
 
   // --- Navigation ---
 
-  private navigateToDetail(item: GroupedInventoryItem) {
-    const url = `/inventory/sealed/${item.productId}/${encodeURIComponent(item.condition)}`;
+  private navigateToDetail(item: InventoryItem) {
+    const url = `/inventory/sealed/${item.id}`;
     window.location.href = url;
   }
 
@@ -416,7 +416,7 @@ export class OgsInventorySealedPage extends LitElement {
   // --- Stats Bar ---
 
   private renderStatsBar() {
-    const stats = computeGroupedInventoryStats(this.inventoryItems);
+    const stats = computeInventoryListStats(this.inventoryItems);
     return html`
       <div class="stats-bar">
         <div class="stat-card">
@@ -521,7 +521,7 @@ export class OgsInventorySealedPage extends LitElement {
                 <th>Game</th>
                 <th>Set</th>
                 <th class="quantity-cell" style="width: 60px;">Qty</th>
-                <th class="price-cell" style="width: 120px;">Price Range</th>
+                <th class="price-cell" style="width: 120px;">Price</th>
                 <th class="quantity-cell" style="width: 80px;">Entries</th>
               </tr>
             </thead>
@@ -538,9 +538,7 @@ export class OgsInventorySealedPage extends LitElement {
                       <strong>${item.totalQuantity}</strong>
                     </td>
                     <td class="price-cell">
-                      ${item.lowestPrice != null && item.highestPrice != null && item.lowestPrice !== item.highestPrice
-                        ? html`${formatCurrency(item.lowestPrice)} – ${formatCurrency(item.highestPrice)}`
-                        : html`<strong>${formatCurrency(item.lowestPrice)}</strong>`}
+                      <strong>${formatCurrency(item.price)}</strong>
                     </td>
                     <td class="quantity-cell">${item.entryCount}</td>
                   </tr>

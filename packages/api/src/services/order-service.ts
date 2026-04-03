@@ -1,5 +1,5 @@
 import { and, eq, sql, asc, inArray, like, or, isNull, gt } from 'drizzle-orm';
-import { cartItem, inventoryItem, order, orderItem, otcgs } from '../db';
+import { cartItem, inventoryItem, inventoryItemStock, order, orderItem, otcgs } from '../db';
 import { getOrCreateShoppingCart } from './shopping-cart-service';
 
 /** Return today's date as YYYY-MM-DD. */
@@ -124,11 +124,11 @@ export async function submitOrder(organizationId: string, userId: string, custom
     return { error: 'Cart is empty' };
   }
 
-  // 2. Validate inventory availability — check total across ALL non-deleted inventory records
-  //    for the same product+condition (not just the specific inventoryItemId in the cart)
+  // 2. Validate inventory availability — check total stock across all non-deleted stock entries
+  //    for the parent inventory_item referenced by each cart item
   const insufficientItems: InsufficientItemInfo[] = [];
   const cartItemsWithInventory: {
-    inventoryItemId: number;
+    inventoryItemId: number; // parent inventory_item.id
     productId: number;
     productName: string;
     condition: string;
@@ -141,16 +141,14 @@ export async function submitOrder(organizationId: string, userId: string, custom
 
     const inv = ci.inventoryItem;
 
-    // Check total available across all non-deleted inventory records for this product+condition (org-scoped)
+    // Check total available from stock entries for this parent
     const [totalResult] = await otcgs
-      .select({ total: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)` })
-      .from(inventoryItem)
+      .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
+      .from(inventoryItemStock)
       .where(
         and(
-          eq(inventoryItem.organizationId, organizationId),
-          eq(inventoryItem.productId, inv.product.id),
-          eq(inventoryItem.condition, inv.condition),
-          isNull(inventoryItem.deletedAt),
+          eq(inventoryItemStock.inventoryItemId, inv.id),
+          isNull(inventoryItemStock.deletedAt),
         ),
       );
 
@@ -167,7 +165,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     }
 
     cartItemsWithInventory.push({
-      inventoryItemId: ci.inventoryItemId,
+      inventoryItemId: inv.id,
       productId: inv.product.id,
       productName: inv.product.name,
       condition: inv.condition,
@@ -200,11 +198,11 @@ export async function submitOrder(organizationId: string, userId: string, custom
     })
     .returning();
 
-  // 4. Decrement inventory using FIFO (oldest first by createdAt) for tax purposes.
-  //    Only consider non-deleted items with quantity > 0.
+  // 4. Decrement inventory using FIFO (oldest first by createdAt) across stock entries.
   const allOrderItemValues: {
     orderId: number;
     inventoryItemId: number;
+    inventoryItemStockId: number;
     productId: number;
     productName: string;
     condition: string;
@@ -214,47 +212,48 @@ export async function submitOrder(organizationId: string, userId: string, custom
   }[] = [];
 
   for (const item of cartItemsWithInventory) {
-    // Get ALL non-deleted inventory records for this product+condition with quantity > 0 (org-scoped),
-    // ordered by createdAt ASC (FIFO)
-    const fifoRecords = await otcgs
+    // Get all non-deleted stock entries with quantity > 0 for this parent, FIFO ordered
+    const fifoStockEntries = await otcgs
       .select({
-        id: inventoryItem.id,
-        quantity: inventoryItem.quantity,
-        costBasis: inventoryItem.costBasis,
+        id: inventoryItemStock.id,
+        quantity: inventoryItemStock.quantity,
+        costBasis: inventoryItemStock.costBasis,
       })
-      .from(inventoryItem)
+      .from(inventoryItemStock)
       .where(
         and(
-          eq(inventoryItem.organizationId, organizationId),
-          eq(inventoryItem.productId, item.productId),
-          eq(inventoryItem.condition, item.condition),
-          isNull(inventoryItem.deletedAt),
-          gt(inventoryItem.quantity, 0),
+          eq(inventoryItemStock.inventoryItemId, item.inventoryItemId),
+          isNull(inventoryItemStock.deletedAt),
+          gt(inventoryItemStock.quantity, 0),
         ),
       )
-      .orderBy(asc(inventoryItem.createdAt));
+      .orderBy(asc(inventoryItemStock.createdAt));
 
     let remaining = item.quantity;
 
-    for (const record of fifoRecords) {
+    for (const stockEntry of fifoStockEntries) {
       if (remaining <= 0) break;
-      if (record.quantity <= 0) continue;
+      if (stockEntry.quantity <= 0) continue;
 
-      const deduct = Math.min(remaining, record.quantity);
-      const newQuantity = record.quantity - deduct;
+      const deduct = Math.min(remaining, stockEntry.quantity);
+      const newQuantity = stockEntry.quantity - deduct;
 
-      await otcgs.update(inventoryItem).set({ quantity: newQuantity }).where(eq(inventoryItem.id, record.id));
+      await otcgs
+        .update(inventoryItemStock)
+        .set({ quantity: newQuantity, updatedAt: new Date() })
+        .where(eq(inventoryItemStock.id, stockEntry.id));
 
-      // Create an order item for each inventory record consumed (tracks exact cost basis lot)
+      // Create an order item for each stock entry consumed (tracks exact cost basis lot)
       allOrderItemValues.push({
         orderId: insertedOrder.id,
-        inventoryItemId: record.id,
+        inventoryItemId: item.inventoryItemId,
+        inventoryItemStockId: stockEntry.id,
         productId: item.productId,
         productName: item.productName,
         condition: item.condition,
         quantity: deduct,
         unitPrice: item.unitPrice,
-        costBasis: record.costBasis,
+        costBasis: stockEntry.costBasis,
       });
 
       remaining -= deduct;
@@ -306,80 +305,39 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
     return { error: 'Order is already cancelled' };
   }
 
-  // 2. Return items to inventory — use inventoryItemId for precise restocking
-  //    Also un-soft-delete items that were soft-deleted if they are being restored
+  // 2. Return items to inventory — use inventoryItemStockId for precise restocking
   for (const oi of existingOrder.orderItems) {
-    if (oi.inventoryItemId) {
-      // Check if the inventory item was soft-deleted
-      const [invItem] = await otcgs
-        .select({ id: inventoryItem.id, deletedAt: inventoryItem.deletedAt })
-        .from(inventoryItem)
-        .where(eq(inventoryItem.id, oi.inventoryItemId))
+    if (oi.inventoryItemStockId) {
+      // Precise restocking using stock entry ID
+      const [stockEntry] = await otcgs
+        .select({ id: inventoryItemStock.id, deletedAt: inventoryItemStock.deletedAt })
+        .from(inventoryItemStock)
+        .where(eq(inventoryItemStock.id, oi.inventoryItemStockId))
         .limit(1);
 
-      if (invItem) {
-        // Restock the exact inventory record, and undo soft-delete if needed
+      if (stockEntry) {
         const updateSet: Record<string, unknown> = {
-          quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`,
+          quantity: sql`${inventoryItemStock.quantity} + ${oi.quantity}`,
           updatedAt: new Date(),
         };
-        if (invItem.deletedAt) {
+        if (stockEntry.deletedAt) {
           updateSet.deletedAt = null;
         }
-        await otcgs.update(inventoryItem).set(updateSet).where(eq(inventoryItem.id, oi.inventoryItemId));
-      } else {
-        // Inventory record was hard-deleted (shouldn't happen with soft-delete, but handle gracefully)
-        await otcgs.insert(inventoryItem).values({
-          organizationId: existingOrder.organizationId,
-          productId: oi.productId,
-          condition: oi.condition,
-          quantity: oi.quantity,
-          price: oi.unitPrice,
-          costBasis: oi.costBasis ?? 0,
-          acquisitionDate: todayDateString(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
-    } else {
-      // Legacy order items without inventoryItemId — fall back to finding a matching record
-      const records = await otcgs
-        .select({ id: inventoryItem.id })
-        .from(inventoryItem)
-        .where(
-          and(
-            eq(inventoryItem.organizationId, existingOrder.organizationId),
-            eq(inventoryItem.productId, oi.productId),
-            eq(inventoryItem.condition, oi.condition),
-          ),
-        )
-        .orderBy(asc(inventoryItem.createdAt))
-        .limit(1);
-
-      if (records.length > 0) {
-        // Restock and undo soft-delete
         await otcgs
-          .update(inventoryItem)
-          .set({
-            quantity: sql`${inventoryItem.quantity} + ${oi.quantity}`,
-            updatedAt: new Date(),
-            deletedAt: null,
-          })
-          .where(eq(inventoryItem.id, records[0].id));
+          .update(inventoryItemStock)
+          .set(updateSet)
+          .where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
+
       } else {
-        // No matching inventory record exists — create one
-        await otcgs.insert(inventoryItem).values({
-          organizationId: existingOrder.organizationId,
-          productId: oi.productId,
-          condition: oi.condition,
-          quantity: oi.quantity,
-          price: oi.unitPrice,
-          costBasis: oi.costBasis ?? 0,
-          acquisitionDate: todayDateString(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        // Stock entry was hard-deleted — create a new stock entry under the parent
+        await restockFallback(existingOrder.organizationId, oi);
       }
+    } else if (oi.inventoryItemId) {
+      // Legacy: has parent inventoryItemId but no stock ID — find or create stock
+      await restockFallback(existingOrder.organizationId, oi);
+    } else {
+      // Very legacy: no inventoryItemId at all — find by product+condition
+      await restockFallbackByProduct(existingOrder.organizationId, oi);
     }
   }
 
@@ -403,6 +361,97 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
       items,
     },
   };
+}
+
+/**
+ * Fallback restocking: find or create stock entry under the parent inventory item.
+ */
+async function restockFallback(
+  organizationId: string,
+  oi: { inventoryItemId: number | null; productId: number; condition: string; quantity: number; unitPrice: number; costBasis: number | null },
+): Promise<void> {
+  const now = new Date();
+
+  // Find or create the parent
+  let parentId = oi.inventoryItemId;
+  if (!parentId) {
+    // Look up by product+condition
+    const [parent] = await otcgs
+      .select({ id: inventoryItem.id })
+      .from(inventoryItem)
+      .where(
+        and(
+          eq(inventoryItem.organizationId, organizationId),
+          eq(inventoryItem.productId, oi.productId),
+          eq(inventoryItem.condition, oi.condition),
+        ),
+      )
+      .limit(1);
+
+    if (parent) {
+      parentId = parent.id;
+    } else {
+      const [newParent] = await otcgs
+        .insert(inventoryItem)
+        .values({
+          organizationId,
+          productId: oi.productId,
+          condition: oi.condition,
+          price: oi.unitPrice,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      parentId = newParent.id;
+    }
+  }
+
+  // Find matching stock entry or create new one
+  const costBasis = oi.costBasis ?? 0;
+  const [existingStock] = await otcgs
+    .select()
+    .from(inventoryItemStock)
+    .where(
+      and(
+        eq(inventoryItemStock.inventoryItemId, parentId),
+        eq(inventoryItemStock.costBasis, costBasis),
+      ),
+    )
+    .orderBy(asc(inventoryItemStock.createdAt))
+    .limit(1);
+
+  if (existingStock) {
+    const updateSet: Record<string, unknown> = {
+      quantity: sql`${inventoryItemStock.quantity} + ${oi.quantity}`,
+      updatedAt: now,
+    };
+    if (existingStock.deletedAt) {
+      updateSet.deletedAt = null;
+    }
+    await otcgs
+      .update(inventoryItemStock)
+      .set(updateSet)
+      .where(eq(inventoryItemStock.id, existingStock.id));
+  } else {
+    await otcgs.insert(inventoryItemStock).values({
+      inventoryItemId: parentId,
+      quantity: oi.quantity,
+      costBasis,
+      acquisitionDate: todayDateString(),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
+/**
+ * Very legacy fallback: no inventoryItemId at all.
+ */
+async function restockFallbackByProduct(
+  organizationId: string,
+  oi: { productId: number; condition: string; quantity: number; unitPrice: number; costBasis: number | null },
+): Promise<void> {
+  await restockFallback(organizationId, { ...oi, inventoryItemId: null });
 }
 
 export async function updateOrderStatus(

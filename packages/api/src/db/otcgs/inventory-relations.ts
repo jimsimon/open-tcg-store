@@ -1,13 +1,15 @@
 import { relations } from 'drizzle-orm/relations';
 import { inventoryItem } from './inventory-schema';
+import { inventoryItemStock } from './inventory-stock-schema';
 import { user } from './auth-schema';
 import { product } from '../tcg-data/schema';
 
-export const inventoryItemRelations = relations(inventoryItem, ({ one }) => ({
+export const inventoryItemRelations = relations(inventoryItem, ({ one, many }) => ({
   product: one(product, {
     fields: [inventoryItem.productId],
     references: [product.id],
   }),
+  stocks: many(inventoryItemStock),
   createdByUser: one(user, {
     fields: [inventoryItem.createdBy],
     references: [user.id],

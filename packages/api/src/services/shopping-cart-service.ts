@@ -1,5 +1,5 @@
-import { and } from 'drizzle-orm';
-import { cart, otcgs } from '../db';
+import { and, sql, eq, isNull } from 'drizzle-orm';
+import { cart, otcgs, inventoryItemStock } from '../db';
 import { CartItemOutput } from '../schema/types.generated';
 
 export async function getOrCreateShoppingCart(organizationId: string, userId: string) {
@@ -17,7 +17,6 @@ export async function getOrCreateShoppingCart(organizationId: string, userId: st
               id: true,
               productId: true,
               condition: true,
-              quantity: true,
               price: true,
             },
             with: {
@@ -57,18 +56,34 @@ export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof g
   // Map cart items through inventoryItem join to get display data
   const cartItemsWithInventory = cart.cartItems.filter((ci) => ci.inventoryItem?.product);
 
-  const items: CartItemOutput[] = cartItemsWithInventory.map((ci) => {
+  const items: CartItemOutput[] = [];
+
+  for (const ci of cartItemsWithInventory) {
     const inv = ci.inventoryItem;
-    return {
+
+    // Derive total available quantity from stock entries
+    const [stockResult] = await otcgs
+      .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
+      .from(inventoryItemStock)
+      .where(
+        and(
+          eq(inventoryItemStock.inventoryItemId, inv.id),
+          isNull(inventoryItemStock.deletedAt),
+        ),
+      );
+
+    const maxAvailable = stockResult?.total ?? 0;
+
+    items.push({
       inventoryItemId: ci.inventoryItemId,
       productId: inv.product.id,
       productName: inv.product.name,
       condition: inv.condition,
       quantity: ci.quantity,
       unitPrice: inv.price,
-      maxAvailable: inv.quantity,
-    };
-  });
+      maxAvailable,
+    });
+  }
 
   return { organizationId: cart.organizationId, items };
 }

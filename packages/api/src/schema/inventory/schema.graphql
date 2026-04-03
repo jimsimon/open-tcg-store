@@ -9,8 +9,17 @@ type InventoryItem {
   isSingle: Boolean!
   isSealed: Boolean!
   condition: String!
-  quantity: Int!
   price: Float!
+  totalQuantity: Int!
+  entryCount: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type InventoryItemStock {
+  id: Int!
+  inventoryItemId: Int!
+  quantity: Int!
   costBasis: Float!
   acquisitionDate: String!
   notes: String
@@ -18,32 +27,16 @@ type InventoryItem {
   updatedAt: String!
 }
 
-type GroupedInventoryItem {
-  organizationId: String!
-  productId: Int!
-  productName: String!
-  gameName: String!
-  setName: String!
-  rarity: String
-  isSingle: Boolean!
-  isSealed: Boolean!
-  condition: String!
-  totalQuantity: Int!
-  lowestPrice: Float
-  highestPrice: Float
-  entryCount: Int!
-}
-
-type GroupedInventoryPage {
-  items: [GroupedInventoryItem!]!
+type InventoryPage {
+  items: [InventoryItem!]!
   totalCount: Int!
   page: Int!
   pageSize: Int!
   totalPages: Int!
 }
 
-type InventoryPage {
-  items: [InventoryItem!]!
+type InventoryStockPage {
+  items: [InventoryItemStock!]!
   totalCount: Int!
   page: Int!
   pageSize: Int!
@@ -69,8 +62,8 @@ input PaginationInput {
 input AddInventoryItemInput {
   productId: Int!
   condition: String!
-  quantity: Int!
   price: Float!
+  quantity: Int!
   costBasis: Float!
   acquisitionDate: String!
   notes: String
@@ -79,30 +72,41 @@ input AddInventoryItemInput {
 input UpdateInventoryItemInput {
   id: Int!
   condition: String
-  quantity: Int
   price: Float
+}
+
+input AddStockInput {
+  inventoryItemId: Int!
+  quantity: Int!
+  costBasis: Float!
+  acquisitionDate: String!
+  notes: String
+}
+
+input UpdateStockInput {
+  id: Int!
+  quantity: Int
   costBasis: Float
   acquisitionDate: String
   notes: String
 }
 
-input BulkUpdateInventoryInput {
+input BulkUpdateStockInput {
   ids: [Int!]!
-  condition: String
   quantity: Int
-  price: Float
   costBasis: Float
   acquisitionDate: String
   notes: String
 }
 
-input BulkDeleteInventoryInput {
+input BulkDeleteStockInput {
   ids: [Int!]!
 }
 
 extend type Query {
-  getInventory(filters: InventoryFilters, pagination: PaginationInput): GroupedInventoryPage!
-  getInventoryItemDetails(productId: Int!, condition: String!, pagination: PaginationInput): InventoryPage!
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getInventoryItem(id: Int!): InventoryItem
+  getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
   searchProducts(searchTerm: String!, game: String): [ProductSearchResult!]!
 }
 
@@ -131,6 +135,9 @@ extend type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   deleteInventoryItem(id: Int!): Boolean!
-  bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
-  bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
+  addStock(input: AddStockInput!): InventoryItemStock!
+  updateStock(input: UpdateStockInput!): InventoryItemStock!
+  deleteStock(id: Int!): Boolean!
+  bulkUpdateStock(input: BulkUpdateStockInput!): [InventoryItemStock!]!
+  bulkDeleteStock(input: BulkDeleteStockInput!): Boolean!
 }

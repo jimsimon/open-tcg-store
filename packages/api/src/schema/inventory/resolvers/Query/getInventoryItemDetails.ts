@@ -10,5 +10,5 @@ export const getInventoryItemDetails: NonNullable<QueryResolvers['getInventoryIt
 ) => {
   await assertPermission(ctx, { inventory: ['read'] });
   const organizationId = getOrganizationId(ctx);
-  return await getInventoryItemDetailsService(organizationId, args.productId, args.condition, args.pagination);
+  return await getInventoryItemDetailsService(organizationId, args.inventoryItemId, args.pagination);
 };

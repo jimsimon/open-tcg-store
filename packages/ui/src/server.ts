@@ -223,12 +223,12 @@ const router = new Router()
   .get('inventory-sealed', '/inventory/sealed', async (ctx) => {
     return renderPage(ctx, 'inventory-sealed');
   })
-  .get('inventory-singles-detail', '/inventory/singles/:productId/:condition', async (ctx) => {
+  .get('inventory-singles-detail', '/inventory/singles/:inventoryItemId', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');
   })
-  .get('inventory-sealed-detail', '/inventory/sealed/:productId/:condition', async (ctx) => {
+  .get('inventory-sealed-detail', '/inventory/sealed/:inventoryItemId', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');

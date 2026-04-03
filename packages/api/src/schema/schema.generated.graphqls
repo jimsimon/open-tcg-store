@@ -8,6 +8,14 @@ input AddInventoryItemInput {
   quantity: Int!
 }
 
+input AddStockInput {
+  acquisitionDate: String!
+  costBasis: Float!
+  inventoryItemId: Int!
+  notes: String
+  quantity: Int!
+}
+
 input AddStoreLocationInput {
   city: String!
   hours: [StoreHoursInput!]
@@ -35,17 +43,15 @@ type BackupSettings {
   provider: String
 }
 
-input BulkDeleteInventoryInput {
+input BulkDeleteStockInput {
   ids: [Int!]!
 }
 
-input BulkUpdateInventoryInput {
+input BulkUpdateStockInput {
   acquisitionDate: String
-  condition: String
   costBasis: Float
   ids: [Int!]!
   notes: String
-  price: Float
   quantity: Int
 }
 
@@ -106,30 +112,6 @@ type ConditionInventory {
   quantity: Int!
 }
 
-type GroupedInventoryItem {
-  condition: String!
-  entryCount: Int!
-  gameName: String!
-  highestPrice: Float
-  isSealed: Boolean!
-  isSingle: Boolean!
-  lowestPrice: Float
-  organizationId: String!
-  productId: Int!
-  productName: String!
-  rarity: String
-  setName: String!
-  totalQuantity: Int!
-}
-
-type GroupedInventoryPage {
-  items: [GroupedInventoryItem!]!
-  page: Int!
-  pageSize: Int!
-  totalCount: Int!
-  totalPages: Int!
-}
-
 input InitialStoreLocation {
   city: String!
   name: String!
@@ -167,22 +149,31 @@ input InventoryFilters {
 }
 
 type InventoryItem {
-  acquisitionDate: String!
   condition: String!
-  costBasis: Float!
   createdAt: String!
+  entryCount: Int!
   gameName: String!
   id: Int!
   isSealed: Boolean!
   isSingle: Boolean!
-  notes: String
   organizationId: String!
   price: Float!
   productId: Int!
   productName: String!
-  quantity: Int!
   rarity: String
   setName: String!
+  totalQuantity: Int!
+  updatedAt: String!
+}
+
+type InventoryItemStock {
+  acquisitionDate: String!
+  costBasis: Float!
+  createdAt: String!
+  id: Int!
+  inventoryItemId: Int!
+  notes: String
+  quantity: Int!
   updatedAt: String!
 }
 
@@ -194,16 +185,26 @@ type InventoryPage {
   totalPages: Int!
 }
 
+type InventoryStockPage {
+  items: [InventoryItemStock!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
 type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
+  addStock(input: AddStockInput!): InventoryItemStock!
   addStoreLocation(input: AddStoreLocationInput!): StoreLocation!
   addToCart(cartItem: CartItemInput!): ShoppingCart!
-  bulkDeleteInventory(input: BulkDeleteInventoryInput!): Boolean!
-  bulkUpdateInventory(input: BulkUpdateInventoryInput!): [InventoryItem!]!
+  bulkDeleteStock(input: BulkDeleteStockInput!): Boolean!
+  bulkUpdateStock(input: BulkUpdateStockInput!): [InventoryItemStock!]!
   cancelOrder(orderId: Int!): CancelOrderResult!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
   deleteInventoryItem(id: Int!): Boolean!
+  deleteStock(id: Int!): Boolean!
   firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
   removeStoreLocation(id: String!): Boolean!
@@ -217,6 +218,7 @@ type Mutation {
   updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
   updateQuickBooksIntegration(input: UpdateQuickBooksIntegrationInput!): QuickBooksIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
+  updateStock(input: UpdateStockInput!): InventoryItemStock!
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
   updateStoreSettings(input: UpdateStoreSettingsInput!): StoreSettings!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
@@ -368,8 +370,9 @@ type Query {
   """
   getEmployeeStoreLocations: [StoreLocation!]!
   getIntegrationSettings: IntegrationSettings!
-  getInventory(filters: InventoryFilters, pagination: PaginationInput): GroupedInventoryPage!
-  getInventoryItemDetails(condition: String!, pagination: PaginationInput, productId: Int!): InventoryPage!
+  getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
+  getInventoryItem(id: Int!): InventoryItem
+  getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(organizationId: String, productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
@@ -480,13 +483,9 @@ input UpdateBackupSettingsInput {
 }
 
 input UpdateInventoryItemInput {
-  acquisitionDate: String
   condition: String
-  costBasis: Float
   id: Int!
-  notes: String
   price: Float
-  quantity: Int
 }
 
 type UpdateOrderStatusResult {
@@ -504,6 +503,14 @@ input UpdateShopifyIntegrationInput {
   apiKey: String
   enabled: Boolean
   shopDomain: String
+}
+
+input UpdateStockInput {
+  acquisitionDate: String
+  costBasis: Float
+  id: Int!
+  notes: String
+  quantity: Int
 }
 
 input UpdateStoreLocationInput {

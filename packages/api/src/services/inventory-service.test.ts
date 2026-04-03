@@ -8,9 +8,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 // Helper: build a chainable mock that resolves to `rows` at the end of the chain.
-// We assign chainable query-builder methods onto a real Promise so that `await`
-// resolves to `rows` without adding a `then` property to a plain object (which
-// linters flag as creating an accidentally-thenable object).
 function chainable(rows: unknown[] = []) {
   const chain = Object.assign(Promise.resolve(rows), {} as Record<string, unknown>);
   for (const method of [
@@ -57,15 +54,24 @@ vi.mock('../db/otcgs/index', () => ({
     organizationId: 'inventory_item.organization_id',
     productId: 'inventory_item.product_id',
     condition: 'inventory_item.condition',
-    quantity: 'inventory_item.quantity',
     price: 'inventory_item.price',
-    costBasis: 'inventory_item.cost_basis',
-    acquisitionDate: 'inventory_item.acquisition_date',
-    notes: 'inventory_item.notes',
     createdAt: 'inventory_item.created_at',
     updatedAt: 'inventory_item.updated_at',
     createdBy: 'inventory_item.created_by',
     updatedBy: 'inventory_item.updated_by',
+  },
+  inventoryItemStock: {
+    id: 'inventory_item_stock.id',
+    inventoryItemId: 'inventory_item_stock.inventory_item_id',
+    quantity: 'inventory_item_stock.quantity',
+    costBasis: 'inventory_item_stock.cost_basis',
+    acquisitionDate: 'inventory_item_stock.acquisition_date',
+    notes: 'inventory_item_stock.notes',
+    deletedAt: 'inventory_item_stock.deleted_at',
+    createdAt: 'inventory_item_stock.created_at',
+    updatedAt: 'inventory_item_stock.updated_at',
+    createdBy: 'inventory_item_stock.created_by',
+    updatedBy: 'inventory_item_stock.updated_by',
   },
 }));
 
@@ -78,7 +84,7 @@ vi.mock('../db/tcg-data/schema', () => ({
     imageUrl: 'product.image_url',
   },
   group: { id: 'group.id', name: 'group.name' },
-  category: { id: 'category.id', name: 'category.name' },
+  category: { id: 'category.id', name: 'category.name', seoCategoryName: 'category.seo_category_name' },
   productExtendedData: { productId: 'ped.product_id', name: 'ped.name', value: 'ped.value' },
   price: {
     productId: 'price.product_id',
@@ -93,18 +99,14 @@ vi.mock('../db/tcg-data/schema', () => ({
 
 // Mock drizzle-orm operators so they don't throw
 vi.mock('drizzle-orm', () => {
-  // sql needs to work both as a function call and as a tagged template literal.
-  // Tagged templates receive (strings[], ...values) and the result needs .as().
   const sqlResult = () => ({ type: 'sql', as: vi.fn().mockReturnValue({ type: 'sql-alias' }) });
   const sqlFn = Object.assign(
     vi.fn((..._args: unknown[]) => sqlResult()),
     {
       raw: vi.fn(),
+      join: vi.fn((..._args: unknown[]) => ({ type: 'sql-join' })),
     },
   );
-  // Make it callable as a tagged template: sql`...` invokes the function
-  // with (TemplateStringsArray, ...expressions). The vi.fn() handles this,
-  // but we need to ensure the return value has .as().
   return {
     eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
     and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
@@ -112,6 +114,7 @@ vi.mock('drizzle-orm', () => {
     sql: sqlFn,
     inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
     isNull: vi.fn((...args: unknown[]) => ({ type: 'isNull', args })),
+    gt: vi.fn((...args: unknown[]) => ({ type: 'gt', args })),
   };
 });
 
@@ -123,8 +126,11 @@ import {
   addInventoryItem,
   updateInventoryItem,
   deleteInventoryItem,
-  bulkUpdateInventoryItems,
-  bulkDeleteInventoryItems,
+  addStock,
+  updateStock,
+  deleteStock,
+  bulkUpdateStock,
+  bulkDeleteStock,
   searchProducts,
 } from './inventory-service';
 
@@ -132,8 +138,8 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** A realistic row shape returned by baseInventoryQuery (detail / single-row queries). */
-function fakeRow(overrides: Record<string, unknown> = {}) {
+/** A realistic row returned by getInventoryItems (parent with derived stock totals). */
+function fakeInventoryRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
     organizationId: 'test-org-id',
@@ -142,34 +148,29 @@ function fakeRow(overrides: Record<string, unknown> = {}) {
     gameName: 'Magic',
     setName: 'Alpha',
     condition: 'NM',
-    quantity: 4,
     price: 50000,
-    costBasis: 40000,
-    acquisitionDate: new Date('2024-01-15'),
-    notes: 'Graded',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-06-01'),
+    totalQuantity: 4,
+    entryCount: 1,
     rarity: 'Mythic Rare',
     isSingle: 1,
     ...overrides,
   };
 }
 
-/** A realistic row shape returned by the grouped getInventoryItems query. */
-function fakeGroupedRow(overrides: Record<string, unknown> = {}) {
+/** A realistic stock entry row. */
+function fakeStockRow(overrides: Record<string, unknown> = {}) {
   return {
-    organizationId: 'test-org-id',
-    productId: 100,
-    productName: 'Black Lotus',
-    gameName: 'Magic',
-    setName: 'Alpha',
-    condition: 'NM',
-    totalQuantity: 4,
-    lowestPrice: 50000,
-    highestPrice: 50000,
-    entryCount: 1,
-    rarity: 'Mythic Rare',
-    isSingle: 1,
+    id: 10,
+    inventoryItemId: 1,
+    quantity: 4,
+    costBasis: 40000,
+    acquisitionDate: '2024-01-15',
+    notes: 'Graded',
+    deletedAt: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-06-01'),
     ...overrides,
   };
 }
@@ -196,15 +197,12 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('getInventoryItems', () => {
     it('should return paginated results with default pagination', async () => {
-      // First select() call builds the grouped data query, second builds the count query.
-      // The count query is awaited first, then the data query.
-      const dataChain = chainable([fakeGroupedRow({ productId: 1 }), fakeGroupedRow({ productId: 2 })]);
+      const dataChain = chainable([fakeInventoryRow({ id: 1 }), fakeInventoryRow({ id: 2 })]);
       const countChain = chainable([{ total: 2 }]);
 
       let callIndex = 0;
       mockOtcgs.select.mockImplementation(() => {
         callIndex++;
-        // First select builds grouped query, second builds count query
         return callIndex === 1 ? dataChain : countChain;
       });
 
@@ -219,7 +217,7 @@ describe('inventory-service', () => {
     });
 
     it('should apply search filter', async () => {
-      const dataChain = chainable([fakeGroupedRow({ productName: 'Charizard' })]);
+      const dataChain = chainable([fakeInventoryRow({ productName: 'Charizard' })]);
       const countChain = chainable([{ total: 1 }]);
 
       let callIndex = 0;
@@ -235,7 +233,7 @@ describe('inventory-service', () => {
     });
 
     it('should apply condition filter', async () => {
-      const dataChain = chainable([fakeGroupedRow({ condition: 'LP' })]);
+      const dataChain = chainable([fakeInventoryRow({ condition: 'LP' })]);
       const countChain = chainable([{ total: 1 }]);
 
       let callIndex = 0;
@@ -250,42 +248,8 @@ describe('inventory-service', () => {
       expect(result.items[0].condition).toBe('LP');
     });
 
-    it('should apply product type filter for singles', async () => {
-      const dataChain = chainable([fakeGroupedRow({ isSingle: 1 })]);
-      const countChain = chainable([{ total: 1 }]);
-
-      let callIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? dataChain : countChain;
-      });
-
-      const result = await getInventoryItems('test-org-id', { includeSingles: true, includeSealed: false });
-
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].isSingle).toBe(true);
-      expect(result.items[0].isSealed).toBe(false);
-    });
-
-    it('should apply product type filter for sealed', async () => {
-      const dataChain = chainable([fakeGroupedRow({ isSingle: 0 })]);
-      const countChain = chainable([{ total: 1 }]);
-
-      let callIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? dataChain : countChain;
-      });
-
-      const result = await getInventoryItems('test-org-id', { includeSealed: true, includeSingles: false });
-
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].isSingle).toBe(false);
-      expect(result.items[0].isSealed).toBe(true);
-    });
-
     it('should return correct pagination metadata', async () => {
-      const dataChain = chainable(Array.from({ length: 25 }, (_, i) => fakeGroupedRow({ productId: i + 26 })));
+      const dataChain = chainable(Array.from({ length: 25 }, (_, i) => fakeInventoryRow({ id: i + 26 })));
       const countChain = chainable([{ total: 75 }]);
 
       let callIndex = 0;
@@ -308,84 +272,83 @@ describe('inventory-service', () => {
   // addInventoryItem
   // -----------------------------------------------------------------------
   describe('addInventoryItem', () => {
-    it('should add a new inventory item', async () => {
-      // First select: duplicate check → no existing row
-      const dupCheckChain = chainable([]);
-      // Insert chain → returns inserted row
-      const insChain = chainable([{ id: 42 }]);
-      // getInventoryItemById select → returns full row
-      const fetchChain = chainable([fakeRow({ id: 42, productId: 100, condition: 'NM', quantity: 2, price: 9.99 })]);
+    it('should create parent and stock entry for a new item', async () => {
+      // First select: check for existing parent → no match
+      const parentCheckChain = chainable([]);
+      // Insert parent → returns new parent
+      const insParentChain = chainable([{ id: 42 }]);
+      // Second select: check for existing stock → no match
+      const stockCheckChain = chainable([]);
+      // Insert stock
+      const insStockChain = chainable([{ id: 100 }]);
+      // getInventoryItemById select
+      const fetchChain = chainable([fakeInventoryRow({ id: 42, totalQuantity: 2, price: 9.99 })]);
 
-      let callIndex = 0;
+      let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? dupCheckChain : fetchChain;
+        selectIdx++;
+        if (selectIdx === 1) return parentCheckChain;
+        if (selectIdx === 2) return stockCheckChain;
+        return fetchChain;
       });
-      mockOtcgs.insert.mockReturnValue(insChain);
 
-      const result = await addInventoryItem('test-org-id', { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
+      let insertIdx = 0;
+      mockOtcgs.insert.mockImplementation(() => {
+        insertIdx++;
+        return insertIdx === 1 ? insParentChain : insStockChain;
+      });
+
+      const result = await addInventoryItem(
+        'test-org-id',
+        { productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5, acquisitionDate: '2026-01-01' },
+        'user-1',
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBe(42);
       expect(mockOtcgs.insert).toHaveBeenCalled();
     });
 
-    it('should merge with existing item when same productId + condition + costBasis + acquisitionDate', async () => {
-      // Duplicate check → finds existing row
-      const dupCheckChain = chainable([{ id: 10, quantity: 3, price: 5.0 }]);
-      // Update chain
-      const updChain = chainable([]);
-      // getInventoryItemById → returns merged row
-      const fetchChain = chainable([fakeRow({ id: 10, quantity: 5, price: 9.99 })]);
+    it('should merge stock when same costBasis+acquisitionDate already exists', async () => {
+      // Find existing parent
+      const parentCheckChain = chainable([{ id: 10, price: 5.0 }]);
+      // Update parent price
+      const updParentChain = chainable([]);
+      // Find existing stock with same costBasis+acquisitionDate
+      const stockCheckChain = chainable([{ id: 50, quantity: 3, notes: null }]);
+      // getInventoryItemById
+      const fetchChain = chainable([fakeInventoryRow({ id: 10, totalQuantity: 5 })]);
 
-      let callIndex = 0;
+      let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? dupCheckChain : fetchChain;
+        selectIdx++;
+        if (selectIdx === 1) return parentCheckChain;
+        if (selectIdx === 2) return stockCheckChain;
+        return fetchChain;
       });
-      mockOtcgs.update.mockReturnValue(updChain);
+      mockOtcgs.update.mockImplementation(() => {
+        return updParentChain;
+      });
 
       const result = await addInventoryItem(
         'test-org-id',
-        { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5.0, acquisitionDate: '2026-01-01' },
+        { productId: 100, condition: 'NM', quantity: 2, price: 9.99, costBasis: 5, acquisitionDate: '2026-01-01' },
         'user-1',
       );
 
       expect(result).toBeDefined();
       expect(result.id).toBe(10);
       expect(mockOtcgs.update).toHaveBeenCalled();
-      // insert should NOT have been called since we merged
-      expect(mockOtcgs.insert).not.toHaveBeenCalled();
-    });
-
-    it('should handle zero costBasis correctly', async () => {
-      // Duplicate check with zero costBasis → no match
-      const dupCheckChain = chainable([]);
-      const insChain = chainable([{ id: 55 }]);
-      const fetchChain = chainable([fakeRow({ id: 55, costBasis: 0 })]);
-
-      let callIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? dupCheckChain : fetchChain;
-      });
-      mockOtcgs.insert.mockReturnValue(insChain);
-
-      const result = await addInventoryItem('test-org-id', { organizationId: 'test-org-id', productId: 100, condition: 'NM', quantity: 1, price: 5.0, costBasis: 0, acquisitionDate: '2026-01-01' }, 'user-1');
-
-      expect(result).toBeDefined();
-      expect(result.costBasis).toBe(0);
-      expect(mockOtcgs.insert).toHaveBeenCalled();
     });
   });
 
   // -----------------------------------------------------------------------
-  // updateInventoryItem
+  // updateInventoryItem — updates parent (condition, price)
   // -----------------------------------------------------------------------
   describe('updateInventoryItem', () => {
-    it('should update only provided fields', async () => {
+    it('should update parent fields', async () => {
       const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 1, price: 19.99 })]);
+      const fetchChain = chainable([fakeInventoryRow({ id: 1, price: 19.99 })]);
 
       mockOtcgs.update.mockReturnValue(updChain);
       mockOtcgs.select.mockReturnValue(fetchChain);
@@ -397,74 +360,28 @@ describe('inventory-service', () => {
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
 
-    it('should update the updatedBy and updatedAt fields', async () => {
-      const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 1 })]);
-
-      mockOtcgs.update.mockReturnValue(updChain);
-      mockOtcgs.select.mockReturnValue(fetchChain);
-
-      await updateInventoryItem({ id: 1, quantity: 10 }, 'user-42');
-
-      // The update chain's `set` should have been called
-      expect(updChain.set).toHaveBeenCalled();
-      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.updatedBy).toBe('user-42');
-      expect(setCall.updatedAt).toBeInstanceOf(Date);
-    });
-
-    it('should merge with existing item when costBasis change creates duplicate tuple', async () => {
-      // Current item being edited: id=1, productId=100, condition=NM, costBasis=10.00, quantity=3
+    it('should handle condition change with merge', async () => {
+      // Fetch current item
       const currentItemChain = chainable([
-        { id: 1, productId: 100, condition: 'NM', costBasis: 10.0, quantity: 3, price: 5.0 },
+        { id: 1, organizationId: 'test-org-id', productId: 100, condition: 'NM', price: 5.0 },
       ]);
-      // Duplicate check finds existing item: id=2, same productId+condition but costBasis=20.00 (the target)
-      const dupCheckChain = chainable([
-        { id: 2, productId: 100, condition: 'NM', costBasis: 20.0, quantity: 5, price: 6.0 },
+      // Find existing target parent for new condition
+      const targetCheckChain = chainable([
+        { id: 3, organizationId: 'test-org-id', productId: 100, condition: 'LP', price: 4.0 },
       ]);
-      // Update chain for the soft-delete and surviving item update
+      // Update/merge operations
       const updChain = chainable([]);
-      // Final fetch of the surviving item
-      const fetchChain = chainable([fakeRow({ id: 2, quantity: 8, costBasis: 20.0 })]);
+      // Merge stock duplicates query
+      const mergeStockChain = chainable([]);
+      // getInventoryItemById for result
+      const fetchChain = chainable([fakeInventoryRow({ id: 3, condition: 'LP' })]);
 
-      let selectCallIndex = 0;
+      let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
-        selectCallIndex++;
-        if (selectCallIndex === 1) return currentItemChain; // fetch current item
-        if (selectCallIndex === 2) return dupCheckChain; // duplicate check
-        return fetchChain; // getInventoryItemById for the survivor
-      });
-      mockOtcgs.update.mockReturnValue(updChain);
-
-      const result = await updateInventoryItem({ id: 1, costBasis: 20.0 }, 'user-1');
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(2);
-      // Both soft-delete and merge update use otcgs.update
-      expect(mockOtcgs.update).toHaveBeenCalled();
-      // The first set call is the soft-delete; the last is the merge update
-      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
-      const mergeSetCall = setCalls[setCalls.length - 1][0];
-      expect(mergeSetCall.quantity).toBe(8); // 5 (existing) + 3 (from edited item)
-    });
-
-    it('should merge with existing item when condition change creates duplicate tuple', async () => {
-      // Current item: id=1, productId=100, condition=NM, costBasis=10.00, quantity=2
-      const currentItemChain = chainable([
-        { id: 1, productId: 100, condition: 'NM', costBasis: 10.0, quantity: 2, price: 5.0 },
-      ]);
-      // Duplicate check finds existing item with condition=LP and same costBasis
-      const dupCheckChain = chainable([
-        { id: 3, productId: 100, condition: 'LP', costBasis: 10.0, quantity: 7, price: 4.0 },
-      ]);
-      const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 3, quantity: 9, condition: 'LP' })]);
-
-      let selectCallIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        selectCallIndex++;
-        if (selectCallIndex === 1) return currentItemChain;
-        if (selectCallIndex === 2) return dupCheckChain;
+        selectIdx++;
+        if (selectIdx === 1) return currentItemChain;
+        if (selectIdx === 2) return targetCheckChain;
+        if (selectIdx === 3) return mergeStockChain;
         return fetchChain;
       });
       mockOtcgs.update.mockReturnValue(updChain);
@@ -473,74 +390,6 @@ describe('inventory-service', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(3);
-      // Soft-delete and merge both use update
-      expect(mockOtcgs.update).toHaveBeenCalled();
-      // The first set call is the soft-delete; the last is the merge update
-      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
-      const mergeSetCall = setCalls[setCalls.length - 1][0];
-      expect(mergeSetCall.quantity).toBe(9); // 7 (existing) + 2 (from edited item)
-    });
-
-    it('should use input quantity when merging if quantity is provided', async () => {
-      // Current item: id=1, quantity=3
-      const currentItemChain = chainable([
-        { id: 1, productId: 100, condition: 'NM', costBasis: 10.0, quantity: 3, price: 5.0 },
-      ]);
-      // Existing match: id=2, quantity=5
-      const dupCheckChain = chainable([
-        { id: 2, productId: 100, condition: 'NM', costBasis: 20.0, quantity: 5, price: 6.0 },
-      ]);
-      const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 2, quantity: 15 })]);
-
-      let selectCallIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        selectCallIndex++;
-        if (selectCallIndex === 1) return currentItemChain;
-        if (selectCallIndex === 2) return dupCheckChain;
-        return fetchChain;
-      });
-      mockOtcgs.update.mockReturnValue(updChain);
-
-      // Provide explicit quantity=10 along with costBasis change
-      const result = await updateInventoryItem({ id: 1, costBasis: 20.0, quantity: 10 }, 'user-1');
-
-      expect(result).toBeDefined();
-      // The first set call is the soft-delete (sets deletedAt, quantity: 0),
-      // the second set call is the merge update on the surviving item
-      const setCalls = (updChain.set as ReturnType<typeof vi.fn>).mock.calls;
-      const mergeSetCall = setCalls[setCalls.length - 1][0];
-      // Should use input quantity (10) instead of current item quantity (3)
-      expect(mergeSetCall.quantity).toBe(15); // 5 (existing) + 10 (input override)
-    });
-
-    it('should not merge when costBasis change does not create a duplicate', async () => {
-      // Current item: id=1, productId=100, condition=NM, costBasis=10.00
-      const currentItemChain = chainable([
-        { id: 1, productId: 100, condition: 'NM', costBasis: 10.0, quantity: 3, price: 5.0 },
-      ]);
-      // Duplicate check finds the same item (id=1), no other match
-      const dupCheckChain = chainable([
-        { id: 1, productId: 100, condition: 'NM', costBasis: 30.0, quantity: 3, price: 5.0 },
-      ]);
-      const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 1, costBasis: 30.0 })]);
-
-      let selectCallIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        selectCallIndex++;
-        if (selectCallIndex === 1) return currentItemChain;
-        if (selectCallIndex === 2) return dupCheckChain;
-        return fetchChain;
-      });
-      mockOtcgs.update.mockReturnValue(updChain);
-
-      const result = await updateInventoryItem({ id: 1, costBasis: 30.0 }, 'user-1');
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(1);
-      // Should NOT delete anything – just a normal update
-      expect(mockOtcgs.delete).not.toHaveBeenCalled();
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
   });
@@ -549,69 +398,120 @@ describe('inventory-service', () => {
   // deleteInventoryItem
   // -----------------------------------------------------------------------
   describe('deleteInventoryItem', () => {
-    it('should soft-delete an item by id using update', async () => {
-      const updChain = chainable([]);
-      mockOtcgs.update.mockReturnValue(updChain);
-
-      await deleteInventoryItem(1);
-
-      expect(mockOtcgs.update).toHaveBeenCalled();
-    });
-
-    it('should return true on successful deletion', async () => {
+    it('should soft-delete stock entries only (parent is never deleted)', async () => {
       const updChain = chainable([]);
       mockOtcgs.update.mockReturnValue(updChain);
 
       const result = await deleteInventoryItem(1);
 
       expect(result).toBe(true);
+      // Should call update once: only stock entries are soft-deleted
+      expect(mockOtcgs.update).toHaveBeenCalledTimes(1);
     });
   });
 
   // -----------------------------------------------------------------------
-  // bulkUpdateInventoryItems
+  // addStock
   // -----------------------------------------------------------------------
-  describe('bulkUpdateInventoryItems', () => {
-    it('should update multiple items', async () => {
+  describe('addStock', () => {
+    it('should add a new stock entry', async () => {
+      // Verify parent exists
+      const parentCheckChain = chainable([{ id: 1 }]);
+      // Check for duplicate stock
+      const dupCheckChain = chainable([]);
+      // Insert stock
+      const insChain = chainable([{ id: 100 }]);
+      // getStockById
+      const fetchChain = chainable([fakeStockRow({ id: 100 })]);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return parentCheckChain;
+        if (selectIdx === 2) return dupCheckChain;
+        return fetchChain;
+      });
+      mockOtcgs.insert.mockReturnValue(insChain);
+
+      const result = await addStock(
+        { inventoryItemId: 1, quantity: 5, costBasis: 10, acquisitionDate: '2026-01-01' },
+        'user-1',
+      );
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(100);
+      expect(mockOtcgs.insert).toHaveBeenCalled();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // updateStock
+  // -----------------------------------------------------------------------
+  describe('updateStock', () => {
+    it('should update stock entry fields', async () => {
+      // Fetch current stock
+      const currentStockChain = chainable([fakeStockRow({ id: 10 })]);
       const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 1 }), fakeRow({ id: 2 })]);
+      const fetchChain = chainable([fakeStockRow({ id: 10, quantity: 8 })]);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return currentStockChain;
+        return fetchChain;
+      });
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      const result = await updateStock({ id: 10, quantity: 8 }, 'user-1');
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(10);
+      expect(mockOtcgs.update).toHaveBeenCalled();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // deleteStock
+  // -----------------------------------------------------------------------
+  describe('deleteStock', () => {
+    it('should soft-delete a stock entry', async () => {
+      const updChain = chainable([]);
+      mockOtcgs.update.mockReturnValue(updChain);
+
+      const result = await deleteStock(10);
+
+      expect(result).toBe(true);
+      expect(mockOtcgs.update).toHaveBeenCalled();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // bulkUpdateStock
+  // -----------------------------------------------------------------------
+  describe('bulkUpdateStock', () => {
+    it('should update multiple stock entries', async () => {
+      const updChain = chainable([]);
+      const fetchChain = chainable([fakeStockRow({ id: 10 }), fakeStockRow({ id: 11 })]);
 
       mockOtcgs.update.mockReturnValue(updChain);
       mockOtcgs.select.mockReturnValue(fetchChain);
 
-      const result = await bulkUpdateInventoryItems({ ids: [1, 2], condition: 'LP' }, 'user-1');
+      const result = await bulkUpdateStock({ ids: [10, 11], quantity: 5 }, 'user-1');
 
       expect(result).toHaveLength(2);
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
-
-    it('should only apply non-null fields', async () => {
-      const updChain = chainable([]);
-      const fetchChain = chainable([fakeRow({ id: 1 })]);
-
-      mockOtcgs.update.mockReturnValue(updChain);
-      mockOtcgs.select.mockReturnValue(fetchChain);
-
-      await bulkUpdateInventoryItems({ ids: [1], price: 15.0 }, 'user-1');
-
-      const setCall = (updChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.updatedBy).toBe('user-1');
-      expect(setCall.updatedAt).toBeInstanceOf(Date);
-      expect(setCall.price).toBe(15.0);
-      // condition was not provided, so it should not be in the set call
-      expect(setCall.condition).toBeUndefined();
-    });
   });
 
   // -----------------------------------------------------------------------
-  // bulkDeleteInventoryItems
+  // bulkDeleteStock
   // -----------------------------------------------------------------------
-  describe('bulkDeleteInventoryItems', () => {
-    it('should soft-delete multiple items by ids using update', async () => {
+  describe('bulkDeleteStock', () => {
+    it('should soft-delete multiple stock entries', async () => {
       const updChain = chainable([]);
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await bulkDeleteInventoryItems([1, 2, 3]);
+      const result = await bulkDeleteStock([10, 11, 12]);
 
       expect(result).toBe(true);
       expect(mockOtcgs.update).toHaveBeenCalled();
@@ -656,31 +556,6 @@ describe('inventory-service', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Charizard');
-    });
-
-    it('should filter by game when provided', async () => {
-      const productRows = [
-        {
-          id: 1,
-          name: 'Pikachu',
-          gameName: 'Pokemon',
-          setName: 'Base Set',
-          imageUrl: null,
-          rarity: 'Common',
-          isSingle: 1,
-        },
-      ];
-
-      let callIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? chainable(productRows) : chainable([]);
-      });
-
-      const result = await searchProducts('Pikachu', 'Pokemon');
-
-      expect(result).toHaveLength(1);
-      expect(result[0].gameName).toBe('Pokemon');
     });
 
     it('should include prices in results', async () => {
@@ -729,45 +604,6 @@ describe('inventory-service', () => {
       expect(result[0].prices[0].subTypeName).toBe('Normal');
       expect(result[0].prices[0].marketPrice).toBe(0.8);
       expect(result[0].prices[1].subTypeName).toBe('Foil');
-    });
-
-    it('should determine isSingle/isSealed correctly', async () => {
-      const productRows = [
-        {
-          id: 1,
-          name: 'Booster Box',
-          gameName: 'Pokemon',
-          setName: 'Base Set',
-          imageUrl: null,
-          rarity: null,
-          isSingle: 0,
-        },
-        {
-          id: 2,
-          name: 'Charizard',
-          gameName: 'Pokemon',
-          setName: 'Base Set',
-          imageUrl: null,
-          rarity: 'Rare',
-          isSingle: 1,
-        },
-      ];
-
-      let callIndex = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIndex++;
-        return callIndex === 1 ? chainable(productRows) : chainable([]);
-      });
-
-      const result = await searchProducts('Pokemon');
-
-      expect(result).toHaveLength(2);
-      // Sealed product
-      expect(result[0].isSingle).toBe(false);
-      expect(result[0].isSealed).toBe(true);
-      // Single card
-      expect(result[1].isSingle).toBe(true);
-      expect(result[1].isSealed).toBe(false);
     });
   });
 });

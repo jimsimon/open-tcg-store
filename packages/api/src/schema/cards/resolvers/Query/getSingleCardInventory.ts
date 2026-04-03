@@ -1,7 +1,8 @@
-import { sql } from 'drizzle-orm';
+import { sql, and } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from '../../../types.generated';
@@ -83,7 +84,7 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
     limit: 10,
   });
 
-  // Fetch real inventory data for all products
+  // Fetch real inventory data for all products — derive quantity from stock entries
   const productIds = results.map((r) => r.id);
   const inventoryData =
     productIds.length > 0
@@ -91,15 +92,24 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
           .select({
             productId: inventoryItem.productId,
             condition: inventoryItem.condition,
-            totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+            totalQuantity: sql<number>`COALESCE(SUM(
+              CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+            ), 0)`.as('total_quantity'),
             lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
           })
           .from(inventoryItem)
+          .leftJoin(
+            inventoryItemStock,
+            sql`${inventoryItemStock.inventoryItemId} = ${inventoryItem.id}`,
+          )
           .where(
-            sql`${inventoryItem.productId} IN (${sql.join(
-              productIds.map((id) => sql`${id}`),
-              sql`, `,
-            )}) ${organizationId ? sql`AND ${inventoryItem.organizationId} = ${organizationId}` : sql``}`,
+            and(
+              sql`${inventoryItem.productId} IN (${sql.join(
+                productIds.map((id) => sql`${id}`),
+                sql`, `,
+              )})`,
+              organizationId ? sql`${inventoryItem.organizationId} = ${organizationId}` : undefined,
+            ),
           )
           .groupBy(inventoryItem.productId, inventoryItem.condition)
       : [];

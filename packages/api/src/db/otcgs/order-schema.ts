@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { user } from './auth-schema';
+import { inventoryItemStock } from './inventory-stock-schema';
 
 export const order = sqliteTable(
   'order',
@@ -36,6 +37,7 @@ export const orderItem = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     orderId: integer('order_id').notNull(),
     inventoryItemId: integer('inventory_item_id'),
+    inventoryItemStockId: integer('inventory_item_stock_id'),
     productId: integer('product_id').notNull(),
     productName: text('product_name').notNull(),
     condition: text('condition').notNull(),
@@ -52,5 +54,11 @@ export const orderItem = sqliteTable(
     index('order_item_order_id_idx').on(table.orderId),
     index('order_item_product_id_idx').on(table.productId),
     index('order_item_inventory_item_id_idx').on(table.inventoryItemId),
+    index('order_item_stock_id_idx').on(table.inventoryItemStockId),
+    foreignKey({
+      columns: [table.inventoryItemStockId],
+      foreignColumns: [inventoryItemStock.id],
+      name: 'order_item_stock_id_fkey',
+    }),
   ],
 );

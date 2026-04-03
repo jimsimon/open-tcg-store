@@ -2,6 +2,8 @@ import { relations } from 'drizzle-orm/relations';
 import { order, orderItem } from './order-schema';
 import { user } from './auth-schema';
 import { product } from '../tcg-data/schema';
+import { inventoryItem } from './inventory-schema';
+import { inventoryItemStock } from './inventory-stock-schema';
 
 export const orderRelations = relations(order, ({ one, many }) => ({
   user: one(user, {
@@ -19,5 +21,13 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
   product: one(product, {
     fields: [orderItem.productId],
     references: [product.id],
+  }),
+  inventoryItem: one(inventoryItem, {
+    fields: [orderItem.inventoryItemId],
+    references: [inventoryItem.id],
+  }),
+  inventoryItemStock: one(inventoryItemStock, {
+    fields: [orderItem.inventoryItemStockId],
+    references: [inventoryItemStock.id],
   }),
 }));

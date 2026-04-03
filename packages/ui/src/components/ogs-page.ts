@@ -1078,6 +1078,8 @@ export class OgsPage extends SignalWatcher(LitElement) {
           this.orderSuccess = `Order ${data.order.orderNumber} created for $${data.order.totalAmount.toFixed(2)}`;
           cartState.set({ items: [] });
           this.customerName = '';
+          // Notify product pages to refresh listings with updated inventory
+          this.dispatchEvent(new CustomEvent('order-submitted', { bubbles: true, composed: true }));
         }
       }
     } catch (e) {

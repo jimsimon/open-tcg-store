@@ -2,6 +2,7 @@ import { sql, and, like, eq, exists, isNull, gt } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { product, productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
+import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 import type { InputMaybe, ProductListingFilters, QueryResolvers } from '../../../types.generated';
@@ -59,18 +60,25 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
   }
 
   // If condition filter is set, only show products that have inventory in that condition
+  // We need to check for a parent inventory_item with that condition that has stock entries
   if (conditionFilter) {
     conditions.push(
       exists(
         otcgs
           .select({ one: sql`1` })
           .from(inventoryItem)
+          .innerJoin(
+            inventoryItemStock,
+            and(
+              eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
+              isNull(inventoryItemStock.deletedAt),
+              gt(inventoryItemStock.quantity, 0),
+            ),
+          )
           .where(
             and(
               eq(inventoryItem.productId, product.id),
               eq(inventoryItem.condition, conditionFilter),
-              gt(inventoryItem.quantity, 0),
-              isNull(inventoryItem.deletedAt),
               organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           ),
@@ -105,17 +113,21 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     );
   }
 
-  // Build the base query with LEFT JOIN to inventory_item
+  // Build the base query with LEFT JOINs: product -> inventory_item -> inventory_item_stock
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  // Query with aggregation
+  // Derive quantity from stock entries via double LEFT JOIN
+  const orgCondition = organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined;
+
   const baseQuery = otcgs
     .select({
       id: product.id,
       name: product.name,
       tcgpProductId: product.tcgpProductId,
       groupId: product.groupId,
-      totalQuantity: sql<number>`COALESCE(SUM(${inventoryItem.quantity}), 0)`.as('total_quantity'),
+      totalQuantity: sql<number>`COALESCE(SUM(
+        CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+      ), 0)`.as('total_quantity'),
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(product)
@@ -123,19 +135,25 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       inventoryItem,
       and(
         eq(inventoryItem.productId, product.id),
-        isNull(inventoryItem.deletedAt),
-        gt(inventoryItem.quantity, 0),
-        organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
+        orgCondition,
       ),
+    )
+    .leftJoin(
+      inventoryItemStock,
+      eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
     )
     .where(whereClause)
     .groupBy(product.id);
 
   // Apply inStockOnly filter using HAVING
-  const queryWithHaving = inStockOnly ? baseQuery.having(sql`SUM(${inventoryItem.quantity}) > 0`) : baseQuery;
+  const queryWithHaving = inStockOnly
+    ? baseQuery.having(sql`COALESCE(SUM(
+        CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+      ), 0) > 0`)
+    : baseQuery;
 
   // Get total count first (without pagination)
-  const orgJoinCondition = organizationId
+  const orgJoinSql = organizationId
     ? sql`AND ${inventoryItem.organizationId} = ${organizationId}`
     : sql``;
   const countQuery = otcgs
@@ -147,10 +165,14 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
         ? sql`(
             SELECT ${product.id}
             FROM ${product}
-            LEFT JOIN ${inventoryItem} ON ${inventoryItem.productId} = ${product.id} ${orgJoinCondition}
+            LEFT JOIN ${inventoryItem} ON ${inventoryItem.productId} = ${product.id}
+              ${orgJoinSql}
+            LEFT JOIN ${inventoryItemStock} ON ${inventoryItemStock.inventoryItemId} = ${inventoryItem.id}
             ${whereClause ? sql`WHERE ${whereClause}` : sql``}
             GROUP BY ${product.id}
-            HAVING SUM(${inventoryItem.quantity}) > 0
+            HAVING COALESCE(SUM(
+              CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+            ), 0) > 0
           ) AS filtered`
         : sql`(
             SELECT ${product.id}
@@ -211,26 +233,30 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     return 'Unknown';
   }
 
-  // Fetch per-condition pricing for all product IDs (exclude soft-deleted and zero-qty)
-  // We need the inventory item with the lowest price per product+condition for the inventoryItemId
+  // Fetch per-condition pricing for all product IDs
+  // Join inventory_item with stock to derive quantity per condition
   const conditionPricesRaw =
     productIds.length > 0
       ? await otcgs
           .select({
             productId: inventoryItem.productId,
             condition: inventoryItem.condition,
-            quantity: sql<number>`SUM(${inventoryItem.quantity})`.as('cond_qty'),
+            quantity: sql<number>`COALESCE(SUM(
+              CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+            ), 0)`.as('cond_qty'),
             price: sql<number>`MIN(${inventoryItem.price})`.as('cond_price'),
           })
           .from(inventoryItem)
+          .leftJoin(
+            inventoryItemStock,
+            eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
+          )
           .where(
             and(
               sql`${inventoryItem.productId} IN (${sql.join(
                 productIds.map((id) => sql`${id}`),
                 sql`, `,
               )})`,
-              isNull(inventoryItem.deletedAt),
-              gt(inventoryItem.quantity, 0),
               organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           )
@@ -238,6 +264,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       : [];
 
   // Also fetch the specific inventory item ID with the lowest price per product+condition
+  // (only where there's stock with quantity > 0)
   const inventoryItemIdsRaw =
     productIds.length > 0
       ? await otcgs
@@ -246,19 +273,28 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
             productId: inventoryItem.productId,
             condition: inventoryItem.condition,
             price: inventoryItem.price,
+            stockQty: sql<number>`COALESCE(SUM(
+              CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+            ), 0)`.as('stock_qty'),
           })
           .from(inventoryItem)
+          .leftJoin(
+            inventoryItemStock,
+            eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
+          )
           .where(
             and(
               sql`${inventoryItem.productId} IN (${sql.join(
                 productIds.map((id) => sql`${id}`),
                 sql`, `,
               )})`,
-              gt(inventoryItem.quantity, 0),
-              isNull(inventoryItem.deletedAt),
               organizationId ? eq(inventoryItem.organizationId, organizationId) : undefined,
             ),
           )
+          .groupBy(inventoryItem.id)
+          .having(sql`COALESCE(SUM(
+            CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END
+          ), 0) > 0`)
           .orderBy(inventoryItem.price)
       : [];
 
