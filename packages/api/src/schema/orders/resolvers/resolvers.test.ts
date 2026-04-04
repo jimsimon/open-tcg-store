@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const {
   mockAssertPermission,
   mockGetOrganizationId,
+  mockGetUserId,
   mockSubmitOrder,
   mockCancelOrder,
   mockUpdateOrderStatus,
@@ -10,6 +11,7 @@ const {
 } = vi.hoisted(() => ({
   mockAssertPermission: vi.fn(),
   mockGetOrganizationId: vi.fn().mockReturnValue('org-1'),
+  mockGetUserId: vi.fn().mockReturnValue('user-1'),
   mockSubmitOrder: vi.fn(),
   mockCancelOrder: vi.fn(),
   mockUpdateOrderStatus: vi.fn(),
@@ -19,6 +21,7 @@ const {
 vi.mock('../../../lib/assert-permission', () => ({
   assertPermission: mockAssertPermission,
   getOrganizationId: mockGetOrganizationId,
+  getUserId: mockGetUserId,
 }));
 
 vi.mock('../../../services/order-service', () => ({
@@ -67,7 +70,7 @@ describe('orders resolvers', () => {
       await cancelOrder(null, { orderId: 1 }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { order: ['cancel'] });
-      expect(mockCancelOrder).toHaveBeenCalledWith(1);
+      expect(mockCancelOrder).toHaveBeenCalledWith(1, 'org-1', 'user-1');
     });
   });
 
@@ -78,7 +81,7 @@ describe('orders resolvers', () => {
       await updateOrderStatus(null, { orderId: 1, status: 'completed' }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { order: ['update'] });
-      expect(mockUpdateOrderStatus).toHaveBeenCalledWith(1, 'completed');
+      expect(mockUpdateOrderStatus).toHaveBeenCalledWith(1, 'completed', 'org-1', 'user-1');
     });
   });
 

@@ -381,6 +381,7 @@ type Query {
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   getStoreLocation(id: String!): StoreLocation
   getStoreSettings: StoreSettings!
+  getTransactionLogs(filters: TransactionLogFilters, pagination: PaginationInput): TransactionLogPage!
   isSetupPending: Boolean!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
   searchProducts(game: String, searchTerm: String!): [ProductSearchResult!]!
@@ -475,6 +476,33 @@ type SubmitOrderResult {
   error: String
   insufficientItems: [InsufficientItem!]
   order: Order
+}
+
+type TransactionLogEntry {
+  action: String!
+  createdAt: String!
+  details: String!
+  id: Int!
+  resourceId: String
+  resourceType: String!
+  userEmail: String!
+  userName: String!
+}
+
+input TransactionLogFilters {
+  action: String
+  month: Int
+  resourceType: String
+  searchTerm: String
+  year: Int
+}
+
+type TransactionLogPage {
+  items: [TransactionLogEntry!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
 }
 
 input UpdateBackupSettingsInput {

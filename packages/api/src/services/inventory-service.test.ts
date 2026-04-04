@@ -97,6 +97,11 @@ vi.mock('../db/tcg-data/schema', () => ({
   },
 }));
 
+// Mock the transaction log service so logging calls don't break tests
+vi.mock('./transaction-log-service', () => ({
+  logTransaction: vi.fn(),
+}));
+
 // Mock drizzle-orm operators so they don't throw
 vi.mock('drizzle-orm', () => {
   const sqlResult = () => ({ type: 'sql', as: vi.fn().mockReturnValue({ type: 'sql-alias' }) });

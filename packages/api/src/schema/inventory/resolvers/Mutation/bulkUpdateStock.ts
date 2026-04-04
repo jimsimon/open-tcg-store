@@ -1,5 +1,5 @@
 import type { GraphqlContext } from '../../../../server';
-import { assertPermission, getUserId } from '../../../../lib/assert-permission';
+import { assertPermission, getOrganizationId, getUserId } from '../../../../lib/assert-permission';
 import { bulkUpdateStock as bulkUpdateStockService } from '../../../../services/inventory-service';
 import type { MutationResolvers } from './../../../types.generated';
 
@@ -9,6 +9,7 @@ export const bulkUpdateStock: NonNullable<MutationResolvers['bulkUpdateStock']> 
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { inventory: ['update'] });
+  const organizationId = getOrganizationId(ctx);
   const userId = getUserId(ctx);
-  return await bulkUpdateStockService(args.input, userId);
+  return await bulkUpdateStockService(args.input, userId, organizationId);
 };

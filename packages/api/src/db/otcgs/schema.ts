@@ -5,3 +5,4 @@ export * from './inventory-stock-schema';
 export * from './order-schema';
 export * from './settings-schema';
 export * from './store-hours-schema';
+export * from './transaction-log-schema';

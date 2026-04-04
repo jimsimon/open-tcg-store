@@ -17,6 +17,7 @@ import { getShoppingCart as Query_getShoppingCart } from './shopping/resolvers/Q
 import { getSingleCardInventory as Query_getSingleCardInventory } from './cards/resolvers/Query/getSingleCardInventory';
 import { getStoreLocation as Query_getStoreLocation } from './store-locations/resolvers/Query/getStoreLocation';
 import { getStoreSettings as Query_getStoreSettings } from './settings/resolvers/Query/getStoreSettings';
+import { getTransactionLogs as Query_getTransactionLogs } from './transaction-log/resolvers/Query/getTransactionLogs';
 import { isSetupPending as Query_isSetupPending } from './setup/resolvers/Query/isSetupPending';
 import { lookupSalesTax as Query_lookupSalesTax } from './settings/resolvers/Query/lookupSalesTax';
 import { searchProducts as Query_searchProducts } from './inventory/resolvers/Query/searchProducts';
@@ -67,6 +68,7 @@ export const resolvers: Resolvers = {
     getSingleCardInventory: Query_getSingleCardInventory,
     getStoreLocation: Query_getStoreLocation,
     getStoreSettings: Query_getStoreSettings,
+    getTransactionLogs: Query_getTransactionLogs,
     isSetupPending: Query_isSetupPending,
     lookupSalesTax: Query_lookupSalesTax,
     searchProducts: Query_searchProducts,

@@ -1,6 +1,7 @@
 import { eq, and, like, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
+import { logTransaction } from './transaction-log-service';
 import type {
   InventoryItem,
   InventoryPage,
@@ -457,6 +458,22 @@ export async function addInventoryItem(
     });
   }
 
+  // Log the transaction
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.item_created',
+    resourceType: 'inventory',
+    resourceId: parentId,
+    details: {
+      productId: input.productId,
+      condition: input.condition,
+      price: input.price,
+      quantity: input.quantity,
+      costBasis: input.costBasis,
+    },
+  });
+
   return (await getInventoryItemById(parentId))!;
 }
 
@@ -464,7 +481,11 @@ export async function addInventoryItem(
 // 4. updateInventoryItem — Update parent price/condition
 // ---------------------------------------------------------------------------
 
-export async function updateInventoryItem(input: UpdateInventoryItemInput, userId: string): Promise<InventoryItem> {
+export async function updateInventoryItem(
+  input: UpdateInventoryItemInput,
+  userId: string,
+  organizationId?: string,
+): Promise<InventoryItem> {
   validateUpdateInput(input);
   const now = new Date();
 
@@ -509,6 +530,25 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
         // Merge any duplicate stock entries (same costBasis + acquisitionDate) that now exist
         await mergeStockDuplicates(existingTarget.id, userId);
 
+        // Log the transaction
+        if (organizationId) {
+          await logTransaction({
+            organizationId,
+            userId,
+            action: 'inventory.item_updated',
+            resourceType: 'inventory',
+            resourceId: existingTarget.id,
+            details: {
+              productId: currentItem.productId,
+              conditionBefore: currentItem.condition,
+              conditionAfter: input.condition,
+              priceBefore: currentItem.price,
+              priceAfter: input.price ?? currentItem.price,
+              merged: true,
+            },
+          });
+        }
+
         return (await getInventoryItemById(existingTarget.id))!;
       }
     }
@@ -521,6 +561,21 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
 
   await otcgs.update(inventoryItem).set(updates).where(eq(inventoryItem.id, input.id));
 
+  // Log the transaction
+  if (organizationId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.item_updated',
+      resourceType: 'inventory',
+      resourceId: input.id,
+      details: {
+        condition: input.condition ?? undefined,
+        price: input.price ?? undefined,
+      },
+    });
+  }
+
   return (await getInventoryItemById(input.id))!;
 }
 
@@ -528,7 +583,7 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
 // 5. deleteInventoryItem — Soft-delete all stock (parent stays; hidden when no stock)
 // ---------------------------------------------------------------------------
 
-export async function deleteInventoryItem(id: number): Promise<boolean> {
+export async function deleteInventoryItem(id: number, organizationId?: string, userId?: string): Promise<boolean> {
   const now = new Date();
   // Soft-delete all non-deleted stock entries for this parent.
   // The parent row itself is never deleted — it will be hidden from the
@@ -538,6 +593,19 @@ export async function deleteInventoryItem(id: number): Promise<boolean> {
     .update(inventoryItemStock)
     .set({ deletedAt: now, quantity: 0, updatedAt: now })
     .where(and(eq(inventoryItemStock.inventoryItemId, id), stockNotDeleted()));
+
+  // Log the transaction
+  if (organizationId && userId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.item_deleted',
+      resourceType: 'inventory',
+      resourceId: id,
+      details: { inventoryItemId: id },
+    });
+  }
+
   return true;
 }
 
@@ -545,7 +613,11 @@ export async function deleteInventoryItem(id: number): Promise<boolean> {
 // 6. Stock CRUD operations
 // ---------------------------------------------------------------------------
 
-export async function addStock(input: AddStockInput, userId: string): Promise<InventoryItemStockGql> {
+export async function addStock(
+  input: AddStockInput,
+  userId: string,
+  organizationId?: string,
+): Promise<InventoryItemStockGql> {
   const now = new Date();
 
   // Verify parent exists (parents are never deleted)
@@ -572,6 +644,8 @@ export async function addStock(input: AddStockInput, userId: string): Promise<In
     )
     .limit(1);
 
+  let resultStockId: number;
+
   if (existing) {
     // Reuse: un-delete if needed, add quantity
     const baseQty = existing.deletedAt ? 0 : existing.quantity;
@@ -586,29 +660,52 @@ export async function addStock(input: AddStockInput, userId: string): Promise<In
       })
       .where(eq(inventoryItemStock.id, existing.id));
 
-    return (await getStockById(existing.id))!;
+    resultStockId = existing.id;
+  } else {
+    // Insert new stock entry
+    const [inserted] = await otcgs
+      .insert(inventoryItemStock)
+      .values({
+        inventoryItemId: input.inventoryItemId,
+        quantity: input.quantity,
+        costBasis: input.costBasis,
+        acquisitionDate: input.acquisitionDate,
+        notes: input.notes ?? null,
+        createdBy: userId,
+        updatedBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    resultStockId = inserted.id;
   }
 
-  // Insert new stock entry
-  const [inserted] = await otcgs
-    .insert(inventoryItemStock)
-    .values({
-      inventoryItemId: input.inventoryItemId,
-      quantity: input.quantity,
-      costBasis: input.costBasis,
-      acquisitionDate: input.acquisitionDate,
-      notes: input.notes ?? null,
-      createdBy: userId,
-      updatedBy: userId,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning();
+  // Log the transaction
+  if (organizationId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.stock_added',
+      resourceType: 'inventory',
+      resourceId: resultStockId,
+      details: {
+        inventoryItemId: input.inventoryItemId,
+        quantity: input.quantity,
+        costBasis: input.costBasis,
+        acquisitionDate: input.acquisitionDate,
+      },
+    });
+  }
 
-  return (await getStockById(inserted.id))!;
+  return (await getStockById(resultStockId))!;
 }
 
-export async function updateStock(input: UpdateStockInput, userId: string): Promise<InventoryItemStockGql> {
+export async function updateStock(
+  input: UpdateStockInput,
+  userId: string,
+  organizationId?: string,
+): Promise<InventoryItemStockGql> {
   const now = new Date();
 
   if (input.quantity != null && input.quantity < 0) {
@@ -666,6 +763,18 @@ export async function updateStock(input: UpdateStockInput, userId: string): Prom
         .set({ deletedAt: now, quantity: 0, updatedBy: userId, updatedAt: now })
         .where(eq(inventoryItemStock.id, input.id));
 
+      // Log the transaction
+      if (organizationId) {
+        await logTransaction({
+          organizationId,
+          userId,
+          action: 'inventory.stock_updated',
+          resourceType: 'inventory',
+          resourceId: duplicate.id,
+          details: { stockId: input.id, mergedInto: duplicate.id, quantity: input.quantity },
+        });
+      }
+
       return (await getStockById(duplicate.id))!;
     }
   }
@@ -679,15 +788,44 @@ export async function updateStock(input: UpdateStockInput, userId: string): Prom
 
   await otcgs.update(inventoryItemStock).set(updates).where(eq(inventoryItemStock.id, input.id));
 
+  // Log the transaction
+  if (organizationId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.stock_updated',
+      resourceType: 'inventory',
+      resourceId: input.id,
+      details: {
+        stockId: input.id,
+        quantity: input.quantity ?? undefined,
+        costBasis: input.costBasis ?? undefined,
+      },
+    });
+  }
+
   return (await getStockById(input.id))!;
 }
 
-export async function deleteStock(id: number): Promise<boolean> {
+export async function deleteStock(id: number, organizationId?: string, userId?: string): Promise<boolean> {
   const now = new Date();
   await otcgs
     .update(inventoryItemStock)
     .set({ deletedAt: now, quantity: 0, updatedAt: now })
     .where(eq(inventoryItemStock.id, id));
+
+  // Log the transaction
+  if (organizationId && userId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.stock_deleted',
+      resourceType: 'inventory',
+      resourceId: id,
+      details: { stockId: id },
+    });
+  }
+
   return true;
 }
 
@@ -695,7 +833,11 @@ export async function deleteStock(id: number): Promise<boolean> {
 // 7. Bulk stock operations
 // ---------------------------------------------------------------------------
 
-export async function bulkUpdateStock(input: BulkUpdateStockInput, userId: string): Promise<InventoryItemStockGql[]> {
+export async function bulkUpdateStock(
+  input: BulkUpdateStockInput,
+  userId: string,
+  organizationId?: string,
+): Promise<InventoryItemStockGql[]> {
   const now = new Date();
 
   const changingCostBasis = input.costBasis !== undefined && input.costBasis !== null;
@@ -714,6 +856,7 @@ export async function bulkUpdateStock(input: BulkUpdateStockInput, userId: strin
           notes: input.notes ?? undefined,
         },
         userId,
+        organizationId,
       );
       results.push(result);
     }
@@ -733,6 +876,21 @@ export async function bulkUpdateStock(input: BulkUpdateStockInput, userId: strin
     .from(inventoryItemStock)
     .where(and(inArray(inventoryItemStock.id, input.ids), stockNotDeleted()));
 
+  // Log the transaction
+  if (organizationId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.stock_bulk_updated',
+      resourceType: 'inventory',
+      details: {
+        count: input.ids.length,
+        ids: input.ids,
+        quantity: input.quantity ?? undefined,
+      },
+    });
+  }
+
   return rows.map((r) => ({
     id: r.id,
     inventoryItemId: r.inventoryItemId,
@@ -745,12 +903,24 @@ export async function bulkUpdateStock(input: BulkUpdateStockInput, userId: strin
   }));
 }
 
-export async function bulkDeleteStock(ids: number[]): Promise<boolean> {
+export async function bulkDeleteStock(ids: number[], organizationId?: string, userId?: string): Promise<boolean> {
   const now = new Date();
   await otcgs
     .update(inventoryItemStock)
     .set({ deletedAt: now, quantity: 0, updatedAt: now })
     .where(inArray(inventoryItemStock.id, ids));
+
+  // Log the transaction
+  if (organizationId && userId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'inventory.stock_bulk_deleted',
+      resourceType: 'inventory',
+      details: { count: ids.length, ids },
+    });
+  }
+
   return true;
 }
 

@@ -115,6 +115,15 @@ vi.mock('./shopping-cart-service', () => ({
   getOrCreateShoppingCart: mockGetOrCreateShoppingCart,
 }));
 
+// Mock the transaction log service so logging calls don't break tests
+const { mockLogTransaction } = vi.hoisted(() => ({
+  mockLogTransaction: vi.fn(),
+}));
+
+vi.mock('./transaction-log-service', () => ({
+  logTransaction: mockLogTransaction,
+}));
+
 // Mock drizzle-orm operators
 vi.mock('drizzle-orm', () => {
   const sqlResult = () => ({ type: 'sql', as: vi.fn().mockReturnValue({ type: 'sql-alias' }) });

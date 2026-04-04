@@ -1,0 +1,33 @@
+type TransactionLogEntry {
+  id: Int!
+  action: String!
+  resourceType: String!
+  resourceId: String
+  details: String!
+  userName: String!
+  userEmail: String!
+  createdAt: String!
+}
+
+type TransactionLogPage {
+  items: [TransactionLogEntry!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+input TransactionLogFilters {
+  month: Int
+  year: Int
+  searchTerm: String
+  action: String
+  resourceType: String
+}
+
+extend type Query {
+  getTransactionLogs(
+    pagination: PaginationInput
+    filters: TransactionLogFilters
+  ): TransactionLogPage!
+}

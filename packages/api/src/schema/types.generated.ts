@@ -522,6 +522,7 @@ export type Query = {
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
+  getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
@@ -574,6 +575,11 @@ export type QuerygetSingleCardInventoryArgs = {
 
 export type QuerygetStoreLocationArgs = {
   id: Scalars['String']['input'];
+};
+
+export type QuerygetTransactionLogsArgs = {
+  filters?: InputMaybe<TransactionLogFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 export type QuerylookupSalesTaxArgs = {
@@ -686,6 +692,35 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type TransactionLogEntry = {
+  __typename?: 'TransactionLogEntry';
+  action: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  details: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  resourceId?: Maybe<Scalars['String']['output']>;
+  resourceType: Scalars['String']['output'];
+  userEmail: Scalars['String']['output'];
+  userName: Scalars['String']['output'];
+};
+
+export type TransactionLogFilters = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  month?: InputMaybe<Scalars['Int']['input']>;
+  resourceType?: InputMaybe<Scalars['String']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  year?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type TransactionLogPage = {
+  __typename?: 'TransactionLogPage';
+  items: Array<TransactionLogEntry>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type UpdateBackupSettingsInput = {
@@ -897,6 +932,9 @@ export type ResolversTypes = {
   StripeIntegration: ResolverTypeWrapper<StripeIntegration>;
   SubmitOrderInput: SubmitOrderInput;
   SubmitOrderResult: ResolverTypeWrapper<SubmitOrderResult>;
+  TransactionLogEntry: ResolverTypeWrapper<TransactionLogEntry>;
+  TransactionLogFilters: TransactionLogFilters;
+  TransactionLogPage: ResolverTypeWrapper<TransactionLogPage>;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateOrderStatusResult: ResolverTypeWrapper<UpdateOrderStatusResult>;
@@ -969,6 +1007,9 @@ export type ResolversParentTypes = {
   StripeIntegration: StripeIntegration;
   SubmitOrderInput: SubmitOrderInput;
   SubmitOrderResult: SubmitOrderResult;
+  TransactionLogEntry: TransactionLogEntry;
+  TransactionLogFilters: TransactionLogFilters;
+  TransactionLogPage: TransactionLogPage;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateOrderStatusResult: UpdateOrderStatusResult;
@@ -1494,6 +1535,12 @@ export type QueryResolvers<
     RequireFields<QuerygetStoreLocationArgs, 'id'>
   >;
   getStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType>;
+  getTransactionLogs?: Resolver<
+    ResolversTypes['TransactionLogPage'],
+    ParentType,
+    ContextType,
+    Partial<QuerygetTransactionLogsArgs>
+  >;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lookupSalesTax?: Resolver<
     ResolversTypes['SalesTaxLookupResult'],
@@ -1611,6 +1658,31 @@ export type SubmitOrderResultResolvers<
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
 
+export type TransactionLogEntryResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TransactionLogEntry'] = ResolversParentTypes['TransactionLogEntry'],
+> = {
+  action?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  details?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  resourceId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  resourceType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userEmail?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type TransactionLogPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TransactionLogPage'] = ResolversParentTypes['TransactionLogPage'],
+> = {
+  items?: Resolver<Array<ResolversTypes['TransactionLogEntry']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type UpdateOrderStatusResultResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['UpdateOrderStatusResult'] = ResolversParentTypes['UpdateOrderStatusResult'],
@@ -1657,5 +1729,7 @@ export type Resolvers<ContextType = any> = {
   StoreSettings?: StoreSettingsResolvers<ContextType>;
   StripeIntegration?: StripeIntegrationResolvers<ContextType>;
   SubmitOrderResult?: SubmitOrderResultResolvers<ContextType>;
+  TransactionLogEntry?: TransactionLogEntryResolvers<ContextType>;
+  TransactionLogPage?: TransactionLogPageResolvers<ContextType>;
   UpdateOrderStatusResult?: UpdateOrderStatusResultResolvers<ContextType>;
 };

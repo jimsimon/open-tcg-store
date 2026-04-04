@@ -127,7 +127,7 @@ describe('inventory resolvers', () => {
       await updateInventoryItem(null, { input }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['update'] });
-      expect(mockUpdateInventoryItem).toHaveBeenCalledWith(input, 'user-1');
+      expect(mockUpdateInventoryItem).toHaveBeenCalledWith(input, 'user-1', 'org-1');
     });
   });
 
@@ -138,7 +138,7 @@ describe('inventory resolvers', () => {
       await deleteInventoryItem(null, { id: 1 }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['delete'] });
-      expect(mockDeleteInventoryItem).toHaveBeenCalledWith(1);
+      expect(mockDeleteInventoryItem).toHaveBeenCalledWith(1, 'org-1', 'user-1');
     });
   });
 
@@ -150,7 +150,7 @@ describe('inventory resolvers', () => {
       await addStock(null, { input }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['create'] });
-      expect(mockAddStock).toHaveBeenCalledWith(input, 'user-1');
+      expect(mockAddStock).toHaveBeenCalledWith(input, 'user-1', 'org-1');
     });
   });
 
@@ -162,7 +162,7 @@ describe('inventory resolvers', () => {
       await updateStock(null, { input }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['update'] });
-      expect(mockUpdateStock).toHaveBeenCalledWith(input, 'user-1');
+      expect(mockUpdateStock).toHaveBeenCalledWith(input, 'user-1', 'org-1');
     });
   });
 
@@ -173,7 +173,7 @@ describe('inventory resolvers', () => {
       await deleteStock(null, { id: 10 }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['delete'] });
-      expect(mockDeleteStock).toHaveBeenCalledWith(10);
+      expect(mockDeleteStock).toHaveBeenCalledWith(10, 'org-1', 'user-1');
     });
   });
 
@@ -185,7 +185,7 @@ describe('inventory resolvers', () => {
       await bulkUpdateStock(null, { input }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['update'] });
-      expect(mockBulkUpdateStock).toHaveBeenCalledWith(input, 'user-1');
+      expect(mockBulkUpdateStock).toHaveBeenCalledWith(input, 'user-1', 'org-1');
     });
   });
 
@@ -197,7 +197,7 @@ describe('inventory resolvers', () => {
       await bulkDeleteStock(null, { input }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['delete'] });
-      expect(mockBulkDeleteStock).toHaveBeenCalledWith([10, 11]);
+      expect(mockBulkDeleteStock).toHaveBeenCalledWith([10, 11], 'org-1', 'user-1');
     });
   });
 

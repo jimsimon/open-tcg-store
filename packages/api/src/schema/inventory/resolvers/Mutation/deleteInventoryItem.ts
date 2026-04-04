@@ -1,5 +1,5 @@
 import type { GraphqlContext } from '../../../../server';
-import { assertPermission } from '../../../../lib/assert-permission';
+import { assertPermission, getOrganizationId, getUserId } from '../../../../lib/assert-permission';
 import { deleteInventoryItem as deleteInventoryItemService } from '../../../../services/inventory-service';
 import type { MutationResolvers } from './../../../types.generated';
 
@@ -9,5 +9,7 @@ export const deleteInventoryItem: NonNullable<MutationResolvers['deleteInventory
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { inventory: ['delete'] });
-  return await deleteInventoryItemService(args.id);
+  const organizationId = getOrganizationId(ctx);
+  const userId = getUserId(ctx);
+  return await deleteInventoryItemService(args.id, organizationId, userId);
 };

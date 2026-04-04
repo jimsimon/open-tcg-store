@@ -16,6 +16,7 @@ export const statement = {
   storeSettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
   userManagement: ['create', 'read', 'update', 'delete'],
+  transactionLog: ['read'],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -37,6 +38,7 @@ export const ownerRole = ac.newRole({
   storeSettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
   userManagement: ['create', 'read', 'update', 'delete'],
+  transactionLog: ['read'],
 });
 
 /**
@@ -55,6 +57,7 @@ export const adminRole = ac.newRole({
   storeSettings: ['read'],
   storeLocations: ['read'],
   userManagement: ['read'],
+  transactionLog: ['read'],
 });
 
 /**

@@ -507,6 +507,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   canManageUsers = false;
 
+  @property({ type: Boolean })
+  canViewTransactionLog = false;
+
   /** The active organization ID, passed from server-side or session */
   @property({ type: String })
   activeOrganizationId = '';
@@ -756,6 +759,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
                   ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}
                   ${this.renderNavSubLink('/inventory/sealed', 'Sealed', 'inventory/sealed')}
+                  ${when(this.canViewTransactionLog, () =>
+                    this.renderNavLink('/transaction-log', 'clock-rotate-left', 'Transaction Log', 'Transaction Log'),
+                  )}
                 `,
               )}
               ${when(

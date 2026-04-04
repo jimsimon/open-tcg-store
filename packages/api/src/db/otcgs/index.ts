@@ -10,6 +10,7 @@ import * as inventoryRelations from './inventory-relations';
 import * as inventoryStockRelations from './inventory-stock-relations';
 import * as orderRelations from './order-relations';
 import * as storeHoursRelations from './store-hours-relations';
+import * as transactionLogRelations from './transaction-log-relations';
 export * from './schema';
 
 const client = createClient({ url: databaseFile });
@@ -27,6 +28,7 @@ const otcgs = drizzle(client, {
     ...inventoryStockRelations,
     ...orderRelations,
     ...storeHoursRelations,
+    ...transactionLogRelations,
   },
 });
 

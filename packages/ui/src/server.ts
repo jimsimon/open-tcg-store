@@ -100,6 +100,9 @@ function requirePermission(resource: string, action: string) {
         update: ['admin', 'owner', 'employee', 'member'],
         cancel: ['admin', 'owner', 'employee', 'member'],
       },
+      transactionLog: {
+        read: ['admin', 'owner'],
+      },
     };
 
     const allowedRoles = permissionMap[resource]?.[action] ?? [];
@@ -233,6 +236,11 @@ const router = new Router()
   })
   .get('orders', '/orders', async (ctx) => {
     return renderPage(ctx, 'orders');
+  })
+  .get('transaction-log', '/transaction-log', async (ctx) => {
+    await requirePermission('transactionLog', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'transaction-log');
   })
   .get('inventory-redirect', '/inventory', async (ctx) => {
     ctx.redirect('/inventory/singles');

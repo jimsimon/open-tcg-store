@@ -1,6 +1,7 @@
 import { and, eq, sql, asc, inArray, like, or, isNull, gt } from 'drizzle-orm';
 import { cartItem, inventoryItem, inventoryItemStock, order, orderItem, otcgs } from '../db';
 import { getOrCreateShoppingCart } from './shopping-cart-service';
+import { logTransaction } from './transaction-log-service';
 
 /** Return today's date as YYYY-MM-DD. */
 function todayDateString(): string {
@@ -267,6 +268,21 @@ export async function submitOrder(organizationId: string, userId: string, custom
   const items = mapOrderItems(insertedOrderItems);
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
+  // Log the transaction
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'order.created',
+    resourceType: 'order',
+    resourceId: insertedOrder.id,
+    details: {
+      orderNumber,
+      customerName,
+      totalAmount,
+      itemCount: cartItemsWithInventory.length,
+    },
+  });
+
   return {
     order: {
       id: insertedOrder.id,
@@ -283,7 +299,11 @@ export async function submitOrder(organizationId: string, userId: string, custom
   };
 }
 
-export async function cancelOrder(orderId: number): Promise<{ order?: OrderResult['order']; error?: string }> {
+export async function cancelOrder(
+  orderId: number,
+  organizationId?: string,
+  userId?: string,
+): Promise<{ order?: OrderResult['order']; error?: string }> {
   // 1. Find the order
   const existingOrder = await otcgs.query.order.findFirst({
     with: {
@@ -337,6 +357,22 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
 
   const items = mapOrderItems(existingOrder.orderItems);
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
+
+  // Log the transaction
+  if (organizationId && userId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'order.cancelled',
+      resourceType: 'order',
+      resourceId: orderId,
+      details: {
+        orderNumber: existingOrder.orderNumber,
+        customerName: existingOrder.customerName,
+        totalAmount: existingOrder.totalAmount,
+      },
+    });
+  }
 
   return {
     order: {
@@ -447,6 +483,8 @@ async function restockFallbackByProduct(
 export async function updateOrderStatus(
   orderId: number,
   newStatus: string,
+  organizationId?: string,
+  userId?: string,
 ): Promise<{ order?: OrderResult['order']; error?: string }> {
   const validStatuses = ['open', 'completed'];
   if (!validStatuses.includes(newStatus)) {
@@ -474,6 +512,22 @@ export async function updateOrderStatus(
 
   const items = mapOrderItems(existingOrder.orderItems);
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
+
+  // Log the transaction
+  if (organizationId && userId) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'order.status_updated',
+      resourceType: 'order',
+      resourceId: orderId,
+      details: {
+        orderNumber: existingOrder.orderNumber,
+        previousStatus: existingOrder.status,
+        newStatus,
+      },
+    });
+  }
 
   return {
     order: {

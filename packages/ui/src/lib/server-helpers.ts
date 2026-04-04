@@ -9,6 +9,7 @@ interface PageAttributes {
   canAccessSettings: boolean;
   canManageStoreLocations: boolean;
   canManageUsers: boolean;
+  canViewTransactionLog: boolean;
   activeOrganizationId: string;
   showStoreSelector?: boolean;
 }
@@ -42,6 +43,7 @@ export function getPageAttributes(ctx: RouterContext): PageAttributes {
     canAccessSettings: isOwner,
     canManageStoreLocations: isOwner,
     canManageUsers: isOwner,
+    canViewTransactionLog: isOwner,
     activeOrganizationId,
   };
 }
@@ -61,6 +63,7 @@ export function renderPageAttributes(ctx: RouterContext, extras: Record<string, 
     attrs.canAccessSettings ? 'canAccessSettings' : '',
     attrs.canManageStoreLocations ? 'canManageStoreLocations' : '',
     attrs.canManageUsers ? 'canManageUsers' : '',
+    attrs.canViewTransactionLog ? 'canViewTransactionLog' : '',
     attrs.activeOrganizationId ? `activeOrganizationId="${escapeHtml(attrs.activeOrganizationId)}"` : '',
   ];
 

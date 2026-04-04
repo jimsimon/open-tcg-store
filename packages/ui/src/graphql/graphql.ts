@@ -522,6 +522,7 @@ export type Query = {
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
+  getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
@@ -574,6 +575,11 @@ export type QueryGetSingleCardInventoryArgs = {
 
 export type QueryGetStoreLocationArgs = {
   id: Scalars['String']['input'];
+};
+
+export type QueryGetTransactionLogsArgs = {
+  filters?: InputMaybe<TransactionLogFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 export type QueryLookupSalesTaxArgs = {
@@ -686,6 +692,35 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type TransactionLogEntry = {
+  __typename?: 'TransactionLogEntry';
+  action: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  details: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  resourceId?: Maybe<Scalars['String']['output']>;
+  resourceType: Scalars['String']['output'];
+  userEmail: Scalars['String']['output'];
+  userName: Scalars['String']['output'];
+};
+
+export type TransactionLogFilters = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  month?: InputMaybe<Scalars['Int']['input']>;
+  resourceType?: InputMaybe<Scalars['String']['input']>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  year?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type TransactionLogPage = {
+  __typename?: 'TransactionLogPage';
+  items: Array<TransactionLogEntry>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type UpdateBackupSettingsInput = {
