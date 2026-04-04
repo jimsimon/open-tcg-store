@@ -46,6 +46,7 @@ export class OgsInventorySealedPage extends LitElement {
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: Boolean }) canViewTransactionLog = false;
   @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
 
@@ -366,6 +367,7 @@ export class OgsInventorySealedPage extends LitElement {
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
+        ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
         ?showStoreSelector="${this.showStoreSelector}"
         @store-changed="${() => this.fetchInventory()}"

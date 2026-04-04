@@ -512,7 +512,7 @@ export class OgsTransactionLogPage extends LitElement {
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
-        canViewTransactionLog
+        ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
         ?showStoreSelector="${this.showStoreSelector}"
         @store-changed="${() => this.fetchLogs()}"

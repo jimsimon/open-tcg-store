@@ -192,6 +192,7 @@ export class SettingsLocationsPage extends LitElement {
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: Boolean }) canViewTransactionLog = false;
 
   static styles = [
     css`
@@ -752,6 +753,7 @@ export class SettingsLocationsPage extends LitElement {
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
+        ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
         showUserMenu
       >

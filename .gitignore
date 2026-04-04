@@ -33,6 +33,7 @@ sqlite-data
 plans/
 
 # Debugging directories and files
+.playwright-mcp
 screenshots/
 
 # Typescript Files

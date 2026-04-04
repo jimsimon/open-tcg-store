@@ -70,6 +70,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
+  @property({ type: Boolean }) canViewTransactionLog = false;
   @property({ type: String }) activeOrganizationId = '';
 
   static styles = [
@@ -360,6 +361,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
+        ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
       >
         ${this.renderPageHeader()}
