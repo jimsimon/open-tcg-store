@@ -436,13 +436,6 @@ export class OgsProductsSinglesPage extends LitElement {
     this.fetchProducts();
   }
 
-  private handleInStockOnlyChange(event: Event) {
-    const checkbox = event.target as HTMLInputElement;
-    this.inStockOnly = checkbox.checked;
-    this.currentPage = 1;
-    this.fetchProducts();
-  }
-
   private handleRowConditionChange(productId: string, event: Event) {
     const select = event.target as WaSelect;
     const value = Array.isArray(select.value) ? select.value[0] : (select.value as string);

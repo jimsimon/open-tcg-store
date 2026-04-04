@@ -461,10 +461,15 @@ export class OgsSettingsUsersPage extends LitElement {
         if (newUserId && this.addStoreIds.length > 0) {
           for (const storeId of this.addStoreIds) {
             try {
-              await authClient.organization.addMember({
-                userId: newUserId,
-                role: this.addRole as 'owner' | 'admin' | 'member',
-                organizationId: storeId,
+              await fetch('/api/auth/organization/add-member', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  userId: newUserId,
+                  role: this.addRole as 'owner' | 'admin' | 'member',
+                  organizationId: storeId,
+                }),
               });
             } catch (memberErr) {
               console.error(`Failed to add user to store ${storeId}`, memberErr);

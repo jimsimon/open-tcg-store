@@ -16,7 +16,6 @@ import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
-import type WaCheckbox from '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import { cartState } from '../../lib/cart-state.ts';
@@ -302,13 +301,6 @@ export class OgsProductsSealedPage extends LitElement {
     const select = event.target as WaSelect;
     const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
     this.gameFilter = value;
-    this.currentPage = 1;
-    this.fetchProducts();
-  }
-
-  private handleInStockOnlyChange(event: Event) {
-    const checkbox = event.target as WaCheckbox;
-    this.inStockOnly = checkbox.checked;
     this.currentPage = 1;
     this.fetchProducts();
   }
