@@ -353,6 +353,7 @@ export class OgsProductsSealedPage extends LitElement {
     return html`
       <ogs-page
         activePage="products/sealed"
+        ?showUserMenu="${true}"
         ?showCartButton="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"

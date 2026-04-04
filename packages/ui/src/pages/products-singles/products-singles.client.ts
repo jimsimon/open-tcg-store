@@ -521,6 +521,7 @@ export class OgsProductsSinglesPage extends LitElement {
     return html`
       <ogs-page
         activePage="products/singles"
+        ?showUserMenu="${true}"
         ?showCartButton="${true}"
         userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
