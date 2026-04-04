@@ -6,7 +6,11 @@ import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema'
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 
-export const getCard: NonNullable<QueryResolvers['getCard']> = async (_parent, { game, cardId }, ctx: GraphqlContext) => {
+export const getCard: NonNullable<QueryResolvers['getCard']> = async (
+  _parent,
+  { game, cardId },
+  ctx: GraphqlContext,
+) => {
   if (cardId === null) {
     throw new Error(`Invalid card id: ${cardId}`);
   }
@@ -64,7 +68,10 @@ async function getCardFromDb(cardId: number, organizationId: string | null): Pro
   const inventoryData = await otcgs
     .select({
       condition: inventoryItem.condition,
-      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
+      totalQuantity:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as(
+          'total_quantity',
+        ),
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(inventoryItem)

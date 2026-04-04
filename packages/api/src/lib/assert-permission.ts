@@ -30,7 +30,7 @@ export function getUserId(ctx: GraphqlContext): string {
  * Useful for public-facing queries that should work with or without an org context.
  */
 export function getOrganizationIdOptional(ctx: GraphqlContext): string | null {
-  return (ctx.auth?.session as Record<string, unknown>)?.activeOrganizationId as string | null ?? null;
+  return ((ctx.auth?.session as Record<string, unknown>)?.activeOrganizationId as string | null) ?? null;
 }
 
 /**
@@ -44,10 +44,7 @@ export function getOrganizationIdOptional(ctx: GraphqlContext): string | null {
  *
  * @throws Error if the user doesn't have the required permissions
  */
-export async function assertPermission(
-  ctx: GraphqlContext,
-  permissions: Record<string, string[]>,
-): Promise<void> {
+export async function assertPermission(ctx: GraphqlContext, permissions: Record<string, string[]>): Promise<void> {
   if (!ctx.auth?.user) {
     throw new Error('Unauthorized');
   }

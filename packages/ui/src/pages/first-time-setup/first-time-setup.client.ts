@@ -14,23 +14,57 @@ import { graphql } from '../../graphql/index.ts';
 import { execute } from '../../lib/graphql.ts';
 
 const US_STATES = [
-  { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
-  { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
-  { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'DC', name: 'District of Columbia' },
-  { code: 'FL', name: 'Florida' }, { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' },
-  { code: 'ID', name: 'Idaho' }, { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' },
-  { code: 'IA', name: 'Iowa' }, { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' },
-  { code: 'LA', name: 'Louisiana' }, { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' },
-  { code: 'MA', name: 'Massachusetts' }, { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' },
-  { code: 'MS', name: 'Mississippi' }, { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' },
-  { code: 'NE', name: 'Nebraska' }, { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' },
-  { code: 'NJ', name: 'New Jersey' }, { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' },
-  { code: 'NC', name: 'North Carolina' }, { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' },
-  { code: 'OK', name: 'Oklahoma' }, { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' },
-  { code: 'RI', name: 'Rhode Island' }, { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' },
-  { code: 'TN', name: 'Tennessee' }, { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' },
-  { code: 'VT', name: 'Vermont' }, { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' },
-  { code: 'WV', name: 'West Virginia' }, { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' },
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'DC', name: 'District of Columbia' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' },
 ];
 
 interface User {
@@ -122,18 +156,42 @@ export class FirstTimeSetupPage extends LitElement {
                 process is complete.
               </p>
               <form slot="end" @submit="${(e: Event) => e.preventDefault()}">
-                <wa-input label="First Name" name="name" autocomplete="name" required
-                  @input="${(e: InputEvent) => { this.user = { ...this.user, firstName: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="First Name"
+                  name="name"
+                  autocomplete="name"
+                  required
+                  @input="${(e: InputEvent) => {
+                    this.user = { ...this.user, firstName: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="pencil"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input type="email" label="E-mail Address" name="email" autocomplete="email" required
-                  @input="${(e: Event) => { this.user = { ...this.user, email: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  type="email"
+                  label="E-mail Address"
+                  name="email"
+                  autocomplete="email"
+                  required
+                  @input="${(e: Event) => {
+                    this.user = { ...this.user, email: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="envelope"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input type="password" label="Password" name="password" autocomplete="new-password" password-toggle required
-                  @input="${(e: Event) => { this.user = { ...this.user, password: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  type="password"
+                  label="Password"
+                  name="password"
+                  autocomplete="new-password"
+                  password-toggle
+                  required
+                  @input="${(e: Event) => {
+                    this.user = { ...this.user, password: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="lock"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
@@ -148,13 +206,23 @@ export class FirstTimeSetupPage extends LitElement {
                 Enter your company details. These are used for business identification across all your store locations.
               </p>
               <form slot="end" @submit="${(e: Event) => e.preventDefault()}">
-                <wa-input label="Company Name" required
-                  @input="${(e: InputEvent) => { this.company = { ...this.company, companyName: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="Company Name"
+                  required
+                  @input="${(e: InputEvent) => {
+                    this.company = { ...this.company, companyName: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="building"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input label="EIN (Employer Identification Number)" required
-                  @input="${(e: InputEvent) => { this.company = { ...this.company, ein: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="EIN (Employer Identification Number)"
+                  required
+                  @input="${(e: InputEvent) => {
+                    this.company = { ...this.company, ein: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="hashtag"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
@@ -166,39 +234,73 @@ export class FirstTimeSetupPage extends LitElement {
           <ogs-wizard-item heading="First Store Location">
             <ogs-two-pane-panel>
               <p slot="start">
-                Set up your first store location. You'll be able to add more locations later from the Settings page.
-                All fields are required.
+                Set up your first store location. You'll be able to add more locations later from the Settings page. All
+                fields are required.
               </p>
               <form slot="end" @submit="${(e: Event) => e.preventDefault()}">
-                <wa-input label="Store Name" required
-                  @input="${(e: InputEvent) => { this.store = { ...this.store, name: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="Store Name"
+                  required
+                  @input="${(e: InputEvent) => {
+                    this.store = { ...this.store, name: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="store"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input label="Street Address" required
-                  @input="${(e: InputEvent) => { this.store = { ...this.store, street1: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="Street Address"
+                  required
+                  @input="${(e: InputEvent) => {
+                    this.store = { ...this.store, street1: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                   <wa-icon slot="start" name="location-dot"></wa-icon>
                   <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
                 </wa-input>
-                <wa-input label="Street Address 2"
-                  @input="${(e: InputEvent) => { this.store = { ...this.store, street2: (e.target as HTMLInputElement).value }; }}">
+                <wa-input
+                  label="Street Address 2"
+                  @input="${(e: InputEvent) => {
+                    this.store = { ...this.store, street2: (e.target as HTMLInputElement).value };
+                  }}"
+                >
                 </wa-input>
                 <div class="form-row">
-                  <wa-input label="City" required
-                    @input="${(e: InputEvent) => { this.store = { ...this.store, city: (e.target as HTMLInputElement).value }; }}">
+                  <wa-input
+                    label="City"
+                    required
+                    @input="${(e: InputEvent) => {
+                      this.store = { ...this.store, city: (e.target as HTMLInputElement).value };
+                    }}"
+                  >
                   </wa-input>
-                  <wa-select label="State" required
-                    @change="${(e: Event) => { this.store = { ...this.store, state: (e.target as HTMLSelectElement).value }; }}">
+                  <wa-select
+                    label="State"
+                    required
+                    @change="${(e: Event) => {
+                      this.store = { ...this.store, state: (e.target as HTMLSelectElement).value };
+                    }}"
+                  >
                     <wa-option value="">Select state...</wa-option>
                     ${US_STATES.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
                   </wa-select>
                 </div>
                 <div class="form-row">
-                  <wa-input label="ZIP Code" required
-                    @input="${(e: InputEvent) => { this.store = { ...this.store, zip: (e.target as HTMLInputElement).value }; }}">
+                  <wa-input
+                    label="ZIP Code"
+                    required
+                    @input="${(e: InputEvent) => {
+                      this.store = { ...this.store, zip: (e.target as HTMLInputElement).value };
+                    }}"
+                  >
                   </wa-input>
-                  <wa-input label="Phone" type="tel"
-                    @input="${(e: InputEvent) => { this.store = { ...this.store, phone: (e.target as HTMLInputElement).value }; }}">
+                  <wa-input
+                    label="Phone"
+                    type="tel"
+                    @input="${(e: InputEvent) => {
+                      this.store = { ...this.store, phone: (e.target as HTMLInputElement).value };
+                    }}"
+                  >
                   </wa-input>
                 </div>
               </form>
@@ -240,7 +342,11 @@ export class FirstTimeSetupPage extends LitElement {
     this.saving = true;
 
     const FirstTimeSetupMutation = graphql(`
-      mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {
+      mutation FirstTimeSetupMutation(
+        $userDetails: UserDetails!
+        $company: CompanySettings!
+        $store: InitialStoreLocation!
+      ) {
         firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)
       }
     `);

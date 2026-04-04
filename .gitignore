@@ -37,3 +37,6 @@ screenshots/
 
 # Typescript Files
 *.tsbuildinfo
+
+# Test coverage
+coverage/

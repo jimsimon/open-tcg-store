@@ -119,7 +119,6 @@ export class OgsInventoryDetailPage extends LitElement {
     return this.inventoryType === 'sealed' ? '/inventory/sealed' : '/inventory/singles';
   }
 
-
   // --- Data Fetching ---
 
   private async fetchDetails() {
@@ -490,8 +489,8 @@ export class OgsInventoryDetailPage extends LitElement {
           <p>
             ${this.parentItem
               ? html`
-                  Condition: ${renderConditionBadge(this.parentItem.condition)}
-                  — Price: <strong>${formatCurrency(this.parentItem.price)}</strong>
+                  Condition: ${renderConditionBadge(this.parentItem.condition)} — Price:
+                  <strong>${formatCurrency(this.parentItem.price)}</strong>
                   — ${this.parentItem.gameName} / ${this.parentItem.setName}
                 `
               : ''}
@@ -603,12 +602,21 @@ export class OgsInventoryDetailPage extends LitElement {
                         @change="${() => this.toggleItemSelection(stock.id)}"
                       ></wa-checkbox>
                     </td>
-                    <td>${stock.acquisitionDate ? new Date(`${stock.acquisitionDate.slice(0, 10)}T00:00:00`).toLocaleDateString() : '—'}</td>
+                    <td>
+                      ${stock.acquisitionDate
+                        ? new Date(`${stock.acquisitionDate.slice(0, 10)}T00:00:00`).toLocaleDateString()
+                        : '—'}
+                    </td>
                     <td class="quantity-cell"><strong>${stock.quantity}</strong></td>
                     <td class="price-cell">${formatCurrency(stock.costBasis)}</td>
                     <td>${stock.notes || '—'}</td>
                     <td class="actions-cell">
-                      <wa-button size="small" variant="neutral" title="Edit" @click="${() => this.openEditDialog(stock)}">
+                      <wa-button
+                        size="small"
+                        variant="neutral"
+                        title="Edit"
+                        @click="${() => this.openEditDialog(stock)}"
+                      >
                         <wa-icon name="pencil"></wa-icon>
                       </wa-button>
                       <wa-button
@@ -762,9 +770,7 @@ export class OgsInventoryDetailPage extends LitElement {
         </div>
 
         <wa-button slot="footer" variant="neutral" @click="${this.closeAddDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="brand" @click="${this.submitAddStock}">
-          Add Stock Entry
-        </wa-button>
+        <wa-button slot="footer" variant="brand" @click="${this.submitAddStock}"> Add Stock Entry </wa-button>
       </wa-dialog>
     `;
   }
@@ -869,7 +875,10 @@ export class OgsInventoryDetailPage extends LitElement {
           <wa-icon name="triangle-exclamation"></wa-icon>
           <div class="delete-warning-text">
             <p>Delete this stock entry?</p>
-            <p>Qty: ${this.deletingStock.quantity}, Cost: ${formatCurrency(this.deletingStock.costBasis)}, Date: ${this.deletingStock.acquisitionDate}</p>
+            <p>
+              Qty: ${this.deletingStock.quantity}, Cost: ${formatCurrency(this.deletingStock.costBasis)}, Date:
+              ${this.deletingStock.acquisitionDate}
+            </p>
           </div>
         </div>
         <wa-button autofocus slot="footer" variant="neutral" @click="${this.closeDeleteDialog}">Cancel</wa-button>

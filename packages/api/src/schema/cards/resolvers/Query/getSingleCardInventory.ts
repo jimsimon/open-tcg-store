@@ -98,10 +98,7 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
             lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
           })
           .from(inventoryItem)
-          .leftJoin(
-            inventoryItemStock,
-            sql`${inventoryItemStock.inventoryItemId} = ${inventoryItem.id}`,
-          )
+          .leftJoin(inventoryItemStock, sql`${inventoryItemStock.inventoryItemId} = ${inventoryItem.id}`)
           .where(
             and(
               sql`${inventoryItem.productId} IN (${sql.join(

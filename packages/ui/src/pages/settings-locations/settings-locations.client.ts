@@ -109,10 +109,7 @@ const GetAllStoreLocationsAdminQuery = new TypedDocumentString(`
       createdAt
     }
   }
-`) as unknown as TypedDocumentString<
-  { getEmployeeStoreLocations: StoreLocation[] },
-  Record<string, never>
->;
+`) as unknown as TypedDocumentString<{ getEmployeeStoreLocations: StoreLocation[] }, Record<string, never>>;
 
 const AddStoreLocationMutation = new TypedDocumentString(`
   mutation AddStoreLocation($input: AddStoreLocationInput!) {
@@ -564,11 +561,25 @@ export class SettingsLocationsPage extends LitElement {
   }
 
   private isAddFormValid(): boolean {
-    return !!(this.addName.trim() && this.addSlug.trim() && this.addStreet1.trim() && this.addCity.trim() && this.addState && this.addZip.trim());
+    return !!(
+      this.addName.trim() &&
+      this.addSlug.trim() &&
+      this.addStreet1.trim() &&
+      this.addCity.trim() &&
+      this.addState &&
+      this.addZip.trim()
+    );
   }
 
   private isEditFormValid(): boolean {
-    return !!(this.editName.trim() && this.editSlug.trim() && this.editStreet1.trim() && this.editCity.trim() && this.editState && this.editZip.trim());
+    return !!(
+      this.editName.trim() &&
+      this.editSlug.trim() &&
+      this.editStreet1.trim() &&
+      this.editCity.trim() &&
+      this.editState &&
+      this.editZip.trim()
+    );
   }
 
   async handleAddLocation() {
@@ -1018,9 +1029,7 @@ export class SettingsLocationsPage extends LitElement {
               this.addState = (e.target as HTMLSelectElement).value;
             }}"
           >
-            ${US_STATES.map(
-              (s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`,
-            )}
+            ${US_STATES.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
           </wa-select>
           <wa-input
             label="ZIP"
@@ -1157,9 +1166,7 @@ export class SettingsLocationsPage extends LitElement {
                   this.editState = (e.target as HTMLSelectElement).value;
                 }}"
               >
-                ${US_STATES.map(
-                  (s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`,
-                )}
+                ${US_STATES.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
               </wa-select>
               <wa-input
                 label="ZIP"
@@ -1254,12 +1261,7 @@ export class SettingsLocationsPage extends LitElement {
               }}"
               >Cancel</wa-button
             >
-            <wa-button
-              slot="footer"
-              variant="danger"
-              ?loading="${this.saving}"
-              @click="${this.handleRemoveLocation}"
-            >
+            <wa-button slot="footer" variant="danger" ?loading="${this.saving}" @click="${this.handleRemoveLocation}">
               <wa-icon slot="start" name="trash"></wa-icon>
               Remove
             </wa-button>

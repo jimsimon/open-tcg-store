@@ -146,8 +146,14 @@ export async function getInventoryItems(
       price: inventoryItem.price,
       createdAt: inventoryItem.createdAt,
       updatedAt: inventoryItem.updatedAt,
-      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
-      entryCount: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as('entry_count'),
+      totalQuantity:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as(
+          'total_quantity',
+        ),
+      entryCount:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as(
+          'entry_count',
+        ),
       rarity: sql<string | null>`(
         SELECT ${productExtendedData.value}
         FROM ${productExtendedData}
@@ -170,13 +176,13 @@ export async function getInventoryItems(
     .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
     .where(whereClause)
     .groupBy(inventoryItem.id)
-    .having(sql`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0`);
+    .having(
+      sql`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0`,
+    );
 
   // Count query
-  const countQuery = otcgs
-    .select({ total: sql<number>`count(*)` })
-    .from(
-      sql`(
+  const countQuery = otcgs.select({ total: sql<number>`count(*)` }).from(
+    sql`(
         SELECT ${inventoryItem.id}
         FROM ${inventoryItem}
         INNER JOIN ${product} ON ${inventoryItem.productId} = ${product.id}
@@ -187,7 +193,7 @@ export async function getInventoryItems(
         GROUP BY ${inventoryItem.id}
         HAVING COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0
       ) AS counted`,
-    );
+  );
 
   const [countResult] = await countQuery;
   const totalCount = Number(countResult?.total ?? 0);
@@ -236,12 +242,7 @@ export async function getInventoryItemDetails(
   const [parent] = await otcgs
     .select({ id: inventoryItem.id })
     .from(inventoryItem)
-    .where(
-      and(
-        eq(inventoryItem.id, inventoryItemId),
-        eq(inventoryItem.organizationId, organizationId),
-      ),
-    )
+    .where(and(eq(inventoryItem.id, inventoryItemId), eq(inventoryItem.organizationId, organizationId)))
     .limit(1);
 
   if (!parent) {
@@ -304,8 +305,14 @@ export async function getInventoryItemById(id: number): Promise<InventoryItem | 
       price: inventoryItem.price,
       createdAt: inventoryItem.createdAt,
       updatedAt: inventoryItem.updatedAt,
-      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
-      entryCount: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as('entry_count'),
+      totalQuantity:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as(
+          'total_quantity',
+        ),
+      entryCount:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as(
+          'entry_count',
+        ),
       rarity: sql<string | null>`(
         SELECT ${productExtendedData.value}
         FROM ${productExtendedData}
@@ -463,11 +470,7 @@ export async function updateInventoryItem(input: UpdateInventoryItemInput, userI
 
   // If condition is changing, we may need to merge parents
   if (input.condition != null) {
-    const [currentItem] = await otcgs
-      .select()
-      .from(inventoryItem)
-      .where(eq(inventoryItem.id, input.id))
-      .limit(1);
+    const [currentItem] = await otcgs.select().from(inventoryItem).where(eq(inventoryItem.id, input.id)).limit(1);
 
     if (!currentItem) throw new Error('Inventory item not found');
 
@@ -756,11 +759,7 @@ export async function bulkDeleteStock(ids: number[]): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 async function getStockById(id: number): Promise<InventoryItemStockGql | null> {
-  const [row] = await otcgs
-    .select()
-    .from(inventoryItemStock)
-    .where(eq(inventoryItemStock.id, id))
-    .limit(1);
+  const [row] = await otcgs.select().from(inventoryItemStock).where(eq(inventoryItemStock.id, id)).limit(1);
 
   if (!row) return null;
   return {
@@ -783,10 +782,7 @@ async function mergeStockDuplicates(parentId: number, userId: string): Promise<v
   const now = new Date();
   // Fetch ALL stock entries (including soft-deleted) because the unique
   // index covers all rows regardless of deletedAt.
-  const stocks = await otcgs
-    .select()
-    .from(inventoryItemStock)
-    .where(eq(inventoryItemStock.inventoryItemId, parentId));
+  const stocks = await otcgs.select().from(inventoryItemStock).where(eq(inventoryItemStock.inventoryItemId, parentId));
 
   // Group by costBasis + acquisitionDate
   const groups = new Map<string, (typeof stocks)[number][]>();
@@ -802,9 +798,8 @@ async function mergeStockDuplicates(parentId: number, userId: string): Promise<v
 
     // Keep the first non-deleted entry (or just the first if all deleted), merge the rest
     const nonDeleted = entries.filter((e) => !e.deletedAt);
-    const [survivor, ...toMerge] = nonDeleted.length > 0
-      ? [nonDeleted[0], ...entries.filter((e) => e.id !== nonDeleted[0].id)]
-      : entries;
+    const [survivor, ...toMerge] =
+      nonDeleted.length > 0 ? [nonDeleted[0], ...entries.filter((e) => e.id !== nonDeleted[0].id)] : entries;
     let totalQty = survivor.deletedAt ? 0 : survivor.quantity;
     for (const entry of toMerge) {
       if (!entry.deletedAt) totalQty += entry.quantity;

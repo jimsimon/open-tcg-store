@@ -399,9 +399,7 @@ export class OgsInventorySinglesPage extends LitElement {
           `,
           () => this.renderInventoryTable(),
         )}
-        ${this.renderPagination()}
-        ${this.renderAddDialog()}
-        ${this.renderCostBasisWarningDialog()}
+        ${this.renderPagination()} ${this.renderAddDialog()} ${this.renderCostBasisWarningDialog()}
       </ogs-page>
     `;
   }
@@ -660,7 +658,6 @@ export class OgsInventorySinglesPage extends LitElement {
             </wa-callout>
           `,
         )}
-
         ${when(
           !this.selectedProduct,
           () => html`

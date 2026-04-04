@@ -73,10 +73,7 @@ export const GetInventoryItemQuery = new TypedDocumentString(`
       entryCount
     }
   }
-`) as unknown as TypedDocumentString<
-  { getInventoryItem: InventoryItem | null },
-  { id: number }
->;
+`) as unknown as TypedDocumentString<{ getInventoryItem: InventoryItem | null }, { id: number }>;
 
 export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
   query GetInventoryItemDetails($inventoryItemId: Int!, $pagination: PaginationInput) {

@@ -28,7 +28,12 @@ export const getProductListings: NonNullable<QueryResolvers['getProductListings'
   };
 };
 
-async function queryProductListings(filters: InputMaybe<ProductListingFilters>, limit: number, offset: number, organizationId: string | null) {
+async function queryProductListings(
+  filters: InputMaybe<ProductListingFilters>,
+  limit: number,
+  offset: number,
+  organizationId: string | null,
+) {
   const includeSingles = filters?.includeSingles;
   const includeSealed = filters?.includeSealed;
   const inStockOnly = filters?.inStockOnly ?? false;
@@ -131,17 +136,8 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
       lowestPrice: sql<number | null>`MIN(${inventoryItem.price})`.as('lowest_price'),
     })
     .from(product)
-    .leftJoin(
-      inventoryItem,
-      and(
-        eq(inventoryItem.productId, product.id),
-        orgCondition,
-      ),
-    )
-    .leftJoin(
-      inventoryItemStock,
-      eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
-    )
+    .leftJoin(inventoryItem, and(eq(inventoryItem.productId, product.id), orgCondition))
+    .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
     .where(whereClause)
     .groupBy(product.id);
 
@@ -153,9 +149,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
     : baseQuery;
 
   // Get total count first (without pagination)
-  const orgJoinSql = organizationId
-    ? sql`AND ${inventoryItem.organizationId} = ${organizationId}`
-    : sql``;
+  const orgJoinSql = organizationId ? sql`AND ${inventoryItem.organizationId} = ${organizationId}` : sql``;
   const countQuery = otcgs
     .select({
       count: sql<number>`COUNT(*)`.as('count'),
@@ -247,10 +241,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
             price: sql<number>`MIN(${inventoryItem.price})`.as('cond_price'),
           })
           .from(inventoryItem)
-          .leftJoin(
-            inventoryItemStock,
-            eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
-          )
+          .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
           .where(
             and(
               sql`${inventoryItem.productId} IN (${sql.join(
@@ -278,10 +269,7 @@ async function queryProductListings(filters: InputMaybe<ProductListingFilters>, 
             ), 0)`.as('stock_qty'),
           })
           .from(inventoryItem)
-          .leftJoin(
-            inventoryItemStock,
-            eq(inventoryItemStock.inventoryItemId, inventoryItem.id),
-          )
+          .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
           .where(
             and(
               sql`${inventoryItem.productId} IN (${sql.join(

@@ -6,7 +6,11 @@ import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema'
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 
-export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_parent, { productId }, ctx: GraphqlContext) => {
+export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (
+  _parent,
+  { productId },
+  ctx: GraphqlContext,
+) => {
   const id = Number.parseInt(productId, 10);
   if (Number.isNaN(id)) {
     throw new Error(`Invalid product id: ${productId}`);
@@ -67,7 +71,10 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
       id: inventoryItem.id,
       condition: inventoryItem.condition,
       price: inventoryItem.price,
-      totalQuantity: sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as('total_quantity'),
+      totalQuantity:
+        sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0)`.as(
+          'total_quantity',
+        ),
     })
     .from(inventoryItem)
     .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
@@ -78,7 +85,9 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (_par
       ),
     )
     .groupBy(inventoryItem.id)
-    .having(sql`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0`)
+    .having(
+      sql`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL THEN ${inventoryItemStock.quantity} ELSE 0 END), 0) > 0`,
+    )
     .orderBy(inventoryItem.price);
 
   // Map game name from categoryId

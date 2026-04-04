@@ -56,6 +56,12 @@ export default defineConfig({
         'src/auth.ts',
         'src/auth-client.ts',
       ],
+      thresholds: {
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
+      },
     },
   },
 });

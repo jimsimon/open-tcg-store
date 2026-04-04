@@ -138,10 +138,7 @@ const GetAllStoreLocationsQuery = new TypedDocumentString(`
       state
     }
   }
-`) as unknown as TypedDocumentString<
-  { getAllStoreLocations: StoreInfo[] },
-  Record<string, never>
->;
+`) as unknown as TypedDocumentString<{ getAllStoreLocations: StoreInfo[] }, Record<string, never>>;
 
 const GetEmployeeStoreLocationsQuery = new TypedDocumentString(`
   query GetEmployeeStoreLocations {
@@ -153,10 +150,7 @@ const GetEmployeeStoreLocationsQuery = new TypedDocumentString(`
       state
     }
   }
-`) as unknown as TypedDocumentString<
-  { getEmployeeStoreLocations: StoreInfo[] },
-  Record<string, never>
->;
+`) as unknown as TypedDocumentString<{ getEmployeeStoreLocations: StoreInfo[] }, Record<string, never>>;
 
 @customElement('ogs-page')
 export class OgsPage extends SignalWatcher(LitElement) {
@@ -726,11 +720,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 >
                   <wa-icon slot="start" name="store" variant="regular"></wa-icon>
                   <span slot="label" class="wa-visually-hidden">Select Store</span>
-                  ${storeList.get().map(
-                    (store) => html`
-                      <wa-option value="${store.id}">${store.name}</wa-option>
-                    `,
-                  )}
+                  ${storeList.get().map((store) => html` <wa-option value="${store.id}">${store.name}</wa-option> `)}
                 </wa-select>
               `
             : nothing}
@@ -776,16 +766,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
                   ${this.renderNavLink('/settings/general', 'gear', 'Settings', 'settings')}
                   ${this.renderNavSubLink('/settings/general', 'General', 'settings/general')}
-                  ${when(
-                    this.canManageStoreLocations,
-                    () => this.renderNavSubLink('/settings/locations', 'Store Locations', 'settings/locations'),
+                  ${when(this.canManageStoreLocations, () =>
+                    this.renderNavSubLink('/settings/locations', 'Store Locations', 'settings/locations'),
                   )}
                   ${this.renderNavSubLink('/settings/backup', 'Backup & Restore', 'settings/backup')}
                   ${this.renderNavSubLink('/settings/autoprice', 'Autoprice', 'settings/autoprice')}
                   ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
-                  ${when(
-                    this.canManageUsers,
-                    () => this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users'),
+                  ${when(this.canManageUsers, () =>
+                    this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users'),
                   )}
                 `,
               )}
@@ -827,7 +815,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
     await this.fetchCart();
 
     // Dispatch event so page components can re-fetch their data
-    this.dispatchEvent(new CustomEvent('store-changed', { detail: { storeId: newStoreId }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent('store-changed', { detail: { storeId: newStoreId }, bubbles: true, composed: true }),
+    );
   }
 
   // --- Cart Drawer ---

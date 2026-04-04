@@ -61,7 +61,8 @@ app.use(
         });
         return {
           auth: session,
-          organizationId: (session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | null ?? null,
+          organizationId:
+            ((session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | null) ?? null,
           req: req.raw,
           res: req.context.res,
         } as GraphqlContext;

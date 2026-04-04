@@ -145,12 +145,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     const [totalResult] = await otcgs
       .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
       .from(inventoryItemStock)
-      .where(
-        and(
-          eq(inventoryItemStock.inventoryItemId, inv.id),
-          isNull(inventoryItemStock.deletedAt),
-        ),
-      );
+      .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
 
     const totalAvailable = totalResult?.total ?? 0;
 
@@ -323,11 +318,7 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
         if (stockEntry.deletedAt) {
           updateSet.deletedAt = null;
         }
-        await otcgs
-          .update(inventoryItemStock)
-          .set(updateSet)
-          .where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
-
+        await otcgs.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
       } else {
         // Stock entry was hard-deleted — create a new stock entry under the parent
         await restockFallback(existingOrder.organizationId, oi);
@@ -368,7 +359,14 @@ export async function cancelOrder(orderId: number): Promise<{ order?: OrderResul
  */
 async function restockFallback(
   organizationId: string,
-  oi: { inventoryItemId: number | null; productId: number; condition: string; quantity: number; unitPrice: number; costBasis: number | null },
+  oi: {
+    inventoryItemId: number | null;
+    productId: number;
+    condition: string;
+    quantity: number;
+    unitPrice: number;
+    costBasis: number | null;
+  },
 ): Promise<void> {
   const now = new Date();
 
@@ -411,12 +409,7 @@ async function restockFallback(
   const [existingStock] = await otcgs
     .select()
     .from(inventoryItemStock)
-    .where(
-      and(
-        eq(inventoryItemStock.inventoryItemId, parentId),
-        eq(inventoryItemStock.costBasis, costBasis),
-      ),
-    )
+    .where(and(eq(inventoryItemStock.inventoryItemId, parentId), eq(inventoryItemStock.costBasis, costBasis)))
     .orderBy(asc(inventoryItemStock.createdAt))
     .limit(1);
 
@@ -428,10 +421,7 @@ async function restockFallback(
     if (existingStock.deletedAt) {
       updateSet.deletedAt = null;
     }
-    await otcgs
-      .update(inventoryItemStock)
-      .set(updateSet)
-      .where(eq(inventoryItemStock.id, existingStock.id));
+    await otcgs.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, existingStock.id));
   } else {
     await otcgs.insert(inventoryItemStock).values({
       inventoryItemId: parentId,

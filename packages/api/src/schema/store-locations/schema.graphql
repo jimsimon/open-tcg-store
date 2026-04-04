@@ -49,9 +49,13 @@ input UpdateStoreLocationInput {
 }
 
 extend type Query {
-  """Stores the current user is assigned to (for authenticated employees/managers/owners)"""
+  """
+  Stores the current user is assigned to (for authenticated employees/managers/owners)
+  """
   getEmployeeStoreLocations: [StoreLocation!]!
-  """Public list of all stores — no auth required. Used by anonymous users on product pages."""
+  """
+  Public list of all stores — no auth required. Used by anonymous users on product pages.
+  """
   getAllStoreLocations: [StoreLocation!]!
   getStoreLocation(id: String!): StoreLocation
   getActiveStoreLocation: StoreLocation

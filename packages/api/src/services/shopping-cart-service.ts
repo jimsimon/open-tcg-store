@@ -65,12 +65,7 @@ export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof g
     const [stockResult] = await otcgs
       .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
       .from(inventoryItemStock)
-      .where(
-        and(
-          eq(inventoryItemStock.inventoryItemId, inv.id),
-          isNull(inventoryItemStock.deletedAt),
-        ),
-      );
+      .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
 
     const maxAvailable = stockResult?.total ?? 0;
 

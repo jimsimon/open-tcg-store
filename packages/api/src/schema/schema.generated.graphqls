@@ -375,7 +375,11 @@ type Query {
   getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(organizationId: String, productId: String!): ProductDetail!
-  getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
+  getProductListings(
+    filters: ProductListingFilters
+    organizationId: String
+    pagination: ProductListingPagination
+  ): ProductListingPage!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!

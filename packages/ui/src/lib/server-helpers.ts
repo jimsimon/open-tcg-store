@@ -26,7 +26,7 @@ export function getPageAttributes(ctx: RouterContext): PageAttributes {
   const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
   const userName = ctx.state.auth?.user?.name ?? '';
   const activeOrganizationId =
-    (ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string ?? '';
+    ((ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string) ?? '';
 
   // Derive permissions from role during migration period
   // owner (admin) gets everything, admin (store manager) gets inventory+orders+settings read,

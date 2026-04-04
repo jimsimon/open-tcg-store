@@ -104,9 +104,7 @@ export async function getAllStoreLocations(): Promise<StoreLocationData[]> {
  * Authenticated — returns the store locations the current user has access to
  * (via better-auth organization membership), enriched with store hours.
  */
-export async function getEmployeeStoreLocations(
-  headers: Record<string, string>,
-): Promise<StoreLocationData[]> {
+export async function getEmployeeStoreLocations(headers: Record<string, string>): Promise<StoreLocationData[]> {
   const response = await auth.api.listOrganizations({ headers });
   const orgs = response as Array<{
     id: string;
@@ -164,9 +162,7 @@ export async function getStoreLocation(id: string): Promise<StoreLocationData | 
  * Reads activeOrganizationId from the session and returns that org + hours.
  * Returns null if no active organization is set.
  */
-export async function getActiveStoreLocation(
-  headers: Record<string, string>,
-): Promise<StoreLocationData | null> {
+export async function getActiveStoreLocation(headers: Record<string, string>): Promise<StoreLocationData | null> {
   const session = await auth.api.getSession({ headers });
   if (!session?.session?.activeOrganizationId) {
     return null;
@@ -306,14 +302,9 @@ export async function updateStoreLocation(
  * Removes a store location (organization). Validates that at least one
  * organization remains before deleting.
  */
-export async function removeStoreLocation(
-  id: string,
-  headers: Record<string, string>,
-): Promise<boolean> {
+export async function removeStoreLocation(id: string, headers: Record<string, string>): Promise<boolean> {
   // Ensure at least one organization remains
-  const countResult = await otcgs.all<{ count: number }>(
-    sql`SELECT COUNT(*) as count FROM organization`,
-  );
+  const countResult = await otcgs.all<{ count: number }>(sql`SELECT COUNT(*) as count FROM organization`);
   if (countResult[0].count <= 1) {
     throw new Error('Cannot remove the last store location. At least one must remain.');
   }
@@ -333,10 +324,7 @@ export async function removeStoreLocation(
 /**
  * Sets the active store (organization) for the current user's session.
  */
-export async function setActiveStore(
-  organizationId: string,
-  headers: Record<string, string>,
-): Promise<void> {
+export async function setActiveStore(organizationId: string, headers: Record<string, string>): Promise<void> {
   await auth.api.setActiveOrganization({
     body: { organizationId },
     headers,

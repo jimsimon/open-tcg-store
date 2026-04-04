@@ -354,6 +354,52 @@ describe('backup-service', () => {
       expect(mockUpdateLastBackupAt).toHaveBeenCalled();
     });
 
+    it('should backup to Google Drive creating folder when none exists', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('db-content'));
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      // Folder search returns empty — no existing folder
+      mockDriveFilesList.mockResolvedValue({
+        data: { files: [] },
+      });
+      // Create folder returns new folder ID
+      mockDriveFilesCreate.mockResolvedValue({ data: { id: 'new-folder-id' } });
+
+      const result = await performBackup('google_drive');
+
+      expect(result.success).toBe(true);
+      // Create should be called twice: once for folder, once for file
+      expect(mockDriveFilesCreate).toHaveBeenCalled();
+    });
+
+    it('should fail OneDrive backup when folder not found after creation', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockCreateReadStream.mockReturnValue('stream');
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockOneDriveCreateFolder.mockResolvedValue({});
+      // Folder not found in children list
+      mockOneDriveListChildren.mockResolvedValue({ value: [] });
+
+      const result = await performBackup('onedrive');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Failed to find or create backup folder');
+    });
+
     it('should return failure on backup error', async () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(Buffer.from('db-content'));
@@ -426,6 +472,135 @@ describe('backup-service', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('restored successfully');
+    });
+
+    it('should restore from OneDrive successfully', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      // Root children — find backup folder
+      mockOneDriveListChildren
+        .mockResolvedValueOnce({
+          value: [{ name: 'otcgs-backups', id: 'folder-id' }],
+        })
+        // Folder children — find backup files
+        .mockResolvedValueOnce({
+          value: [
+            { name: 'otcgs-backup-2025-01-01.sqlite', id: 'file-1' },
+            { name: 'otcgs-backup-2025-01-02.sqlite', id: 'file-2' },
+          ],
+        });
+      // Download latest backup (file-2, sorted descending)
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield Buffer.from('restored-data');
+        },
+      };
+      mockOneDriveDownload.mockResolvedValue(mockStream);
+
+      const result = await performRestore('onedrive');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('restored successfully');
+      expect(mockWriteFileSync).toHaveBeenCalled();
+    });
+
+    it('should fail OneDrive restore when no backup folder found', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockOneDriveListChildren.mockResolvedValue({ value: [] });
+
+      const result = await performRestore('onedrive');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No backup folder found');
+    });
+
+    it('should fail OneDrive restore when no backup files found', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockOneDriveListChildren
+        .mockResolvedValueOnce({
+          value: [{ name: 'otcgs-backups', id: 'folder-id' }],
+        })
+        .mockResolvedValueOnce({ value: [] });
+
+      const result = await performRestore('onedrive');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No backup files found');
+    });
+
+    it('should fail Google Drive restore when no backup folder found', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockDriveFilesList.mockResolvedValue({ data: { files: [] } });
+
+      const result = await performRestore('google_drive');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No backup folder found');
+    });
+
+    it('should fail Google Drive restore when no backup files found', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockDriveFilesList
+        .mockResolvedValueOnce({ data: { files: [{ id: 'folder-123' }] } })
+        .mockResolvedValueOnce({ data: { files: [] } });
+
+      const result = await performRestore('google_drive');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No backup files found');
+    });
+
+    it('should fail Dropbox restore when no backup files found', async () => {
+      mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
+      mockCreateToken.mockReturnValue({
+        expired: () => false,
+        refresh: vi.fn().mockResolvedValue({
+          token: { access_token: 'new-access', refresh_token: 'refresh' },
+        }),
+        token: { access_token: 'new-access', refresh_token: 'refresh' },
+      });
+      mockFilesListFolder.mockResolvedValue({
+        result: { entries: [] },
+      });
+
+      const result = await performRestore('dropbox');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No backup files found');
     });
 
     it('should return failure on restore error', async () => {

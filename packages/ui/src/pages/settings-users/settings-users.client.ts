@@ -754,9 +754,7 @@ export class OgsSettingsUsersPage extends LitElement {
                     <td><strong>${user.name}</strong></td>
                     <td>${user.email}</td>
                     <td>
-                      <wa-badge variant="${roleBadgeVariant(user.role)}">
-                        ${roleLabel(user.role)}
-                      </wa-badge>
+                      <wa-badge variant="${roleBadgeVariant(user.role)}"> ${roleLabel(user.role)} </wa-badge>
                     </td>
                     <td>${new Date(user.createdAt).toLocaleDateString()}</td>
                     <td>

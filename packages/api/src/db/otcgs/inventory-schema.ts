@@ -20,11 +20,7 @@ export const inventoryItem = sqliteTable(
     updatedBy: text('updated_by'),
   },
   (table) => [
-    uniqueIndex('inventory_item_org_product_condition_idx').on(
-      table.organizationId,
-      table.productId,
-      table.condition,
-    ),
+    uniqueIndex('inventory_item_org_product_condition_idx').on(table.organizationId, table.productId, table.condition),
     index('inventory_item_org_id_idx').on(table.organizationId),
     index('inventory_item_product_id_idx').on(table.productId),
     index('inventory_item_condition_idx').on(table.condition),
