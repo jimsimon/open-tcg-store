@@ -26,8 +26,5 @@ input TransactionLogFilters {
 }
 
 extend type Query {
-  getTransactionLogs(
-    pagination: PaginationInput
-    filters: TransactionLogFilters
-  ): TransactionLogPage!
+  getTransactionLogs(pagination: PaginationInput, filters: TransactionLogFilters): TransactionLogPage!
 }
