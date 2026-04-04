@@ -9,11 +9,11 @@ export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' |
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string };
-  String: { input: string; output: string };
-  Boolean: { input: boolean; output: boolean };
-  Int: { input: number; output: number };
-  Float: { input: number; output: number };
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
 };
 
 export type AddInventoryItemInput = {
@@ -257,41 +257,51 @@ export type Mutation = {
   updateStripeIntegration: StripeIntegration;
 };
 
+
 export type MutationaddInventoryItemArgs = {
   input: AddInventoryItemInput;
 };
+
 
 export type MutationaddStockArgs = {
   input: AddStockInput;
 };
 
+
 export type MutationaddStoreLocationArgs = {
   input: AddStoreLocationInput;
 };
+
 
 export type MutationaddToCartArgs = {
   cartItem: CartItemInput;
 };
 
+
 export type MutationbulkDeleteStockArgs = {
   input: BulkDeleteStockInput;
 };
+
 
 export type MutationbulkUpdateStockArgs = {
   input: BulkUpdateStockInput;
 };
 
+
 export type MutationcancelOrderArgs = {
   orderId: Scalars['Int']['input'];
 };
+
 
 export type MutationdeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
 
+
 export type MutationdeleteStockArgs = {
   id: Scalars['Int']['input'];
 };
+
 
 export type MutationfirstTimeSetupArgs = {
   company: CompanySettings;
@@ -299,62 +309,77 @@ export type MutationfirstTimeSetupArgs = {
   userDetails: UserDetails;
 };
 
+
 export type MutationremoveFromCartArgs = {
   cartItem: CartItemInput;
 };
+
 
 export type MutationremoveStoreLocationArgs = {
   id: Scalars['String']['input'];
 };
 
+
 export type MutationsetActiveStoreLocationArgs = {
   organizationId: Scalars['String']['input'];
 };
+
 
 export type MutationsubmitOrderArgs = {
   input: SubmitOrderInput;
 };
 
+
 export type MutationtriggerRestoreArgs = {
   provider: Scalars['String']['input'];
 };
+
 
 export type MutationupdateBackupSettingsArgs = {
   input: UpdateBackupSettingsInput;
 };
 
+
 export type MutationupdateInventoryItemArgs = {
   input: UpdateInventoryItemInput;
 };
 
+
 export type MutationupdateItemInCartArgs = {
   cartItem: CartItemInput;
 };
+
 
 export type MutationupdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: Scalars['String']['input'];
 };
 
+
 export type MutationupdateQuickBooksIntegrationArgs = {
   input: UpdateQuickBooksIntegrationInput;
 };
+
 
 export type MutationupdateShopifyIntegrationArgs = {
   input: UpdateShopifyIntegrationInput;
 };
 
+
 export type MutationupdateStockArgs = {
   input: UpdateStockInput;
 };
+
 
 export type MutationupdateStoreLocationArgs = {
   input: UpdateStoreLocationInput;
 };
 
+
 export type MutationupdateStoreSettingsArgs = {
   input: UpdateStoreSettingsInput;
 };
+
 
 export type MutationupdateStripeIntegrationArgs = {
   input: UpdateStripeIntegrationInput;
@@ -527,34 +552,41 @@ export type Query = {
   searchProducts: Array<ProductSearchResult>;
 };
 
+
 export type QuerygetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
 };
+
 
 export type QuerygetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QuerygetInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
+
 
 export type QuerygetInventoryItemDetailsArgs = {
   inventoryItemId: Scalars['Int']['input'];
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QuerygetOrdersArgs = {
   filters?: InputMaybe<OrderFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QuerygetProductArgs = {
   organizationId?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['String']['input'];
 };
+
 
 export type QuerygetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
@@ -562,24 +594,29 @@ export type QuerygetProductListingsArgs = {
   pagination?: InputMaybe<ProductListingPagination>;
 };
 
+
 export type QuerygetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
 };
+
 
 export type QuerygetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
 };
 
+
 export type QuerygetStoreLocationArgs = {
   id: Scalars['String']['input'];
 };
+
 
 export type QuerylookupSalesTaxArgs = {
   countryCode: Scalars['String']['input'];
   stateCode: Scalars['String']['input'];
 };
+
 
 export type QuerysearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
@@ -753,37 +790,35 @@ export type UserDetails = {
   password: Scalars['String']['input'];
 };
 
+
+
 export type ResolverTypeWrapper<T> = Promise<T> | T;
+
 
 export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
   resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
 };
-export type Resolver<
-  TResult,
-  TParent = Record<PropertyKey, never>,
-  TContext = Record<PropertyKey, never>,
-  TArgs = Record<PropertyKey, never>,
-> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
+export type Resolver<TResult, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
 
 export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
   context: TContext,
-  info: GraphQLResolveInfo,
+  info: GraphQLResolveInfo
 ) => Promise<TResult> | TResult;
 
 export type SubscriptionSubscribeFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
   context: TContext,
-  info: GraphQLResolveInfo,
+  info: GraphQLResolveInfo
 ) => AsyncIterable<TResult> | Promise<AsyncIterable<TResult>>;
 
 export type SubscriptionResolveFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
   context: TContext,
-  info: GraphQLResolveInfo,
+  info: GraphQLResolveInfo
 ) => TResult | Promise<TResult>;
 
 export interface SubscriptionSubscriberObject<TResult, TKey extends string, TParent, TContext, TArgs> {
@@ -800,42 +835,31 @@ export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, 
   | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
   | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
-export type SubscriptionResolver<
-  TResult,
-  TKey extends string,
-  TParent = Record<PropertyKey, never>,
-  TContext = Record<PropertyKey, never>,
-  TArgs = Record<PropertyKey, never>,
-> =
+export type SubscriptionResolver<TResult, TKey extends string, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> =
   | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
   | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
 
 export type TypeResolveFn<TTypes, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (
   parent: TParent,
   context: TContext,
-  info: GraphQLResolveInfo,
+  info: GraphQLResolveInfo
 ) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
 
-export type IsTypeOfResolverFn<T = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (
-  obj: T,
-  context: TContext,
-  info: GraphQLResolveInfo,
-) => boolean | Promise<boolean>;
+export type IsTypeOfResolverFn<T = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
 
 export type NextResolverFn<T> = () => Promise<T>;
 
-export type DirectiveResolverFn<
-  TResult = Record<PropertyKey, never>,
-  TParent = Record<PropertyKey, never>,
-  TContext = Record<PropertyKey, never>,
-  TArgs = Record<PropertyKey, never>,
-> = (
+export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = (
   next: NextResolverFn<TResult>,
   parent: TParent,
   args: TArgs,
   context: TContext,
-  info: GraphQLResolveInfo,
+  info: GraphQLResolveInfo
 ) => TResult | Promise<TResult>;
+
+
+
+
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
@@ -981,19 +1005,13 @@ export type ResolversParentTypes = {
   UserDetails: UserDetails;
 };
 
-export type BackupResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['BackupResult'] = ResolversParentTypes['BackupResult'],
-> = {
+export type BackupResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['BackupResult'] = ResolversParentTypes['BackupResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   timestamp?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type BackupSettingsResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['BackupSettings'] = ResolversParentTypes['BackupSettings'],
-> = {
+export type BackupSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['BackupSettings'] = ResolversParentTypes['BackupSettings']> = {
   dropboxConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   frequency?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   googleDriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1002,18 +1020,12 @@ export type BackupSettingsResolvers<
   provider?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type CancelOrderResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult'],
-> = {
+export type CancelOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
 
-export type CardResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card'],
-> = {
+export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   flavorText?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1026,18 +1038,12 @@ export type CardResolvers<
   type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type CardImagesResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['CardImages'] = ResolversParentTypes['CardImages'],
-> = {
+export type CardImagesResolvers<ContextType = any, ParentType extends ResolversParentTypes['CardImages'] = ResolversParentTypes['CardImages']> = {
   large?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   small?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type CartItemOutputResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['CartItemOutput'] = ResolversParentTypes['CartItemOutput'],
-> = {
+export type CartItemOutputResolvers<ContextType = any, ParentType extends ResolversParentTypes['CartItemOutput'] = ResolversParentTypes['CartItemOutput']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   maxAvailable?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1047,10 +1053,7 @@ export type CartItemOutputResolvers<
   unitPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
-export type ConditionInventoriesResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ConditionInventories'] = ResolversParentTypes['ConditionInventories'],
-> = {
+export type ConditionInventoriesResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventories'] = ResolversParentTypes['ConditionInventories']> = {
   D?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
   HP?: Resolver<Maybe<ResolversTypes['ConditionInventory']>, ParentType, ContextType>;
   LP?: Resolver<ResolversTypes['ConditionInventory'], ParentType, ContextType>;
@@ -1059,18 +1062,12 @@ export type ConditionInventoriesResolvers<
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type ConditionInventoryResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ConditionInventory'] = ResolversParentTypes['ConditionInventory'],
-> = {
+export type ConditionInventoryResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConditionInventory'] = ResolversParentTypes['ConditionInventory']> = {
   price?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type InsufficientItemResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem'],
-> = {
+export type InsufficientItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem']> = {
   available?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1078,19 +1075,13 @@ export type InsufficientItemResolvers<
   requested?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type IntegrationSettingsResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['IntegrationSettings'] = ResolversParentTypes['IntegrationSettings'],
-> = {
+export type IntegrationSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['IntegrationSettings'] = ResolversParentTypes['IntegrationSettings']> = {
   quickbooks?: Resolver<ResolversTypes['QuickBooksIntegration'], ParentType, ContextType>;
   shopify?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType>;
   stripe?: Resolver<ResolversTypes['StripeIntegration'], ParentType, ContextType>;
 };
 
-export type InventoryItemResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['InventoryItem'] = ResolversParentTypes['InventoryItem'],
-> = {
+export type InventoryItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryItem'] = ResolversParentTypes['InventoryItem']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   entryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1108,10 +1099,7 @@ export type InventoryItemResolvers<
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type InventoryItemStockResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['InventoryItemStock'] = ResolversParentTypes['InventoryItemStock'],
-> = {
+export type InventoryItemStockResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryItemStock'] = ResolversParentTypes['InventoryItemStock']> = {
   acquisitionDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   costBasis?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1122,10 +1110,7 @@ export type InventoryItemStockResolvers<
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type InventoryPageResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['InventoryPage'] = ResolversParentTypes['InventoryPage'],
-> = {
+export type InventoryPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryPage'] = ResolversParentTypes['InventoryPage']> = {
   items?: Resolver<Array<ResolversTypes['InventoryItem']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1133,10 +1118,7 @@ export type InventoryPageResolvers<
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type InventoryStockPageResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['InventoryStockPage'] = ResolversParentTypes['InventoryStockPage'],
-> = {
+export type InventoryStockPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryStockPage'] = ResolversParentTypes['InventoryStockPage']> = {
   items?: Resolver<Array<ResolversTypes['InventoryItemStock']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1144,169 +1126,38 @@ export type InventoryStockPageResolvers<
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type MutationResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation'],
-> = {
-  addInventoryItem?: Resolver<
-    ResolversTypes['InventoryItem'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationaddInventoryItemArgs, 'input'>
-  >;
-  addStock?: Resolver<
-    ResolversTypes['InventoryItemStock'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationaddStockArgs, 'input'>
-  >;
-  addStoreLocation?: Resolver<
-    ResolversTypes['StoreLocation'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationaddStoreLocationArgs, 'input'>
-  >;
-  addToCart?: Resolver<
-    ResolversTypes['ShoppingCart'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationaddToCartArgs, 'cartItem'>
-  >;
-  bulkDeleteStock?: Resolver<
-    ResolversTypes['Boolean'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationbulkDeleteStockArgs, 'input'>
-  >;
-  bulkUpdateStock?: Resolver<
-    Array<ResolversTypes['InventoryItemStock']>,
-    ParentType,
-    ContextType,
-    RequireFields<MutationbulkUpdateStockArgs, 'input'>
-  >;
-  cancelOrder?: Resolver<
-    ResolversTypes['CancelOrderResult'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationcancelOrderArgs, 'orderId'>
-  >;
+export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
+  addStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationaddStockArgs, 'input'>>;
+  addStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationaddStoreLocationArgs, 'input'>>;
+  addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
+  bulkDeleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationbulkDeleteStockArgs, 'input'>>;
+  bulkUpdateStock?: Resolver<Array<ResolversTypes['InventoryItemStock']>, ParentType, ContextType, RequireFields<MutationbulkUpdateStockArgs, 'input'>>;
+  cancelOrder?: Resolver<ResolversTypes['CancelOrderResult'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
-  deleteInventoryItem?: Resolver<
-    ResolversTypes['Boolean'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationdeleteInventoryItemArgs, 'id'>
-  >;
-  deleteStock?: Resolver<
-    ResolversTypes['Boolean'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationdeleteStockArgs, 'id'>
-  >;
-  firstTimeSetup?: Resolver<
-    ResolversTypes['String'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'userDetails'>
-  >;
-  removeFromCart?: Resolver<
-    ResolversTypes['ShoppingCart'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationremoveFromCartArgs, 'cartItem'>
-  >;
-  removeStoreLocation?: Resolver<
-    ResolversTypes['Boolean'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationremoveStoreLocationArgs, 'id'>
-  >;
-  setActiveStoreLocation?: Resolver<
-    ResolversTypes['Boolean'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationsetActiveStoreLocationArgs, 'organizationId'>
-  >;
-  submitOrder?: Resolver<
-    ResolversTypes['SubmitOrderResult'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationsubmitOrderArgs, 'input'>
-  >;
+  deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
+  deleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteStockArgs, 'id'>>;
+  firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'userDetails'>>;
+  removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
+  removeStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationremoveStoreLocationArgs, 'id'>>;
+  setActiveStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationsetActiveStoreLocationArgs, 'organizationId'>>;
+  submitOrder?: Resolver<ResolversTypes['SubmitOrderResult'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
-  triggerRestore?: Resolver<
-    ResolversTypes['RestoreResult'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationtriggerRestoreArgs, 'provider'>
-  >;
-  updateBackupSettings?: Resolver<
-    ResolversTypes['BackupSettings'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateBackupSettingsArgs, 'input'>
-  >;
-  updateInventoryItem?: Resolver<
-    ResolversTypes['InventoryItem'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateInventoryItemArgs, 'input'>
-  >;
-  updateItemInCart?: Resolver<
-    ResolversTypes['ShoppingCart'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateItemInCartArgs, 'cartItem'>
-  >;
-  updateOrderStatus?: Resolver<
-    ResolversTypes['UpdateOrderStatusResult'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>
-  >;
-  updateQuickBooksIntegration?: Resolver<
-    ResolversTypes['QuickBooksIntegration'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateQuickBooksIntegrationArgs, 'input'>
-  >;
-  updateShopifyIntegration?: Resolver<
-    ResolversTypes['ShopifyIntegration'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>
-  >;
-  updateStock?: Resolver<
-    ResolversTypes['InventoryItemStock'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateStockArgs, 'input'>
-  >;
-  updateStoreLocation?: Resolver<
-    ResolversTypes['StoreLocation'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateStoreLocationArgs, 'input'>
-  >;
-  updateStoreSettings?: Resolver<
-    ResolversTypes['StoreSettings'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateStoreSettingsArgs, 'input'>
-  >;
-  updateStripeIntegration?: Resolver<
-    ResolversTypes['StripeIntegration'],
-    ParentType,
-    ContextType,
-    RequireFields<MutationupdateStripeIntegrationArgs, 'input'>
-  >;
+  triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
+  updateBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType, RequireFields<MutationupdateBackupSettingsArgs, 'input'>>;
+  updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
+  updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
+  updateOrderStatus?: Resolver<ResolversTypes['UpdateOrderStatusResult'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
+  updateQuickBooksIntegration?: Resolver<ResolversTypes['QuickBooksIntegration'], ParentType, ContextType, RequireFields<MutationupdateQuickBooksIntegrationArgs, 'input'>>;
+  updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
+  updateStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationupdateStockArgs, 'input'>>;
+  updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;
+  updateStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType, RequireFields<MutationupdateStoreSettingsArgs, 'input'>>;
+  updateStripeIntegration?: Resolver<ResolversTypes['StripeIntegration'], ParentType, ContextType, RequireFields<MutationupdateStripeIntegrationArgs, 'input'>>;
 };
 
-export type OrderResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Order'] = ResolversParentTypes['Order'],
-> = {
+export type OrderResolvers<ContextType = any, ParentType extends ResolversParentTypes['Order'] = ResolversParentTypes['Order']> = {
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   customerName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1319,10 +1170,7 @@ export type OrderResolvers<
   totalProfit?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
 };
 
-export type OrderItemResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['OrderItem'] = ResolversParentTypes['OrderItem'],
-> = {
+export type OrderItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderItem'] = ResolversParentTypes['OrderItem']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   costBasis?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1333,10 +1181,7 @@ export type OrderItemResolvers<
   unitPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
-export type OrderPageResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['OrderPage'] = ResolversParentTypes['OrderPage'],
-> = {
+export type OrderPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderPage'] = ResolversParentTypes['OrderPage']> = {
   orders?: Resolver<Array<ResolversTypes['Order']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1344,20 +1189,14 @@ export type OrderPageResolvers<
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type ProductConditionPriceResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice'],
-> = {
+export type ProductConditionPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type ProductDetailResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductDetail'] = ResolversParentTypes['ProductDetail'],
-> = {
+export type ProductDetailResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductDetail'] = ResolversParentTypes['ProductDetail']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   flavorText?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1373,20 +1212,14 @@ export type ProductDetailResolvers<
   type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type ProductInventoryRecordResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductInventoryRecord'] = ResolversParentTypes['ProductInventoryRecord'],
-> = {
+export type ProductInventoryRecordResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductInventoryRecord'] = ResolversParentTypes['ProductInventoryRecord']> = {
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type ProductListingResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductListing'] = ResolversParentTypes['ProductListing'],
-> = {
+export type ProductListingResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductListing'] = ResolversParentTypes['ProductListing']> = {
   conditionPrices?: Resolver<Array<ResolversTypes['ProductConditionPrice']>, ParentType, ContextType>;
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1400,10 +1233,7 @@ export type ProductListingResolvers<
   totalQuantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type ProductListingPageResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductListingPage'] = ResolversParentTypes['ProductListingPage'],
-> = {
+export type ProductListingPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductListingPage'] = ResolversParentTypes['ProductListingPage']> = {
   items?: Resolver<Array<ResolversTypes['ProductListing']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1411,10 +1241,7 @@ export type ProductListingPageResolvers<
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type ProductPriceResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductPrice'] = ResolversParentTypes['ProductPrice'],
-> = {
+export type ProductPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductPrice'] = ResolversParentTypes['ProductPrice']> = {
   directLowPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   highPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   lowPrice?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
@@ -1423,10 +1250,7 @@ export type ProductPriceResolvers<
   subTypeName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type ProductSearchResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ProductSearchResult'] = ResolversParentTypes['ProductSearchResult'],
-> = {
+export type ProductSearchResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductSearchResult'] = ResolversParentTypes['ProductSearchResult']> = {
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   imageUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1438,141 +1262,69 @@ export type ProductSearchResultResolvers<
   setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type QueryResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
-> = {
+export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   getActiveStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
-  getCard?: Resolver<
-    ResolversTypes['Card'],
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetCardArgs, 'cardId' | 'game'>
-  >;
+  getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
-  getInventoryItem?: Resolver<
-    Maybe<ResolversTypes['InventoryItem']>,
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetInventoryItemArgs, 'id'>
-  >;
-  getInventoryItemDetails?: Resolver<
-    ResolversTypes['InventoryStockPage'],
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetInventoryItemDetailsArgs, 'inventoryItemId'>
-  >;
+  getInventoryItem?: Resolver<Maybe<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<QuerygetInventoryItemArgs, 'id'>>;
+  getInventoryItemDetails?: Resolver<ResolversTypes['InventoryStockPage'], ParentType, ContextType, RequireFields<QuerygetInventoryItemDetailsArgs, 'inventoryItemId'>>;
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
-  getProduct?: Resolver<
-    ResolversTypes['ProductDetail'],
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetProductArgs, 'productId'>
-  >;
-  getProductListings?: Resolver<
-    ResolversTypes['ProductListingPage'],
-    ParentType,
-    ContextType,
-    Partial<QuerygetProductListingsArgs>
-  >;
+  getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
+  getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
-  getSingleCardInventory?: Resolver<
-    Array<ResolversTypes['Card']>,
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetSingleCardInventoryArgs, 'game'>
-  >;
-  getStoreLocation?: Resolver<
-    Maybe<ResolversTypes['StoreLocation']>,
-    ParentType,
-    ContextType,
-    RequireFields<QuerygetStoreLocationArgs, 'id'>
-  >;
+  getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
+  getStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType, RequireFields<QuerygetStoreLocationArgs, 'id'>>;
   getStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  lookupSalesTax?: Resolver<
-    ResolversTypes['SalesTaxLookupResult'],
-    ParentType,
-    ContextType,
-    RequireFields<QuerylookupSalesTaxArgs, 'countryCode' | 'stateCode'>
-  >;
-  searchProducts?: Resolver<
-    Array<ResolversTypes['ProductSearchResult']>,
-    ParentType,
-    ContextType,
-    RequireFields<QuerysearchProductsArgs, 'searchTerm'>
-  >;
+  lookupSalesTax?: Resolver<ResolversTypes['SalesTaxLookupResult'], ParentType, ContextType, RequireFields<QuerylookupSalesTaxArgs, 'countryCode' | 'stateCode'>>;
+  searchProducts?: Resolver<Array<ResolversTypes['ProductSearchResult']>, ParentType, ContextType, RequireFields<QuerysearchProductsArgs, 'searchTerm'>>;
 };
 
-export type QuickBooksIntegrationResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['QuickBooksIntegration'] = ResolversParentTypes['QuickBooksIntegration'],
-> = {
+export type QuickBooksIntegrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuickBooksIntegration'] = ResolversParentTypes['QuickBooksIntegration']> = {
   enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   hasClientId?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   hasClientSecret?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
-export type RestoreResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult'],
-> = {
+export type RestoreResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
-export type SalesTaxLookupResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['SalesTaxLookupResult'] = ResolversParentTypes['SalesTaxLookupResult'],
-> = {
+export type SalesTaxLookupResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesTaxLookupResult'] = ResolversParentTypes['SalesTaxLookupResult']> = {
   currency?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type SetResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Set'] = ResolversParentTypes['Set'],
-> = {
+export type SetResolvers<ContextType = any, ParentType extends ResolversParentTypes['Set'] = ResolversParentTypes['Set']> = {
   code?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type ShopifyIntegrationResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ShopifyIntegration'] = ResolversParentTypes['ShopifyIntegration'],
-> = {
+export type ShopifyIntegrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['ShopifyIntegration'] = ResolversParentTypes['ShopifyIntegration']> = {
   enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   hasApiKey?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   shopDomain?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type ShoppingCartResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['ShoppingCart'] = ResolversParentTypes['ShoppingCart'],
-> = {
+export type ShoppingCartResolvers<ContextType = any, ParentType extends ResolversParentTypes['ShoppingCart'] = ResolversParentTypes['ShoppingCart']> = {
   items?: Resolver<Array<ResolversTypes['CartItemOutput']>, ParentType, ContextType>;
   organizationId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type StoreHoursResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['StoreHours'] = ResolversParentTypes['StoreHours'],
-> = {
+export type StoreHoursResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreHours'] = ResolversParentTypes['StoreHours']> = {
   closeTime?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   dayOfWeek?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   openTime?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type StoreLocationResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['StoreLocation'] = ResolversParentTypes['StoreLocation'],
-> = {
+export type StoreLocationResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreLocation'] = ResolversParentTypes['StoreLocation']> = {
   city?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   hours?: Resolver<Array<ResolversTypes['StoreHours']>, ParentType, ContextType>;
@@ -1586,35 +1338,23 @@ export type StoreLocationResolvers<
   zip?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
-export type StoreSettingsResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['StoreSettings'] = ResolversParentTypes['StoreSettings'],
-> = {
+export type StoreSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['StoreSettings'] = ResolversParentTypes['StoreSettings']> = {
   companyName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   ein?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
-export type StripeIntegrationResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['StripeIntegration'] = ResolversParentTypes['StripeIntegration'],
-> = {
+export type StripeIntegrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['StripeIntegration'] = ResolversParentTypes['StripeIntegration']> = {
   enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   hasApiKey?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
-export type SubmitOrderResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['SubmitOrderResult'] = ResolversParentTypes['SubmitOrderResult'],
-> = {
+export type SubmitOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubmitOrderResult'] = ResolversParentTypes['SubmitOrderResult']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   insufficientItems?: Resolver<Maybe<Array<ResolversTypes['InsufficientItem']>>, ParentType, ContextType>;
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
 
-export type UpdateOrderStatusResultResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['UpdateOrderStatusResult'] = ResolversParentTypes['UpdateOrderStatusResult'],
-> = {
+export type UpdateOrderStatusResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['UpdateOrderStatusResult'] = ResolversParentTypes['UpdateOrderStatusResult']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
@@ -1659,3 +1399,4 @@ export type Resolvers<ContextType = any> = {
   SubmitOrderResult?: SubmitOrderResultResolvers<ContextType>;
   UpdateOrderStatusResult?: UpdateOrderStatusResultResolvers<ContextType>;
 };
+
