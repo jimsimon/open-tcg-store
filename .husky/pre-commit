@@ -1,0 +1,3 @@
+pnpm graphql:generate
+git add packages/api/src/schema/ packages/ui/src/graphql/
+pnpm exec lint-staged

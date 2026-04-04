@@ -15,7 +15,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:browser": "vitest --browser",
-    "test:browser:run": "vitest run --browser"
+    "test:browser:run": "vitest run --browser",
+    "prepare": "husky"
   },
   "dependencies": {
     "@awesome.me/webawesome": "3.5.0",
@@ -68,6 +69,8 @@
     "@vitest/coverage-v8": "^4.1.2",
     "cli-progress": "3.12.0",
     "drizzle-kit": "^0.31.10",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "oxfmt": "^0.43.0",
     "oxlint": "^1.57.0",
     "playwright": "^1.58.2",
@@ -75,6 +78,15 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
     "vitest": "^4.1.2"
+  },
+  "lint-staged": {
+    "*.{ts,js,tsx,jsx}": [
+      "oxlint --fix",
+      "oxfmt"
+    ],
+    "*.{json,css,html}": [
+      "oxfmt"
+    ]
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",
