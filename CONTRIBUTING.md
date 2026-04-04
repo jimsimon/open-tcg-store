@@ -4,17 +4,17 @@ Thank you for your interest in contributing to OpenTCGS! This guide covers every
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | [Lit](https://lit.dev/) web components, [Web Awesome](https://www.webawesome.com/) UI library |
-| Backend | [Koa.js](https://koajs.com/) with [GraphQL](https://graphql.org/) API |
-| Database | [PostgreSQL](https://www.postgresql.org/) (production) / [libsql](https://github.com/tursodatabase/libsql) (development) via [Drizzle ORM](https://orm.drizzle.team/) |
-| Auth | [Better Auth](https://www.better-auth.com/) with access control plugin |
-| Build | [Vite](https://vite.dev/) 8, [TypeScript](https://www.typescriptlang.org/) 6 |
-| Testing | [Vitest](https://vitest.dev/) 4 (Node.js + browser via Playwright) |
-| Linting | [oxlint](https://oxc.rs/docs/guide/usage/linter) + [oxfmt](https://oxc.rs/docs/guide/usage/formatter) |
-| Dev Orchestration | [Tilt](https://tilt.dev/) |
-| Package Manager | [pnpm](https://pnpm.io/) 10 with workspaces |
+| Layer             | Technology                                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend          | [Lit](https://lit.dev/) web components, [Web Awesome](https://www.webawesome.com/) UI library                                                                         |
+| Backend           | [Koa.js](https://koajs.com/) with [GraphQL](https://graphql.org/) API                                                                                                 |
+| Database          | [PostgreSQL](https://www.postgresql.org/) (production) / [libsql](https://github.com/tursodatabase/libsql) (development) via [Drizzle ORM](https://orm.drizzle.team/) |
+| Auth              | [Better Auth](https://www.better-auth.com/) with access control plugin                                                                                                |
+| Build             | [Vite](https://vite.dev/) 8, [TypeScript](https://www.typescriptlang.org/) 6                                                                                          |
+| Testing           | [Vitest](https://vitest.dev/) 4 (Node.js + browser via Playwright)                                                                                                    |
+| Linting           | [oxlint](https://oxc.rs/docs/guide/usage/linter) + [oxfmt](https://oxc.rs/docs/guide/usage/formatter)                                                                 |
+| Dev Orchestration | [Tilt](https://tilt.dev/)                                                                                                                                             |
+| Package Manager   | [pnpm](https://pnpm.io/) 10 with workspaces                                                                                                                           |
 
 ## Getting Started
 
