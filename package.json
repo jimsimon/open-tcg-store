@@ -84,7 +84,7 @@
       "pnpm run lint",
       "pnpm run format"
     ],
-    "*.{json,css,html,graphql,graphqls}": [
+    "*.{json,css,html}": [
       "pnpm run format"
     ]
   },
