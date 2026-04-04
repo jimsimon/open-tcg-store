@@ -420,8 +420,7 @@ export class OgsSettingsUsersPage extends LitElement {
         this.stores = result.data.getEmployeeStoreLocations;
       }
     } catch (e) {
-      // Store list is non-critical; log but don't block the page
-      console.error('Failed to load stores for user management', e);
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to load stores';
     }
   }
 

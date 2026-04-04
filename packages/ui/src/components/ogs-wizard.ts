@@ -35,7 +35,8 @@ export class OgsWizard extends LitElement {
   @queryAssignedElements({ flatten: true, selector: 'ogs-wizard-item' })
   items: OgsWizardItem[] = [];
 
-  @state()
+  // Not reactive — we trigger a re-render explicitly after the first update
+  // to avoid "scheduled an update after an update completed" warnings.
   firstUpdateCompleted = false;
 
   @property({ type: Number })
@@ -80,10 +81,16 @@ export class OgsWizard extends LitElement {
     this.removeEventListener('keydown', this.handleKeyDown);
   }
 
-  firstUpdated() {
-    this.firstUpdateCompleted = true;
+  async firstUpdated() {
     this.updateItemVisibility();
     this.focusFirstElement();
+    // Wait for the current update to fully settle before scheduling a new one.
+    // Setting firstUpdateCompleted synchronously inside firstUpdated would
+    // schedule a re-render during the update cycle, triggering Lit's
+    // "change-in-update" warning.
+    await this.updateComplete;
+    this.firstUpdateCompleted = true;
+    this.requestUpdate();
   }
 
   shouldShowPrevious() {

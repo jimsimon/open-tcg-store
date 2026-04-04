@@ -19,8 +19,14 @@ vi.mock('../../auth-client', () => ({
   },
 }));
 
+// Mock the GraphQL execute function to prevent real fetch calls (e.g. loadStores)
+vi.mock('../../lib/graphql', () => ({
+  execute: vi.fn().mockResolvedValue({ data: { getEmployeeStoreLocations: [] } }),
+}));
+
 import './settings-users.client.ts';
 import { OgsSettingsUsersPage } from './settings-users.client.ts';
+import { execute } from '../../lib/graphql';
 
 // --- Helpers ---
 
@@ -179,6 +185,21 @@ describe('ogs-settings-users-page', () => {
     const errorCallout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(errorCallout).toBeTruthy();
     expect(errorCallout?.textContent).toContain('Auth error');
+  });
+
+  test('should show error message on store load failure', async () => {
+    vi.mocked(execute).mockRejectedValue(new Error('Network error'));
+
+    element.remove();
+    element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const errorCallout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
+    expect(errorCallout).toBeTruthy();
+    expect(errorCallout?.textContent).toContain('Network error');
   });
 
   test('should show empty state when no users', async () => {
