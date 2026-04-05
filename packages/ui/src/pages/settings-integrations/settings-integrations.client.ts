@@ -20,7 +20,6 @@ const GetIntegrationSettingsQuery = new TypedDocumentString(`
     getIntegrationSettings {
       stripe { enabled hasApiKey }
       shopify { enabled hasApiKey shopDomain }
-      quickbooks { enabled hasClientId hasClientSecret }
     }
   }
 `) as unknown as TypedDocumentString<
@@ -28,7 +27,6 @@ const GetIntegrationSettingsQuery = new TypedDocumentString(`
     getIntegrationSettings: {
       stripe: { enabled: boolean; hasApiKey: boolean };
       shopify: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null };
-      quickbooks: { enabled: boolean; hasClientId: boolean; hasClientSecret: boolean };
     };
   },
   Record<string, never>
@@ -50,15 +48,6 @@ const UpdateShopifyMutation = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   { updateShopifyIntegration: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null } },
   { input: { enabled?: boolean; apiKey?: string; shopDomain?: string } }
->;
-
-const UpdateQuickBooksMutation = new TypedDocumentString(`
-  mutation UpdateQuickBooksIntegration($input: UpdateQuickBooksIntegrationInput!) {
-    updateQuickBooksIntegration(input: $input) { enabled hasClientId hasClientSecret }
-  }
-`) as unknown as TypedDocumentString<
-  { updateQuickBooksIntegration: { enabled: boolean; hasClientId: boolean; hasClientSecret: boolean } },
-  { input: { enabled?: boolean; clientId?: string; clientSecret?: string } }
 >;
 
 @customElement('ogs-settings-integrations-page')
@@ -228,15 +217,9 @@ export class OgsSettingsIntegrationsPage extends LitElement {
   @state() shopifyHasApiKey = false;
   @state() shopifyApiKey = '';
   @state() shopifyShopDomain = '';
-  @state() quickbooksEnabled = false;
-  @state() quickbooksHasClientId = false;
-  @state() quickbooksHasClientSecret = false;
-  @state() quickbooksClientId = '';
-  @state() quickbooksClientSecret = '';
   @state() loading = true;
   @state() savingStripe = false;
   @state() savingShopify = false;
-  @state() savingQuickbooks = false;
   @state() successMessage = '';
   @state() errorMessage = '';
 
@@ -255,9 +238,6 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         this.shopifyEnabled = s.shopify.enabled;
         this.shopifyHasApiKey = s.shopify.hasApiKey;
         this.shopifyShopDomain = s.shopify.shopDomain ?? '';
-        this.quickbooksEnabled = s.quickbooks.enabled;
-        this.quickbooksHasClientId = s.quickbooks.hasClientId;
-        this.quickbooksHasClientSecret = s.quickbooks.hasClientSecret;
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load settings';
@@ -316,36 +296,6 @@ export class OgsSettingsIntegrationsPage extends LitElement {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to save';
     } finally {
       this.savingShopify = false;
-    }
-  }
-
-  async saveQuickbooks() {
-    this.savingQuickbooks = true;
-    this.successMessage = '';
-    this.errorMessage = '';
-    try {
-      const input: { enabled?: boolean; clientId?: string; clientSecret?: string } = {
-        enabled: this.quickbooksEnabled,
-      };
-      if (this.quickbooksClientId) input.clientId = this.quickbooksClientId;
-      if (this.quickbooksClientSecret) input.clientSecret = this.quickbooksClientSecret;
-      const result = await execute(UpdateQuickBooksMutation, { input });
-      if (result?.errors?.length) {
-        this.errorMessage = result.errors.map((e: { message: string }) => e.message).join(', ');
-      } else {
-        this.quickbooksHasClientId = result.data.updateQuickBooksIntegration.hasClientId;
-        this.quickbooksHasClientSecret = result.data.updateQuickBooksIntegration.hasClientSecret;
-        this.quickbooksClientId = '';
-        this.quickbooksClientSecret = '';
-        this.successMessage = 'QuickBooks settings saved';
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
-      }
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to save';
-    } finally {
-      this.savingQuickbooks = false;
     }
   }
 
@@ -412,9 +362,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
           `
         : nothing}
 
-      <div class="integrations-grid">
-        ${this.renderStripeCard()} ${this.renderShopifyCard()} ${this.renderQuickBooksCard()}
-      </div>
+      <div class="integrations-grid">${this.renderStripeCard()} ${this.renderShopifyCard()}</div>
     `;
   }
 
@@ -528,68 +476,6 @@ export class OgsSettingsIntegrationsPage extends LitElement {
             <wa-button variant="brand" size="small" ?loading="${this.savingShopify}" @click="${this.saveShopify}">
               <wa-icon slot="start" name="floppy-disk"></wa-icon>
               Save Shopify Settings
-            </wa-button>
-          </div>
-        </div>
-      </wa-card>
-    `;
-  }
-
-  private renderQuickBooksCard() {
-    return html`
-      <wa-card appearance="outline">
-        <div class="integration-card-header">
-          <div class="integration-title">
-            <div class="integration-icon">
-              <wa-icon name="calculator"></wa-icon>
-            </div>
-            <div class="integration-title-text">
-              <h3>QuickBooks</h3>
-              <p>Accounting integration for sales, expenses, and inventory</p>
-            </div>
-          </div>
-          <wa-switch
-            ?checked="${this.quickbooksEnabled}"
-            @change="${(e: Event) => {
-              this.quickbooksEnabled = (e.target as HTMLInputElement).checked;
-            }}"
-          >
-            ${this.quickbooksEnabled ? 'Enabled' : 'Disabled'}
-          </wa-switch>
-        </div>
-        <div class="integration-fields">
-          <div>
-            <wa-input
-              label="Client ID"
-              placeholder="${this.quickbooksHasClientId ? '••••••••' : 'Enter QuickBooks Client ID'}"
-              .value="${this.quickbooksClientId}"
-              @input="${(e: Event) => {
-                this.quickbooksClientId = (e.target as HTMLInputElement).value;
-              }}"
-            >
-              <wa-icon slot="prefix" name="id-card"></wa-icon>
-            </wa-input>
-            ${this.renderKeyStatus(this.quickbooksHasClientId, 'Client ID')}
-          </div>
-          <div>
-            <wa-input
-              type="password"
-              label="Client Secret"
-              placeholder="${this.quickbooksHasClientSecret ? '••••••••••••••••' : 'Enter QuickBooks Client Secret'}"
-              .value="${this.quickbooksClientSecret}"
-              @input="${(e: Event) => {
-                this.quickbooksClientSecret = (e.target as HTMLInputElement).value;
-              }}"
-              password-toggle
-            >
-              <wa-icon slot="prefix" name="key"></wa-icon>
-            </wa-input>
-            ${this.renderKeyStatus(this.quickbooksHasClientSecret, 'Client Secret')}
-          </div>
-          <div class="integration-save">
-            <wa-button variant="brand" size="small" ?loading="${this.savingQuickbooks}" @click="${this.saveQuickbooks}">
-              <wa-icon slot="start" name="floppy-disk"></wa-icon>
-              Save QuickBooks Settings
             </wa-button>
           </div>
         </div>
