@@ -66,7 +66,10 @@ function requirePermission(resource: string, action: string) {
     const result = await authClient.organization.hasPermission({
       permissions: { [resource]: [action] },
       fetchOptions: {
-        headers: { Cookie: (ctx.headers.cookie as string) ?? '' },
+        headers: {
+          Cookie: (ctx.headers.cookie as string) ?? '',
+          Origin: (ctx.headers.origin as string) ?? 'http://localhost:5173',
+        },
       },
     });
 

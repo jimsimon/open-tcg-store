@@ -15,8 +15,11 @@ interface PageAttributes {
   showStoreSelector?: boolean;
 }
 
-function cookieHeaders(ctx: RouterContext): Record<string, string> {
-  return { Cookie: (ctx.headers.cookie as string) ?? '' };
+function serverFetchHeaders(ctx: RouterContext): Record<string, string> {
+  return {
+    Cookie: (ctx.headers.cookie as string) ?? '',
+    Origin: (ctx.headers.origin as string) ?? 'http://localhost:5173',
+  };
 }
 
 async function checkPermission(
@@ -57,7 +60,7 @@ export async function getPageAttributes(ctx: RouterContext): Promise<PageAttribu
     };
   }
 
-  const fetchOptions = { headers: cookieHeaders(ctx) };
+  const fetchOptions = { headers: serverFetchHeaders(ctx) };
 
   // Run all permission checks in parallel to avoid sequential round trips
   const [canManageInventory, canViewTransactionLog, canAccessSettings, canManageStoreLocations, canManageUsers] =

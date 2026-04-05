@@ -58,16 +58,15 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
         },
       });
 
-    // Forward Set-Cookie headers from the signup response to the browser
-    const setCookies = signUpResponse.headers.getSetCookie();
-    for (const cookie of setCookies) {
-      ctx.res.append('Set-Cookie', cookie);
-    }
-
     // Build headers from the sign-up session cookies so org creation
     // is authenticated as the newly created user.
+    // NOTE: We intentionally do NOT forward these signup cookies to the browser.
+    // The signup session contains stale data (the default role from before we
+    // updated it to 'owner'). A fresh sign-in at the end provides cookies
+    // with the correct role.
+    const signUpCookies = signUpResponse.headers.getSetCookie();
     const signUpHeaders = new Headers();
-    for (const cookie of setCookies) {
+    for (const cookie of signUpCookies) {
       signUpHeaders.append('cookie', cookie);
     }
 
@@ -100,8 +99,37 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
 
     console.log('Initial admin user and organization have been created successfully.');
 
-    // 6. Return the session token
-    return signUpData.token;
+    // 6. Create a fresh session by signing in. The signup session contains
+    // stale data (the default 'user' role assigned at signup time, before the
+    // DB update to 'owner'). Better Auth's session_data cookie caches the user
+    // object, so getSession() on subsequent requests would return the old role,
+    // causing all permission checks to fail. A fresh sign-in creates a new
+    // session that reads the current user.role ('owner') from the database.
+    // The session-creation hook in auth.ts also auto-sets activeOrganizationId
+    // from the membership created in step 4.
+    const signInResponse = await auth.api.signInEmail({
+      body: {
+        email: args.userDetails.email,
+        password: args.userDetails.password,
+      },
+      headers: fromNodeHeaders(ctx.req.headers),
+      asResponse: true,
+    });
+
+    if (!signInResponse.ok) {
+      throw new Error('Setup completed but failed to create authenticated session. Please sign in manually.');
+    }
+
+    const signInData = await signInResponse.json();
+
+    // Forward the fresh session cookies (with correct role) to the browser
+    const freshCookies = signInResponse.headers.getSetCookie();
+    for (const cookie of freshCookies) {
+      ctx.res.append('Set-Cookie', cookie);
+    }
+
+    // 7. Return the fresh session token
+    return signInData.token;
   } catch (error) {
     // Rollback: if the user was created but a subsequent step failed, clean up
     // the partially created user so setup can be retried cleanly.
