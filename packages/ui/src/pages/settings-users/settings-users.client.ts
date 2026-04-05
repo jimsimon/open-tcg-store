@@ -884,6 +884,7 @@ export class OgsSettingsUsersPage extends LitElement {
         this.editingUser,
         () => html`
           <wa-dialog
+            with-footer
             label="Edit User"
             ?open="${this.showEditDialog}"
             @wa-after-hide="${(e: Event) => {

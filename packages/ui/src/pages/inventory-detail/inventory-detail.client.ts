@@ -783,6 +783,7 @@ export class OgsInventoryDetailPage extends LitElement {
     if (!this.editingStock) return nothing;
     return html`
       <wa-dialog
+        with-footer
         label="Edit Stock Entry"
         ?open="${this.showEditDialog}"
         @wa-after-hide="${(e: Event) => {
@@ -867,6 +868,7 @@ export class OgsInventoryDetailPage extends LitElement {
     if (!this.deletingStock) return nothing;
     return html`
       <wa-dialog
+        with-footer
         label="Delete Stock Entry"
         ?open="${this.showDeleteDialog}"
         @wa-after-hide="${(e: Event) => {

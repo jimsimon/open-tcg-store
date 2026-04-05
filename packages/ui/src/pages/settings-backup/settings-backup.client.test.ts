@@ -98,13 +98,19 @@ describe('ogs-settings-backup-page', () => {
     expect(badge?.textContent).toContain('Not connected');
   });
 
-  test('should display backup provider select', () => {
+  test('should display backup provider select with only connected providers', () => {
     const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
     expect(providerSelect).toBeTruthy();
 
     const options = providerSelect!.querySelectorAll('wa-option');
-    // "Select provider" + 3 providers = 4
-    expect(options.length).toBe(4);
+    // "Select provider" + 1 connected provider (Google Drive) = 2
+    expect(options.length).toBe(2);
+
+    const optionValues = Array.from(options).map((o) => o.getAttribute('value'));
+    expect(optionValues).toContain('');
+    expect(optionValues).toContain('google_drive');
+    expect(optionValues).not.toContain('dropbox');
+    expect(optionValues).not.toContain('onedrive');
   });
 
   test('should display backup frequency select', () => {
@@ -138,6 +144,71 @@ describe('ogs-settings-backup-page', () => {
     const buttons = element.shadowRoot!.querySelectorAll('.save-bar wa-button');
     const restoreBtn = Array.from(buttons).find((b) => b.textContent?.includes('Restore'));
     expect(restoreBtn).toBeTruthy();
+  });
+
+  test('should disable provider select when no providers are connected', async () => {
+    mockExecute.mockResolvedValue({
+      data: {
+        getBackupSettings: {
+          provider: null,
+          frequency: null,
+          lastBackupAt: null,
+          googleDriveConnected: false,
+          dropboxConnected: false,
+          onedriveConnected: false,
+        },
+      },
+    });
+
+    element.remove();
+    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
+    expect(providerSelect).toBeTruthy();
+    expect(providerSelect!.hasAttribute('disabled')).toBe(true);
+
+    const options = providerSelect!.querySelectorAll('wa-option');
+    // Only the placeholder "Select provider" option
+    expect(options.length).toBe(1);
+  });
+
+  test('should enable provider select and list all connected providers', async () => {
+    mockExecute.mockResolvedValue({
+      data: {
+        getBackupSettings: {
+          provider: null,
+          frequency: null,
+          lastBackupAt: null,
+          googleDriveConnected: true,
+          dropboxConnected: true,
+          onedriveConnected: false,
+        },
+      },
+    });
+
+    element.remove();
+    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
+    expect(providerSelect).toBeTruthy();
+    expect(providerSelect!.hasAttribute('disabled')).toBe(false);
+
+    const options = providerSelect!.querySelectorAll('wa-option');
+    // "Select provider" + Google Drive + Dropbox = 3
+    expect(options.length).toBe(3);
+
+    const optionValues = Array.from(options).map((o) => o.getAttribute('value'));
+    expect(optionValues).toContain('google_drive');
+    expect(optionValues).toContain('dropbox');
+    expect(optionValues).not.toContain('onedrive');
   });
 
   test('should show "No backups" message when no backup has been made', async () => {

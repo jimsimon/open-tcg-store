@@ -10,6 +10,8 @@ import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/details/details.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
@@ -247,6 +249,62 @@ export class OgsSettingsBackupPage extends LitElement {
         font-size: var(--wa-font-size-m);
       }
 
+      /* --- Provider Card Wrapper --- */
+
+      .provider-card-wrapper {
+        background: var(--wa-color-surface-alt);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-l);
+        transition: border-color 0.15s ease;
+      }
+
+      .provider-card-wrapper:hover {
+        border-color: var(--wa-color-brand-text);
+      }
+
+      .provider-card-wrapper .provider-card {
+        border: none;
+        background: none;
+        border-radius: 0;
+      }
+
+      .provider-card-wrapper .provider-card:hover {
+        border-color: transparent;
+      }
+
+      .provider-setup {
+        padding: 0 1.25rem 0.875rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .setup-steps {
+        margin: 0.25rem 0 0.75rem;
+        padding-left: 1.25rem;
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-muted);
+        line-height: 1.6;
+      }
+
+      .setup-steps li {
+        margin-bottom: 0.25rem;
+      }
+
+      .setup-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-brand-text);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .setup-link:hover {
+        text-decoration: underline;
+      }
+
       /* --- Form Layout --- */
 
       .form-grid {
@@ -361,6 +419,9 @@ export class OgsSettingsBackupPage extends LitElement {
   @state() googleDriveConnected = false;
   @state() dropboxConnected = false;
   @state() onedriveConnected = false;
+  @state() googleDriveClientId = '';
+  @state() dropboxClientId = '';
+  @state() onedriveClientId = '';
   @state() loading = true;
   @state() saving = false;
   @state() backingUp = false;
@@ -368,6 +429,10 @@ export class OgsSettingsBackupPage extends LitElement {
   @state() showRestoreDialog = false;
   @state() successMessage = '';
   @state() errorMessage = '';
+
+  get hasConnectedProvider(): boolean {
+    return this.googleDriveConnected || this.dropboxConnected || this.onedriveConnected;
+  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -466,8 +531,80 @@ export class OgsSettingsBackupPage extends LitElement {
     }
   }
 
+  private getClientIdForProvider(providerKey: string): string {
+    switch (providerKey) {
+      case 'google_drive':
+        return this.googleDriveClientId;
+      case 'dropbox':
+        return this.dropboxClientId;
+      case 'onedrive':
+        return this.onedriveClientId;
+      default:
+        return '';
+    }
+  }
+
+  private setClientIdForProvider(providerKey: string, value: string) {
+    switch (providerKey) {
+      case 'google_drive':
+        this.googleDriveClientId = value;
+        break;
+      case 'dropbox':
+        this.dropboxClientId = value;
+        break;
+      case 'onedrive':
+        this.onedriveClientId = value;
+        break;
+    }
+  }
+
+  private getOAuthInstructions(providerKey: string): { steps: string[]; url: string; urlLabel: string } {
+    switch (providerKey) {
+      case 'google_drive':
+        return {
+          steps: [
+            'Go to the Google Cloud Console and create or select a project.',
+            'Navigate to APIs & Services > Credentials.',
+            'Click "Create Credentials" and select "OAuth client ID".',
+            'Set the application type to "Web application".',
+            'Add your redirect URI (e.g. http://localhost:5174/api/backup/oauth/google_drive/callback).',
+            'Copy the generated Client ID and paste it below.',
+          ],
+          url: 'https://console.cloud.google.com/apis/credentials',
+          urlLabel: 'Google Cloud Console',
+        };
+      case 'dropbox':
+        return {
+          steps: [
+            'Go to the Dropbox App Console and click "Create app".',
+            'Choose "Scoped access" and "Full Dropbox" access type.',
+            'Name your app and click "Create app".',
+            'Under Settings, add your redirect URI (e.g. http://localhost:5174/api/backup/oauth/dropbox/callback).',
+            'Copy the "App key" (this is your Client ID) and paste it below.',
+          ],
+          url: 'https://www.dropbox.com/developers/apps',
+          urlLabel: 'Dropbox App Console',
+        };
+      case 'onedrive':
+        return {
+          steps: [
+            'Go to the Azure Portal and navigate to App registrations.',
+            'Click "New registration" and name your application.',
+            'Set the redirect URI to "Web" with your callback URL (e.g. http://localhost:5174/api/backup/oauth/onedrive/callback).',
+            'After registration, copy the "Application (client) ID" and paste it below.',
+          ],
+          url: 'https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
+          urlLabel: 'Azure App Registrations',
+        };
+      default:
+        return { steps: [], url: '', urlLabel: '' };
+    }
+  }
+
   connectProvider(providerKey: string) {
-    window.location.href = `http://localhost:5174/api/backup/oauth/${providerKey}/authorize`;
+    const clientId = this.getClientIdForProvider(providerKey);
+    const params = new URLSearchParams({ client_id: clientId });
+    window.location.href = `http://localhost:5174/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
   }
 
   render() {
@@ -545,9 +682,9 @@ export class OgsSettingsBackupPage extends LitElement {
             </div>
           </div>
           <div class="provider-grid">
-            ${this.renderProviderCard('Google Drive', 'google', 'brands', this.googleDriveConnected, 'google_drive')}
-            ${this.renderProviderCard('Dropbox', 'dropbox', 'brands', this.dropboxConnected, 'dropbox')}
-            ${this.renderProviderCard('OneDrive', 'microsoft', 'brands', this.onedriveConnected, 'onedrive')}
+            ${this.renderProviderCard('Google Drive', 'database', 'solid', this.googleDriveConnected, 'google_drive')}
+            ${this.renderProviderCard('Dropbox', 'box-open', 'solid', this.dropboxConnected, 'dropbox')}
+            ${this.renderProviderCard('OneDrive', 'cloud', 'solid', this.onedriveConnected, 'onedrive')}
           </div>
         </div>
 
@@ -565,14 +702,15 @@ export class OgsSettingsBackupPage extends LitElement {
               <wa-select
                 label="Backup Provider"
                 .value="${this.provider}"
+                ?disabled="${!this.hasConnectedProvider}"
                 @change="${(e: Event) => {
                   this.provider = (e.target as HTMLSelectElement).value;
                 }}"
               >
                 <wa-option value="">Select provider</wa-option>
-                <wa-option value="google_drive">Google Drive</wa-option>
-                <wa-option value="dropbox">Dropbox</wa-option>
-                <wa-option value="onedrive">OneDrive</wa-option>
+                ${this.googleDriveConnected ? html`<wa-option value="google_drive">Google Drive</wa-option>` : nothing}
+                ${this.dropboxConnected ? html`<wa-option value="dropbox">Dropbox</wa-option>` : nothing}
+                ${this.onedriveConnected ? html`<wa-option value="onedrive">OneDrive</wa-option>` : nothing}
               </wa-select>
 
               <wa-select
@@ -640,28 +778,54 @@ export class OgsSettingsBackupPage extends LitElement {
   }
 
   private renderProviderCard(name: string, icon: string, iconVariant: string, connected: boolean, providerKey: string) {
+    const clientId = this.getClientIdForProvider(providerKey);
+    const instructions = this.getOAuthInstructions(providerKey);
+
     return html`
-      <div class="provider-card">
-        <div class="provider-info">
-          <div class="provider-icon">
-            <wa-icon name="${icon}" variant="${iconVariant}"></wa-icon>
+      <div class="provider-card-wrapper">
+        <div class="provider-card">
+          <div class="provider-info">
+            <div class="provider-icon">
+              <wa-icon name="${icon}" variant="${iconVariant}"></wa-icon>
+            </div>
+            <div class="provider-details">
+              <span class="provider-name">${name}</span>
+              ${connected
+                ? html`<wa-badge variant="success">Connected</wa-badge>`
+                : html`<wa-badge variant="neutral">Not connected</wa-badge>`}
+            </div>
           </div>
-          <div class="provider-details">
-            <span class="provider-name">${name}</span>
-            ${connected
-              ? html`<wa-badge variant="success">Connected</wa-badge>`
-              : html`<wa-badge variant="neutral">Not connected</wa-badge>`}
-          </div>
+          <wa-button
+            size="small"
+            variant="${connected ? 'neutral' : 'brand'}"
+            appearance="outlined"
+            ?disabled="${!connected && !clientId.trim()}"
+            @click="${() => this.connectProvider(providerKey)}"
+          >
+            <wa-icon slot="start" name="${connected ? 'rotate' : 'link'}"></wa-icon>
+            ${connected ? 'Reconnect' : 'Connect'}
+          </wa-button>
         </div>
-        <wa-button
-          size="small"
-          variant="${connected ? 'neutral' : 'brand'}"
-          appearance="outlined"
-          @click="${() => this.connectProvider(providerKey)}"
-        >
-          <wa-icon slot="start" name="${connected ? 'rotate' : 'link'}"></wa-icon>
-          ${connected ? 'Reconnect' : 'Connect'}
-        </wa-button>
+        <div class="provider-setup">
+          <wa-details summary="How to get a ${name} OAuth Client ID">
+            <ol class="setup-steps">
+              ${instructions.steps.map((step) => html`<li>${step}</li>`)}
+            </ol>
+            <a class="setup-link" href="${instructions.url}" target="_blank" rel="noopener noreferrer">
+              Open ${instructions.urlLabel}
+              <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75rem;"></wa-icon>
+            </a>
+          </wa-details>
+          <wa-input
+            label="OAuth Client ID"
+            placeholder="Paste your ${name} OAuth Client ID"
+            size="small"
+            .value="${clientId}"
+            @input="${(e: Event) => this.setClientIdForProvider(providerKey, (e.target as HTMLInputElement).value)}"
+          >
+            <wa-icon slot="prefix" name="key"></wa-icon>
+          </wa-input>
+        </div>
       </div>
     `;
   }

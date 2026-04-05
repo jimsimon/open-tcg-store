@@ -217,6 +217,17 @@ describe('ogs-settings-users-page', () => {
     expect(emptyState?.textContent).toContain('No Users Found');
   });
 
+  test('edit dialog footer buttons are present when dialog opens', async () => {
+    const user = fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'admin' });
+    element.openEditDialog(user);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const footerButtons = element.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
+    expect(footerButtons.length).toBeGreaterThanOrEqual(2);
+  });
+
   test('should filter out anonymous users', async () => {
     mockListUsers.mockResolvedValue({
       data: {

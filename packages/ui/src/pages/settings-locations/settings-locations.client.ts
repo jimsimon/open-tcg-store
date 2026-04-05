@@ -1103,6 +1103,7 @@ export class SettingsLocationsPage extends LitElement {
         this.editingLocation,
         () => html`
           <wa-dialog
+            with-footer
             label="Edit Store"
             ?open="${this.showEditDialog}"
             @wa-after-hide="${(e: Event) => {
@@ -1244,11 +1245,14 @@ export class SettingsLocationsPage extends LitElement {
         this.removingLocation,
         () => html`
           <wa-dialog
+            with-footer
             label="Remove Store Location"
             ?open="${this.showRemoveDialog}"
-            @wa-after-hide="${() => {
-              this.showRemoveDialog = false;
-              this.removingLocation = null;
+            @wa-after-hide="${(e: Event) => {
+              if (e.target === e.currentTarget) {
+                this.showRemoveDialog = false;
+                this.removingLocation = null;
+              }
             }}"
           >
             <p>
