@@ -39,7 +39,6 @@ export class OgsInventorySealedPage extends LitElement {
 
   // --- Properties ---
 
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -361,7 +360,6 @@ export class OgsInventorySealedPage extends LitElement {
       <ogs-page
         activePage="inventory/sealed"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

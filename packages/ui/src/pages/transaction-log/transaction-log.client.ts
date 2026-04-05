@@ -131,7 +131,6 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number):
 
 @customElement('ogs-transaction-log-page')
 export class OgsTransactionLogPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -506,7 +505,6 @@ export class OgsTransactionLogPage extends LitElement {
       <ogs-page
         activePage="Transaction Log"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

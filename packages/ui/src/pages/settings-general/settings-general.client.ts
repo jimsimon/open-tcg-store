@@ -54,7 +54,6 @@ const UpdateStoreSettingsMutation = new TypedDocumentString(`
 
 @customElement('ogs-settings-general-page')
 export class OgsSettingsGeneralPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -245,7 +244,6 @@ export class OgsSettingsGeneralPage extends LitElement {
       <ogs-page
         activePage="settings/general"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

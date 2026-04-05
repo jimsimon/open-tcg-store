@@ -68,7 +68,6 @@ describe('ogs-settings-users-page', () => {
     });
 
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
-    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

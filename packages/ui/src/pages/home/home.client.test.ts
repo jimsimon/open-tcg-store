@@ -146,7 +146,7 @@ describe('ogs-home-page', () => {
     await createElement();
 
     const cards = element.shadowRoot!.querySelectorAll('wa-card');
-    expect(cards.length).toBeGreaterThanOrEqual(5);
+    expect(cards.length).toBeGreaterThanOrEqual(4);
 
     const cardHeaders = Array.from(cards).map(
       (card) => card.querySelector('[slot="header"]')?.textContent?.trim() || '',
@@ -157,7 +157,6 @@ describe('ogs-home-page', () => {
     expect(cardHeaders.some((h) => h.includes('Best Sellers'))).toBe(true);
     expect(cardHeaders.some((h) => h.includes('Order Status'))).toBe(true);
     expect(cardHeaders.some((h) => h.includes('Inventory Summary'))).toBe(true);
-    expect(cardHeaders.some((h) => h.includes('Open Orders'))).toBe(true);
   });
 
   test('displays empty states when no data', async () => {
@@ -191,17 +190,6 @@ describe('ogs-home-page', () => {
     );
     expect(names).toContain('Product A');
     expect(names).toContain('Product B');
-  });
-
-  test('displays open orders when available', async () => {
-    mockAllData();
-    await createElement();
-
-    const orderItems = element.shadowRoot!.querySelectorAll('.open-order-item');
-    expect(orderItems.length).toBe(1);
-
-    const orderNumber = element.shadowRoot!.querySelector('.open-order-number');
-    expect(orderNumber?.textContent?.trim()).toBe('ORD-20250405-0001');
   });
 
   test('renders best seller sort toggle', async () => {

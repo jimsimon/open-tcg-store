@@ -42,7 +42,6 @@ describe('ogs-settings-backup-page', () => {
     });
 
     element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
-    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

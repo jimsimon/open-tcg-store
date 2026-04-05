@@ -182,7 +182,6 @@ function formatNumber(value: number | null | undefined): string {
 @customElement('ogs-home-page')
 export class HomePage extends LitElement {
   // --- Server-injected properties ---
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -736,7 +735,6 @@ export class HomePage extends LitElement {
       <ogs-page
         activePage="Dashboard"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

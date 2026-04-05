@@ -2,7 +2,6 @@ import type { RouterContext } from '@koa/router';
 import { escapeHtml } from './html-escape';
 
 interface PageAttributes {
-  userRole: string;
   isAnonymous: boolean;
   userName: string;
   canManageInventory: boolean;
@@ -40,7 +39,6 @@ export function getPageAttributes(ctx: RouterContext): PageAttributes {
   const isAuthenticated = isOwner || isManagerOrAbove || isEmployee;
 
   return {
-    userRole,
     isAnonymous,
     userName,
     canManageInventory: isAuthenticated,
@@ -59,7 +57,6 @@ export function getPageAttributes(ctx: RouterContext): PageAttributes {
 export function renderPageAttributes(ctx: RouterContext, extras: Record<string, string | boolean> = {}): string {
   const attrs = getPageAttributes(ctx);
   const parts: string[] = [
-    `userRole="${escapeHtml(attrs.userRole)}"`,
     attrs.isAnonymous ? 'isAnonymous' : '',
     `userName="${escapeHtml(attrs.userName)}"`,
     // Always show the user menu so users can sign in/out from any page

@@ -25,7 +25,6 @@ describe('ogs-settings-integrations-page', () => {
 
   beforeEach(async () => {
     element = document.createElement('ogs-settings-integrations-page') as OgsSettingsIntegrationsPage;
-    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

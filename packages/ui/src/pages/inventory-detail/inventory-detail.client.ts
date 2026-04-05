@@ -39,7 +39,6 @@ import {
 export class OgsInventoryDetailPage extends LitElement {
   static styles = sharedInventoryStyles;
 
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -430,7 +429,6 @@ export class OgsInventoryDetailPage extends LitElement {
       <ogs-page
         activePage="${activePage}"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

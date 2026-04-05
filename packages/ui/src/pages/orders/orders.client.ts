@@ -180,7 +180,6 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number):
 
 @customElement('ogs-orders-page')
 export class OrdersPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -786,7 +785,6 @@ export class OrdersPage extends LitElement {
       <ogs-page
         activePage="Orders"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

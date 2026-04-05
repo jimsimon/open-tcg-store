@@ -130,7 +130,6 @@ export class OgsInventoryImportPage extends LitElement {
     `,
   ];
 
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -145,7 +144,6 @@ export class OgsInventoryImportPage extends LitElement {
     return html`
       <ogs-page
         pageTitle="Import Inventory"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

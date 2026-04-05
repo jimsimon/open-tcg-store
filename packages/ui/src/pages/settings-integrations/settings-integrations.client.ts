@@ -52,7 +52,6 @@ const UpdateShopifyMutation = new TypedDocumentString(`
 
 @customElement('ogs-settings-integrations-page')
 export class OgsSettingsIntegrationsPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -305,7 +304,6 @@ export class OgsSettingsIntegrationsPage extends LitElement {
       <ogs-page
         activePage="settings/integrations"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

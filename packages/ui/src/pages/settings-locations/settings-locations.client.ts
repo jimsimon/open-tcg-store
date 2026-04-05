@@ -183,7 +183,6 @@ function toKebabCase(str: string): string {
 
 @customElement('ogs-settings-locations-page')
 export class SettingsLocationsPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: String }) activePage = '';
@@ -747,7 +746,6 @@ export class SettingsLocationsPage extends LitElement {
     return html`
       <ogs-page
         activePage="${this.activePage}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

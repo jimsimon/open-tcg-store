@@ -8,7 +8,6 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 
 @customElement('ogs-settings-autoprice-page')
 export class OgsSettingsAutopricePage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -142,7 +141,6 @@ export class OgsSettingsAutopricePage extends LitElement {
       <ogs-page
         activePage="settings/autoprice"
         ?showUserMenu="${true}"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

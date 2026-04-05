@@ -87,7 +87,6 @@ function roleBadgeVariant(role: string | null): string {
 
 @customElement('ogs-settings-users-page')
 export class OgsSettingsUsersPage extends LitElement {
-  @property({ type: String }) userRole = '';
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
@@ -576,7 +575,6 @@ export class OgsSettingsUsersPage extends LitElement {
     return html`
       <ogs-page
         activePage="settings/users"
-        userRole="${this.userRole}"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"

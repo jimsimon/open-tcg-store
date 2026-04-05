@@ -471,10 +471,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
   @property({ type: String })
   activePage?: string;
 
-  /** @deprecated Use permission flags instead. Kept for backward compat during migration. */
-  @property({ type: String })
-  userRole = '';
-
   @property({ type: Boolean })
   hideNav = false;
 

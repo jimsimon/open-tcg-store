@@ -10,7 +10,6 @@ describe('ogs-settings-autoprice-page', () => {
 
   beforeEach(async () => {
     element = document.createElement('ogs-settings-autoprice-page') as OgsSettingsAutopricePage;
-    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
   });
@@ -57,10 +56,6 @@ describe('ogs-settings-autoprice-page', () => {
     const emptyState = element.shadowRoot!.querySelector('.empty-state');
     expect(emptyState?.textContent).toContain('automatically set prices');
     expect(emptyState?.textContent).toContain('market data');
-  });
-
-  test('should accept userRole property', () => {
-    expect(element.userRole).toBe('owner');
   });
 
   test('should accept isAnonymous property', () => {

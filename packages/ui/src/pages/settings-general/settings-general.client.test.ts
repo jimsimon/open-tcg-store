@@ -25,7 +25,6 @@ describe('ogs-settings-general-page', () => {
 
   beforeEach(async () => {
     element = document.createElement('ogs-settings-general-page') as OgsSettingsGeneralPage;
-    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     // Wait for async loadSettings to complete
