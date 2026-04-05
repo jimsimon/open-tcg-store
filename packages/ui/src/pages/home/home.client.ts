@@ -66,15 +66,6 @@ interface OrderStatusBreakdown {
   total: number;
 }
 
-interface OpenOrder {
-  id: number;
-  orderNumber: string;
-  customerName: string;
-  totalAmount: number;
-  itemCount: number;
-  createdAt: string;
-}
-
 // ---------------------------------------------------------------------------
 // GraphQL Queries
 // ---------------------------------------------------------------------------
@@ -143,22 +134,6 @@ const GetDashboardOrderStatusQuery = new TypedDocumentString(`
   { organizationId: string; dateRange: { startDate: string; endDate: string } }
 >;
 
-const GetDashboardOpenOrdersQuery = new TypedDocumentString(`
-  query GetDashboardOpenOrders($organizationId: String!, $limit: Int) {
-    getDashboardOpenOrders(organizationId: $organizationId, limit: $limit) {
-      id
-      orderNumber
-      customerName
-      totalAmount
-      itemCount
-      createdAt
-    }
-  }
-`) as unknown as TypedDocumentString<
-  { getDashboardOpenOrders: OpenOrder[] },
-  { organizationId: string; limit?: number }
->;
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -200,19 +175,6 @@ function formatNumber(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
 
-function timeAgo(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  const diffDays = Math.floor(diffHrs / 24);
-  return `${diffDays}d ago`;
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -241,15 +203,12 @@ export class HomePage extends LitElement {
   @state() private bestSellers: BestSeller[] = [];
   @state() private inventorySummary: InventorySummary | null = null;
   @state() private orderStatus: OrderStatusBreakdown | null = null;
-  @state() private openOrders: OpenOrder[] = [];
-
   // --- Loading/error state ---
   @state() private initialLoad = true;
   @state() private salesLoading = true;
   @state() private bestSellersLoading = true;
   @state() private inventoryLoading = true;
   @state() private orderStatusLoading = true;
-  @state() private openOrdersLoading = true;
   @state() private error = '';
 
   // --- Internal ---
@@ -289,7 +248,6 @@ export class HomePage extends LitElement {
       this.bestSellersLoading = false;
       this.inventoryLoading = false;
       this.orderStatusLoading = false;
-      this.openOrdersLoading = false;
       this.initialLoad = false;
       return;
     }
@@ -298,7 +256,7 @@ export class HomePage extends LitElement {
     const dateRange = computeDateRange(this.datePreset);
 
     try {
-      const [salesResult, bestSellersResult, inventoryResult, orderStatusResult, openOrdersResult] = await Promise.all([
+      const [salesResult, bestSellersResult, inventoryResult, orderStatusResult] = await Promise.all([
         execute(GetDashboardSalesQuery, { organizationId: orgId, dateRange }),
         execute(GetDashboardBestSellersQuery, {
           organizationId: orgId,
@@ -308,7 +266,6 @@ export class HomePage extends LitElement {
         }),
         execute(GetDashboardInventorySummaryQuery, { organizationId: orgId }),
         execute(GetDashboardOrderStatusQuery, { organizationId: orgId, dateRange }),
-        execute(GetDashboardOpenOrdersQuery, { organizationId: orgId, limit: 10 }),
       ]);
 
       if (salesResult.data) {
@@ -323,9 +280,6 @@ export class HomePage extends LitElement {
       if (orderStatusResult.data) {
         this.orderStatus = orderStatusResult.data.getDashboardOrderStatus;
       }
-      if (openOrdersResult.data) {
-        this.openOrders = openOrdersResult.data.getDashboardOpenOrders;
-      }
 
       this.error = '';
     } catch (err) {
@@ -337,7 +291,6 @@ export class HomePage extends LitElement {
       this.bestSellersLoading = false;
       this.inventoryLoading = false;
       this.orderStatusLoading = false;
-      this.openOrdersLoading = false;
       this.initialLoad = false;
       this._fetching = false;
     }
@@ -411,7 +364,7 @@ export class HomePage extends LitElement {
     const dateRange = computeDateRange(this.datePreset);
 
     try {
-      const [salesResult, bestSellersResult, inventoryResult, orderStatusResult, openOrdersResult] = await Promise.all([
+      const [salesResult, bestSellersResult, inventoryResult, orderStatusResult] = await Promise.all([
         execute(GetDashboardSalesQuery, { organizationId: orgId, dateRange }),
         execute(GetDashboardBestSellersQuery, {
           organizationId: orgId,
@@ -421,14 +374,12 @@ export class HomePage extends LitElement {
         }),
         execute(GetDashboardInventorySummaryQuery, { organizationId: orgId }),
         execute(GetDashboardOrderStatusQuery, { organizationId: orgId, dateRange }),
-        execute(GetDashboardOpenOrdersQuery, { organizationId: orgId, limit: 10 }),
       ]);
 
       if (salesResult.data) this.salesData = salesResult.data.getDashboardSales;
       if (bestSellersResult.data) this.bestSellers = bestSellersResult.data.getDashboardBestSellers;
       if (inventoryResult.data) this.inventorySummary = inventoryResult.data.getDashboardInventorySummary;
       if (orderStatusResult.data) this.orderStatus = orderStatusResult.data.getDashboardOrderStatus;
-      if (openOrdersResult.data) this.openOrders = openOrdersResult.data.getDashboardOpenOrders;
     } catch {
       // Silent refresh — don't show errors
     } finally {
@@ -445,7 +396,6 @@ export class HomePage extends LitElement {
     this.bestSellersLoading = true;
     this.inventoryLoading = true;
     this.orderStatusLoading = true;
-    this.openOrdersLoading = true;
     this._fetchAllData();
   }
 
@@ -544,316 +494,14 @@ export class HomePage extends LitElement {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Date Preset Bar --- */
+      /* --- Controls Bar --- */
       .controls-bar {
         display: flex;
         align-items: center;
         justify-content: flex-end;
         margin-bottom: var(--wa-space-l);
         gap: var(--wa-space-m);
-      }
-
-      /* --- Dashboard Grid --- */
-      .dashboard-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--wa-space-l);
-      }
-
-      .dashboard-grid .full-width {
-        grid-column: 1 / -1;
-      }
-
-      @media (max-width: 768px) {
-        .dashboard-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* --- Card Styles --- */
-      .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--wa-space-m);
-      }
-
-      .card-header h3 {
-        margin: 0;
-        font-size: var(--wa-font-size-l);
-        font-weight: 600;
-      }
-
-      /* --- Stats Row --- */
-      .stats-row {
-        display: flex;
-        gap: var(--wa-space-m);
-        flex-wrap: wrap;
-      }
-
-      .stats-row.has-chart {
-        margin-bottom: var(--wa-space-l);
-      }
-
-      .stat-card {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.875rem 1.25rem;
-        border-radius: var(--wa-border-radius-l);
-        background: var(--wa-color-surface-raised);
-        border: 1px solid var(--wa-color-surface-border);
-        min-width: 150px;
-        flex: 1;
-      }
-
-      .stat-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: var(--wa-border-radius-m);
-        font-size: 1.125rem;
-        flex-shrink: 0;
-      }
-
-      .stat-icon.success {
-        background: var(--wa-color-success-fill-quiet);
-        color: var(--wa-color-success-on-quiet);
-      }
-
-      .stat-icon.danger {
-        background: var(--wa-color-danger-fill-quiet);
-        color: var(--wa-color-danger-on-quiet);
-      }
-
-      .stat-icon.brand {
-        background: var(--wa-color-brand-fill-quiet);
-        color: var(--wa-color-brand-on-quiet);
-      }
-
-      .stat-icon.neutral {
-        background: var(--wa-color-neutral-fill-quiet);
-        color: var(--wa-color-neutral-on-quiet);
-      }
-
-      .stat-icon.warning {
-        background: var(--wa-color-warning-fill-quiet);
-        color: var(--wa-color-warning-on-quiet);
-      }
-
-      .stat-content {
-        display: flex;
-        flex-direction: column;
-        gap: 0.125rem;
-        min-width: 0;
-      }
-
-      .stat-label {
-        font-size: var(--wa-font-size-xs);
-        color: var(--wa-color-text-quiet);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-weight: 600;
-      }
-
-      .stat-value {
-        font-size: var(--wa-font-size-xl);
-        font-weight: 700;
-        line-height: 1;
-      }
-
-      /* --- Chart Container --- */
-      .chart-wrapper {
-        margin-top: var(--wa-space-l);
-      }
-
-      .chart-container {
-        position: relative;
-        width: 100%;
-        height: 260px;
-        overflow: hidden;
-      }
-
-      .granularity-label {
-        font-size: var(--wa-font-size-xs);
-        color: var(--wa-color-text-quiet);
-        margin-bottom: var(--wa-space-s);
-        text-transform: capitalize;
-      }
-
-      /* --- Best Sellers List --- */
-      .best-sellers-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      .best-seller-item {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-m);
-        padding: var(--wa-space-s) 0;
-        border-bottom: 1px solid var(--wa-color-surface-border);
-      }
-
-      .best-seller-item:last-child {
-        border-bottom: none;
-      }
-
-      .best-seller-rank {
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--wa-border-radius-m);
-        background: var(--wa-color-neutral-fill-quiet);
-        color: var(--wa-color-neutral-on-quiet);
-        font-size: var(--wa-font-size-xs);
-        font-weight: 700;
-        flex-shrink: 0;
-      }
-
-      .best-seller-rank.top-3 {
-        background: var(--wa-color-brand-fill-quiet);
-        color: var(--wa-color-brand-on-quiet);
-      }
-
-      .best-seller-name {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .best-seller-stats {
-        display: flex;
-        gap: var(--wa-space-l);
-        flex-shrink: 0;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .best-seller-stat {
-        text-align: right;
-        min-width: 70px;
-        color: var(--wa-color-text-quiet);
-      }
-
-      .best-seller-stat.active {
-        font-weight: 700;
-        color: var(--wa-color-text-normal);
-      }
-
-      .best-seller-stat-label {
-        font-size: var(--wa-font-size-2xs);
-        color: var(--wa-color-text-quiet);
-      }
-
-      /* --- Open Orders List --- */
-      .open-order-item {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-m);
-        padding: var(--wa-space-s) 0;
-        border-bottom: 1px solid var(--wa-color-surface-border);
-      }
-
-      .open-order-item:last-child {
-        border-bottom: none;
-      }
-
-      .open-order-number {
-        font-weight: 600;
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-brand-on-quiet);
-        white-space: nowrap;
-      }
-
-      .open-order-customer {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .open-order-meta {
-        display: flex;
-        gap: var(--wa-space-m);
-        flex-shrink: 0;
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-text-quiet);
-      }
-
-      .open-order-amount {
-        font-weight: 600;
-        color: var(--wa-color-text-normal);
-        min-width: 70px;
-        text-align: right;
-      }
-
-      .open-order-time {
-        min-width: 60px;
-        text-align: right;
-      }
-
-      /* --- Empty State --- */
-      .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: var(--wa-space-2xl) var(--wa-space-l);
-        text-align: center;
-        gap: var(--wa-space-s);
-      }
-
-      .empty-state wa-icon {
-        font-size: 2.5rem;
-        color: var(--wa-color-text-quiet);
-        opacity: 0.6;
-      }
-
-      .empty-state-title {
-        font-size: var(--wa-font-size-m);
-        font-weight: 600;
-        color: var(--wa-color-text-normal);
-        margin: 0;
-      }
-
-      .empty-state-description {
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-text-quiet);
-        margin: 0;
-        max-width: 320px;
-        line-height: 1.5;
-      }
-
-      /* --- Loading --- */
-      .card-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: var(--wa-space-2xl);
-      }
-
-      /* --- View All Link --- */
-      .view-all-link {
-        font-size: var(--wa-font-size-s);
-      }
-
-      /* --- Date Preset Bar --- */
-      .controls-bar {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        margin-bottom: var(--wa-space-l);
-        gap: var(--wa-space-m);
+        box-sizing: border-box;
       }
 
       /* --- Dashboard Grid --- */
@@ -883,6 +531,7 @@ export class HomePage extends LitElement {
         align-items: center;
         justify-content: space-between;
         gap: var(--wa-space-m);
+        box-sizing: border-box;
       }
 
       .card-header h3 {
@@ -891,12 +540,15 @@ export class HomePage extends LitElement {
         font-weight: 600;
       }
 
+      .card-header wa-button-group {
+        line-height: 0;
+      }
+
       /* --- Stats Row --- */
       .stats-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: var(--wa-space-m);
-        margin-bottom: var(--wa-space-l);
       }
 
       .stat-card {
@@ -939,11 +591,6 @@ export class HomePage extends LitElement {
         color: var(--wa-color-neutral-text);
       }
 
-      .stat-icon.warning {
-        background: var(--wa-color-warning-fill-quiet);
-        color: var(--wa-color-warning-text);
-      }
-
       .stat-content {
         display: flex;
         flex-direction: column;
@@ -963,6 +610,10 @@ export class HomePage extends LitElement {
       }
 
       /* --- Chart Container --- */
+      .chart-wrapper {
+        margin-top: var(--wa-space-l);
+      }
+
       .chart-container {
         height: 280px;
         position: relative;
@@ -1038,60 +689,6 @@ export class HomePage extends LitElement {
         font-weight: 700;
       }
 
-      .best-seller-stat-label {
-        font-size: var(--wa-font-size-2xs);
-        color: var(--wa-color-text-muted);
-      }
-
-      /* --- Open Orders List --- */
-      .open-order-item {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-m);
-        padding: var(--wa-space-s) 0;
-        border-bottom: 1px solid var(--wa-color-surface-border);
-      }
-
-      .open-order-item:last-child {
-        border-bottom: none;
-      }
-
-      .open-order-number {
-        font-weight: 600;
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-brand-text);
-        white-space: nowrap;
-      }
-
-      .open-order-customer {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .open-order-meta {
-        display: flex;
-        gap: var(--wa-space-m);
-        flex-shrink: 0;
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-text-muted);
-      }
-
-      .open-order-amount {
-        font-weight: 600;
-        color: var(--wa-color-text-default);
-        min-width: 70px;
-        text-align: right;
-      }
-
-      .open-order-time {
-        min-width: 60px;
-        text-align: right;
-      }
-
       /* --- Empty State --- */
       .empty-state {
         display: flex;
@@ -1130,11 +727,6 @@ export class HomePage extends LitElement {
         align-items: center;
         justify-content: center;
         padding: var(--wa-space-2xl);
-      }
-
-      /* --- View All Link --- */
-      .view-all-link {
-        font-size: var(--wa-font-size-s);
       }
     `,
   ];
@@ -1210,8 +802,8 @@ export class HomePage extends LitElement {
         </div>
 
         <div class="dashboard-grid">
-          ${this._renderSalesCard()} ${this._renderBestSellersCard()} ${this._renderOrderStatusCard()}
-          ${this._renderInventorySummaryCard()} ${this._renderOpenOrdersCard()}
+          ${this._renderOrderStatusCard()} ${this._renderSalesCard()} ${this._renderBestSellersCard()}
+          ${this._renderInventorySummaryCard()}
         </div>
       </ogs-page>
     `;
@@ -1369,7 +961,7 @@ export class HomePage extends LitElement {
 
   private _renderOrderStatusCard() {
     return html`
-      <wa-card appearance="filled">
+      <wa-card appearance="filled" class="full-width">
         <div slot="header" class="card-header">
           <h3>Order Status</h3>
         </div>
@@ -1489,60 +1081,6 @@ export class HomePage extends LitElement {
                     <p class="empty-state-title">No inventory yet</p>
                     <p class="empty-state-description">
                       Add products to your inventory to see a summary of your stock levels and value here.
-                    </p>
-                  </div>
-                `,
-        )}
-      </wa-card>
-    `;
-  }
-
-  private _renderOpenOrdersCard() {
-    return html`
-      <wa-card appearance="filled" class="full-width">
-        <div slot="header" class="card-header">
-          <h3>Open Orders</h3>
-          ${this.openOrders.length > 0
-            ? html`
-                <wa-button
-                  class="view-all-link"
-                  variant="brand"
-                  appearance="plain"
-                  size="small"
-                  href="/orders?status=open"
-                >
-                  View All
-                  <wa-icon slot="suffix" name="arrow-right"></wa-icon>
-                </wa-button>
-              `
-            : nothing}
-        </div>
-        ${when(
-          this.openOrdersLoading && this.initialLoad,
-          () => html`<div class="card-loading"><wa-spinner></wa-spinner></div>`,
-          () =>
-            this.openOrders.length > 0
-              ? html`
-                  ${this.openOrders.map(
-                    (order) => html`
-                      <div class="open-order-item">
-                        <span class="open-order-number">${order.orderNumber}</span>
-                        <span class="open-order-customer">${order.customerName}</span>
-                        <div class="open-order-meta">
-                          <span>${order.itemCount} ${order.itemCount === 1 ? 'item' : 'items'}</span>
-                          <span class="open-order-amount">${formatCurrency(order.totalAmount)}</span>
-                          <span class="open-order-time">${timeAgo(order.createdAt)}</span>
-                        </div>
-                      </div>
-                    `,
-                  )}
-                `
-              : html`
-                  <div class="empty-state">
-                    <wa-icon name="circle-check"></wa-icon>
-                    <p class="empty-state-title">No open orders</p>
-                    <p class="empty-state-description">
-                      All caught up! Open orders will appear here when customers place new orders.
                     </p>
                   </div>
                 `,
