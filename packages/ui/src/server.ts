@@ -51,15 +51,9 @@ function getSession(ctx: Context) {
 }
 
 /**
- * Creates middleware that checks if the user has a specific permission.
- *
- * During the migration period, we derive permissions from the global user.role
- * field since the organization-based hasPermission() requires an active org
- * which may not be set yet (e.g. if the user just signed in before org auto-select
- * takes effect, or if the better-auth session cache doesn't include the org yet).
- *
- * Once all users are fully migrated to org-based roles, this should use
- * authClient.organization.hasPermission() instead.
+ * Creates middleware that checks if the user has a specific permission
+ * using authClient.organization.hasPermission, which respects the user's
+ * role in their active organization.
  */
 function requirePermission(resource: string, action: string) {
   return async (ctx: Context, next: Next) => {
@@ -69,45 +63,14 @@ function requirePermission(resource: string, action: string) {
       return;
     }
 
-    const userRole = ctx.state.auth.user.role;
+    const result = await authClient.organization.hasPermission({
+      permissions: { [resource]: [action] },
+      fetchOptions: {
+        headers: { Cookie: (ctx.headers.cookie as string) ?? '' },
+      },
+    });
 
-    // Permission map: owner gets everything, manager (Store Manager) and member (Employee)
-    // get inventory + orders only. Settings, user management, and transaction log
-    // are restricted to owner.
-    const allRoles = ['owner', 'manager', 'member'];
-    const permissionMap: Record<string, Record<string, string[]>> = {
-      storeSettings: { read: ['owner'], update: ['owner'] },
-      storeLocations: {
-        read: ['owner'],
-        create: ['owner'],
-        update: ['owner'],
-        delete: ['owner'],
-      },
-      userManagement: {
-        read: ['owner'],
-        create: ['owner'],
-        update: ['owner'],
-        delete: ['owner'],
-      },
-      inventory: {
-        read: allRoles,
-        create: allRoles,
-        update: allRoles,
-        delete: allRoles,
-      },
-      order: {
-        read: allRoles,
-        create: allRoles,
-        update: allRoles,
-        cancel: allRoles,
-      },
-      transactionLog: {
-        read: ['owner', 'manager'],
-      },
-    };
-
-    const allowedRoles = permissionMap[resource]?.[action] ?? [];
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    if (!result.data?.success) {
       ctx.status = 403;
       ctx.body = 'Forbidden: Insufficient permissions';
       return;
@@ -308,7 +271,7 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
   // ctx.body = new RenderResultReadable(
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );
-  ctx.body = renderShellTemplate(pageDirectory, pageTemplate(ctx));
+  ctx.body = renderShellTemplate(pageDirectory, await pageTemplate(ctx));
 }
 
 async function isSetupPending() {

@@ -1,6 +1,6 @@
 import type { RouterContext } from '@koa/router';
 import { renderPageAttributes } from '../../lib/server-helpers';
 
-export function render(ctx: RouterContext) {
-  return `<ogs-orders-page ${renderPageAttributes(ctx, { showStoreSelector: true })}></ogs-orders-page>`;
+export async function render(ctx: RouterContext) {
+  return `<ogs-orders-page ${await renderPageAttributes(ctx, { showStoreSelector: true })}></ogs-orders-page>`;
 }
