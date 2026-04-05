@@ -757,9 +757,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   <wa-divider></wa-divider>
                   <div class="nav-section-label">Employees</div>
 
-                  ${when(this.canViewDashboard, () =>
-                    this.renderNavLink('/', 'house', 'Dashboard', 'Dashboard'),
-                  )}
+                  ${when(this.canViewDashboard, () => this.renderNavLink('/', 'house', 'Dashboard', 'Dashboard'))}
                   ${this.renderNavLink('/orders', 'receipt', 'Orders', 'Orders')}
                   ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
                   ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}

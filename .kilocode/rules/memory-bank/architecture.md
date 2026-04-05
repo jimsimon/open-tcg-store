@@ -137,12 +137,15 @@ packages/
 ## Authentication & Authorization
 
 ### Plugins
+
 - **Organization plugin** (`better-auth/plugins`): Multi-store support with org-based membership. Custom `ac` and `roles` passed in. `creatorRole` defaults to `"owner"`.
 - **Admin plugin** (`better-auth/plugins`): Provides user management API endpoints (createUser, listUsers, banUser, setRole, etc.). Custom `ac` and `roles` passed in. `adminRoles: ['owner']` set explicitly for impersonation protection.
 - **Anonymous plugin** (`better-auth/plugins`): Guest shopping sessions. Anonymous users get `role: "user"` (the admin plugin's `defaultRole`), which has zero management permissions.
 
 ### 3-Role System (defined in `packages/api/src/lib/permissions.ts`)
+
 Role values are stored in both `user.role` (global) and `member.role` (per-org):
+
 - **`owner`**: Full access. Admin plugin endpoints (createUser, banUser, etc.), all settings, dashboard, transaction log, inventory, orders. Includes `...adminAc.statements` for full `user`/`session` resource permissions.
 - **`manager`**: Store Manager. Dashboard, inventory, orders, transaction log. No settings, no user management, no admin plugin access.
 - **`member`**: Employee. Inventory and orders only. No dashboard, no transaction log, no settings.
@@ -151,11 +154,13 @@ Role values are stored in both `user.role` (global) and `member.role` (per-org):
 The `statement` merges default statements from both the organization plugin (`organization`, `member`, `invitation`, `ac` resources) and the admin plugin (`user`, `session` resources), plus custom app resources (`inventory`, `order`, `storeSettings`, `storeLocations`, `userManagement`, `transactionLog`).
 
 ### Permission Derivation (server-side)
+
 - `packages/ui/src/lib/server-helpers.ts` derives boolean permission flags from `user.role` and passes them as HTML attributes to page components.
 - `packages/ui/src/server.ts` has a `requirePermission()` middleware with a role-based permission map for route protection.
 - `packages/ui/src/components/ogs-page.ts` uses permission flags to control nav section visibility.
 
 ### Auth Flow
+
 1. First-time setup creates user with `role: 'owner'` via `firstTimeSetup.ts`
 2. Subsequent logins use email/password authentication
 3. Anonymous users created on-demand for guest shopping via `ensureAnonymousSession` middleware

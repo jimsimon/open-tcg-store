@@ -364,9 +364,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
           `
         : nothing}
 
-      <div class="integrations-grid">
-        ${this.renderStripeCard()} ${this.renderShopifyCard()}
-      </div>
+      <div class="integrations-grid">${this.renderStripeCard()} ${this.renderShopifyCard()}</div>
     `;
   }
 
