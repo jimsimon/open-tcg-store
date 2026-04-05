@@ -32,15 +32,13 @@ export class OgsChart extends LitElement {
       display: block;
       position: relative;
       width: 100%;
+      height: 100%;
     }
 
     .chart-container {
       position: relative;
       width: 100%;
-    }
-
-    canvas {
-      width: 100% !important;
+      height: 100%;
     }
   `;
 

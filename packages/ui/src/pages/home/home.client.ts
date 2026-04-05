@@ -540,7 +540,310 @@ export class HomePage extends LitElement {
 
       .page-header p {
         margin: 0.25rem 0 0 0;
-        color: var(--wa-color-text-muted);
+        color: var(--wa-color-text-quiet);
+        font-size: var(--wa-font-size-s);
+      }
+
+      /* --- Date Preset Bar --- */
+      .controls-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: var(--wa-space-l);
+        gap: var(--wa-space-m);
+      }
+
+      /* --- Dashboard Grid --- */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--wa-space-l);
+      }
+
+      .dashboard-grid .full-width {
+        grid-column: 1 / -1;
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* --- Card Styles --- */
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--wa-space-m);
+      }
+
+      .card-header h3 {
+        margin: 0;
+        font-size: var(--wa-font-size-l);
+        font-weight: 600;
+      }
+
+      /* --- Stats Row --- */
+      .stats-row {
+        display: flex;
+        gap: var(--wa-space-m);
+        flex-wrap: wrap;
+      }
+
+      .stats-row.has-chart {
+        margin-bottom: var(--wa-space-l);
+      }
+
+      .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1.25rem;
+        border-radius: var(--wa-border-radius-l);
+        background: var(--wa-color-surface-raised);
+        border: 1px solid var(--wa-color-surface-border);
+        min-width: 150px;
+        flex: 1;
+      }
+
+      .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: var(--wa-border-radius-m);
+        font-size: 1.125rem;
+        flex-shrink: 0;
+      }
+
+      .stat-icon.success {
+        background: var(--wa-color-success-fill-quiet);
+        color: var(--wa-color-success-on-quiet);
+      }
+
+      .stat-icon.danger {
+        background: var(--wa-color-danger-fill-quiet);
+        color: var(--wa-color-danger-on-quiet);
+      }
+
+      .stat-icon.brand {
+        background: var(--wa-color-brand-fill-quiet);
+        color: var(--wa-color-brand-on-quiet);
+      }
+
+      .stat-icon.neutral {
+        background: var(--wa-color-neutral-fill-quiet);
+        color: var(--wa-color-neutral-on-quiet);
+      }
+
+      .stat-icon.warning {
+        background: var(--wa-color-warning-fill-quiet);
+        color: var(--wa-color-warning-on-quiet);
+      }
+
+      .stat-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        min-width: 0;
+      }
+
+      .stat-label {
+        font-size: var(--wa-font-size-xs);
+        color: var(--wa-color-text-quiet);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+
+      .stat-value {
+        font-size: var(--wa-font-size-xl);
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      /* --- Chart Container --- */
+      .chart-wrapper {
+        margin-top: var(--wa-space-l);
+      }
+
+      .chart-container {
+        position: relative;
+        width: 100%;
+        height: 260px;
+        overflow: hidden;
+      }
+
+      .granularity-label {
+        font-size: var(--wa-font-size-xs);
+        color: var(--wa-color-text-quiet);
+        margin-bottom: var(--wa-space-s);
+        text-transform: capitalize;
+      }
+
+      /* --- Best Sellers List --- */
+      .best-sellers-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .best-seller-item {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-m);
+        padding: var(--wa-space-s) 0;
+        border-bottom: 1px solid var(--wa-color-surface-border);
+      }
+
+      .best-seller-item:last-child {
+        border-bottom: none;
+      }
+
+      .best-seller-rank {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-neutral-fill-quiet);
+        color: var(--wa-color-neutral-on-quiet);
+        font-size: var(--wa-font-size-xs);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .best-seller-rank.top-3 {
+        background: var(--wa-color-brand-fill-quiet);
+        color: var(--wa-color-brand-on-quiet);
+      }
+
+      .best-seller-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--wa-font-size-s);
+      }
+
+      .best-seller-stats {
+        display: flex;
+        gap: var(--wa-space-l);
+        flex-shrink: 0;
+        font-size: var(--wa-font-size-s);
+      }
+
+      .best-seller-stat {
+        text-align: right;
+        min-width: 70px;
+        color: var(--wa-color-text-quiet);
+      }
+
+      .best-seller-stat.active {
+        font-weight: 700;
+        color: var(--wa-color-text-normal);
+      }
+
+      .best-seller-stat-label {
+        font-size: var(--wa-font-size-2xs);
+        color: var(--wa-color-text-quiet);
+      }
+
+      /* --- Open Orders List --- */
+      .open-order-item {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-m);
+        padding: var(--wa-space-s) 0;
+        border-bottom: 1px solid var(--wa-color-surface-border);
+      }
+
+      .open-order-item:last-child {
+        border-bottom: none;
+      }
+
+      .open-order-number {
+        font-weight: 600;
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-brand-on-quiet);
+        white-space: nowrap;
+      }
+
+      .open-order-customer {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--wa-font-size-s);
+      }
+
+      .open-order-meta {
+        display: flex;
+        gap: var(--wa-space-m);
+        flex-shrink: 0;
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-quiet);
+      }
+
+      .open-order-amount {
+        font-weight: 600;
+        color: var(--wa-color-text-normal);
+        min-width: 70px;
+        text-align: right;
+      }
+
+      .open-order-time {
+        min-width: 60px;
+        text-align: right;
+      }
+
+      /* --- Empty State --- */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--wa-space-2xl) var(--wa-space-l);
+        text-align: center;
+        gap: var(--wa-space-s);
+      }
+
+      .empty-state wa-icon {
+        font-size: 2.5rem;
+        color: var(--wa-color-text-quiet);
+        opacity: 0.6;
+      }
+
+      .empty-state-title {
+        font-size: var(--wa-font-size-m);
+        font-weight: 600;
+        color: var(--wa-color-text-normal);
+        margin: 0;
+      }
+
+      .empty-state-description {
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-quiet);
+        margin: 0;
+        max-width: 320px;
+        line-height: 1.5;
+      }
+
+      /* --- Loading --- */
+      .card-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--wa-space-2xl);
+      }
+
+      /* --- View All Link --- */
+      .view-all-link {
         font-size: var(--wa-font-size-s);
       }
 
@@ -875,24 +1178,34 @@ export class HomePage extends LitElement {
 
         <div class="controls-bar">
           <wa-button-group label="Date range">
-            ${(['today', 'week', 'month', 'year'] as DatePreset[]).map(
-              (preset) => html`
-                <wa-button
-                  size="small"
-                  variant="${this.datePreset === preset ? 'brand' : 'neutral'}"
-                  appearance="${this.datePreset === preset ? 'filled' : 'outlined'}"
-                  @click="${() => this._handleDatePresetChange(preset)}"
-                >
-                  ${preset === 'today'
-                    ? 'Today'
-                    : preset === 'week'
-                      ? 'This Week'
-                      : preset === 'month'
-                        ? 'This Month'
-                        : 'This Year'}
-                </wa-button>
-              `,
-            )}
+            <wa-button
+              size="small"
+              variant="${this.datePreset === 'today' ? 'brand' : 'neutral'}"
+              appearance="filled"
+              @click="${() => this._handleDatePresetChange('today')}"
+              >Today</wa-button
+            >
+            <wa-button
+              size="small"
+              variant="${this.datePreset === 'week' ? 'brand' : 'neutral'}"
+              appearance="filled"
+              @click="${() => this._handleDatePresetChange('week')}"
+              >This Week</wa-button
+            >
+            <wa-button
+              size="small"
+              variant="${this.datePreset === 'month' ? 'brand' : 'neutral'}"
+              appearance="filled"
+              @click="${() => this._handleDatePresetChange('month')}"
+              >This Month</wa-button
+            >
+            <wa-button
+              size="small"
+              variant="${this.datePreset === 'year' ? 'brand' : 'neutral'}"
+              appearance="filled"
+              @click="${() => this._handleDatePresetChange('year')}"
+              >This Year</wa-button
+            >
           </wa-button-group>
         </div>
 
@@ -922,7 +1235,7 @@ export class HomePage extends LitElement {
           () =>
             this.salesData && this.salesData.summary.orderCount > 0
               ? html`
-                  <div class="stats-row">
+                  <div class="stats-row has-chart">
                     <div class="stat-card">
                       <div class="stat-icon success">
                         <wa-icon name="dollar-sign"></wa-icon>
@@ -962,16 +1275,18 @@ export class HomePage extends LitElement {
                   </div>
                   ${chartData
                     ? html`
-                        <div class="granularity-label">
-                          ${this.salesData.granularity === 'hour'
-                            ? 'Hourly'
-                            : this.salesData.granularity === 'day'
-                              ? 'Daily'
-                              : 'Monthly'}
-                          Breakdown
-                        </div>
-                        <div class="chart-container">
-                          <ogs-chart type="bar" .data="${chartData}" .options="${{}}"></ogs-chart>
+                        <div class="chart-wrapper">
+                          <div class="granularity-label">
+                            ${this.salesData.granularity === 'hour'
+                              ? 'Hourly'
+                              : this.salesData.granularity === 'day'
+                                ? 'Daily'
+                                : 'Monthly'}
+                            Breakdown
+                          </div>
+                          <div class="chart-container">
+                            <ogs-chart type="bar" .data="${chartData}" .options="${{}}"></ogs-chart>
+                          </div>
                         </div>
                       `
                     : nothing}
@@ -1000,19 +1315,17 @@ export class HomePage extends LitElement {
             <wa-button
               size="small"
               variant="${this.bestSellerSort === 'quantity' ? 'brand' : 'neutral'}"
-              appearance="${this.bestSellerSort === 'quantity' ? 'filled' : 'outlined'}"
+              appearance="filled"
               @click="${() => this._handleBestSellerSortChange('quantity')}"
+              >By Quantity</wa-button
             >
-              By Quantity
-            </wa-button>
             <wa-button
               size="small"
               variant="${this.bestSellerSort === 'revenue' ? 'brand' : 'neutral'}"
-              appearance="${this.bestSellerSort === 'revenue' ? 'filled' : 'outlined'}"
+              appearance="filled"
               @click="${() => this._handleBestSellerSortChange('revenue')}"
+              >By Revenue</wa-button
             >
-              By Revenue
-            </wa-button>
           </wa-button-group>
         </div>
         ${when(
