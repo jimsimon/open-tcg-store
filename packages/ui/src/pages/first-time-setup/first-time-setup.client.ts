@@ -277,11 +277,12 @@ export class FirstTimeSetupPage extends LitElement {
                   <wa-select
                     label="State"
                     required
+                    placeholder="Select state..."
+                    .value="${this.store.state ?? ''}"
                     @change="${(e: Event) => {
                       this.store = { ...this.store, state: (e.target as HTMLSelectElement).value };
                     }}"
                   >
-                    <wa-option value="">Select state...</wa-option>
                     ${US_STATES.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
                   </wa-select>
                 </div>

@@ -800,8 +800,8 @@ export class OgsSettingsUsersPage extends LitElement {
       <wa-dialog
         label="Add User"
         ?open="${this.showAddDialog}"
-        @wa-after-hide="${() => {
-          this.showAddDialog = false;
+        @wa-after-hide="${(e: Event) => {
+          if (e.target === e.currentTarget) this.showAddDialog = false;
         }}"
       >
         <div class="dialog-form">
@@ -886,9 +886,11 @@ export class OgsSettingsUsersPage extends LitElement {
           <wa-dialog
             label="Edit User"
             ?open="${this.showEditDialog}"
-            @wa-after-hide="${() => {
-              this.showEditDialog = false;
-              this.editingUser = null;
+            @wa-after-hide="${(e: Event) => {
+              if (e.target === e.currentTarget) {
+                this.showEditDialog = false;
+                this.editingUser = null;
+              }
             }}"
           >
             <div class="dialog-form">

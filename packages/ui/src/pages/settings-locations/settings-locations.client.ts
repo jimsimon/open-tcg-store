@@ -968,8 +968,8 @@ export class SettingsLocationsPage extends LitElement {
       <wa-dialog
         label="Add Store"
         ?open="${this.showAddDialog}"
-        @wa-after-hide="${() => {
-          this.showAddDialog = false;
+        @wa-after-hide="${(e: Event) => {
+          if (e.target === e.currentTarget) this.showAddDialog = false;
         }}"
       >
         <div class="dialog-form">
@@ -1105,9 +1105,11 @@ export class SettingsLocationsPage extends LitElement {
           <wa-dialog
             label="Edit Store"
             ?open="${this.showEditDialog}"
-            @wa-after-hide="${() => {
-              this.showEditDialog = false;
-              this.editingLocation = null;
+            @wa-after-hide="${(e: Event) => {
+              if (e.target === e.currentTarget) {
+                this.showEditDialog = false;
+                this.editingLocation = null;
+              }
             }}"
           >
             <div class="dialog-form">
