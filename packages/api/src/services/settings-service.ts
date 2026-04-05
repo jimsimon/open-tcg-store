@@ -148,7 +148,6 @@ export async function updateBackupSettings(
 export interface IntegrationSettingsResult {
   stripe: { enabled: boolean; hasApiKey: boolean };
   shopify: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null };
-  quickbooks: { enabled: boolean; hasClientId: boolean; hasClientSecret: boolean };
 }
 
 export async function getIntegrationSettings(): Promise<IntegrationSettingsResult> {
@@ -162,11 +161,6 @@ export async function getIntegrationSettings(): Promise<IntegrationSettingsResul
       enabled: !!row.shopifyEnabled,
       hasApiKey: !!row.shopifyApiKey,
       shopDomain: row.shopifyShopDomain,
-    },
-    quickbooks: {
-      enabled: !!row.quickbooksEnabled,
-      hasClientId: !!row.quickbooksClientId,
-      hasClientSecret: !!row.quickbooksClientSecret,
     },
   };
 }
@@ -231,39 +225,6 @@ export async function updateShopifyIntegration(
     enabled: !!row.shopifyEnabled,
     hasApiKey: !!row.shopifyApiKey,
     shopDomain: row.shopifyShopDomain,
-  };
-}
-
-export interface UpdateQuickBooksInput {
-  enabled?: boolean | null;
-  clientId?: string | null;
-  clientSecret?: string | null;
-}
-
-export async function updateQuickBooksIntegration(
-  input: UpdateQuickBooksInput,
-  userId: string,
-): Promise<{ enabled: boolean; hasClientId: boolean; hasClientSecret: boolean }> {
-  await ensureSettingsRow();
-
-  const updates: Record<string, unknown> = {
-    updatedAt: new Date(),
-    updatedBy: userId,
-  };
-
-  if (input.enabled !== undefined && input.enabled !== null) updates.quickbooksEnabled = input.enabled;
-  if (input.clientId !== undefined) updates.quickbooksClientId = input.clientId;
-  if (input.clientSecret !== undefined) {
-    updates.quickbooksClientSecret = encryptIfPresent(input.clientSecret);
-  }
-
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
-
-  const row = await ensureSettingsRow();
-  return {
-    enabled: !!row.quickbooksEnabled,
-    hasClientId: !!row.quickbooksClientId,
-    hasClientSecret: !!row.quickbooksClientSecret,
   };
 }
 

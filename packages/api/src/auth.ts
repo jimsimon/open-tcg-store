@@ -67,6 +67,7 @@ export const auth = betterAuth({
     admin({
       ac,
       roles,
+      adminRoles: ['owner'],
     }),
     anonymous({
       onLinkAccount: async ({ anonymousUser, newUser }) => {

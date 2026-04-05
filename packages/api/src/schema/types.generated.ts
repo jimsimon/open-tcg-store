@@ -160,7 +160,6 @@ export type InsufficientItem = {
 
 export type IntegrationSettings = {
   __typename?: 'IntegrationSettings';
-  quickbooks: QuickBooksIntegration;
   shopify: ShopifyIntegration;
   stripe: StripeIntegration;
 };
@@ -249,7 +248,6 @@ export type Mutation = {
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateOrderStatus: UpdateOrderStatusResult;
-  updateQuickBooksIntegration: QuickBooksIntegration;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -353,11 +351,6 @@ export type MutationupdateItemInCartArgs = {
 export type MutationupdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: Scalars['String']['input'];
-};
-
-
-export type MutationupdateQuickBooksIntegrationArgs = {
-  input: UpdateQuickBooksIntegrationInput;
 };
 
 
@@ -630,13 +623,6 @@ export type QuerysearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
-export type QuickBooksIntegration = {
-  __typename?: 'QuickBooksIntegration';
-  enabled: Scalars['Boolean']['output'];
-  hasClientId: Scalars['Boolean']['output'];
-  hasClientSecret: Scalars['Boolean']['output'];
-};
-
 export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -776,12 +762,6 @@ export type UpdateOrderStatusResult = {
   __typename?: 'UpdateOrderStatusResult';
   error?: Maybe<Scalars['String']['output']>;
   order?: Maybe<Order>;
-};
-
-export type UpdateQuickBooksIntegrationInput = {
-  clientId?: InputMaybe<Scalars['String']['input']>;
-  clientSecret?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type UpdateShopifyIntegrationInput = {
@@ -942,7 +922,6 @@ export type ResolversTypes = {
   ProductPrice: ResolverTypeWrapper<ProductPrice>;
   ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
-  QuickBooksIntegration: ResolverTypeWrapper<QuickBooksIntegration>;
   RestoreResult: ResolverTypeWrapper<RestoreResult>;
   SalesTaxLookupResult: ResolverTypeWrapper<SalesTaxLookupResult>;
   Set: ResolverTypeWrapper<Set>;
@@ -963,7 +942,6 @@ export type ResolversTypes = {
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateOrderStatusResult: ResolverTypeWrapper<UpdateOrderStatusResult>;
-  UpdateQuickBooksIntegrationInput: UpdateQuickBooksIntegrationInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1017,7 +995,6 @@ export type ResolversParentTypes = {
   ProductPrice: ProductPrice;
   ProductSearchResult: ProductSearchResult;
   Query: Record<PropertyKey, never>;
-  QuickBooksIntegration: QuickBooksIntegration;
   RestoreResult: RestoreResult;
   SalesTaxLookupResult: SalesTaxLookupResult;
   Set: Set;
@@ -1038,7 +1015,6 @@ export type ResolversParentTypes = {
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateOrderStatusResult: UpdateOrderStatusResult;
-  UpdateQuickBooksIntegrationInput: UpdateQuickBooksIntegrationInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1118,7 +1094,6 @@ export type InsufficientItemResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type IntegrationSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['IntegrationSettings'] = ResolversParentTypes['IntegrationSettings']> = {
-  quickbooks?: Resolver<ResolversTypes['QuickBooksIntegration'], ParentType, ContextType>;
   shopify?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType>;
   stripe?: Resolver<ResolversTypes['StripeIntegration'], ParentType, ContextType>;
 };
@@ -1191,7 +1166,6 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
   updateOrderStatus?: Resolver<ResolversTypes['UpdateOrderStatusResult'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
-  updateQuickBooksIntegration?: Resolver<ResolversTypes['QuickBooksIntegration'], ParentType, ContextType, RequireFields<MutationupdateQuickBooksIntegrationArgs, 'input'>>;
   updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
   updateStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationupdateStockArgs, 'input'>>;
   updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;
@@ -1328,12 +1302,6 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   searchProducts?: Resolver<Array<ResolversTypes['ProductSearchResult']>, ParentType, ContextType, RequireFields<QuerysearchProductsArgs, 'searchTerm'>>;
 };
 
-export type QuickBooksIntegrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuickBooksIntegration'] = ResolversParentTypes['QuickBooksIntegration']> = {
-  enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  hasClientId?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  hasClientSecret?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-};
-
 export type RestoreResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1448,7 +1416,6 @@ export type Resolvers<ContextType = any> = {
   ProductPrice?: ProductPriceResolvers<ContextType>;
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
-  QuickBooksIntegration?: QuickBooksIntegrationResolvers<ContextType>;
   RestoreResult?: RestoreResultResolvers<ContextType>;
   SalesTaxLookupResult?: SalesTaxLookupResultResolvers<ContextType>;
   Set?: SetResolvers<ContextType>;

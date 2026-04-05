@@ -189,6 +189,7 @@ export class SettingsLocationsPage extends LitElement {
   @property({ type: String }) activePage = '';
   @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
@@ -750,6 +751,7 @@ export class SettingsLocationsPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"

@@ -189,6 +189,7 @@ export class ProductDetailsPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
@@ -285,6 +286,7 @@ export class ProductDetailsPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"

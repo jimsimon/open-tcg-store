@@ -71,37 +71,38 @@ function requirePermission(resource: string, action: string) {
 
     const userRole = ctx.state.auth.user.role;
 
-    // Derive permissions from role during migration period.
-    // owner/admin get full access, admin (store manager) gets read access to settings,
-    // member/employee gets inventory/order access only.
+    // Permission map: owner gets everything, manager (Store Manager) and member (Employee)
+    // get inventory + orders only. Settings, user management, and transaction log
+    // are restricted to owner.
+    const allRoles = ['owner', 'manager', 'member'];
     const permissionMap: Record<string, Record<string, string[]>> = {
-      storeSettings: { read: ['admin', 'owner'], update: ['admin', 'owner'] },
+      storeSettings: { read: ['owner'], update: ['owner'] },
       storeLocations: {
-        read: ['admin', 'owner'],
-        create: ['admin', 'owner'],
-        update: ['admin', 'owner'],
-        delete: ['admin', 'owner'],
+        read: ['owner'],
+        create: ['owner'],
+        update: ['owner'],
+        delete: ['owner'],
       },
       userManagement: {
-        read: ['admin', 'owner'],
-        create: ['admin', 'owner'],
-        update: ['admin', 'owner'],
-        delete: ['admin', 'owner'],
+        read: ['owner'],
+        create: ['owner'],
+        update: ['owner'],
+        delete: ['owner'],
       },
       inventory: {
-        read: ['admin', 'owner', 'employee', 'member'],
-        create: ['admin', 'owner', 'employee', 'member'],
-        update: ['admin', 'owner', 'employee', 'member'],
-        delete: ['admin', 'owner', 'employee', 'member'],
+        read: allRoles,
+        create: allRoles,
+        update: allRoles,
+        delete: allRoles,
       },
       order: {
-        read: ['admin', 'owner', 'employee', 'member'],
-        create: ['admin', 'owner', 'employee', 'member'],
-        update: ['admin', 'owner', 'employee', 'member'],
-        cancel: ['admin', 'owner', 'employee', 'member'],
+        read: allRoles,
+        create: allRoles,
+        update: allRoles,
+        cancel: allRoles,
       },
       transactionLog: {
-        read: ['admin', 'owner'],
+        read: ['owner', 'manager'],
       },
     };
 

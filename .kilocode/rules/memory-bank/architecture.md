@@ -9,7 +9,7 @@ OpenTCGS is a full-stack web application built with a modern monorepo architectu
 1. **Frontend**: Lit-based web components with Web Awesome UI framework
 2. **Backend**: Koa.js server with GraphQL API
 3. **Database**: PostgreSQL with Drizzle ORM (using libsql/sqlite for development)
-4. **Authentication**: Better Auth with email/password, anonymous users, and employee role with access control
+4. **Authentication**: Better Auth with email/password, anonymous users, organization plugin, and admin plugin with custom access control (3-role system: owner, manager, member)
 5. **Build Tool**: Vite for development and bundling
 6. **Testing Framework**: Vitest for both Node.js and browser testing
 7. **Development Orchestration**: Tilt for multi-service development
@@ -89,7 +89,7 @@ packages/
 │       │   ├── settings-general/     # General settings (store info, address, EIN, sales tax)
 │       │   ├── settings-backup/      # Backup & Restore (OAuth, cloud providers)
 │       │   ├── settings-autoprice/   # Autoprice (stub)
-│       │   ├── settings-integrations/ # Integrations (Stripe, Shopify, QuickBooks)
+│       │   ├── settings-integrations/ # Integrations (Stripe, Shopify)
 │       │   ├── settings-users/       # User Accounts (Better Auth admin APIs)
 │       │   └── first-time-setup/ # Initial setup wizard
 │       ├── graphql/       # GraphQL client setup
@@ -120,7 +120,7 @@ packages/
 
 ## Component Architecture
 
-- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching; role-based nav links (inventory visible to employees); cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission; settings section visible to admin only
+- **ogs-page**: Main layout with polished sidebar navigation (icons, hover/active states, section labels) and theme switching. Nav sections: **Shop** (all users), **Employees** (gated by `canManageInventory` — owner/manager/member; Dashboard sub-gated by `canViewDashboard` — owner/manager only; Transaction Log sub-gated by `canViewTransactionLog` — owner/manager), **Owner** (gated by `canAccessSettings` — owner only). Cart drawer (wa-drawer placement=end) with quantity controls, customer name, order submission.
 - **Page Components**: Each page has server.ts and client.ts files
 - **Custom Elements**: All components use Lit custom elements
 - **Web Awesome**: UI components from Web Awesome framework
@@ -134,14 +134,33 @@ packages/
 - **Dialogs**: Add inventory item (with product search), edit item, delete confirmation
 - **Empty State**: Guidance when no inventory items exist
 
-## Authentication Flow
+## Authentication & Authorization
 
-1. First-time setup creates admin user via Better Auth
+### Plugins
+- **Organization plugin** (`better-auth/plugins`): Multi-store support with org-based membership. Custom `ac` and `roles` passed in. `creatorRole` defaults to `"owner"`.
+- **Admin plugin** (`better-auth/plugins`): Provides user management API endpoints (createUser, listUsers, banUser, setRole, etc.). Custom `ac` and `roles` passed in. `adminRoles: ['owner']` set explicitly for impersonation protection.
+- **Anonymous plugin** (`better-auth/plugins`): Guest shopping sessions. Anonymous users get `role: "user"` (the admin plugin's `defaultRole`), which has zero management permissions.
+
+### 3-Role System (defined in `packages/api/src/lib/permissions.ts`)
+Role values are stored in both `user.role` (global) and `member.role` (per-org):
+- **`owner`**: Full access. Admin plugin endpoints (createUser, banUser, etc.), all settings, dashboard, transaction log, inventory, orders. Includes `...adminAc.statements` for full `user`/`session` resource permissions.
+- **`manager`**: Store Manager. Dashboard, inventory, orders, transaction log. No settings, no user management, no admin plugin access.
+- **`member`**: Employee. Inventory and orders only. No dashboard, no transaction log, no settings.
+- **`user`** (anonymous default): Shop/cart only. No management access.
+
+The `statement` merges default statements from both the organization plugin (`organization`, `member`, `invitation`, `ac` resources) and the admin plugin (`user`, `session` resources), plus custom app resources (`inventory`, `order`, `storeSettings`, `storeLocations`, `userManagement`, `transactionLog`).
+
+### Permission Derivation (server-side)
+- `packages/ui/src/lib/server-helpers.ts` derives boolean permission flags from `user.role` and passes them as HTML attributes to page components.
+- `packages/ui/src/server.ts` has a `requirePermission()` middleware with a role-based permission map for route protection.
+- `packages/ui/src/components/ogs-page.ts` uses permission flags to control nav section visibility.
+
+### Auth Flow
+1. First-time setup creates user with `role: 'owner'` via `firstTimeSetup.ts`
 2. Subsequent logins use email/password authentication
-3. Anonymous users supported for guest shopping
-4. Employee role with access control for inventory operations
-5. Session management handled by Better Auth
-6. Protected routes enforced by middleware
+3. Anonymous users created on-demand for guest shopping via `ensureAnonymousSession` middleware
+4. Session management handled by Better Auth
+5. Protected routes enforced by `requirePermission()` middleware
 
 ## Database Schema
 
@@ -150,7 +169,7 @@ packages/
 - **Shopping Cart**: Cart and cart item tables with user and inventory item relations, unique constraint on cartId+inventoryItemId
 - **Inventory**: inventory_item table with productId, condition, quantity, price, costBasis, createdAt, updatedAt; unique constraint on productId+condition+costBasis combination
 - **Orders**: order table with orderNumber, customerName, userId, status, totalAmount, createdAt; order_item table with orderId, productId, productName, condition, quantity, unitPrice
-- **Settings**: store_settings wide table (single-row pattern) with store info (name, address, EIN, sales tax rate), backup config (provider, frequency, OAuth tokens), integration credentials (Stripe, Shopify, QuickBooks with encrypted API keys)
+- **Settings**: store_settings wide table (single-row pattern) with store info (name, address, EIN, sales tax rate), backup config (provider, frequency, OAuth tokens), integration credentials (Stripe, Shopify with encrypted API keys)
 - **Relations**: Comprehensive Drizzle ORM relations connecting all schemas (inventory items → products, orders → users, order items → orders/products)
 - **Adapter**: Drizzle ORM with libsql (SQLite-compatible) for development
 

@@ -160,7 +160,6 @@ export type InsufficientItem = {
 
 export type IntegrationSettings = {
   __typename?: 'IntegrationSettings';
-  quickbooks: QuickBooksIntegration;
   shopify: ShopifyIntegration;
   stripe: StripeIntegration;
 };
@@ -249,7 +248,6 @@ export type Mutation = {
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateOrderStatus: UpdateOrderStatusResult;
-  updateQuickBooksIntegration: QuickBooksIntegration;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -334,10 +332,6 @@ export type MutationUpdateItemInCartArgs = {
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: Scalars['String']['input'];
-};
-
-export type MutationUpdateQuickBooksIntegrationArgs = {
-  input: UpdateQuickBooksIntegrationInput;
 };
 
 export type MutationUpdateShopifyIntegrationArgs = {
@@ -592,13 +586,6 @@ export type QuerySearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
-export type QuickBooksIntegration = {
-  __typename?: 'QuickBooksIntegration';
-  enabled: Scalars['Boolean']['output'];
-  hasClientId: Scalars['Boolean']['output'];
-  hasClientSecret: Scalars['Boolean']['output'];
-};
-
 export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -738,12 +725,6 @@ export type UpdateOrderStatusResult = {
   __typename?: 'UpdateOrderStatusResult';
   error?: Maybe<Scalars['String']['output']>;
   order?: Maybe<Order>;
-};
-
-export type UpdateQuickBooksIntegrationInput = {
-  clientId?: InputMaybe<Scalars['String']['input']>;
-  clientSecret?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type UpdateShopifyIntegrationInput = {

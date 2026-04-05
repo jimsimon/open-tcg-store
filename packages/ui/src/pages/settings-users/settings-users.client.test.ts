@@ -53,7 +53,7 @@ describe('ogs-settings-users-page', () => {
     mockListUsers.mockResolvedValue({
       data: {
         users: [
-          fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'admin' }),
+          fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'manager' }),
           fakeUser({ id: 'user-2', name: 'Jane Smith', email: 'jane@example.com', role: 'employee' }),
           fakeUser({
             id: 'user-3',
@@ -68,7 +68,7 @@ describe('ogs-settings-users-page', () => {
     });
 
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
-    element.userRole = 'admin';
+    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -218,7 +218,7 @@ describe('ogs-settings-users-page', () => {
   });
 
   test('edit dialog footer buttons are present when dialog opens', async () => {
-    const user = fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'admin' });
+    const user = fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'manager' });
     element.openEditDialog(user);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

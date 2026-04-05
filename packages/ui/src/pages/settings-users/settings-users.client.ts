@@ -61,13 +61,13 @@ interface UserRecord {
 function roleLabel(role: string | null): string {
   switch (role) {
     case 'owner':
-    case 'admin':
       return 'Owner';
+    case 'manager':
+      return 'Store Manager';
     case 'member':
-    case 'employee':
       return 'Employee';
     default:
-      return 'Store Manager';
+      return role ?? 'Unknown';
   }
 }
 
@@ -75,13 +75,13 @@ function roleLabel(role: string | null): string {
 function roleBadgeVariant(role: string | null): string {
   switch (role) {
     case 'owner':
-    case 'admin':
       return 'danger';
+    case 'manager':
+      return 'brand';
     case 'member':
-    case 'employee':
       return 'neutral';
     default:
-      return 'brand';
+      return 'neutral';
   }
 }
 
@@ -91,6 +91,7 @@ export class OgsSettingsUsersPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
@@ -436,7 +437,7 @@ export class OgsSettingsUsersPage extends LitElement {
     const total = this.users.length;
     const active = this.users.filter((u) => !u.banned).length;
     const deactivated = this.users.filter((u) => u.banned).length;
-    const owners = this.users.filter((u) => u.role === 'admin' || u.role === 'owner').length;
+    const owners = this.users.filter((u) => u.role === 'owner').length;
     return { total, active, deactivated, owners };
   }
 
@@ -450,7 +451,7 @@ export class OgsSettingsUsersPage extends LitElement {
         email: this.addEmail,
         password: this.addPassword,
         name: this.addName,
-        role: this.addRole as 'admin' | 'member',
+        role: this.addRole as 'owner' | 'manager' | 'member',
       });
 
       if (result.error) {
@@ -467,7 +468,7 @@ export class OgsSettingsUsersPage extends LitElement {
                 credentials: 'include',
                 body: JSON.stringify({
                   userId: newUserId,
-                  role: this.addRole as 'owner' | 'admin' | 'member',
+                  role: this.addRole as 'owner' | 'manager' | 'member',
                   organizationId: storeId,
                 }),
               });
@@ -515,7 +516,7 @@ export class OgsSettingsUsersPage extends LitElement {
       // Set global role (admin plugin compat)
       const roleResult = await authClient.admin.setRole({
         userId: this.editingUser.id,
-        role: this.editRole as 'admin' | 'member',
+        role: this.editRole as 'owner' | 'manager' | 'member',
       });
 
       if (roleResult.error) {
@@ -579,6 +580,7 @@ export class OgsSettingsUsersPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
@@ -846,7 +848,7 @@ export class OgsSettingsUsersPage extends LitElement {
             }}"
           >
             <wa-option value="owner">Owner</wa-option>
-            <wa-option value="admin">Store Manager</wa-option>
+            <wa-option value="manager">Store Manager</wa-option>
             <wa-option value="member">Employee</wa-option>
           </wa-select>
           <wa-select
@@ -909,7 +911,7 @@ export class OgsSettingsUsersPage extends LitElement {
                 }}"
               >
                 <wa-option value="owner">Owner</wa-option>
-                <wa-option value="admin">Store Manager</wa-option>
+                <wa-option value="manager">Store Manager</wa-option>
                 <wa-option value="member">Employee</wa-option>
               </wa-select>
               <wa-select

@@ -132,7 +132,6 @@ type InsufficientItem {
 }
 
 type IntegrationSettings {
-  quickbooks: QuickBooksIntegration!
   shopify: ShopifyIntegration!
   stripe: StripeIntegration!
 }
@@ -216,7 +215,6 @@ type Mutation {
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
   updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
-  updateQuickBooksIntegration(input: UpdateQuickBooksIntegrationInput!): QuickBooksIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   updateStock(input: UpdateStockInput!): InventoryItemStock!
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
@@ -387,12 +385,6 @@ type Query {
   searchProducts(game: String, searchTerm: String!): [ProductSearchResult!]!
 }
 
-type QuickBooksIntegration {
-  enabled: Boolean!
-  hasClientId: Boolean!
-  hasClientSecret: Boolean!
-}
-
 type RestoreResult {
   message: String
   success: Boolean!
@@ -519,12 +511,6 @@ input UpdateInventoryItemInput {
 type UpdateOrderStatusResult {
   error: String
   order: Order
-}
-
-input UpdateQuickBooksIntegrationInput {
-  clientId: String
-  clientSecret: String
-  enabled: Boolean
 }
 
 input UpdateShopifyIntegrationInput {

@@ -38,9 +38,10 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
       throw new Error('Failed to create user account');
     }
 
-    // 2. Set the global user.role to 'admin' so the admin() plugin's APIs work
-    // (listUsers, banUser, etc.). The organization membership handles app-level permissions.
-    await otcgs.update(userTable).set({ role: 'admin' }).where(eq(userTable.id, createdUserId));
+    // 2. Set the global user.role to 'owner' so the admin() plugin's APIs work
+    // (createUser, listUsers, banUser, etc.). The 'owner' role has full admin
+    // plugin permissions. The organization membership handles app-level permissions.
+    await otcgs.update(userTable).set({ role: 'owner' }).where(eq(userTable.id, createdUserId));
 
     // 3. Save company settings (companyName + ein) to store_settings
     await otcgs

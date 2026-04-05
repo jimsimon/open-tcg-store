@@ -499,6 +499,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
   canManageInventory = false;
 
   @property({ type: Boolean })
+  canViewDashboard = false;
+
+  @property({ type: Boolean })
   canAccessSettings = false;
 
   @property({ type: Boolean })
@@ -752,9 +755,11 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 this.canManageInventory,
                 () => html`
                   <wa-divider></wa-divider>
-                  <div class="nav-section-label">Management</div>
+                  <div class="nav-section-label">Employees</div>
 
-                  ${this.renderNavLink('/', 'house', 'Dashboard', 'Dashboard')}
+                  ${when(this.canViewDashboard, () =>
+                    this.renderNavLink('/', 'house', 'Dashboard', 'Dashboard'),
+                  )}
                   ${this.renderNavLink('/orders', 'receipt', 'Orders', 'Orders')}
                   ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
                   ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}
@@ -768,7 +773,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 this.canAccessSettings,
                 () => html`
                   <wa-divider></wa-divider>
-                  <div class="nav-section-label">Settings</div>
+                  <div class="nav-section-label">Owner</div>
 
                   ${this.renderNavLink('/settings/general', 'gear', 'Settings', 'settings')}
                   ${this.renderNavSubLink('/settings/general', 'General', 'settings/general')}

@@ -28,7 +28,7 @@ Existing TCG store management software is expensive and often lacking in feature
 - **Settings**
   - **General** -- Store name, address, EIN, automatic sales tax rate lookup
   - **Backup & Restore** -- Google Drive, Dropbox, and OneDrive OAuth integration
-  - **Integrations** -- Stripe, Shopify, and QuickBooks with encrypted API key storage (AES-256-GCM)
+  - **Integrations** -- Stripe and Shopify with encrypted API key storage (AES-256-GCM)
   - **User Accounts** -- List, create, edit roles, activate/deactivate users
 - **Server-Side Rendering** -- Lit SSR with client-side hydration for fast initial loads
 

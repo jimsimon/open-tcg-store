@@ -22,11 +22,6 @@ export const storeSettings = sqliteTable('store_settings', {
   shopifyApiKey: text('shopify_api_key'),
   shopifyShopDomain: text('shopify_shop_domain'),
 
-  // Integration: QuickBooks
-  quickbooksEnabled: integer('quickbooks_enabled', { mode: 'boolean' }).default(false),
-  quickbooksClientId: text('quickbooks_client_id'),
-  quickbooksClientSecret: text('quickbooks_client_secret'),
-
   // OAuth Tokens (encrypted)
   googleDriveAccessToken: text('google_drive_access_token'),
   googleDriveRefreshToken: text('google_drive_refresh_token'),

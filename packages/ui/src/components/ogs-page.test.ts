@@ -273,7 +273,7 @@ describe('ogs-page', () => {
     });
 
     test('shows inventory section with Singles and Sealed links for admin role', async () => {
-      element.userRole = 'admin';
+      element.userRole = 'owner';
       element.canManageInventory = true;
       element.canAccessSettings = true;
       await element.updateComplete;

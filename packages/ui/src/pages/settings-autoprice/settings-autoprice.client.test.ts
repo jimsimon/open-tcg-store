@@ -10,7 +10,7 @@ describe('ogs-settings-autoprice-page', () => {
 
   beforeEach(async () => {
     element = document.createElement('ogs-settings-autoprice-page') as OgsSettingsAutopricePage;
-    element.userRole = 'admin';
+    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
   });
@@ -60,7 +60,7 @@ describe('ogs-settings-autoprice-page', () => {
   });
 
   test('should accept userRole property', () => {
-    expect(element.userRole).toBe('admin');
+    expect(element.userRole).toBe('owner');
   });
 
   test('should accept isAnonymous property', () => {

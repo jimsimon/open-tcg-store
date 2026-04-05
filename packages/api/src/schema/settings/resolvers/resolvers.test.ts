@@ -13,7 +13,6 @@ const {
   mockGetIntegrationSettings,
   mockUpdateStripeIntegration,
   mockUpdateShopifyIntegration,
-  mockUpdateQuickBooksIntegration,
   mockPerformBackup,
   mockPerformRestore,
   mockAssertPermission,
@@ -27,7 +26,6 @@ const {
   mockGetIntegrationSettings: vi.fn(),
   mockUpdateStripeIntegration: vi.fn(),
   mockUpdateShopifyIntegration: vi.fn(),
-  mockUpdateQuickBooksIntegration: vi.fn(),
   mockPerformBackup: vi.fn(),
   mockPerformRestore: vi.fn(),
   mockAssertPermission: vi.fn(),
@@ -43,7 +41,6 @@ vi.mock('../../../services/settings-service', () => ({
   getIntegrationSettings: mockGetIntegrationSettings,
   updateStripeIntegration: mockUpdateStripeIntegration,
   updateShopifyIntegration: mockUpdateShopifyIntegration,
-  updateQuickBooksIntegration: mockUpdateQuickBooksIntegration,
 }));
 
 vi.mock('../../../services/backup-service', () => ({
@@ -71,7 +68,6 @@ import { triggerBackup as _triggerBackup } from './Mutation/triggerBackup';
 import { triggerRestore as _triggerRestore } from './Mutation/triggerRestore';
 import { updateStripeIntegration as _updateStripeIntegration } from './Mutation/updateStripeIntegration';
 import { updateShopifyIntegration as _updateShopifyIntegration } from './Mutation/updateShopifyIntegration';
-import { updateQuickBooksIntegration as _updateQuickBooksIntegration } from './Mutation/updateQuickBooksIntegration';
 
 // Cast to callable functions
 const getStoreSettings = _getStoreSettings as (...args: unknown[]) => Promise<unknown>;
@@ -84,7 +80,6 @@ const triggerBackup = _triggerBackup as (...args: unknown[]) => Promise<unknown>
 const triggerRestore = _triggerRestore as (...args: unknown[]) => Promise<unknown>;
 const updateStripeIntegration = _updateStripeIntegration as (...args: unknown[]) => Promise<unknown>;
 const updateShopifyIntegration = _updateShopifyIntegration as (...args: unknown[]) => Promise<unknown>;
-const updateQuickBooksIntegration = _updateQuickBooksIntegration as (...args: unknown[]) => Promise<unknown>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,7 +91,7 @@ function adminContext() {
   mockGetUserId.mockReturnValue('admin-1');
   return {
     auth: {
-      user: { id: 'admin-1', role: 'admin' },
+      user: { id: 'admin-1', role: 'owner' },
       session: { activeOrganizationId: 'org-1' },
     },
     req: { headers: {} },
@@ -202,12 +197,6 @@ describe('settings resolvers', () => {
         'Unauthorized: Insufficient permissions',
       );
     });
-
-    it('should reject non-admin users for updateQuickBooksIntegration', async () => {
-      await expect(
-        updateQuickBooksIntegration({}, { input: { enabled: true } }, employeeContext(), {}),
-      ).rejects.toThrow('Unauthorized: Insufficient permissions');
-    });
   });
 
   // -----------------------------------------------------------------------
@@ -248,7 +237,6 @@ describe('settings resolvers', () => {
       const mockResult = {
         stripe: { enabled: true, hasApiKey: true },
         shopify: { enabled: false, hasApiKey: false, shopDomain: null },
-        quickbooks: { enabled: false, hasClientId: false, hasClientSecret: false },
       };
       mockGetIntegrationSettings.mockResolvedValue(mockResult);
 
@@ -367,19 +355,6 @@ describe('settings resolvers', () => {
 
       expect(result).toEqual(mockResult);
       expect(mockUpdateShopifyIntegration).toHaveBeenCalledWith(input, 'admin-1');
-    });
-  });
-
-  describe('updateQuickBooksIntegration resolver', () => {
-    it('should update quickbooks settings for admin', async () => {
-      const input = { enabled: true, clientId: 'qb-id' };
-      const mockResult = { enabled: true, hasClientId: true, hasClientSecret: false };
-      mockUpdateQuickBooksIntegration.mockResolvedValue(mockResult);
-
-      const result = await updateQuickBooksIntegration({}, { input }, adminContext(), {});
-
-      expect(result).toEqual(mockResult);
-      expect(mockUpdateQuickBooksIntegration).toHaveBeenCalledWith(input, 'admin-1');
     });
   });
 });

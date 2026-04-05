@@ -6,6 +6,7 @@ interface PageAttributes {
   isAnonymous: boolean;
   userName: string;
   canManageInventory: boolean;
+  canViewDashboard: boolean;
   canAccessSettings: boolean;
   canManageStoreLocations: boolean;
   canManageUsers: boolean;
@@ -29,21 +30,25 @@ export function getPageAttributes(ctx: RouterContext): PageAttributes {
   const activeOrganizationId =
     ((ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string) ?? '';
 
-  // Derive permissions from role during migration period
-  // owner (admin) gets everything, admin (store manager) gets inventory+orders+settings read,
-  // member (employee) gets inventory+orders only
-  const isOwner = userRole === 'admin' || userRole === 'owner';
-  const isManager = userRole === 'admin' || userRole === 'owner' || userRole === 'employee';
+  // Derive permissions from role.
+  // owner: full access (Settings, Dashboard, Transaction Log, Inventory, Orders)
+  // manager (Store Manager): Dashboard, Inventory, Orders
+  // member (Employee): Inventory, Orders only
+  const isOwner = userRole === 'owner';
+  const isManagerOrAbove = userRole === 'owner' || userRole === 'manager';
+  const isEmployee = userRole === 'member';
+  const isAuthenticated = isOwner || isManagerOrAbove || isEmployee;
 
   return {
     userRole,
     isAnonymous,
     userName,
-    canManageInventory: isManager,
+    canManageInventory: isAuthenticated,
+    canViewDashboard: isManagerOrAbove,
     canAccessSettings: isOwner,
     canManageStoreLocations: isOwner,
     canManageUsers: isOwner,
-    canViewTransactionLog: isOwner,
+    canViewTransactionLog: isManagerOrAbove,
     activeOrganizationId,
   };
 }
@@ -60,6 +65,7 @@ export function renderPageAttributes(ctx: RouterContext, extras: Record<string, 
     // Always show the user menu so users can sign in/out from any page
     'showUserMenu',
     attrs.canManageInventory ? 'canManageInventory' : '',
+    attrs.canViewDashboard ? 'canViewDashboard' : '',
     attrs.canAccessSettings ? 'canAccessSettings' : '',
     attrs.canManageStoreLocations ? 'canManageStoreLocations' : '',
     attrs.canManageUsers ? 'canManageUsers' : '',

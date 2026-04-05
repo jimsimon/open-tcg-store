@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statement, ac, ownerRole, adminRole, memberRole, roles } from './permissions';
+import { statement, ac, ownerRole, managerRole, memberRole, roles } from './permissions';
 
 // ---------------------------------------------------------------------------
 // Tests — verify the permission definitions are correct and complete.
@@ -58,11 +58,11 @@ describe('permissions', () => {
   });
 
   // -----------------------------------------------------------------------
-  // adminRole
+  // managerRole
   // -----------------------------------------------------------------------
-  describe('adminRole', () => {
+  describe('managerRole', () => {
     it('should be defined', () => {
-      expect(adminRole).toBeDefined();
+      expect(managerRole).toBeDefined();
     });
   });
 
@@ -79,10 +79,10 @@ describe('permissions', () => {
   // roles mapping
   // -----------------------------------------------------------------------
   describe('roles', () => {
-    it('should map owner, admin, and member role names', () => {
+    it('should map owner, manager, and member role names', () => {
       expect(roles).toEqual({
         owner: ownerRole,
-        admin: adminRole,
+        manager: managerRole,
         member: memberRole,
       });
     });

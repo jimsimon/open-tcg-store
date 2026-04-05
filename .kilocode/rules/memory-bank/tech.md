@@ -26,11 +26,11 @@
 
 ### Development Tools
 
-- **Biome**: Linter and code formatter
-- **Prettier**: Code formatting
+- **oxlint**: Linter
+- **oxfmt**: Code formatter
 - **GraphQL Codegen**: Type-safe GraphQL code generation
-- **TypeScript**: Static type checking
-- **Vitest**: Testing framework for both Node.js and browser environments
+- **TypeScript 6**: Static type checking
+- **Vitest 4**: Testing framework for both Node.js and browser environments (with `@vitest/browser-playwright`)
 
 ## Testing Framework
 
@@ -95,12 +95,12 @@
 
 ```json
 {
-  "@biomejs/biome": "^2.2.2",
-  "typescript": "^5.9.2",
+  "oxlint": "latest",
+  "typescript": "^6.0.2",
   "@graphql-codegen/cli": "^5.0.7",
   "drizzle-kit": "^0.31.4",
-  "vitest": "^latest",
-  "@vitest/browser": "^latest",
+  "vitest": "^4",
+  "@vitest/browser-playwright": "latest",
   "playwright": "^latest"
 }
 ```

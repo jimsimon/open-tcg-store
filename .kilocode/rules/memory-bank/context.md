@@ -6,6 +6,18 @@ Inventory schema restructuring completed. Price moved from per-lot to per-produc
 
 ## Recent Changes
 
+- **Role System Overhaul (2026-04-05)**: Standardized 3-role permission system
+  - **Root cause fix**: Admin plugin's `createUser` endpoint was checking `{ user: ["create"] }` permission, but custom AC statement didn't include admin plugin's `defaultStatements` (`user`, `session` resources). Merged both org and admin plugin default statements into the AC statement.
+  - **Role rename**: `admin` → `manager` (Store Manager). The org plugin uses `Object.keys(options.roles)` for pre-defined roles, so custom names are safe. No hardcoded dependency on `"admin"` in the org plugin.
+  - **Permissions**: `ownerRole` gets `...adminAc.statements` for full admin plugin access. `managerRole` has inventory + orders + transactionLog read. `memberRole` has inventory + orders only.
+  - **Auth config** (`auth.ts`): Added `adminRoles: ['owner']` to admin plugin for impersonation protection.
+  - **First-time setup**: Initial user now gets `role: 'owner'` (was `'admin'`).
+  - **Nav sections renamed**: "Management" → "Employees", "Settings" → "Owner".
+  - **New permission flag**: `canViewDashboard` added to all 16 page components and ogs-page (gates Dashboard link for owner/manager only).
+  - **UI fixes**: `roleLabel()` and `roleBadgeVariant()` in settings-users now correctly distinguish owner/manager/member. Stats count owners only. Type casts include all 3 roles.
+  - **Server-side**: `server-helpers.ts` derives permissions from role (isOwner, isManagerOrAbove, isEmployee). `server.ts` permission map uses `['owner']` for settings/userMgmt, `['owner', 'manager']` for transactionLog, `['owner', 'manager', 'member']` for inventory/orders.
+  - **Tests**: All settings page tests use `userRole = 'owner'`. Permissions test updated for `managerRole`.
+
 - **Inventory Schema Restructuring (2026-04-03)**: Split inventory_item into parent + stock
   - **Database**: New `inventory_item_stock` table; removed `quantity`, `costBasis`, `acquisitionDate`, `notes` from `inventory_item`; unique constraint changed to `(orgId, productId, condition)`; added `inventoryItemStockId` to `order_item` for FIFO lot tracking
   - **GraphQL**: Removed `GroupedInventoryItem`/`GroupedInventoryPage`; added `InventoryItemStock` type and `InventoryStockPage`; added stock mutations (`addStock`, `updateStock`, `deleteStock`, `bulkUpdateStock`, `bulkDeleteStock`); `getInventoryItemDetails` now takes `inventoryItemId` and returns stock entries
@@ -23,7 +35,7 @@ Inventory schema restructuring completed. Price moved from per-lot to per-produc
   - **Access Control**: Admin-only at 3 layers: UI nav visibility, route middleware (403), GraphQL resolvers
   - **Navigation**: Settings section in sidebar (admin-only) with sub-links for all 5 pages
   - **Routes**: `/settings/*` with `requireAdmin` middleware
-  - **Pages**: General (store info + auto sales tax), Backup & Restore (OAuth connect + backup/restore), Autoprice (stub), Integrations (Stripe/Shopify/QuickBooks), User Accounts (Better Auth admin APIs)
+  - **Pages**: General (store info + auto sales tax), Backup & Restore (OAuth connect + backup/restore), Autoprice (stub), Integrations (Stripe/Shopify), User Accounts (Better Auth admin APIs)
   - **Dependencies**: Added `sales-tax`, `googleapis`, `dropbox`, `@microsoft/microsoft-graph-client`, `@azure/msal-node`
   - **Environment**: Added `ENCRYPTION_KEY`, `API_BASE_URL`, Google/Dropbox/OneDrive OAuth credentials to `.env`
 
@@ -47,11 +59,11 @@ Inventory schema restructuring completed. Price moved from per-lot to per-produc
 
 ## Current Status
 
-- **Authentication**: ✅ Implemented with Better Auth (including anonymous users and employee role)
-- **Access Control**: ✅ Role-based access control with admin and employee roles
+- **Authentication**: ✅ Implemented with Better Auth (email/password, anonymous users, organization plugin, admin plugin)
+- **Access Control**: ✅ 3-role system (owner, manager, member) with custom AC merging org + admin plugin statements
 - **Database**: ✅ Complete schemas (auth, TCG data, shopping cart, inventory, orders, store settings)
 - **UI Framework**: ✅ Lit with Web Awesome components
-- **Routing**: ✅ Koa.js server with page routing and admin middleware
+- **Routing**: ✅ Koa.js server with page routing and role-based `requirePermission()` middleware
 - **GraphQL**: ✅ Complete setup with type generation and resolvers
 - **Shopping Cart Backend**: ✅ Complete GraphQL API with service layer
 - **Shopping Cart UI**: ✅ Cart drawer with quantity controls, remove, customer name, submit order
@@ -66,7 +78,7 @@ Inventory schema restructuring completed. Price moved from per-lot to per-produc
 - **Settings - General**: ✅ Store name, address, EIN, auto sales tax rate
 - **Settings - Backup & Restore**: ✅ Google Drive, Dropbox, OneDrive OAuth + backup/restore
 - **Settings - Autoprice**: ⏳ Stubbed (placeholder page)
-- **Settings - Integrations**: ✅ Stripe, Shopify, QuickBooks with encrypted credentials
+- **Settings - Integrations**: ✅ Stripe, Shopify with encrypted credentials
 - **Settings - User Accounts**: ✅ List, create, edit role, activate/deactivate users
 - **Encryption**: ✅ AES-256-GCM for sensitive settings
 - **Analytics UI**: ❌ Not implemented

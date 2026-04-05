@@ -102,6 +102,7 @@ export class OgsSettingsBackupPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
@@ -554,60 +555,30 @@ export class OgsSettingsBackupPage extends LitElement {
       case 'google_drive':
         return {
           steps: [
-            html`Go to the
-              <a class="setup-link" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer"
-                >Google Cloud Console</a
-              >
-              and create or select a project.`,
-            html`Navigate to
-              <a
-                class="setup-link"
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noopener noreferrer"
-                >APIs &amp; Services &gt; Credentials</a
-              >.`,
+            html`Go to the <a class="setup-link" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a> and create or select a project.`,
+            html`Navigate to <a class="setup-link" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">APIs &amp; Services &gt; Credentials</a>.`,
             html`Click "Create Credentials" and select "OAuth client ID".`,
             html`Set the application type to "Web application".`,
-            html`Add your redirect URI (e.g.
-              <code>http://localhost:5174/api/backup/oauth/google_drive/callback</code>).`,
+            html`Add your redirect URI (e.g. <code>http://localhost:5174/api/backup/oauth/google_drive/callback</code>).`,
             html`Copy the generated Client ID and paste it below.`,
           ],
         };
       case 'dropbox':
         return {
           steps: [
-            html`Go to the
-              <a
-                class="setup-link"
-                href="https://www.dropbox.com/developers/apps"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Dropbox App Console</a
-              >
-              and click "Create app".`,
+            html`Go to the <a class="setup-link" href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer">Dropbox App Console</a> and click "Create app".`,
             html`Choose "Scoped access" and "Full Dropbox" access type.`,
             html`Name your app and click "Create app".`,
-            html`Under Settings, add your redirect URI (e.g.
-              <code>http://localhost:5174/api/backup/oauth/dropbox/callback</code>).`,
+            html`Under Settings, add your redirect URI (e.g. <code>http://localhost:5174/api/backup/oauth/dropbox/callback</code>).`,
             html`Copy the "App key" (this is your Client ID) and paste it below.`,
           ],
         };
       case 'onedrive':
         return {
           steps: [
-            html`Go to the
-              <a
-                class="setup-link"
-                href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Azure Portal App Registrations</a
-              >
-              and click "New registration".`,
+            html`Go to the <a class="setup-link" href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer">Azure Portal App Registrations</a> and click "New registration".`,
             html`Name your application.`,
-            html`Set the redirect URI to "Web" with your callback URL (e.g.
-              <code>http://localhost:5174/api/backup/oauth/onedrive/callback</code>).`,
+            html`Set the redirect URI to "Web" with your callback URL (e.g. <code>http://localhost:5174/api/backup/oauth/onedrive/callback</code>).`,
             html`After registration, copy the "Application (client) ID" and paste it below.`,
           ],
         };
@@ -631,6 +602,7 @@ export class OgsSettingsBackupPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"

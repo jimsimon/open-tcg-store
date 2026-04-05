@@ -15,7 +15,6 @@ type BackupSettings {
 type IntegrationSettings {
   stripe: StripeIntegration!
   shopify: ShopifyIntegration!
-  quickbooks: QuickBooksIntegration!
 }
 
 type StripeIntegration {
@@ -27,12 +26,6 @@ type ShopifyIntegration {
   enabled: Boolean!
   hasApiKey: Boolean!
   shopDomain: String
-}
-
-type QuickBooksIntegration {
-  enabled: Boolean!
-  hasClientId: Boolean!
-  hasClientSecret: Boolean!
 }
 
 type SalesTaxLookupResult {
@@ -73,12 +66,6 @@ input UpdateShopifyIntegrationInput {
   shopDomain: String
 }
 
-input UpdateQuickBooksIntegrationInput {
-  enabled: Boolean
-  clientId: String
-  clientSecret: String
-}
-
 extend type Query {
   getStoreSettings: StoreSettings!
   getBackupSettings: BackupSettings!
@@ -93,5 +80,4 @@ extend type Mutation {
   triggerRestore(provider: String!): RestoreResult!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
-  updateQuickBooksIntegration(input: UpdateQuickBooksIntegrationInput!): QuickBooksIntegration!
 }

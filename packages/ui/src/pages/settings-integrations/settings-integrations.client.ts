@@ -56,6 +56,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
@@ -308,6 +309,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
         ?canManageUsers="${this.canManageUsers}"
@@ -362,7 +364,9 @@ export class OgsSettingsIntegrationsPage extends LitElement {
           `
         : nothing}
 
-      <div class="integrations-grid">${this.renderStripeCard()} ${this.renderShopifyCard()}</div>
+      <div class="integrations-grid">
+        ${this.renderStripeCard()} ${this.renderShopifyCard()}
+      </div>
     `;
   }
 
@@ -381,7 +385,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         <div class="integration-card-header">
           <div class="integration-title">
             <div class="integration-icon">
-              <wa-icon name="stripe" variant="brands"></wa-icon>
+              <wa-icon name="credit-card"></wa-icon>
             </div>
             <div class="integration-title-text">
               <h3>Stripe</h3>
@@ -430,7 +434,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         <div class="integration-card-header">
           <div class="integration-title">
             <div class="integration-icon">
-              <wa-icon name="shopify" variant="brands"></wa-icon>
+              <wa-icon name="cart-shopping"></wa-icon>
             </div>
             <div class="integration-title-text">
               <h3>Shopify</h3>

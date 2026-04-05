@@ -7,7 +7,6 @@ vi.mock('../../lib/graphql.ts', () => ({
       getIntegrationSettings: {
         stripe: { enabled: true, hasApiKey: true },
         shopify: { enabled: false, hasApiKey: false, shopDomain: null },
-        quickbooks: { enabled: false, hasClientId: false, hasClientSecret: false },
       },
     },
   }),
@@ -26,7 +25,7 @@ describe('ogs-settings-integrations-page', () => {
 
   beforeEach(async () => {
     element = document.createElement('ogs-settings-integrations-page') as OgsSettingsIntegrationsPage;
-    element.userRole = 'admin';
+    element.userRole = 'owner';
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -55,9 +54,9 @@ describe('ogs-settings-integrations-page', () => {
     expect(desc?.textContent).toContain('Connect third-party services');
   });
 
-  test('should display three integration cards', () => {
+  test('should display two integration cards', () => {
     const cards = element.shadowRoot!.querySelectorAll('wa-card[appearance="outline"]');
-    expect(cards.length).toBe(3);
+    expect(cards.length).toBe(2);
   });
 
   test('should display Stripe integration card', () => {
@@ -72,15 +71,9 @@ describe('ogs-settings-integrations-page', () => {
     expect(titleTexts).toContain('Shopify');
   });
 
-  test('should display QuickBooks integration card', () => {
-    const titles = element.shadowRoot!.querySelectorAll('.integration-title-text h3');
-    const titleTexts = Array.from(titles).map((t) => t.textContent?.trim());
-    expect(titleTexts).toContain('QuickBooks');
-  });
-
   test('should display enable/disable switches for each integration', () => {
     const switches = element.shadowRoot!.querySelectorAll('wa-switch');
-    expect(switches.length).toBe(3);
+    expect(switches.length).toBe(2);
   });
 
   test('should display Stripe API key input', () => {
@@ -91,16 +84,6 @@ describe('ogs-settings-integrations-page', () => {
   test('should display Shopify shop domain input', () => {
     const domainInput = element.shadowRoot!.querySelector('wa-input[label="Shop Domain"]');
     expect(domainInput).toBeTruthy();
-  });
-
-  test('should display QuickBooks Client ID input', () => {
-    const clientIdInput = element.shadowRoot!.querySelector('wa-input[label="Client ID"]');
-    expect(clientIdInput).toBeTruthy();
-  });
-
-  test('should display QuickBooks Client Secret input', () => {
-    const clientSecretInput = element.shadowRoot!.querySelector('wa-input[label="Client Secret"]');
-    expect(clientSecretInput).toBeTruthy();
   });
 
   test('should show key status indicators', () => {
@@ -117,12 +100,11 @@ describe('ogs-settings-integrations-page', () => {
 
   test('should display save buttons for each integration', () => {
     const saveButtons = element.shadowRoot!.querySelectorAll('.integration-save wa-button');
-    expect(saveButtons.length).toBe(3);
+    expect(saveButtons.length).toBe(2);
 
     const buttonTexts = Array.from(saveButtons).map((b) => b.textContent?.trim());
     expect(buttonTexts).toContain('Save Stripe Settings');
     expect(buttonTexts).toContain('Save Shopify Settings');
-    expect(buttonTexts).toContain('Save QuickBooks Settings');
   });
 
   test('should show loading spinner initially', async () => {

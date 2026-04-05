@@ -56,9 +56,6 @@ vi.mock('../db/otcgs/settings-schema', () => ({
     shopifyEnabled: 'store_settings.shopify_enabled',
     shopifyApiKey: 'store_settings.shopify_api_key',
     shopifyShopDomain: 'store_settings.shopify_shop_domain',
-    quickbooksEnabled: 'store_settings.quickbooks_enabled',
-    quickbooksClientId: 'store_settings.quickbooks_client_id',
-    quickbooksClientSecret: 'store_settings.quickbooks_client_secret',
     googleDriveAccessToken: 'store_settings.google_drive_access_token',
     googleDriveRefreshToken: 'store_settings.google_drive_refresh_token',
     dropboxAccessToken: 'store_settings.dropbox_access_token',
@@ -106,7 +103,6 @@ import {
   getIntegrationSettings,
   updateStripeIntegration,
   updateShopifyIntegration,
-  updateQuickBooksIntegration,
   storeOAuthTokens,
   getOAuthTokens,
   clearOAuthTokens,
@@ -130,9 +126,6 @@ function fakeSettingsRow(overrides: Record<string, unknown> = {}) {
     shopifyEnabled: false,
     shopifyApiKey: null,
     shopifyShopDomain: null,
-    quickbooksEnabled: false,
-    quickbooksClientId: null,
-    quickbooksClientSecret: null,
     googleDriveAccessToken: 'encrypted:gd-access',
     googleDriveRefreshToken: 'encrypted:gd-refresh',
     dropboxAccessToken: null,
@@ -352,9 +345,6 @@ describe('settings-service', () => {
       expect(result.shopify.enabled).toBe(false);
       expect(result.shopify.hasApiKey).toBe(false);
       expect(result.shopify.shopDomain).toBeNull();
-      expect(result.quickbooks.enabled).toBe(false);
-      expect(result.quickbooks.hasClientId).toBe(false);
-      expect(result.quickbooks.hasClientSecret).toBe(false);
     });
 
     it('should detect when all integrations are enabled', async () => {
@@ -365,9 +355,6 @@ describe('settings-service', () => {
           shopifyEnabled: true,
           shopifyApiKey: 'encrypted:key',
           shopifyShopDomain: 'test.myshopify.com',
-          quickbooksEnabled: true,
-          quickbooksClientId: 'client-id',
-          quickbooksClientSecret: 'encrypted:secret',
         }),
       ]);
       mockOtcgs.select.mockImplementation(() => selectChain);
@@ -379,9 +366,6 @@ describe('settings-service', () => {
       expect(result.shopify.enabled).toBe(true);
       expect(result.shopify.hasApiKey).toBe(true);
       expect(result.shopify.shopDomain).toBe('test.myshopify.com');
-      expect(result.quickbooks.enabled).toBe(true);
-      expect(result.quickbooks.hasClientId).toBe(true);
-      expect(result.quickbooks.hasClientSecret).toBe(true);
     });
   });
 
@@ -435,32 +419,6 @@ describe('settings-service', () => {
 
       const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(setCall.shopifyApiKey).toBe('encrypted:shpat_abc123');
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // updateQuickBooksIntegration
-  // -----------------------------------------------------------------------
-  describe('updateQuickBooksIntegration', () => {
-    it('should update quickbooks enabled status', async () => {
-      await updateQuickBooksIntegration({ enabled: true }, 'admin-1');
-
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.quickbooksEnabled).toBe(true);
-    });
-
-    it('should update client ID (not encrypted)', async () => {
-      await updateQuickBooksIntegration({ clientId: 'qb-client-id' }, 'admin-1');
-
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.quickbooksClientId).toBe('qb-client-id');
-    });
-
-    it('should encrypt client secret when provided', async () => {
-      await updateQuickBooksIntegration({ clientSecret: 'qb-secret' }, 'admin-1');
-
-      const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(setCall.quickbooksClientSecret).toBe('encrypted:qb-secret');
     });
   });
 
