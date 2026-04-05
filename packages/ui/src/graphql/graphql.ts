@@ -63,6 +63,14 @@ export type BackupSettings = {
   provider?: Maybe<Scalars['String']['output']>;
 };
 
+export type BestSeller = {
+  __typename?: 'BestSeller';
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+  totalRevenue: Scalars['Float']['output'];
+};
+
 export type BulkDeleteStockInput = {
   ids: Array<Scalars['Int']['input']>;
 };
@@ -136,6 +144,11 @@ export type ConditionInventory = {
   __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+};
+
+export type DashboardDateRange = {
+  endDate: Scalars['String']['input'];
+  startDate: Scalars['String']['input'];
 };
 
 export type InitialStoreLocation = {
@@ -222,6 +235,14 @@ export type InventoryStockPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type InventorySummary = {
+  __typename?: 'InventorySummary';
+  totalCostValue: Scalars['Float']['output'];
+  totalRetailValue: Scalars['Float']['output'];
+  totalSkus: Scalars['Int']['output'];
+  totalUnits: Scalars['Int']['output'];
 };
 
 export type Mutation = {
@@ -354,6 +375,16 @@ export type MutationUpdateStripeIntegrationArgs = {
   input: UpdateStripeIntegrationInput;
 };
 
+export type OpenOrder = {
+  __typename?: 'OpenOrder';
+  createdAt: Scalars['String']['output'];
+  customerName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  itemCount: Scalars['Int']['output'];
+  orderNumber: Scalars['String']['output'];
+  totalAmount: Scalars['Float']['output'];
+};
+
 export type Order = {
   __typename?: 'Order';
   createdAt: Scalars['String']['output'];
@@ -393,6 +424,14 @@ export type OrderPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type OrderStatusBreakdown = {
+  __typename?: 'OrderStatusBreakdown';
+  cancelled: Scalars['Int']['output'];
+  completed: Scalars['Int']['output'];
+  open: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
 };
 
 export type PaginationInput = {
@@ -502,6 +541,11 @@ export type Query = {
   getAllStoreLocations: Array<StoreLocation>;
   getBackupSettings: BackupSettings;
   getCard: Card;
+  getDashboardBestSellers: Array<BestSeller>;
+  getDashboardInventorySummary: InventorySummary;
+  getDashboardOpenOrders: Array<OpenOrder>;
+  getDashboardOrderStatus: OrderStatusBreakdown;
+  getDashboardSales: SalesBreakdown;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
@@ -525,6 +569,32 @@ export type Query = {
 export type QueryGetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
+};
+
+export type QueryGetDashboardBestSellersArgs = {
+  dateRange: DashboardDateRange;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  organizationId: Scalars['String']['input'];
+  sortBy: Scalars['String']['input'];
+};
+
+export type QueryGetDashboardInventorySummaryArgs = {
+  organizationId: Scalars['String']['input'];
+};
+
+export type QueryGetDashboardOpenOrdersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  organizationId: Scalars['String']['input'];
+};
+
+export type QueryGetDashboardOrderStatusArgs = {
+  dateRange: DashboardDateRange;
+  organizationId: Scalars['String']['input'];
+};
+
+export type QueryGetDashboardSalesArgs = {
+  dateRange: DashboardDateRange;
+  organizationId: Scalars['String']['input'];
 };
 
 export type QueryGetInventoryArgs = {
@@ -590,6 +660,31 @@ export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type SalesBreakdown = {
+  __typename?: 'SalesBreakdown';
+  dataPoints: Array<SalesDataPoint>;
+  granularity: Scalars['String']['output'];
+  summary: SalesSummary;
+};
+
+export type SalesDataPoint = {
+  __typename?: 'SalesDataPoint';
+  cost: Scalars['Float']['output'];
+  label: Scalars['String']['output'];
+  orderCount: Scalars['Int']['output'];
+  profit: Scalars['Float']['output'];
+  revenue: Scalars['Float']['output'];
+};
+
+export type SalesSummary = {
+  __typename?: 'SalesSummary';
+  orderCount: Scalars['Int']['output'];
+  profitMargin: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+  totalProfit: Scalars['Float']['output'];
+  totalRevenue: Scalars['Float']['output'];
 };
 
 export type SalesTaxLookupResult = {

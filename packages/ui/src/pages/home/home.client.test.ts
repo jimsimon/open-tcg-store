@@ -1,33 +1,218 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+
+vi.mock('../../lib/graphql.ts', () => ({
+  execute: vi.fn().mockResolvedValue({ data: null }),
+}));
+
+vi.mock('../../lib/store-context.ts', () => ({
+  activeStoreId: { get: () => 'test-org-id', set: vi.fn() },
+  storeList: { get: () => [], set: vi.fn() },
+  initActiveStoreFromCookie: vi.fn(),
+  setActiveStoreCookie: vi.fn(),
+  getActiveStoreId: () => 'test-org-id',
+}));
+
 import './home.client';
 import { HomePage } from './home.client';
+import { execute } from '../../lib/graphql.ts';
+
+const mockExecute = execute as ReturnType<typeof vi.fn>;
+
+// ---------------------------------------------------------------------------
+// Mock data
+// ---------------------------------------------------------------------------
+
+const mockSalesData = {
+  getDashboardSales: {
+    summary: {
+      totalRevenue: 12345.67,
+      totalCost: 8234.0,
+      totalProfit: 4111.67,
+      profitMargin: 33.3,
+      orderCount: 42,
+    },
+    dataPoints: [
+      { label: 'Jan 1', revenue: 1000, cost: 600, profit: 400, orderCount: 5 },
+      { label: 'Jan 2', revenue: 1200, cost: 700, profit: 500, orderCount: 7 },
+    ],
+    granularity: 'day',
+  },
+};
+
+const mockBestSellers = {
+  getDashboardBestSellers: [
+    { productId: 1, productName: 'Product A', totalQuantity: 125, totalRevenue: 1234.56 },
+    { productId: 2, productName: 'Product B', totalQuantity: 98, totalRevenue: 987.65 },
+  ],
+};
+
+const mockInventorySummary = {
+  getDashboardInventorySummary: {
+    totalSkus: 156,
+    totalUnits: 2340,
+    totalCostValue: 45678.0,
+    totalRetailValue: 67890.0,
+  },
+};
+
+const mockOrderStatus = {
+  getDashboardOrderStatus: {
+    open: 12,
+    completed: 118,
+    cancelled: 12,
+    total: 142,
+  },
+};
+
+const mockOpenOrders = {
+  getDashboardOpenOrders: [
+    {
+      id: 1,
+      orderNumber: 'ORD-20250405-0001',
+      customerName: 'John Smith',
+      totalAmount: 45.67,
+      itemCount: 3,
+      createdAt: new Date().toISOString(),
+    },
+  ],
+};
+
+function mockAllData() {
+  let callIndex = 0;
+  mockExecute.mockImplementation(() => {
+    const responses = [
+      { data: mockSalesData },
+      { data: mockBestSellers },
+      { data: mockInventorySummary },
+      { data: mockOrderStatus },
+      { data: mockOpenOrders },
+    ];
+    return Promise.resolve(responses[callIndex++] || { data: null });
+  });
+}
+
+function mockEmptyData() {
+  mockExecute.mockResolvedValue({ data: null });
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('ogs-home-page', () => {
   let element: HomePage;
-  beforeEach(async () => {
-    element = document.createElement('ogs-home-page') as HomePage;
-    document.body.appendChild(element);
-
-    // Wait for the component to render
-    await element.updateComplete;
-  });
 
   afterEach(() => {
-    element.remove();
+    element?.remove();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  test('dashboard content is present', async () => {
-    // Check if dashboard title is present (h2 heading in the page header)
-    const dashboardTitle = element.shadowRoot!.querySelector('h2');
-    expect(dashboardTitle).toBeTruthy();
-    expect(dashboardTitle!.textContent).toBe('Dashboard');
+  async function createElement() {
+    element = document.createElement('ogs-home-page') as HomePage;
+    element.activeOrganizationId = 'test-org-id';
+    document.body.appendChild(element);
+    await element.updateComplete;
+    // Wait for async data fetching
+    await new Promise((r) => setTimeout(r, 100));
+    await element.updateComplete;
+  }
 
-    // Check if dashboard cards are present (wa-card with slotted headers)
+  test('renders dashboard title', async () => {
+    mockEmptyData();
+    await createElement();
+
+    const title = element.shadowRoot!.querySelector('.page-header h2');
+    expect(title).toBeTruthy();
+    expect(title!.textContent).toBe('Dashboard');
+  });
+
+  test('renders date preset buttons', async () => {
+    mockEmptyData();
+    await createElement();
+
+    const buttons = element.shadowRoot!.querySelectorAll('wa-button-group[label="Date range"] wa-button');
+    expect(buttons.length).toBe(4);
+
+    const labels = Array.from(buttons).map((b) => b.textContent?.trim());
+    expect(labels).toContain('Today');
+    expect(labels).toContain('This Week');
+    expect(labels).toContain('This Month');
+    expect(labels).toContain('This Year');
+  });
+
+  test('renders all card sections', async () => {
+    mockAllData();
+    await createElement();
+
     const cards = element.shadowRoot!.querySelectorAll('wa-card');
-    expect(cards.length).toBeGreaterThanOrEqual(2);
+    expect(cards.length).toBeGreaterThanOrEqual(5);
 
-    const cardHeaders = Array.from(cards).map((card) => card.querySelector('[slot="header"]')?.textContent?.trim());
-    expect(cardHeaders).toContain('Monthly Sales');
-    expect(cardHeaders).toContain('Best Sellers');
+    const cardHeaders = Array.from(cards).map(
+      (card) => card.querySelector('[slot="header"]')?.textContent?.trim() || '',
+    );
+
+    // Header text may include button text, so check with includes
+    expect(cardHeaders.some((h) => h.includes('Sales'))).toBe(true);
+    expect(cardHeaders.some((h) => h.includes('Best Sellers'))).toBe(true);
+    expect(cardHeaders.some((h) => h.includes('Order Status'))).toBe(true);
+    expect(cardHeaders.some((h) => h.includes('Inventory Summary'))).toBe(true);
+    expect(cardHeaders.some((h) => h.includes('Open Orders'))).toBe(true);
+  });
+
+  test('displays empty states when no data', async () => {
+    mockEmptyData();
+    await createElement();
+
+    const emptyStates = element.shadowRoot!.querySelectorAll('.empty-state');
+    expect(emptyStates.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test('displays sales data when available', async () => {
+    mockAllData();
+    await createElement();
+
+    const statValues = element.shadowRoot!.querySelectorAll('.stat-value');
+    const statTexts = Array.from(statValues).map((el) => el.textContent?.trim());
+
+    // Should contain the formatted revenue value
+    expect(statTexts.some((t) => t?.includes('12,345'))).toBe(true);
+  });
+
+  test('displays best sellers when available', async () => {
+    mockAllData();
+    await createElement();
+
+    const bestSellerItems = element.shadowRoot!.querySelectorAll('.best-seller-item');
+    expect(bestSellerItems.length).toBe(2);
+
+    const names = Array.from(element.shadowRoot!.querySelectorAll('.best-seller-name')).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(names).toContain('Product A');
+    expect(names).toContain('Product B');
+  });
+
+  test('displays open orders when available', async () => {
+    mockAllData();
+    await createElement();
+
+    const orderItems = element.shadowRoot!.querySelectorAll('.open-order-item');
+    expect(orderItems.length).toBe(1);
+
+    const orderNumber = element.shadowRoot!.querySelector('.open-order-number');
+    expect(orderNumber?.textContent?.trim()).toBe('ORD-20250405-0001');
+  });
+
+  test('renders best seller sort toggle', async () => {
+    mockEmptyData();
+    await createElement();
+
+    const sortButtons = element.shadowRoot!.querySelectorAll('wa-button-group[label="Sort by"] wa-button');
+    expect(sortButtons.length).toBe(2);
+
+    const labels = Array.from(sortButtons).map((b) => b.textContent?.trim());
+    expect(labels).toContain('By Quantity');
+    expect(labels).toContain('By Revenue');
   });
 });

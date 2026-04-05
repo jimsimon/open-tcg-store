@@ -43,6 +43,13 @@ type BackupSettings {
   provider: String
 }
 
+type BestSeller {
+  productId: Int!
+  productName: String!
+  totalQuantity: Int!
+  totalRevenue: Float!
+}
+
 input BulkDeleteStockInput {
   ids: [Int!]!
 }
@@ -110,6 +117,11 @@ type ConditionInventories {
 type ConditionInventory {
   price: String!
   quantity: Int!
+}
+
+input DashboardDateRange {
+  endDate: String!
+  startDate: String!
 }
 
 input InitialStoreLocation {
@@ -192,6 +204,13 @@ type InventoryStockPage {
   totalPages: Int!
 }
 
+type InventorySummary {
+  totalCostValue: Float!
+  totalRetailValue: Float!
+  totalSkus: Int!
+  totalUnits: Int!
+}
+
 type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addStock(input: AddStockInput!): InventoryItemStock!
@@ -220,6 +239,15 @@ type Mutation {
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
   updateStoreSettings(input: UpdateStoreSettingsInput!): StoreSettings!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
+}
+
+type OpenOrder {
+  createdAt: String!
+  customerName: String!
+  id: Int!
+  itemCount: Int!
+  orderNumber: String!
+  totalAmount: Float!
 }
 
 type Order {
@@ -258,6 +286,13 @@ type OrderPage {
   pageSize: Int!
   totalCount: Int!
   totalPages: Int!
+}
+
+type OrderStatusBreakdown {
+  cancelled: Int!
+  completed: Int!
+  open: Int!
+  total: Int!
 }
 
 input PaginationInput {
@@ -362,6 +397,11 @@ type Query {
   getAllStoreLocations: [StoreLocation!]!
   getBackupSettings: BackupSettings!
   getCard(cardId: String!, game: String!): Card!
+  getDashboardBestSellers(dateRange: DashboardDateRange!, limit: Int, organizationId: String!, sortBy: String!): [BestSeller!]!
+  getDashboardInventorySummary(organizationId: String!): InventorySummary!
+  getDashboardOpenOrders(limit: Int, organizationId: String!): [OpenOrder!]!
+  getDashboardOrderStatus(dateRange: DashboardDateRange!, organizationId: String!): OrderStatusBreakdown!
+  getDashboardSales(dateRange: DashboardDateRange!, organizationId: String!): SalesBreakdown!
 
   """
   Stores the current user is assigned to (for authenticated employees/managers/owners)
@@ -388,6 +428,28 @@ type Query {
 type RestoreResult {
   message: String
   success: Boolean!
+}
+
+type SalesBreakdown {
+  dataPoints: [SalesDataPoint!]!
+  granularity: String!
+  summary: SalesSummary!
+}
+
+type SalesDataPoint {
+  cost: Float!
+  label: String!
+  orderCount: Int!
+  profit: Float!
+  revenue: Float!
+}
+
+type SalesSummary {
+  orderCount: Int!
+  profitMargin: Float!
+  totalCost: Float!
+  totalProfit: Float!
+  totalRevenue: Float!
 }
 
 type SalesTaxLookupResult {

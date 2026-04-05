@@ -1,0 +1,85 @@
+input DashboardDateRange {
+  startDate: String!
+  endDate: String!
+}
+
+# --- Sales ---
+
+type SalesSummary {
+  totalRevenue: Float!
+  totalCost: Float!
+  totalProfit: Float!
+  profitMargin: Float!
+  orderCount: Int!
+}
+
+type SalesDataPoint {
+  label: String!
+  revenue: Float!
+  cost: Float!
+  profit: Float!
+  orderCount: Int!
+}
+
+type SalesBreakdown {
+  summary: SalesSummary!
+  dataPoints: [SalesDataPoint!]!
+  granularity: String!
+}
+
+# --- Best Sellers ---
+
+type BestSeller {
+  productId: Int!
+  productName: String!
+  totalQuantity: Int!
+  totalRevenue: Float!
+}
+
+# --- Inventory Summary ---
+
+type InventorySummary {
+  totalSkus: Int!
+  totalUnits: Int!
+  totalCostValue: Float!
+  totalRetailValue: Float!
+}
+
+# --- Order Status Breakdown ---
+
+type OrderStatusBreakdown {
+  open: Int!
+  completed: Int!
+  cancelled: Int!
+  total: Int!
+}
+
+# --- Open Orders ---
+
+type OpenOrder {
+  id: Int!
+  orderNumber: String!
+  customerName: String!
+  totalAmount: Float!
+  itemCount: Int!
+  createdAt: String!
+}
+
+# --- Queries ---
+
+extend type Query {
+  getDashboardSales(organizationId: String!, dateRange: DashboardDateRange!): SalesBreakdown!
+
+  getDashboardBestSellers(
+    organizationId: String!
+    dateRange: DashboardDateRange!
+    sortBy: String!
+    limit: Int
+  ): [BestSeller!]!
+
+  getDashboardInventorySummary(organizationId: String!): InventorySummary!
+
+  getDashboardOrderStatus(organizationId: String!, dateRange: DashboardDateRange!): OrderStatusBreakdown!
+
+  getDashboardOpenOrders(organizationId: String!, limit: Int): [OpenOrder!]!
+}

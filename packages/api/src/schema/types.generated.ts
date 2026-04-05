@@ -63,6 +63,14 @@ export type BackupSettings = {
   provider?: Maybe<Scalars['String']['output']>;
 };
 
+export type BestSeller = {
+  __typename?: 'BestSeller';
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  totalQuantity: Scalars['Int']['output'];
+  totalRevenue: Scalars['Float']['output'];
+};
+
 export type BulkDeleteStockInput = {
   ids: Array<Scalars['Int']['input']>;
 };
@@ -136,6 +144,11 @@ export type ConditionInventory = {
   __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+};
+
+export type DashboardDateRange = {
+  endDate: Scalars['String']['input'];
+  startDate: Scalars['String']['input'];
 };
 
 export type InitialStoreLocation = {
@@ -222,6 +235,14 @@ export type InventoryStockPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type InventorySummary = {
+  __typename?: 'InventorySummary';
+  totalCostValue: Scalars['Float']['output'];
+  totalRetailValue: Scalars['Float']['output'];
+  totalSkus: Scalars['Int']['output'];
+  totalUnits: Scalars['Int']['output'];
 };
 
 export type Mutation = {
@@ -378,6 +399,16 @@ export type MutationupdateStripeIntegrationArgs = {
   input: UpdateStripeIntegrationInput;
 };
 
+export type OpenOrder = {
+  __typename?: 'OpenOrder';
+  createdAt: Scalars['String']['output'];
+  customerName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  itemCount: Scalars['Int']['output'];
+  orderNumber: Scalars['String']['output'];
+  totalAmount: Scalars['Float']['output'];
+};
+
 export type Order = {
   __typename?: 'Order';
   createdAt: Scalars['String']['output'];
@@ -417,6 +448,14 @@ export type OrderPage = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type OrderStatusBreakdown = {
+  __typename?: 'OrderStatusBreakdown';
+  cancelled: Scalars['Int']['output'];
+  completed: Scalars['Int']['output'];
+  open: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
 };
 
 export type PaginationInput = {
@@ -526,6 +565,11 @@ export type Query = {
   getAllStoreLocations: Array<StoreLocation>;
   getBackupSettings: BackupSettings;
   getCard: Card;
+  getDashboardBestSellers: Array<BestSeller>;
+  getDashboardInventorySummary: InventorySummary;
+  getDashboardOpenOrders: Array<OpenOrder>;
+  getDashboardOrderStatus: OrderStatusBreakdown;
+  getDashboardSales: SalesBreakdown;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
@@ -550,6 +594,37 @@ export type Query = {
 export type QuerygetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
+};
+
+
+export type QuerygetDashboardBestSellersArgs = {
+  dateRange: DashboardDateRange;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  organizationId: Scalars['String']['input'];
+  sortBy: Scalars['String']['input'];
+};
+
+
+export type QuerygetDashboardInventorySummaryArgs = {
+  organizationId: Scalars['String']['input'];
+};
+
+
+export type QuerygetDashboardOpenOrdersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  organizationId: Scalars['String']['input'];
+};
+
+
+export type QuerygetDashboardOrderStatusArgs = {
+  dateRange: DashboardDateRange;
+  organizationId: Scalars['String']['input'];
+};
+
+
+export type QuerygetDashboardSalesArgs = {
+  dateRange: DashboardDateRange;
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -627,6 +702,31 @@ export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type SalesBreakdown = {
+  __typename?: 'SalesBreakdown';
+  dataPoints: Array<SalesDataPoint>;
+  granularity: Scalars['String']['output'];
+  summary: SalesSummary;
+};
+
+export type SalesDataPoint = {
+  __typename?: 'SalesDataPoint';
+  cost: Scalars['Float']['output'];
+  label: Scalars['String']['output'];
+  orderCount: Scalars['Int']['output'];
+  profit: Scalars['Float']['output'];
+  revenue: Scalars['Float']['output'];
+};
+
+export type SalesSummary = {
+  __typename?: 'SalesSummary';
+  orderCount: Scalars['Int']['output'];
+  profitMargin: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+  totalProfit: Scalars['Float']['output'];
+  totalRevenue: Scalars['Float']['output'];
 };
 
 export type SalesTaxLookupResult = {
@@ -888,6 +988,7 @@ export type ResolversTypes = {
   BackupResult: ResolverTypeWrapper<BackupResult>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   BackupSettings: ResolverTypeWrapper<BackupSettings>;
+  BestSeller: ResolverTypeWrapper<BestSeller>;
   BulkDeleteStockInput: BulkDeleteStockInput;
   BulkUpdateStockInput: BulkUpdateStockInput;
   CancelOrderResult: ResolverTypeWrapper<CancelOrderResult>;
@@ -898,6 +999,7 @@ export type ResolversTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
+  DashboardDateRange: DashboardDateRange;
   InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: ResolverTypeWrapper<InsufficientItem>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
@@ -906,11 +1008,14 @@ export type ResolversTypes = {
   InventoryItemStock: ResolverTypeWrapper<InventoryItemStock>;
   InventoryPage: ResolverTypeWrapper<InventoryPage>;
   InventoryStockPage: ResolverTypeWrapper<InventoryStockPage>;
+  InventorySummary: ResolverTypeWrapper<InventorySummary>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  OpenOrder: ResolverTypeWrapper<OpenOrder>;
   Order: ResolverTypeWrapper<Order>;
   OrderFilters: OrderFilters;
   OrderItem: ResolverTypeWrapper<OrderItem>;
   OrderPage: ResolverTypeWrapper<OrderPage>;
+  OrderStatusBreakdown: ResolverTypeWrapper<OrderStatusBreakdown>;
   PaginationInput: PaginationInput;
   ProductConditionPrice: ResolverTypeWrapper<ProductConditionPrice>;
   ProductDetail: ResolverTypeWrapper<ProductDetail>;
@@ -923,6 +1028,9 @@ export type ResolversTypes = {
   ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   RestoreResult: ResolverTypeWrapper<RestoreResult>;
+  SalesBreakdown: ResolverTypeWrapper<SalesBreakdown>;
+  SalesDataPoint: ResolverTypeWrapper<SalesDataPoint>;
+  SalesSummary: ResolverTypeWrapper<SalesSummary>;
   SalesTaxLookupResult: ResolverTypeWrapper<SalesTaxLookupResult>;
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
@@ -961,6 +1069,7 @@ export type ResolversParentTypes = {
   BackupResult: BackupResult;
   Boolean: Scalars['Boolean']['output'];
   BackupSettings: BackupSettings;
+  BestSeller: BestSeller;
   BulkDeleteStockInput: BulkDeleteStockInput;
   BulkUpdateStockInput: BulkUpdateStockInput;
   CancelOrderResult: CancelOrderResult;
@@ -971,6 +1080,7 @@ export type ResolversParentTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
+  DashboardDateRange: DashboardDateRange;
   InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: InsufficientItem;
   IntegrationSettings: IntegrationSettings;
@@ -979,11 +1089,14 @@ export type ResolversParentTypes = {
   InventoryItemStock: InventoryItemStock;
   InventoryPage: InventoryPage;
   InventoryStockPage: InventoryStockPage;
+  InventorySummary: InventorySummary;
   Mutation: Record<PropertyKey, never>;
+  OpenOrder: OpenOrder;
   Order: Order;
   OrderFilters: OrderFilters;
   OrderItem: OrderItem;
   OrderPage: OrderPage;
+  OrderStatusBreakdown: OrderStatusBreakdown;
   PaginationInput: PaginationInput;
   ProductConditionPrice: ProductConditionPrice;
   ProductDetail: ProductDetail;
@@ -996,6 +1109,9 @@ export type ResolversParentTypes = {
   ProductSearchResult: ProductSearchResult;
   Query: Record<PropertyKey, never>;
   RestoreResult: RestoreResult;
+  SalesBreakdown: SalesBreakdown;
+  SalesDataPoint: SalesDataPoint;
+  SalesSummary: SalesSummary;
   SalesTaxLookupResult: SalesTaxLookupResult;
   Set: Set;
   SetFilters: SetFilters;
@@ -1036,6 +1152,13 @@ export type BackupSettingsResolvers<ContextType = any, ParentType extends Resolv
   lastBackupAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   onedriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   provider?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+};
+
+export type BestSellerResolvers<ContextType = any, ParentType extends ResolversParentTypes['BestSeller'] = ResolversParentTypes['BestSeller']> = {
+  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalQuantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalRevenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
 export type CancelOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult']> = {
@@ -1143,6 +1266,13 @@ export type InventoryStockPageResolvers<ContextType = any, ParentType extends Re
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type InventorySummaryResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventorySummary'] = ResolversParentTypes['InventorySummary']> = {
+  totalCostValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalRetailValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalSkus?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalUnits?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
   addStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationaddStockArgs, 'input'>>;
@@ -1171,6 +1301,15 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;
   updateStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType, RequireFields<MutationupdateStoreSettingsArgs, 'input'>>;
   updateStripeIntegration?: Resolver<ResolversTypes['StripeIntegration'], ParentType, ContextType, RequireFields<MutationupdateStripeIntegrationArgs, 'input'>>;
+};
+
+export type OpenOrderResolvers<ContextType = any, ParentType extends ResolversParentTypes['OpenOrder'] = ResolversParentTypes['OpenOrder']> = {
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  customerName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  itemCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  orderNumber?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalAmount?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
 export type OrderResolvers<ContextType = any, ParentType extends ResolversParentTypes['Order'] = ResolversParentTypes['Order']> = {
@@ -1203,6 +1342,13 @@ export type OrderPageResolvers<ContextType = any, ParentType extends ResolversPa
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
+export type OrderStatusBreakdownResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderStatusBreakdown'] = ResolversParentTypes['OrderStatusBreakdown']> = {
+  cancelled?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  completed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  open?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
 export type ProductConditionPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice']> = {
@@ -1283,6 +1429,11 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
+  getDashboardBestSellers?: Resolver<Array<ResolversTypes['BestSeller']>, ParentType, ContextType, RequireFields<QuerygetDashboardBestSellersArgs, 'dateRange' | 'organizationId' | 'sortBy'>>;
+  getDashboardInventorySummary?: Resolver<ResolversTypes['InventorySummary'], ParentType, ContextType, RequireFields<QuerygetDashboardInventorySummaryArgs, 'organizationId'>>;
+  getDashboardOpenOrders?: Resolver<Array<ResolversTypes['OpenOrder']>, ParentType, ContextType, RequireFields<QuerygetDashboardOpenOrdersArgs, 'organizationId'>>;
+  getDashboardOrderStatus?: Resolver<ResolversTypes['OrderStatusBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardOrderStatusArgs, 'dateRange' | 'organizationId'>>;
+  getDashboardSales?: Resolver<ResolversTypes['SalesBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardSalesArgs, 'dateRange' | 'organizationId'>>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
@@ -1305,6 +1456,28 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 export type RestoreResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+};
+
+export type SalesBreakdownResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesBreakdown'] = ResolversParentTypes['SalesBreakdown']> = {
+  dataPoints?: Resolver<Array<ResolversTypes['SalesDataPoint']>, ParentType, ContextType>;
+  granularity?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  summary?: Resolver<ResolversTypes['SalesSummary'], ParentType, ContextType>;
+};
+
+export type SalesDataPointResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesDataPoint'] = ResolversParentTypes['SalesDataPoint']> = {
+  cost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  orderCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  profit?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  revenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+};
+
+export type SalesSummaryResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesSummary'] = ResolversParentTypes['SalesSummary']> = {
+  orderCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  profitMargin?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalProfit?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalRevenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
 export type SalesTaxLookupResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesTaxLookupResult'] = ResolversParentTypes['SalesTaxLookupResult']> = {
@@ -1392,6 +1565,7 @@ export type UpdateOrderStatusResultResolvers<ContextType = any, ParentType exten
 export type Resolvers<ContextType = any> = {
   BackupResult?: BackupResultResolvers<ContextType>;
   BackupSettings?: BackupSettingsResolvers<ContextType>;
+  BestSeller?: BestSellerResolvers<ContextType>;
   CancelOrderResult?: CancelOrderResultResolvers<ContextType>;
   Card?: CardResolvers<ContextType>;
   CardImages?: CardImagesResolvers<ContextType>;
@@ -1404,10 +1578,13 @@ export type Resolvers<ContextType = any> = {
   InventoryItemStock?: InventoryItemStockResolvers<ContextType>;
   InventoryPage?: InventoryPageResolvers<ContextType>;
   InventoryStockPage?: InventoryStockPageResolvers<ContextType>;
+  InventorySummary?: InventorySummaryResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  OpenOrder?: OpenOrderResolvers<ContextType>;
   Order?: OrderResolvers<ContextType>;
   OrderItem?: OrderItemResolvers<ContextType>;
   OrderPage?: OrderPageResolvers<ContextType>;
+  OrderStatusBreakdown?: OrderStatusBreakdownResolvers<ContextType>;
   ProductConditionPrice?: ProductConditionPriceResolvers<ContextType>;
   ProductDetail?: ProductDetailResolvers<ContextType>;
   ProductInventoryRecord?: ProductInventoryRecordResolvers<ContextType>;
@@ -1417,6 +1594,9 @@ export type Resolvers<ContextType = any> = {
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RestoreResult?: RestoreResultResolvers<ContextType>;
+  SalesBreakdown?: SalesBreakdownResolvers<ContextType>;
+  SalesDataPoint?: SalesDataPointResolvers<ContextType>;
+  SalesSummary?: SalesSummaryResolvers<ContextType>;
   SalesTaxLookupResult?: SalesTaxLookupResultResolvers<ContextType>;
   Set?: SetResolvers<ContextType>;
   ShopifyIntegration?: ShopifyIntegrationResolvers<ContextType>;
