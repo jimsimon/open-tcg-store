@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { LitElement, TemplateResult, css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '../../components/ogs-page.ts';
@@ -292,17 +292,8 @@ export class OgsSettingsBackupPage extends LitElement {
       }
 
       .setup-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-brand-text);
-        text-decoration: none;
+        color: var(--wa-color-text-link);
         font-weight: 500;
-      }
-
-      .setup-link:hover {
-        text-decoration: underline;
       }
 
       /* --- Form Layout --- */
@@ -558,46 +549,70 @@ export class OgsSettingsBackupPage extends LitElement {
     }
   }
 
-  private getOAuthInstructions(providerKey: string): { steps: string[]; url: string; urlLabel: string } {
+  private getOAuthInstructions(providerKey: string): { steps: TemplateResult[] } {
     switch (providerKey) {
       case 'google_drive':
         return {
           steps: [
-            'Go to the Google Cloud Console and create or select a project.',
-            'Navigate to APIs & Services > Credentials.',
-            'Click "Create Credentials" and select "OAuth client ID".',
-            'Set the application type to "Web application".',
-            'Add your redirect URI (e.g. http://localhost:5174/api/backup/oauth/google_drive/callback).',
-            'Copy the generated Client ID and paste it below.',
+            html`Go to the
+              <a class="setup-link" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer"
+                >Google Cloud Console</a
+              >
+              and create or select a project.`,
+            html`Navigate to
+              <a
+                class="setup-link"
+                href="https://console.cloud.google.com/apis/credentials"
+                target="_blank"
+                rel="noopener noreferrer"
+                >APIs &amp; Services &gt; Credentials</a
+              >.`,
+            html`Click "Create Credentials" and select "OAuth client ID".`,
+            html`Set the application type to "Web application".`,
+            html`Add your redirect URI (e.g.
+              <code>http://localhost:5174/api/backup/oauth/google_drive/callback</code>).`,
+            html`Copy the generated Client ID and paste it below.`,
           ],
-          url: 'https://console.cloud.google.com/apis/credentials',
-          urlLabel: 'Google Cloud Console',
         };
       case 'dropbox':
         return {
           steps: [
-            'Go to the Dropbox App Console and click "Create app".',
-            'Choose "Scoped access" and "Full Dropbox" access type.',
-            'Name your app and click "Create app".',
-            'Under Settings, add your redirect URI (e.g. http://localhost:5174/api/backup/oauth/dropbox/callback).',
-            'Copy the "App key" (this is your Client ID) and paste it below.',
+            html`Go to the
+              <a
+                class="setup-link"
+                href="https://www.dropbox.com/developers/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Dropbox App Console</a
+              >
+              and click "Create app".`,
+            html`Choose "Scoped access" and "Full Dropbox" access type.`,
+            html`Name your app and click "Create app".`,
+            html`Under Settings, add your redirect URI (e.g.
+              <code>http://localhost:5174/api/backup/oauth/dropbox/callback</code>).`,
+            html`Copy the "App key" (this is your Client ID) and paste it below.`,
           ],
-          url: 'https://www.dropbox.com/developers/apps',
-          urlLabel: 'Dropbox App Console',
         };
       case 'onedrive':
         return {
           steps: [
-            'Go to the Azure Portal and navigate to App registrations.',
-            'Click "New registration" and name your application.',
-            'Set the redirect URI to "Web" with your callback URL (e.g. http://localhost:5174/api/backup/oauth/onedrive/callback).',
-            'After registration, copy the "Application (client) ID" and paste it below.',
+            html`Go to the
+              <a
+                class="setup-link"
+                href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Azure Portal App Registrations</a
+              >
+              and click "New registration".`,
+            html`Name your application.`,
+            html`Set the redirect URI to "Web" with your callback URL (e.g.
+              <code>http://localhost:5174/api/backup/oauth/onedrive/callback</code>).`,
+            html`After registration, copy the "Application (client) ID" and paste it below.`,
           ],
-          url: 'https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
-          urlLabel: 'Azure App Registrations',
         };
       default:
-        return { steps: [], url: '', urlLabel: '' };
+        return { steps: [] };
     }
   }
 
@@ -811,10 +826,6 @@ export class OgsSettingsBackupPage extends LitElement {
             <ol class="setup-steps">
               ${instructions.steps.map((step) => html`<li>${step}</li>`)}
             </ol>
-            <a class="setup-link" href="${instructions.url}" target="_blank" rel="noopener noreferrer">
-              Open ${instructions.urlLabel}
-              <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75rem;"></wa-icon>
-            </a>
           </wa-details>
           <wa-input
             label="OAuth Client ID"
