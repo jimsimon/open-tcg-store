@@ -588,6 +588,11 @@ export type Query = {
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
+  /**
+   * Returns all permission flags for the current user in a single round trip.
+   * Used by the SSR server to render nav visibility without multiple hasPermission calls.
+   */
+  userPermissions: UserPermissions;
 };
 
 
@@ -906,6 +911,21 @@ export type UserDetails = {
   password: Scalars['String']['input'];
 };
 
+/**
+ * The set of permissions the current user has in their active organization.
+ * All flags are derived via better-auth's organization.hasPermission, so they
+ * correctly reflect dynamic access control (DAC) overrides.
+ */
+export type UserPermissions = {
+  __typename?: 'UserPermissions';
+  canAccessSettings: Scalars['Boolean']['output'];
+  canManageInventory: Scalars['Boolean']['output'];
+  canManageStoreLocations: Scalars['Boolean']['output'];
+  canManageUsers: Scalars['Boolean']['output'];
+  canViewDashboard: Scalars['Boolean']['output'];
+  canViewTransactionLog: Scalars['Boolean']['output'];
+};
+
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -1056,6 +1076,7 @@ export type ResolversTypes = {
   UpdateStoreSettingsInput: UpdateStoreSettingsInput;
   UpdateStripeIntegrationInput: UpdateStripeIntegrationInput;
   UserDetails: UserDetails;
+  UserPermissions: ResolverTypeWrapper<UserPermissions>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -1137,6 +1158,7 @@ export type ResolversParentTypes = {
   UpdateStoreSettingsInput: UpdateStoreSettingsInput;
   UpdateStripeIntegrationInput: UpdateStripeIntegrationInput;
   UserDetails: UserDetails;
+  UserPermissions: UserPermissions;
 };
 
 export type BackupResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['BackupResult'] = ResolversParentTypes['BackupResult']> = {
@@ -1451,6 +1473,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lookupSalesTax?: Resolver<ResolversTypes['SalesTaxLookupResult'], ParentType, ContextType, RequireFields<QuerylookupSalesTaxArgs, 'countryCode' | 'stateCode'>>;
   searchProducts?: Resolver<Array<ResolversTypes['ProductSearchResult']>, ParentType, ContextType, RequireFields<QuerysearchProductsArgs, 'searchTerm'>>;
+  userPermissions?: Resolver<ResolversTypes['UserPermissions'], ParentType, ContextType>;
 };
 
 export type RestoreResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult']> = {
@@ -1562,6 +1585,15 @@ export type UpdateOrderStatusResultResolvers<ContextType = any, ParentType exten
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
 
+export type UserPermissionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserPermissions'] = ResolversParentTypes['UserPermissions']> = {
+  canAccessSettings?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canManageInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canManageStoreLocations?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canManageUsers?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canViewDashboard?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canViewTransactionLog?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   BackupResult?: BackupResultResolvers<ContextType>;
   BackupSettings?: BackupSettingsResolvers<ContextType>;
@@ -1609,5 +1641,6 @@ export type Resolvers<ContextType = any> = {
   TransactionLogEntry?: TransactionLogEntryResolvers<ContextType>;
   TransactionLogPage?: TransactionLogPageResolvers<ContextType>;
   UpdateOrderStatusResult?: UpdateOrderStatusResultResolvers<ContextType>;
+  UserPermissions?: UserPermissionsResolvers<ContextType>;
 };
 

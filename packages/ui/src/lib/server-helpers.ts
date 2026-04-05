@@ -1,6 +1,20 @@
 import type { RouterContext } from '@koa/router';
-import { authClient } from '../auth-client';
+import { graphql } from '../graphql';
+import { executeWithHeaders } from './graphql';
 import { escapeHtml } from './html-escape';
+
+const UserPermissionsQuery = graphql(`
+  query UserPermissions {
+    userPermissions {
+      canManageInventory
+      canViewDashboard
+      canAccessSettings
+      canManageStoreLocations
+      canManageUsers
+      canViewTransactionLog
+    }
+  }
+`);
 
 interface PageAttributes {
   isAnonymous: boolean;
@@ -15,29 +29,20 @@ interface PageAttributes {
   showStoreSelector?: boolean;
 }
 
-function serverFetchHeaders(ctx: RouterContext): Record<string, string> {
-  return {
-    Cookie: (ctx.headers.cookie as string) ?? '',
-    Origin: (ctx.headers.origin as string) ?? 'http://localhost:5173',
-  };
-}
-
-async function checkPermission(
-  permissions: Record<string, string[]>,
-  fetchOptions: { headers: Record<string, string> },
-): Promise<boolean> {
-  try {
-    const result = await authClient.organization.hasPermission({ permissions, fetchOptions });
-    return result.data?.success ?? false;
-  } catch {
-    return false;
-  }
-}
+const NO_PERMISSIONS = {
+  canManageInventory: false,
+  canViewDashboard: false,
+  canAccessSettings: false,
+  canManageStoreLocations: false,
+  canManageUsers: false,
+  canViewTransactionLog: false,
+};
 
 /**
  * Extract common page attributes from the Koa router context.
- * Permissions are checked via authClient.organization.hasPermission, which
- * respects the user's role in their active organization.
+ * Permissions are resolved in a single GraphQL call to userPermissions,
+ * which checks all flags server-side via auth.api.hasPermission (in-process,
+ * no HTTP overhead per check), correctly respecting DAC overrides.
  */
 export async function getPageAttributes(ctx: RouterContext): Promise<PageAttributes> {
   const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
@@ -45,47 +50,20 @@ export async function getPageAttributes(ctx: RouterContext): Promise<PageAttribu
   const activeOrganizationId =
     ((ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string) ?? '';
 
-  // No active organization session — no org-based permissions
+  // No active organization — no org-based permissions
   if (!activeOrganizationId) {
-    return {
-      isAnonymous,
-      userName,
-      canManageInventory: false,
-      canViewDashboard: false,
-      canAccessSettings: false,
-      canManageStoreLocations: false,
-      canManageUsers: false,
-      canViewTransactionLog: false,
-      activeOrganizationId,
-    };
+    return { isAnonymous, userName, activeOrganizationId, ...NO_PERMISSIONS };
   }
 
-  const fetchOptions = { headers: serverFetchHeaders(ctx) };
-
-  // Run all permission checks in parallel to avoid sequential round trips
-  const [canManageInventory, canViewTransactionLog, canAccessSettings, canManageStoreLocations, canManageUsers] =
-    await Promise.all([
-      checkPermission({ inventory: ['read'] }, fetchOptions),
-      checkPermission({ transactionLog: ['read'] }, fetchOptions),
-      checkPermission({ storeSettings: ['read'] }, fetchOptions),
-      checkPermission({ storeLocations: ['read'] }, fetchOptions),
-      checkPermission({ userManagement: ['read'] }, fetchOptions),
-    ]);
-
-  // Dashboard is visible to anyone who can view the transaction log (manager+)
-  const canViewDashboard = canViewTransactionLog;
-
-  return {
-    isAnonymous,
-    userName,
-    canManageInventory,
-    canViewDashboard,
-    canAccessSettings,
-    canManageStoreLocations,
-    canManageUsers,
-    canViewTransactionLog,
-    activeOrganizationId,
-  };
+  try {
+    const result = await executeWithHeaders(UserPermissionsQuery, {
+      Cookie: (ctx.headers.cookie as string) ?? '',
+    });
+    const perms = result.data?.userPermissions ?? NO_PERMISSIONS;
+    return { isAnonymous, userName, activeOrganizationId, ...perms };
+  } catch {
+    return { isAnonymous, userName, activeOrganizationId, ...NO_PERMISSIONS };
+  }
 }
 
 /**

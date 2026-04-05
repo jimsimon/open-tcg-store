@@ -423,6 +423,12 @@ type Query {
   isSetupPending: Boolean!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
   searchProducts(game: String, searchTerm: String!): [ProductSearchResult!]!
+
+  """
+  Returns all permission flags for the current user in a single round trip.
+  Used by the SSR server to render nav visibility without multiple hasPermission calls.
+  """
+  userPermissions: UserPermissions!
 }
 
 type RestoreResult {
@@ -615,4 +621,18 @@ input UserDetails {
   email: String!
   firstName: String!
   password: String!
+}
+
+"""
+The set of permissions the current user has in their active organization.
+All flags are derived via better-auth's organization.hasPermission, so they
+correctly reflect dynamic access control (DAC) overrides.
+"""
+type UserPermissions {
+  canAccessSettings: Boolean!
+  canManageInventory: Boolean!
+  canManageStoreLocations: Boolean!
+  canManageUsers: Boolean!
+  canViewDashboard: Boolean!
+  canViewTransactionLog: Boolean!
 }

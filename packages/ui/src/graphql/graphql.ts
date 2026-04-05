@@ -564,6 +564,11 @@ export type Query = {
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
+  /**
+   * Returns all permission flags for the current user in a single round trip.
+   * Used by the SSR server to render nav visibility without multiple hasPermission calls.
+   */
+  userPermissions: UserPermissions;
 };
 
 export type QueryGetCardArgs = {
@@ -864,6 +869,21 @@ export type UserDetails = {
   password: Scalars['String']['input'];
 };
 
+/**
+ * The set of permissions the current user has in their active organization.
+ * All flags are derived via better-auth's organization.hasPermission, so they
+ * correctly reflect dynamic access control (DAC) overrides.
+ */
+export type UserPermissions = {
+  __typename?: 'UserPermissions';
+  canAccessSettings: Scalars['Boolean']['output'];
+  canManageInventory: Scalars['Boolean']['output'];
+  canManageStoreLocations: Scalars['Boolean']['output'];
+  canManageUsers: Scalars['Boolean']['output'];
+  canViewDashboard: Scalars['Boolean']['output'];
+  canViewTransactionLog: Scalars['Boolean']['output'];
+};
+
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetShoppingCartQueryQuery = {
@@ -880,6 +900,21 @@ export type GetShoppingCartQueryQuery = {
       unitPrice: number;
       maxAvailable: number;
     }>;
+  };
+};
+
+export type UserPermissionsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type UserPermissionsQuery = {
+  __typename?: 'Query';
+  userPermissions: {
+    __typename?: 'UserPermissions';
+    canManageInventory: boolean;
+    canViewDashboard: boolean;
+    canAccessSettings: boolean;
+    canManageStoreLocations: boolean;
+    canManageUsers: boolean;
+    canViewTransactionLog: boolean;
   };
 };
 
@@ -929,6 +964,18 @@ export const GetShoppingCartQueryDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
+export const UserPermissionsDocument = new TypedDocumentString(`
+    query UserPermissions {
+  userPermissions {
+    canManageInventory
+    canViewDashboard
+    canAccessSettings
+    canManageStoreLocations
+    canManageUsers
+    canViewTransactionLog
+  }
+}
+    `) as unknown as TypedDocumentString<UserPermissionsQuery, UserPermissionsQueryVariables>;
 export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
     mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {
   firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)

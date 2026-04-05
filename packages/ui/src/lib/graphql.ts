@@ -17,6 +17,32 @@ interface ExecutionError {
   path: string[];
 }
 
+/**
+ * Server-side variant of `execute` that forwards explicit headers (e.g. Cookie)
+ * to the GraphQL endpoint. Used during SSR where `credentials: 'include'` has
+ * no effect and the session cookie must be forwarded manually.
+ */
+export async function executeWithHeaders<TResult>(
+  query: TypedDocumentString<TResult, Record<string, never>>,
+  headers: Record<string, string>,
+): Promise<ExecutionResult<TResult>> {
+  const response = await fetch('http://localhost:5174/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/graphql-response+json',
+      ...headers,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  return response.json() as Promise<ExecutionResult<TResult>>;
+}
+
 export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Exact<{ [key: string]: never }>

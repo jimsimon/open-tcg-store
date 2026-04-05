@@ -1,0 +1,21 @@
+"""
+The set of permissions the current user has in their active organization.
+All flags are derived via better-auth's organization.hasPermission, so they
+correctly reflect dynamic access control (DAC) overrides.
+"""
+type UserPermissions {
+  canManageInventory: Boolean!
+  canViewDashboard: Boolean!
+  canAccessSettings: Boolean!
+  canManageStoreLocations: Boolean!
+  canManageUsers: Boolean!
+  canViewTransactionLog: Boolean!
+}
+
+extend type Query {
+  """
+  Returns all permission flags for the current user in a single round trip.
+  Used by the SSR server to render nav visibility without multiple hasPermission calls.
+  """
+  userPermissions: UserPermissions!
+}
