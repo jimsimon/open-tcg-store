@@ -10,8 +10,30 @@ import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
+import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import { graphql } from '../../graphql/index.ts';
 import { execute } from '../../lib/graphql.ts';
+import { TypedDocumentString } from '../../graphql/graphql.ts';
+
+const GetAvailableGamesQuery = new TypedDocumentString(`
+  query GetAvailableGames {
+    getAvailableGames {
+      categoryId
+      name
+      displayName
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    getAvailableGames: Array<{
+      categoryId: number;
+      name: string;
+      displayName: string;
+    }>;
+  },
+  Record<string, never>
+>;
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -120,8 +142,38 @@ export class FirstTimeSetupPage extends LitElement {
   @state() user: User = {};
   @state() company: Company = {};
   @state() store: Store = {};
+  @state() selectedGameCategoryIds: number[] = [];
+  @state() availableGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
+  @state() gamesLoading = true;
   @state() error = '';
   @state() saving = false;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.loadAvailableGames();
+  }
+
+  private async loadAvailableGames() {
+    try {
+      const result = await execute(GetAvailableGamesQuery);
+      if (result?.data?.getAvailableGames) {
+        this.availableGames = result.data.getAvailableGames;
+      }
+    } catch {
+      // Non-fatal: games list will be empty but wizard can still proceed
+      console.error('Failed to load available games');
+    } finally {
+      this.gamesLoading = false;
+    }
+  }
+
+  private handleGameToggle(categoryId: number, checked: boolean) {
+    if (checked) {
+      this.selectedGameCategoryIds = [...this.selectedGameCategoryIds, categoryId];
+    } else {
+      this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => id !== categoryId);
+    }
+  }
 
   render() {
     return html`
@@ -142,6 +194,7 @@ export class FirstTimeSetupPage extends LitElement {
             <ul>
               <li>Creating your first admin user account</li>
               <li>Entering your company information</li>
+              <li>Selecting the trading card games your store supports</li>
               <li>Setting up your first store location</li>
             </ul>
             <p>Click the "Next" button to continue through the setup process!</p>
@@ -230,7 +283,49 @@ export class FirstTimeSetupPage extends LitElement {
             </ogs-two-pane-panel>
           </ogs-wizard-item>
 
-          <!-- Step 4: First Store Location -->
+          <!-- Step 4: Supported Games -->
+          <ogs-wizard-item heading="Supported Games">
+            <ogs-two-pane-panel>
+              <p slot="start">
+                Select the trading card games your store supports. This determines which games appear in your buy rates
+                page and product browsing. You can change this later in Settings.
+              </p>
+              <div slot="end">
+                ${this.gamesLoading
+                  ? html`
+                      <div style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 0;">
+                        <wa-spinner></wa-spinner>
+                        <span>Loading available games...</span>
+                      </div>
+                    `
+                  : this.availableGames.length === 0
+                    ? html`
+                        <wa-callout variant="warning">
+                          <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+                          No game categories found. Please populate your TCG data catalog first.
+                        </wa-callout>
+                      `
+                    : html`
+                        <div style="display: flex; flex-direction: column; gap: var(--wa-space-s);">
+                          ${this.availableGames.map(
+                            (game) => html`
+                              <wa-checkbox
+                                ?checked="${this.selectedGameCategoryIds.includes(game.categoryId)}"
+                                @change="${(e: Event) => {
+                                  this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
+                                }}"
+                              >
+                                ${game.displayName}
+                              </wa-checkbox>
+                            `,
+                          )}
+                        </div>
+                      `}
+              </div>
+            </ogs-two-pane-panel>
+          </ogs-wizard-item>
+
+          <!-- Step 5: First Store Location -->
           <ogs-wizard-item heading="First Store Location">
             <ogs-two-pane-panel>
               <p slot="start">
@@ -334,6 +429,7 @@ export class FirstTimeSetupPage extends LitElement {
     if (!this.store.city?.trim()) missingFields.push('City');
     if (!this.store.state) missingFields.push('State');
     if (!this.store.zip?.trim()) missingFields.push('ZIP Code');
+    if (this.selectedGameCategoryIds.length === 0) missingFields.push('Supported Games (select at least one)');
 
     if (missingFields.length > 0) {
       this.error = `Please fill in the following required fields: ${missingFields.join(', ')}`;
@@ -347,8 +443,14 @@ export class FirstTimeSetupPage extends LitElement {
         $userDetails: UserDetails!
         $company: CompanySettings!
         $store: InitialStoreLocation!
+        $supportedGameCategoryIds: [Int!]!
       ) {
-        firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)
+        firstTimeSetup(
+          userDetails: $userDetails
+          company: $company
+          store: $store
+          supportedGameCategoryIds: $supportedGameCategoryIds
+        )
       }
     `);
 
@@ -373,6 +475,7 @@ export class FirstTimeSetupPage extends LitElement {
           zip: this.store.zip!,
           phone: this.store.phone || undefined,
         },
+        supportedGameCategoryIds: this.selectedGameCategoryIds,
       });
 
       if (result?.errors?.length) {

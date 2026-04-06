@@ -747,6 +747,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
               ${this.renderNavLink('/products/singles', 'bag-shopping', 'Browse', 'products')}
               ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
               ${this.renderNavSubLink('/products/sealed', 'Sealed', 'products/sealed')}
+              ${this.renderNavLink('/buy-rates', 'hand-holding-dollar', 'Buy Rates', 'buy-rates')}
               ${when(
                 this.canManageInventory,
                 () => html`
@@ -776,6 +777,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   )}
                   ${this.renderNavSubLink('/settings/backup', 'Backup & Restore', 'settings/backup')}
                   ${this.renderNavSubLink('/settings/autoprice', 'Autoprice', 'settings/autoprice')}
+                  ${this.renderNavSubLink('/settings/buyrates', 'Buy Rates', 'settings/buyrates')}
                   ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
                   ${when(this.canManageUsers, () =>
                     this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users'),

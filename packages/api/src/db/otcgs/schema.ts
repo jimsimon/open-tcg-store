@@ -6,3 +6,5 @@ export * from './order-schema';
 export * from './settings-schema';
 export * from './store-hours-schema';
 export * from './transaction-log-schema';
+export * from './store-supported-game-schema';
+export * from './buy-rate-schema';

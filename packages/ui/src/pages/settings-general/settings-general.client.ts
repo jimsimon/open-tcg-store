@@ -8,6 +8,8 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
@@ -49,6 +51,65 @@ const UpdateStoreSettingsMutation = new TypedDocumentString(`
       companyName?: string;
       ein?: string;
     };
+  }
+>;
+
+const GetAvailableGamesQuery = new TypedDocumentString(`
+  query GetAvailableGamesForSettings {
+    getAvailableGames {
+      categoryId
+      name
+      displayName
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    getAvailableGames: Array<{
+      categoryId: number;
+      name: string;
+      displayName: string;
+    }>;
+  },
+  Record<string, never>
+>;
+
+const GetSupportedGamesQuery = new TypedDocumentString(`
+  query GetSupportedGamesForSettings {
+    getSupportedGames {
+      categoryId
+      name
+      displayName
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    getSupportedGames: Array<{
+      categoryId: number;
+      name: string;
+      displayName: string;
+    }>;
+  },
+  Record<string, never>
+>;
+
+const SetSupportedGamesMutation = new TypedDocumentString(`
+  mutation SetSupportedGames($categoryIds: [Int!]!) {
+    setSupportedGames(categoryIds: $categoryIds) {
+      categoryId
+      name
+      displayName
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    setSupportedGames: Array<{
+      categoryId: number;
+      name: string;
+      displayName: string;
+    }>;
+  },
+  {
+    categoryIds: number[];
   }
 >;
 
@@ -186,6 +247,8 @@ export class OgsSettingsGeneralPage extends LitElement {
 
   @state() companyName = '';
   @state() ein = '';
+  @state() availableGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
+  @state() selectedGameCategoryIds: number[] = [];
   @state() loading = true;
   @state() saving = false;
   @state() successMessage = '';
@@ -198,16 +261,37 @@ export class OgsSettingsGeneralPage extends LitElement {
 
   async loadSettings() {
     try {
-      const result = await execute(GetStoreSettingsQuery);
-      if (result?.data?.getStoreSettings) {
-        const s = result.data.getStoreSettings;
+      const [settingsResult, availableResult, supportedResult] = await Promise.all([
+        execute(GetStoreSettingsQuery),
+        execute(GetAvailableGamesQuery),
+        execute(GetSupportedGamesQuery),
+      ]);
+
+      if (settingsResult?.data?.getStoreSettings) {
+        const s = settingsResult.data.getStoreSettings;
         this.companyName = s.companyName ?? '';
         this.ein = s.ein ?? '';
+      }
+
+      if (availableResult?.data?.getAvailableGames) {
+        this.availableGames = availableResult.data.getAvailableGames;
+      }
+
+      if (supportedResult?.data?.getSupportedGames) {
+        this.selectedGameCategoryIds = supportedResult.data.getSupportedGames.map((g) => g.categoryId);
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load settings';
     } finally {
       this.loading = false;
+    }
+  }
+
+  private handleGameToggle(categoryId: number, checked: boolean) {
+    if (checked) {
+      this.selectedGameCategoryIds = [...this.selectedGameCategoryIds, categoryId];
+    } else {
+      this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => id !== categoryId);
     }
   }
 
@@ -217,16 +301,23 @@ export class OgsSettingsGeneralPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      const result = await execute(UpdateStoreSettingsMutation, {
-        input: {
-          companyName: this.companyName,
-          ein: this.ein,
-        },
-      });
+      const [settingsResult, gamesResult] = await Promise.all([
+        execute(UpdateStoreSettingsMutation, {
+          input: {
+            companyName: this.companyName,
+            ein: this.ein,
+          },
+        }),
+        execute(SetSupportedGamesMutation, {
+          categoryIds: this.selectedGameCategoryIds,
+        }),
+      ]);
 
-      if (result?.errors?.length) {
-        this.errorMessage = result.errors.map((e: { message: string }) => e.message).join(', ');
-      } else if (result?.data?.updateStoreSettings) {
+      const errors = [...(settingsResult?.errors ?? []), ...(gamesResult?.errors ?? [])];
+
+      if (errors.length) {
+        this.errorMessage = errors.map((e: { message: string }) => e.message).join(', ');
+      } else {
         this.successMessage = 'Settings saved successfully';
         setTimeout(() => {
           this.successMessage = '';
@@ -277,7 +368,7 @@ export class OgsSettingsGeneralPage extends LitElement {
         </div>
         <div class="page-header-content">
           <h2>General Settings</h2>
-          <p>Configure your company information</p>
+          <p>Configure your company information and supported games</p>
         </div>
       </div>
     `;
@@ -332,6 +423,41 @@ export class OgsSettingsGeneralPage extends LitElement {
             >
               <wa-icon slot="prefix" name="id-card"></wa-icon>
             </wa-input>
+          </div>
+        </div>
+
+        <wa-divider></wa-divider>
+
+        <!-- Supported Games -->
+        <div class="settings-section">
+          <div class="section-header">
+            <wa-icon name="cards-blank"></wa-icon>
+            <div>
+              <h3>Supported Games</h3>
+              <p>Select the trading card games your store buys and sells</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            ${this.availableGames.length === 0
+              ? html`<p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
+                  No game categories available. Please populate your TCG data catalog first.
+                </p>`
+              : html`
+                  <div style="display: flex; flex-direction: column; gap: var(--wa-space-s);">
+                    ${this.availableGames.map(
+                      (game) => html`
+                        <wa-checkbox
+                          ?checked="${this.selectedGameCategoryIds.includes(game.categoryId)}"
+                          @change="${(e: Event) => {
+                            this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
+                          }}"
+                        >
+                          ${game.displayName}
+                        </wa-checkbox>
+                      `,
+                    )}
+                  </div>
+                `}
           </div>
         </div>
 

@@ -62,6 +62,26 @@ input BulkUpdateStockInput {
   quantity: Int
 }
 
+type BuyRateEntry {
+  description: String!
+  id: Int!
+  rate: Float!
+  sortOrder: Int!
+}
+
+input BuyRateEntryInput {
+  description: String!
+  rate: Float!
+  sortOrder: Int!
+}
+
+type BuyRateTable {
+  categoryId: Int!
+  entries: [BuyRateEntry!]!
+  gameDisplayName: String!
+  gameName: String!
+}
+
 type CancelOrderResult {
   error: String
   order: Order
@@ -221,12 +241,26 @@ type Mutation {
   cancelOrder(orderId: Int!): CancelOrderResult!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
+
+  """Admin mutation - delete all buy rates for a game."""
+  deleteBuyRates(categoryId: Int!): Boolean!
   deleteInventoryItem(id: Int!): Boolean!
   deleteStock(id: Int!): Boolean!
-  firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, userDetails: UserDetails!): String!
+  firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
   removeStoreLocation(id: String!): Boolean!
+
+  """
+  Admin mutation - save the buy rate table for a game (replaces all entries).
+  """
+  saveBuyRates(input: SaveBuyRatesInput!): [BuyRateEntry!]!
   setActiveStoreLocation(organizationId: String!): Boolean!
+
+  """
+  Admin mutation - set which games the store supports.
+  Removing a game also deletes its buy rates.
+  """
+  setSupportedGames(categoryIds: [Int!]!): [SupportedGame!]!
   submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   triggerBackup: BackupResult!
   triggerRestore(provider: String!): RestoreResult!
@@ -388,6 +422,10 @@ type ProductSearchResult {
   setName: String!
 }
 
+type PublicBuyRates {
+  games: [BuyRateTable!]!
+}
+
 type Query {
   getActiveStoreLocation: StoreLocation
 
@@ -395,7 +433,16 @@ type Query {
   Public list of all stores — no auth required. Used by anonymous users on product pages.
   """
   getAllStoreLocations: [StoreLocation!]!
+
+  """
+  Public query - returns all available game categories from the TCG data catalog.
+  No authentication required (catalog data is not sensitive).
+  """
+  getAvailableGames: [SupportedGame!]!
   getBackupSettings: BackupSettings!
+
+  """Admin query - returns buy rate entries for a specific game."""
+  getBuyRates(categoryId: Int!): [BuyRateEntry!]!
   getCard(cardId: String!, game: String!): Card!
   getDashboardBestSellers(dateRange: DashboardDateRange!, limit: Int, organizationId: String!, sortBy: String!): [BestSeller!]!
   getDashboardInventorySummary(organizationId: String!): InventorySummary!
@@ -414,11 +461,20 @@ type Query {
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(organizationId: String, productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
+
+  """
+  Public query - returns buy rate tables for all supported games.
+  No authentication required.
+  """
+  getPublicBuyRates(organizationId: String): PublicBuyRates!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
   getStoreLocation(id: String!): StoreLocation
   getStoreSettings: StoreSettings!
+
+  """Admin query - returns the games this store currently supports."""
+  getSupportedGames: [SupportedGame!]!
   getTransactionLogs(filters: TransactionLogFilters, pagination: PaginationInput): TransactionLogPage!
   isSetupPending: Boolean!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
@@ -462,6 +518,11 @@ type SalesTaxLookupResult {
   currency: String
   rate: Float!
   type: String!
+}
+
+input SaveBuyRatesInput {
+  categoryId: Int!
+  entries: [BuyRateEntryInput!]!
 }
 
 type Set {
@@ -536,6 +597,12 @@ type SubmitOrderResult {
   error: String
   insufficientItems: [InsufficientItem!]
   order: Order
+}
+
+type SupportedGame {
+  categoryId: Int!
+  displayName: String!
+  name: String!
 }
 
 type TransactionLogEntry {

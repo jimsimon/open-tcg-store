@@ -1,0 +1,76 @@
+type SupportedGame {
+  categoryId: Int!
+  name: String!
+  displayName: String!
+}
+
+type BuyRateEntry {
+  id: Int!
+  description: String!
+  rate: Float!
+  sortOrder: Int!
+}
+
+type BuyRateTable {
+  categoryId: Int!
+  gameName: String!
+  gameDisplayName: String!
+  entries: [BuyRateEntry!]!
+}
+
+type PublicBuyRates {
+  games: [BuyRateTable!]!
+}
+
+input BuyRateEntryInput {
+  description: String!
+  rate: Float!
+  sortOrder: Int!
+}
+
+input SaveBuyRatesInput {
+  categoryId: Int!
+  entries: [BuyRateEntryInput!]!
+}
+
+extend type Query {
+  """
+  Public query - returns buy rate tables for all supported games.
+  No authentication required.
+  """
+  getPublicBuyRates(organizationId: String): PublicBuyRates!
+
+  """
+  Public query - returns all available game categories from the TCG data catalog.
+  No authentication required (catalog data is not sensitive).
+  """
+  getAvailableGames: [SupportedGame!]!
+
+  """
+  Admin query - returns the games this store currently supports.
+  """
+  getSupportedGames: [SupportedGame!]!
+
+  """
+  Admin query - returns buy rate entries for a specific game.
+  """
+  getBuyRates(categoryId: Int!): [BuyRateEntry!]!
+}
+
+extend type Mutation {
+  """
+  Admin mutation - set which games the store supports.
+  Removing a game also deletes its buy rates.
+  """
+  setSupportedGames(categoryIds: [Int!]!): [SupportedGame!]!
+
+  """
+  Admin mutation - save the buy rate table for a game (replaces all entries).
+  """
+  saveBuyRates(input: SaveBuyRatesInput!): [BuyRateEntry!]!
+
+  """
+  Admin mutation - delete all buy rates for a game.
+  """
+  deleteBuyRates(categoryId: Int!): Boolean!
+}

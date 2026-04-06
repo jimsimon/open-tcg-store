@@ -9,11 +9,11 @@ export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> =
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string };
-  String: { input: string; output: string };
-  Boolean: { input: boolean; output: boolean };
-  Int: { input: number; output: number };
-  Float: { input: number; output: number };
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
 };
 
 export type AddInventoryItemInput = {
@@ -81,6 +81,28 @@ export type BulkUpdateStockInput = {
   ids: Array<Scalars['Int']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
   quantity?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type BuyRateEntry = {
+  __typename?: 'BuyRateEntry';
+  description: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  rate: Scalars['Float']['output'];
+  sortOrder: Scalars['Int']['output'];
+};
+
+export type BuyRateEntryInput = {
+  description: Scalars['String']['input'];
+  rate: Scalars['Float']['input'];
+  sortOrder: Scalars['Int']['input'];
+};
+
+export type BuyRateTable = {
+  __typename?: 'BuyRateTable';
+  categoryId: Scalars['Int']['output'];
+  entries: Array<BuyRateEntry>;
+  gameDisplayName: Scalars['String']['output'];
+  gameName: Scalars['String']['output'];
 };
 
 export type CancelOrderResult = {
@@ -256,12 +278,21 @@ export type Mutation = {
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  /** Admin mutation - delete all buy rates for a game. */
+  deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
+  /** Admin mutation - save the buy rate table for a game (replaces all entries). */
+  saveBuyRates: Array<BuyRateEntry>;
   setActiveStoreLocation: Scalars['Boolean']['output'];
+  /**
+   * Admin mutation - set which games the store supports.
+   * Removing a game also deletes its buy rates.
+   */
+  setSupportedGames: Array<SupportedGame>;
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
   triggerRestore: RestoreResult;
@@ -276,100 +307,140 @@ export type Mutation = {
   updateStripeIntegration: StripeIntegration;
 };
 
+
 export type MutationAddInventoryItemArgs = {
   input: AddInventoryItemInput;
 };
+
 
 export type MutationAddStockArgs = {
   input: AddStockInput;
 };
 
+
 export type MutationAddStoreLocationArgs = {
   input: AddStoreLocationInput;
 };
+
 
 export type MutationAddToCartArgs = {
   cartItem: CartItemInput;
 };
 
+
 export type MutationBulkDeleteStockArgs = {
   input: BulkDeleteStockInput;
 };
+
 
 export type MutationBulkUpdateStockArgs = {
   input: BulkUpdateStockInput;
 };
 
+
 export type MutationCancelOrderArgs = {
   orderId: Scalars['Int']['input'];
 };
+
+
+export type MutationDeleteBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
 
 export type MutationDeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
 
+
 export type MutationDeleteStockArgs = {
   id: Scalars['Int']['input'];
 };
 
+
 export type MutationFirstTimeSetupArgs = {
   company: CompanySettings;
   store: InitialStoreLocation;
+  supportedGameCategoryIds: Array<Scalars['Int']['input']>;
   userDetails: UserDetails;
 };
+
 
 export type MutationRemoveFromCartArgs = {
   cartItem: CartItemInput;
 };
 
+
 export type MutationRemoveStoreLocationArgs = {
   id: Scalars['String']['input'];
 };
+
+
+export type MutationSaveBuyRatesArgs = {
+  input: SaveBuyRatesInput;
+};
+
 
 export type MutationSetActiveStoreLocationArgs = {
   organizationId: Scalars['String']['input'];
 };
 
+
+export type MutationSetSupportedGamesArgs = {
+  categoryIds: Array<Scalars['Int']['input']>;
+};
+
+
 export type MutationSubmitOrderArgs = {
   input: SubmitOrderInput;
 };
+
 
 export type MutationTriggerRestoreArgs = {
   provider: Scalars['String']['input'];
 };
 
+
 export type MutationUpdateBackupSettingsArgs = {
   input: UpdateBackupSettingsInput;
 };
+
 
 export type MutationUpdateInventoryItemArgs = {
   input: UpdateInventoryItemInput;
 };
 
+
 export type MutationUpdateItemInCartArgs = {
   cartItem: CartItemInput;
 };
+
 
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: Scalars['String']['input'];
 };
 
+
 export type MutationUpdateShopifyIntegrationArgs = {
   input: UpdateShopifyIntegrationInput;
 };
+
 
 export type MutationUpdateStockArgs = {
   input: UpdateStockInput;
 };
 
+
 export type MutationUpdateStoreLocationArgs = {
   input: UpdateStoreLocationInput;
 };
 
+
 export type MutationUpdateStoreSettingsArgs = {
   input: UpdateStoreSettingsInput;
 };
+
 
 export type MutationUpdateStripeIntegrationArgs = {
   input: UpdateStripeIntegrationInput;
@@ -534,12 +605,24 @@ export type ProductSearchResult = {
   setName: Scalars['String']['output'];
 };
 
+export type PublicBuyRates = {
+  __typename?: 'PublicBuyRates';
+  games: Array<BuyRateTable>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
+  /**
+   * Public query - returns all available game categories from the TCG data catalog.
+   * No authentication required (catalog data is not sensitive).
+   */
+  getAvailableGames: Array<SupportedGame>;
   getBackupSettings: BackupSettings;
+  /** Admin query - returns buy rate entries for a specific game. */
+  getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
   getDashboardBestSellers: Array<BestSeller>;
   getDashboardInventorySummary: InventorySummary;
@@ -555,11 +638,18 @@ export type Query = {
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
+  /**
+   * Public query - returns buy rate tables for all supported games.
+   * No authentication required.
+   */
+  getPublicBuyRates: PublicBuyRates;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
+  /** Admin query - returns the games this store currently supports. */
+  getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
@@ -571,10 +661,17 @@ export type Query = {
   userPermissions: UserPermissions;
 };
 
+
+export type QueryGetBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
+
 export type QueryGetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
 };
+
 
 export type QueryGetDashboardBestSellersArgs = {
   dateRange: DashboardDateRange;
@@ -583,48 +680,58 @@ export type QueryGetDashboardBestSellersArgs = {
   sortBy: Scalars['String']['input'];
 };
 
+
 export type QueryGetDashboardInventorySummaryArgs = {
   organizationId: Scalars['String']['input'];
 };
+
 
 export type QueryGetDashboardOpenOrdersArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
 };
 
+
 export type QueryGetDashboardOrderStatusArgs = {
   dateRange: DashboardDateRange;
   organizationId: Scalars['String']['input'];
 };
+
 
 export type QueryGetDashboardSalesArgs = {
   dateRange: DashboardDateRange;
   organizationId: Scalars['String']['input'];
 };
 
+
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryGetInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
+
 
 export type QueryGetInventoryItemDetailsArgs = {
   inventoryItemId: Scalars['Int']['input'];
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryGetOrdersArgs = {
   filters?: InputMaybe<OrderFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryGetProductArgs = {
   organizationId?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['String']['input'];
 };
+
 
 export type QueryGetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
@@ -632,29 +739,40 @@ export type QueryGetProductListingsArgs = {
   pagination?: InputMaybe<ProductListingPagination>;
 };
 
+
+export type QueryGetPublicBuyRatesArgs = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryGetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
 };
+
 
 export type QueryGetSingleCardInventoryArgs = {
   filters?: InputMaybe<SingleCardFilters>;
   game: Scalars['String']['input'];
 };
 
+
 export type QueryGetStoreLocationArgs = {
   id: Scalars['String']['input'];
 };
+
 
 export type QueryGetTransactionLogsArgs = {
   filters?: InputMaybe<TransactionLogFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
+
 export type QueryLookupSalesTaxArgs = {
   countryCode: Scalars['String']['input'];
   stateCode: Scalars['String']['input'];
 };
+
 
 export type QuerySearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
@@ -697,6 +815,11 @@ export type SalesTaxLookupResult = {
   currency?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
   type: Scalars['String']['output'];
+};
+
+export type SaveBuyRatesInput = {
+  categoryId: Scalars['Int']['input'];
+  entries: Array<BuyRateEntryInput>;
 };
 
 export type Set = {
@@ -779,6 +902,13 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type SupportedGame = {
+  __typename?: 'SupportedGame';
+  categoryId: Scalars['Int']['output'];
+  displayName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type TransactionLogEntry = {
@@ -884,51 +1014,30 @@ export type UserPermissions = {
   canViewTransactionLog: Scalars['Boolean']['output'];
 };
 
-export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never }>;
+export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
-export type GetShoppingCartQueryQuery = {
-  __typename?: 'Query';
-  getShoppingCart: {
-    __typename?: 'ShoppingCart';
-    items: Array<{
-      __typename?: 'CartItemOutput';
-      inventoryItemId: number;
-      quantity: number;
-      productId: number;
-      productName: string;
-      condition: string;
-      unitPrice: number;
-      maxAvailable: number;
-    }>;
-  };
-};
 
-export type UserPermissionsQueryVariables = Exact<{ [key: string]: never }>;
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: string, unitPrice: number, maxAvailable: number }> } };
 
-export type UserPermissionsQuery = {
-  __typename?: 'Query';
-  userPermissions: {
-    __typename?: 'UserPermissions';
-    canManageInventory: boolean;
-    canViewDashboard: boolean;
-    canAccessSettings: boolean;
-    canManageStoreLocations: boolean;
-    canManageUsers: boolean;
-    canViewTransactionLog: boolean;
-  };
-};
+export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean } };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   company: CompanySettings;
   store: InitialStoreLocation;
+  supportedGameCategoryIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
 }>;
 
-export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation'; firstTimeSetup: string };
 
-export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never }>;
+export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
 
-export type IsSetupPendingQuery = { __typename?: 'Query'; isSetupPending: boolean };
+export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type IsSetupPendingQuery = { __typename?: 'Query', isSetupPending: boolean };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -977,8 +1086,13 @@ export const UserPermissionsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<UserPermissionsQuery, UserPermissionsQueryVariables>;
 export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
-    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {
-  firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)
+    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!, $supportedGameCategoryIds: [Int!]!) {
+  firstTimeSetup(
+    userDetails: $userDetails
+    company: $company
+    store: $store
+    supportedGameCategoryIds: $supportedGameCategoryIds
+  )
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`
