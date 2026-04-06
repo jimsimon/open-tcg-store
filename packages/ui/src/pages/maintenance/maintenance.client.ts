@@ -83,10 +83,7 @@ export class OgsMaintenancePage extends LitElement {
       <div class="container">
         <wa-spinner></wa-spinner>
         <h1>Updating Product Database</h1>
-        <p>
-          The product database is being updated with the latest data.
-          This usually takes less than a minute.
-        </p>
+        <p>The product database is being updated with the latest data. This usually takes less than a minute.</p>
         <p>This page will refresh automatically when the update is complete.</p>
       </div>
     `;

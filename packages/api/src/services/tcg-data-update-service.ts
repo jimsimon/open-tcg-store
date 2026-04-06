@@ -116,9 +116,7 @@ export async function downloadUpdate(release: GitHubRelease): Promise<string> {
 export async function validateDatabase(filePath: string): Promise<boolean> {
   const client = createClient({ url: `file:${filePath}` });
   try {
-    const result = await client.execute(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='category'",
-    );
+    const result = await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='category'");
     if (result.rows.length === 0) {
       console.error('[tcg-data-update] Validation failed: "category" table not found');
       return false;
