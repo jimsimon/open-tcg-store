@@ -32,8 +32,8 @@ const otcgs = drizzle(client, {
   },
 });
 
-// Apply pending migrations in production
-if (process.env.NODE_ENV === 'production') {
+// Apply pending migrations on startup (skipped during tests where push-based workflow is used)
+if (process.env.NODE_ENV !== 'test') {
   const { applyMigrations } = await import('./migrator');
   await applyMigrations(otcgs);
 }

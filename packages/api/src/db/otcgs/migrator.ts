@@ -1,6 +1,6 @@
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, existsSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { databaseFilePath } from './drizzle.config';
@@ -52,7 +52,7 @@ async function seedBaselineIfNeeded(db: LibSQLDatabase<Record<string, unknown>>)
   const baseline = migrations[0];
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       hash text NOT NULL,
       created_at numeric
     )
@@ -84,20 +84,20 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
   // Ensure the table exists before querying
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       hash text NOT NULL,
       created_at numeric
     )
   `);
 
-  const dbMigrations = await db.values<[number, string, number]>(
-    sql`SELECT id, hash, created_at FROM ${sql.identifier(MIGRATIONS_TABLE)} ORDER BY created_at DESC LIMIT 1`,
+  const dbMigrations = await db.values<[string]>(
+    sql`SELECT hash FROM ${sql.identifier(MIGRATIONS_TABLE)}`,
   );
 
-  const lastDbMigration = dbMigrations[0] ?? undefined;
+  const appliedHashes = new Set(dbMigrations.map((row) => row[0]));
 
   for (const migration of migrations) {
-    if (!lastDbMigration || Number(lastDbMigration[2]) < migration.folderMillis) {
+    if (!appliedHashes.has(migration.hash)) {
       return true;
     }
   }
@@ -117,7 +117,7 @@ function createLocalBackupPath(): string {
 async function createLocalBackup(db: LibSQLDatabase<Record<string, unknown>>): Promise<string> {
   const backupPath = createLocalBackupPath();
   console.log(`[migrator] Creating local backup via VACUUM INTO: ${backupPath}`);
-  await db.run(sql.raw(`VACUUM INTO '${backupPath}'`));
+  await db.run(sql`VACUUM INTO ${backupPath}`);
   console.log('[migrator] Local backup created successfully.');
   return backupPath;
 }
@@ -189,10 +189,25 @@ async function handleMigrationFailure(
     console.error('[migrator] Could not run integrity check:', integrityError);
   }
 
-  // Integrity check failed or errored — restore from backup
+  // Integrity check failed or errored — restore from backup.
+  // Close the connection first to release any locks and WAL/SHM handles.
+  console.log('[migrator] Closing database connection before restore...');
+  try {
+    await db.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);
+  } catch {
+    // Best-effort — connection may already be in a bad state
+  }
+
   console.log(`[migrator] Restoring database from backup: ${backupPath}`);
   try {
     copyFileSync(backupPath, databaseFilePath);
+
+    // Remove WAL and SHM auxiliary files to prevent inconsistent state
+    const walPath = `${databaseFilePath}-wal`;
+    const shmPath = `${databaseFilePath}-shm`;
+    if (existsSync(walPath)) unlinkSync(walPath);
+    if (existsSync(shmPath)) unlinkSync(shmPath);
+
     console.log('[migrator] Database restored from backup. Backup file preserved at:', backupPath);
   } catch (restoreError) {
     console.error('[migrator] CRITICAL: Failed to restore database from backup:', restoreError);
