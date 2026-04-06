@@ -11,6 +11,8 @@ import * as inventoryStockRelations from './inventory-stock-relations';
 import * as orderRelations from './order-relations';
 import * as storeHoursRelations from './store-hours-relations';
 import * as transactionLogRelations from './transaction-log-relations';
+import * as storeSupportedGameRelations from './store-supported-game-relations';
+import * as buyRateRelations from './buy-rate-relations';
 export * from './schema';
 
 const client = createClient({ url: databaseFile });
@@ -29,6 +31,8 @@ const otcgs = drizzle(client, {
     ...orderRelations,
     ...storeHoursRelations,
     ...transactionLogRelations,
+    ...storeSupportedGameRelations,
+    ...buyRateRelations,
   },
 });
 

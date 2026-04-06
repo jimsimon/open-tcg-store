@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { otcgs } from '../../../../db/index.ts';
 import { user as userTable } from '../../../../db/otcgs/schema.ts';
 import { storeSettings } from '../../../../db/otcgs/settings-schema.ts';
+import { storeSupportedGame } from '../../../../db/otcgs/store-supported-game-schema.ts';
 import { GraphqlContext } from '../../../../server.ts';
 
 export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
@@ -96,6 +97,17 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
         organizationId: orgResponse.id,
       },
     });
+
+    // 5b. Save supported games for the newly created organization
+    if (!args.supportedGameCategoryIds || args.supportedGameCategoryIds.length === 0) {
+      throw new Error('At least one supported game must be selected');
+    }
+    await otcgs.insert(storeSupportedGame).values(
+      args.supportedGameCategoryIds.map((categoryId: number) => ({
+        organizationId: orgResponse.id,
+        categoryId,
+      })),
+    );
 
     console.log('Initial admin user and organization have been created successfully.');
 
