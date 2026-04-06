@@ -67,6 +67,14 @@ vi.mock('../../../db/otcgs/settings-schema', () => ({
   },
 }));
 
+vi.mock('../../../db/otcgs/store-supported-game-schema', () => ({
+  storeSupportedGame: {
+    id: 'store_supported_game.id',
+    organizationId: 'store_supported_game.organization_id',
+    categoryId: 'store_supported_game.category_id',
+  },
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -179,6 +187,7 @@ describe('setup resolvers', () => {
           state: 'IL',
           zip: '60601',
         },
+        supportedGameCategoryIds: [1, 3],
       };
 
       const result = await firstTimeSetup(null, args, ctx());

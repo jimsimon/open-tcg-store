@@ -38,11 +38,17 @@ let deleteChain: ReturnType<typeof chainable>;
 // Mock database
 // ---------------------------------------------------------------------------
 
-const mockOtcgs = vi.hoisted(() => ({
-  select: vi.fn(),
-  insert: vi.fn(),
-  delete: vi.fn(),
-}));
+const mockOtcgs = vi.hoisted(() => {
+  const mock = {
+    select: vi.fn(),
+    insert: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(),
+  };
+  // transaction calls the callback with the mock itself (tx has the same API)
+  mock.transaction.mockImplementation(async (fn: (tx: typeof mock) => Promise<void>) => fn(mock));
+  return mock;
+});
 
 vi.mock('../db/otcgs/index', () => ({
   otcgs: mockOtcgs,

@@ -1,6 +1,8 @@
 /* eslint-disable */
 import * as types from './graphql';
 
+
+
 /**
  * Map of all GraphQL operations in the project.
  *
@@ -13,45 +15,35 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-  '\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ': typeof types.GetShoppingCartQueryDocument;
-  '\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n': typeof types.UserPermissionsDocument;
-  '\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ': typeof types.FirstTimeSetupMutationDocument;
-  '\n      query IsSetupPending {\n        isSetupPending\n      }\n    ': typeof types.IsSetupPendingDocument;
+    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": typeof types.GetShoppingCartQueryDocument,
+    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": typeof types.UserPermissionsDocument,
+    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
+    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": typeof types.IsSetupPendingDocument,
 };
 const documents: Documents = {
-  '\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ':
-    types.GetShoppingCartQueryDocument,
-  '\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n':
-    types.UserPermissionsDocument,
-  '\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ':
-    types.FirstTimeSetupMutationDocument,
-  '\n      query IsSetupPending {\n        isSetupPending\n      }\n    ': types.IsSetupPendingDocument,
+    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": types.GetShoppingCartQueryDocument,
+    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": types.UserPermissionsDocument,
+    "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ": types.FirstTimeSetupMutationDocument,
+    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": types.IsSetupPendingDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(
-  source: '\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ',
-): typeof import('./graphql').GetShoppingCartQueryDocument;
+export function graphql(source: "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    "): typeof import('./graphql').GetShoppingCartQueryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(
-  source: '\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n',
-): typeof import('./graphql').UserPermissionsDocument;
+export function graphql(source: "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n"): typeof import('./graphql').UserPermissionsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(
-  source: '\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ',
-): typeof import('./graphql').FirstTimeSetupMutationDocument;
+export function graphql(source: "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    "): typeof import('./graphql').FirstTimeSetupMutationDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(
-  source: '\n      query IsSetupPending {\n        isSetupPending\n      }\n    ',
-): typeof import('./graphql').IsSetupPendingDocument;
+export function graphql(source: "\n      query IsSetupPending {\n        isSetupPending\n      }\n    "): typeof import('./graphql').IsSetupPendingDocument;
+
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

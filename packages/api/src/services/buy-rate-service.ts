@@ -72,37 +72,39 @@ export async function getSupportedGames(orgId: string): Promise<SupportedGameRes
 }
 
 export async function setSupportedGames(orgId: string, categoryIds: number[]): Promise<SupportedGameResult[]> {
-  // Get current supported games
-  const currentGames = await otcgs
-    .select({ categoryId: storeSupportedGame.categoryId })
-    .from(storeSupportedGame)
-    .where(eq(storeSupportedGame.organizationId, orgId));
+  await otcgs.transaction(async (tx) => {
+    // Get current supported games
+    const currentGames = await tx
+      .select({ categoryId: storeSupportedGame.categoryId })
+      .from(storeSupportedGame)
+      .where(eq(storeSupportedGame.organizationId, orgId));
 
-  const currentCategoryIds = new Set(currentGames.map((g) => g.categoryId));
-  const newCategoryIds = new Set(categoryIds);
+    const currentCategoryIds = new Set(currentGames.map((g) => g.categoryId));
+    const newCategoryIds = new Set(categoryIds);
 
-  // Determine removed games
-  const removedCategoryIds = [...currentCategoryIds].filter((id) => !newCategoryIds.has(id));
+    // Determine removed games
+    const removedCategoryIds = [...currentCategoryIds].filter((id) => !newCategoryIds.has(id));
 
-  // Delete buy rates for removed games
-  if (removedCategoryIds.length > 0) {
-    for (const catId of removedCategoryIds) {
-      await otcgs.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, catId)));
+    // Delete buy rates for removed games
+    if (removedCategoryIds.length > 0) {
+      for (const catId of removedCategoryIds) {
+        await tx.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, catId)));
+      }
     }
-  }
 
-  // Delete all existing supported game records for this org
-  await otcgs.delete(storeSupportedGame).where(eq(storeSupportedGame.organizationId, orgId));
+    // Delete all existing supported game records for this org
+    await tx.delete(storeSupportedGame).where(eq(storeSupportedGame.organizationId, orgId));
 
-  // Insert new supported games
-  if (categoryIds.length > 0) {
-    await otcgs.insert(storeSupportedGame).values(
-      categoryIds.map((catId) => ({
-        organizationId: orgId,
-        categoryId: catId,
-      })),
-    );
-  }
+    // Insert new supported games
+    if (categoryIds.length > 0) {
+      await tx.insert(storeSupportedGame).values(
+        categoryIds.map((catId) => ({
+          organizationId: orgId,
+          categoryId: catId,
+        })),
+      );
+    }
+  });
 
   return getSupportedGames(orgId);
 }
@@ -131,21 +133,33 @@ export async function saveBuyRates(
   categoryId: number,
   entries: BuyRateEntryInput[],
 ): Promise<BuyRateEntryResult[]> {
-  // Delete existing entries for this org+game
-  await otcgs.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, categoryId)));
-
-  // Insert new entries
-  if (entries.length > 0) {
-    await otcgs.insert(buyRate).values(
-      entries.map((entry) => ({
-        organizationId: orgId,
-        categoryId,
-        description: entry.description,
-        rate: entry.rate,
-        sortOrder: entry.sortOrder,
-      })),
-    );
+  // Validate entries
+  for (const entry of entries) {
+    if (entry.rate < 0) {
+      throw new Error('Rate must not be negative');
+    }
+    if (!entry.description || entry.description.trim().length === 0) {
+      throw new Error('Description must not be empty');
+    }
   }
+
+  await otcgs.transaction(async (tx) => {
+    // Delete existing entries for this org+game
+    await tx.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, categoryId)));
+
+    // Insert new entries
+    if (entries.length > 0) {
+      await tx.insert(buyRate).values(
+        entries.map((entry) => ({
+          organizationId: orgId,
+          categoryId,
+          description: entry.description,
+          rate: entry.rate,
+          sortOrder: entry.sortOrder,
+        })),
+      );
+    }
+  });
 
   return getBuyRates(orgId, categoryId);
 }
