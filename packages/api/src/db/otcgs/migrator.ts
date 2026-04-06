@@ -90,9 +90,7 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
     )
   `);
 
-  const dbMigrations = await db.values<[string]>(
-    sql`SELECT hash FROM ${sql.identifier(MIGRATIONS_TABLE)}`,
-  );
+  const dbMigrations = await db.values<[string]>(sql`SELECT hash FROM ${sql.identifier(MIGRATIONS_TABLE)}`);
 
   const appliedHashes = new Set(dbMigrations.map((row) => row[0]));
 
