@@ -32,4 +32,10 @@ const otcgs = drizzle(client, {
   },
 });
 
+// Apply pending migrations in production
+if (process.env.NODE_ENV === 'production') {
+  const { applyMigrations } = await import('./migrator');
+  await applyMigrations(otcgs);
+}
+
 export { otcgs };

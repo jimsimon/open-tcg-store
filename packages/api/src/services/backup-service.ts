@@ -1,16 +1,50 @@
-import { readFileSync, writeFileSync, existsSync, createReadStream } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, createReadStream, unlinkSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { AuthorizationCode } from 'simple-oauth2';
 import { google } from 'googleapis';
 import { Dropbox } from 'dropbox';
 import oneDriveAPI from 'onedrive-api';
-import { workspaceRootSync } from 'workspace-root';
+import { sql } from 'drizzle-orm';
+import { databaseFilePath } from '../db/otcgs/drizzle.config';
+import { otcgs } from '../db/otcgs/index';
 import { storeOAuthTokens, getOAuthTokens, updateLastBackupAt } from './settings-service';
 
-const workspaceRoot = workspaceRootSync()!;
-const DB_FILE_PATH = `${workspaceRoot}/sqlite-data/otcgs.sqlite`;
+const DB_FILE_PATH = databaseFilePath;
 const BACKUP_FOLDER = 'otcgs-backups';
 
 export type BackupProvider = 'google_drive' | 'dropbox' | 'onedrive';
+
+// ---------------------------------------------------------------------------
+// Safe Backup via VACUUM INTO
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a safe, consistent backup of the database using VACUUM INTO.
+ * Returns the path to the temporary backup file. The caller is responsible
+ * for cleaning up the file when done.
+ */
+export async function createSafeBackupFile(): Promise<string> {
+  const tempDir = mkdtempSync(join(tmpdir(), 'otcgs-backup-'));
+  const tempPath = join(tempDir, 'otcgs-backup.sqlite');
+  await otcgs.run(sql.raw(`VACUUM INTO '${tempPath}'`));
+  return tempPath;
+}
+
+/**
+ * Clean up a temporary backup file and its parent temp directory.
+ */
+function cleanupTempBackup(tempPath: string): void {
+  try {
+    unlinkSync(tempPath);
+    // Remove the temp directory too
+    const tempDir = join(tempPath, '..');
+    rmSync(tempDir, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Shared OAuth Configuration
@@ -196,34 +230,39 @@ async function getGoogleDriveClient() {
 
 async function backupToGoogleDrive(): Promise<string> {
   const drive = await getGoogleDriveClient();
-  const fileContent = readFileSync(DB_FILE_PATH);
+  const tempPath = await createSafeBackupFile();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `otcgs-backup-${timestamp}.sqlite`;
 
-  // Find or create the backup folder
-  let folderId: string | undefined;
-  const folderSearch = await drive.files.list({
-    q: `name='${BACKUP_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id)',
-  });
-
-  if (folderSearch.data.files && folderSearch.data.files.length > 0) {
-    folderId = folderSearch.data.files[0].id!;
-  } else {
-    const folder = await drive.files.create({
-      requestBody: { name: BACKUP_FOLDER, mimeType: 'application/vnd.google-apps.folder' },
-      fields: 'id',
+  try {
+    // Find or create the backup folder
+    let folderId: string | undefined;
+    const folderSearch = await drive.files.list({
+      q: `name='${BACKUP_FOLDER}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id)',
     });
-    folderId = folder.data.id!;
+
+    if (folderSearch.data.files && folderSearch.data.files.length > 0) {
+      folderId = folderSearch.data.files[0].id!;
+    } else {
+      const folder = await drive.files.create({
+        requestBody: { name: BACKUP_FOLDER, mimeType: 'application/vnd.google-apps.folder' },
+        fields: 'id',
+      });
+      folderId = folder.data.id!;
+    }
+
+    const { Readable } = await import('node:stream');
+    const fileContent = readFileSync(tempPath);
+    await drive.files.create({
+      requestBody: { name: fileName, parents: [folderId] },
+      media: { mimeType: 'application/x-sqlite3', body: Readable.from(fileContent) },
+    });
+
+    return fileName;
+  } finally {
+    cleanupTempBackup(tempPath);
   }
-
-  const { Readable } = await import('node:stream');
-  await drive.files.create({
-    requestBody: { name: fileName, parents: [folderId] },
-    media: { mimeType: 'application/x-sqlite3', body: Readable.from(fileContent) },
-  });
-
-  return fileName;
 }
 
 async function restoreFromGoogleDrive(): Promise<void> {
@@ -266,13 +305,18 @@ async function getDropboxClient(): Promise<Dropbox> {
 
 async function backupToDropbox(): Promise<string> {
   const dbx = await getDropboxClient();
-  const fileContent = readFileSync(DB_FILE_PATH);
+  const tempPath = await createSafeBackupFile();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `otcgs-backup-${timestamp}.sqlite`;
   const path = `/${BACKUP_FOLDER}/${fileName}`;
 
-  await dbx.filesUpload({ path, contents: fileContent, mode: { '.tag': 'overwrite' } });
-  return fileName;
+  try {
+    const fileContent = readFileSync(tempPath);
+    await dbx.filesUpload({ path, contents: fileContent, mode: { '.tag': 'overwrite' } });
+    return fileName;
+  } finally {
+    cleanupTempBackup(tempPath);
+  }
 }
 
 async function restoreFromDropbox(): Promise<void> {
@@ -298,26 +342,31 @@ async function restoreFromDropbox(): Promise<void> {
 
 async function backupToOneDrive(): Promise<string> {
   const accessToken = await getRefreshedAccessToken('onedrive');
+  const tempPath = await createSafeBackupFile();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `otcgs-backup-${timestamp}.sqlite`;
-  const readableStream = createReadStream(DB_FILE_PATH);
 
-  // Create the backup folder (ignore error if it already exists)
   try {
-    await oneDriveAPI.items.createFolder({ accessToken, itemId: 'root', name: BACKUP_FOLDER });
-  } catch {
-    // Folder may already exist
-  }
+    // Create the backup folder (ignore error if it already exists)
+    try {
+      await oneDriveAPI.items.createFolder({ accessToken, itemId: 'root', name: BACKUP_FOLDER });
+    } catch {
+      // Folder may already exist
+    }
 
-  // Get the folder ID
-  const children = await oneDriveAPI.items.listChildren({ accessToken, itemId: 'root' });
-  const folder = (children.value as Array<{ name: string; id: string }>).find((item) => item.name === BACKUP_FOLDER);
-  if (!folder) {
-    throw new Error('Failed to find or create backup folder on OneDrive');
-  }
+    // Get the folder ID
+    const children = await oneDriveAPI.items.listChildren({ accessToken, itemId: 'root' });
+    const folder = (children.value as Array<{ name: string; id: string }>).find((item) => item.name === BACKUP_FOLDER);
+    if (!folder) {
+      throw new Error('Failed to find or create backup folder on OneDrive');
+    }
 
-  await oneDriveAPI.items.uploadSimple({ accessToken, filename: fileName, parentId: folder.id, readableStream });
-  return fileName;
+    const readableStream = createReadStream(tempPath);
+    await oneDriveAPI.items.uploadSimple({ accessToken, filename: fileName, parentId: folder.id, readableStream });
+    return fileName;
+  } finally {
+    cleanupTempBackup(tempPath);
+  }
 }
 
 async function restoreFromOneDrive(): Promise<void> {

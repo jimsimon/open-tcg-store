@@ -1,3 +1,10 @@
 pnpm graphql:generate
 git add packages/api/src/schema/ packages/ui/src/graphql/
+
+# Auto-generate migrations if schema files changed
+if git diff --cached --name-only | grep -q 'packages/api/src/db/otcgs/.*-schema\.ts'; then
+  pnpm --filter @open-tcgs/api run db:generate
+  git add packages/api/src/db/otcgs/migrations/
+fi
+
 pnpm exec lint-staged
