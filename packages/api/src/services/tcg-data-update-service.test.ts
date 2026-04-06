@@ -88,7 +88,13 @@ function makeRelease(tag: string, hasAsset = true): GitHubRelease {
     tag_name: tag,
     name: `Release ${tag}`,
     assets: hasAsset
-      ? [{ name: 'tcg-data.sqlite', browser_download_url: `https://github.com/download/${tag}/tcg-data.sqlite`, size: 1024 * 1024 }]
+      ? [
+          {
+            name: 'tcg-data.sqlite',
+            browser_download_url: `https://github.com/download/${tag}/tcg-data.sqlite`,
+            size: 1024 * 1024,
+          },
+        ]
       : [],
   };
 }
@@ -252,9 +258,7 @@ describe('tcg-data-update-service', () => {
     it('should throw when release has no matching asset', async () => {
       const release = makeRelease('initial-db-20260405', false);
 
-      await expect(downloadUpdate(release)).rejects.toThrow(
-        'does not contain a tcg-data.sqlite asset',
-      );
+      await expect(downloadUpdate(release)).rejects.toThrow('does not contain a tcg-data.sqlite asset');
     });
 
     it('should throw when download fetch fails', async () => {
@@ -319,9 +323,7 @@ describe('tcg-data-update-service', () => {
 
       // Should DETACH then ATTACH
       expect(mockOtcgsExecute).toHaveBeenCalledWith('DETACH DATABASE tcg_data;');
-      expect(mockOtcgsExecute).toHaveBeenCalledWith(
-        expect.stringContaining('ATTACH DATABASE'),
-      );
+      expect(mockOtcgsExecute).toHaveBeenCalledWith(expect.stringContaining('ATTACH DATABASE'));
 
       // Should rename temp file
       expect(mockRenameSync).toHaveBeenCalledWith(
@@ -363,7 +365,9 @@ describe('tcg-data-update-service', () => {
       // DETACH succeeds
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
       // renameSync will throw (use mockImplementationOnce to avoid leaking)
-      mockRenameSync.mockImplementationOnce(() => { throw new Error('rename failed'); });
+      mockRenameSync.mockImplementationOnce(() => {
+        throw new Error('rename failed');
+      });
       // Recovery ATTACH should be attempted
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
 
