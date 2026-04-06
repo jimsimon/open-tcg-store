@@ -41,6 +41,7 @@ vi.mock('drizzle-orm', async (importOriginal) => {
 const mockAuth = vi.hoisted(() => ({
   api: {
     signUpEmail: vi.fn(),
+    signInEmail: vi.fn(),
     createOrganization: vi.fn(),
     setActiveOrganization: vi.fn(),
   },
@@ -158,6 +159,15 @@ describe('setup resolvers', () => {
       mockAuth.api.createOrganization.mockResolvedValue({ id: 'org-1' });
       mockAuth.api.setActiveOrganization.mockResolvedValue({});
 
+      // Mock signInEmail response (fresh session after setup)
+      mockAuth.api.signInEmail.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ token: 'session-token' }),
+        headers: {
+          getSetCookie: vi.fn().mockReturnValue(['session=fresh123']),
+        },
+      });
+
       const args = {
         userDetails: { email: 'admin@test.com', password: 'password123', firstName: 'Admin' },
         company: { companyName: 'Test Corp', ein: '12-3456789' },
@@ -177,6 +187,7 @@ describe('setup resolvers', () => {
       expect(mockAuth.api.signUpEmail).toHaveBeenCalled();
       expect(mockAuth.api.createOrganization).toHaveBeenCalled();
       expect(mockAuth.api.setActiveOrganization).toHaveBeenCalled();
+      expect(mockAuth.api.signInEmail).toHaveBeenCalled();
     });
 
     it('should throw when signup fails', async () => {
