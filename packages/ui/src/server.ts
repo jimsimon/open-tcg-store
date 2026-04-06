@@ -174,11 +174,25 @@ const router = new Router()
     }
     return next();
   })
+  .use(async (ctx: RouterContext, next: Next) => {
+    if ((await isDatabaseUpdating()) && ctx._matchedRouteName !== 'maintenance') {
+      const redirectUrlOrError = router.url('maintenance');
+      if (redirectUrlOrError instanceof Error) {
+        throw redirectUrlOrError;
+      }
+      ctx.redirect(redirectUrlOrError);
+      return;
+    }
+    return next();
+  })
   .get('dashboard', '/', async (ctx) => {
     return renderPage(ctx, 'home');
   })
   .get('first-time-setup', '/first-time-setup', async (ctx) => {
     return renderPage(ctx, 'first-time-setup');
+  })
+  .get('maintenance', '/maintenance', async (ctx) => {
+    return renderPage(ctx, 'maintenance');
   })
   .use('/products', ensureAnonymousSession)
   .get('products-redirect', '/products', async (ctx) => {
@@ -275,6 +289,18 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );
   ctx.body = renderShellTemplate(pageDirectory, await pageTemplate(ctx));
+}
+
+async function isDatabaseUpdating(): Promise<boolean> {
+  try {
+    const res = await fetch('http://localhost:5174/api/status');
+    if (!res.ok) return false;
+    const data = (await res.json()) as { databaseUpdating: boolean };
+    return data.databaseUpdating === true;
+  } catch {
+    // If the API is unreachable, don't block the UI with a maintenance page
+    return false;
+  }
 }
 
 async function isSetupPending() {
