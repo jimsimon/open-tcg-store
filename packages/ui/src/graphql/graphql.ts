@@ -83,6 +83,28 @@ export type BulkUpdateStockInput = {
   quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type BuyRateEntry = {
+  __typename?: 'BuyRateEntry';
+  description: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  rate: Scalars['Float']['output'];
+  sortOrder: Scalars['Int']['output'];
+};
+
+export type BuyRateEntryInput = {
+  description: Scalars['String']['input'];
+  rate: Scalars['Float']['input'];
+  sortOrder: Scalars['Int']['input'];
+};
+
+export type BuyRateTable = {
+  __typename?: 'BuyRateTable';
+  categoryId: Scalars['Int']['output'];
+  entries: Array<BuyRateEntry>;
+  gameDisplayName: Scalars['String']['output'];
+  gameName: Scalars['String']['output'];
+};
+
 export type CancelOrderResult = {
   __typename?: 'CancelOrderResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -256,12 +278,21 @@ export type Mutation = {
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  /** Admin mutation - delete all buy rates for a game. */
+  deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
+  /** Admin mutation - save the buy rate table for a game (replaces all entries). */
+  saveBuyRates: Array<BuyRateEntry>;
   setActiveStoreLocation: Scalars['Boolean']['output'];
+  /**
+   * Admin mutation - set which games the store supports.
+   * Removing a game also deletes its buy rates.
+   */
+  setSupportedGames: Array<SupportedGame>;
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
   triggerRestore: RestoreResult;
@@ -304,6 +335,10 @@ export type MutationCancelOrderArgs = {
   orderId: Scalars['Int']['input'];
 };
 
+export type MutationDeleteBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
 export type MutationDeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
@@ -315,6 +350,7 @@ export type MutationDeleteStockArgs = {
 export type MutationFirstTimeSetupArgs = {
   company: CompanySettings;
   store: InitialStoreLocation;
+  supportedGameCategoryIds: Array<Scalars['Int']['input']>;
   userDetails: UserDetails;
 };
 
@@ -326,8 +362,16 @@ export type MutationRemoveStoreLocationArgs = {
   id: Scalars['String']['input'];
 };
 
+export type MutationSaveBuyRatesArgs = {
+  input: SaveBuyRatesInput;
+};
+
 export type MutationSetActiveStoreLocationArgs = {
   organizationId: Scalars['String']['input'];
+};
+
+export type MutationSetSupportedGamesArgs = {
+  categoryIds: Array<Scalars['Int']['input']>;
 };
 
 export type MutationSubmitOrderArgs = {
@@ -534,12 +578,24 @@ export type ProductSearchResult = {
   setName: Scalars['String']['output'];
 };
 
+export type PublicBuyRates = {
+  __typename?: 'PublicBuyRates';
+  games: Array<BuyRateTable>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
+  /**
+   * Public query - returns all available game categories from the TCG data catalog.
+   * No authentication required (catalog data is not sensitive).
+   */
+  getAvailableGames: Array<SupportedGame>;
   getBackupSettings: BackupSettings;
+  /** Admin query - returns buy rate entries for a specific game. */
+  getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
   getDashboardBestSellers: Array<BestSeller>;
   getDashboardInventorySummary: InventorySummary;
@@ -555,11 +611,18 @@ export type Query = {
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
+  /**
+   * Public query - returns buy rate tables for all supported games.
+   * No authentication required.
+   */
+  getPublicBuyRates: PublicBuyRates;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
+  /** Admin query - returns the games this store currently supports. */
+  getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
@@ -569,6 +632,10 @@ export type Query = {
    * Used by the SSR server to render nav visibility without multiple hasPermission calls.
    */
   userPermissions: UserPermissions;
+};
+
+export type QueryGetBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
 };
 
 export type QueryGetCardArgs = {
@@ -630,6 +697,10 @@ export type QueryGetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
   organizationId?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<ProductListingPagination>;
+};
+
+export type QueryGetPublicBuyRatesArgs = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type QueryGetSetsArgs = {
@@ -697,6 +768,11 @@ export type SalesTaxLookupResult = {
   currency?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
   type: Scalars['String']['output'];
+};
+
+export type SaveBuyRatesInput = {
+  categoryId: Scalars['Int']['input'];
+  entries: Array<BuyRateEntryInput>;
 };
 
 export type Set = {
@@ -779,6 +855,13 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type SupportedGame = {
+  __typename?: 'SupportedGame';
+  categoryId: Scalars['Int']['output'];
+  displayName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type TransactionLogEntry = {
@@ -922,6 +1005,7 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   company: CompanySettings;
   store: InitialStoreLocation;
+  supportedGameCategoryIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
 }>;
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation'; firstTimeSetup: string };
@@ -977,8 +1061,13 @@ export const UserPermissionsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<UserPermissionsQuery, UserPermissionsQueryVariables>;
 export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
-    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!) {
-  firstTimeSetup(userDetails: $userDetails, company: $company, store: $store)
+    mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!, $supportedGameCategoryIds: [Int!]!) {
+  firstTimeSetup(
+    userDetails: $userDetails
+    company: $company
+    store: $store
+    supportedGameCategoryIds: $supportedGameCategoryIds
+  )
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`

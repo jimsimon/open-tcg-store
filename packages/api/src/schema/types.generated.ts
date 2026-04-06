@@ -83,6 +83,28 @@ export type BulkUpdateStockInput = {
   quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type BuyRateEntry = {
+  __typename?: 'BuyRateEntry';
+  description: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  rate: Scalars['Float']['output'];
+  sortOrder: Scalars['Int']['output'];
+};
+
+export type BuyRateEntryInput = {
+  description: Scalars['String']['input'];
+  rate: Scalars['Float']['input'];
+  sortOrder: Scalars['Int']['input'];
+};
+
+export type BuyRateTable = {
+  __typename?: 'BuyRateTable';
+  categoryId: Scalars['Int']['output'];
+  entries: Array<BuyRateEntry>;
+  gameDisplayName: Scalars['String']['output'];
+  gameName: Scalars['String']['output'];
+};
+
 export type CancelOrderResult = {
   __typename?: 'CancelOrderResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -256,12 +278,21 @@ export type Mutation = {
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  /** Admin mutation - delete all buy rates for a game. */
+  deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
+  /** Admin mutation - save the buy rate table for a game (replaces all entries). */
+  saveBuyRates: Array<BuyRateEntry>;
   setActiveStoreLocation: Scalars['Boolean']['output'];
+  /**
+   * Admin mutation - set which games the store supports.
+   * Removing a game also deletes its buy rates.
+   */
+  setSupportedGames: Array<SupportedGame>;
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
   triggerRestore: RestoreResult;
@@ -312,6 +343,11 @@ export type MutationcancelOrderArgs = {
 };
 
 
+export type MutationdeleteBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
+
 export type MutationdeleteInventoryItemArgs = {
   id: Scalars['Int']['input'];
 };
@@ -325,6 +361,7 @@ export type MutationdeleteStockArgs = {
 export type MutationfirstTimeSetupArgs = {
   company: CompanySettings;
   store: InitialStoreLocation;
+  supportedGameCategoryIds: Array<Scalars['Int']['input']>;
   userDetails: UserDetails;
 };
 
@@ -339,8 +376,18 @@ export type MutationremoveStoreLocationArgs = {
 };
 
 
+export type MutationsaveBuyRatesArgs = {
+  input: SaveBuyRatesInput;
+};
+
+
 export type MutationsetActiveStoreLocationArgs = {
   organizationId: Scalars['String']['input'];
+};
+
+
+export type MutationsetSupportedGamesArgs = {
+  categoryIds: Array<Scalars['Int']['input']>;
 };
 
 
@@ -558,12 +605,24 @@ export type ProductSearchResult = {
   setName: Scalars['String']['output'];
 };
 
+export type PublicBuyRates = {
+  __typename?: 'PublicBuyRates';
+  games: Array<BuyRateTable>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
+  /**
+   * Public query - returns all available game categories from the TCG data catalog.
+   * No authentication required (catalog data is not sensitive).
+   */
+  getAvailableGames: Array<SupportedGame>;
   getBackupSettings: BackupSettings;
+  /** Admin query - returns buy rate entries for a specific game. */
+  getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
   getDashboardBestSellers: Array<BestSeller>;
   getDashboardInventorySummary: InventorySummary;
@@ -579,11 +638,18 @@ export type Query = {
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
+  /**
+   * Public query - returns buy rate tables for all supported games.
+   * No authentication required.
+   */
+  getPublicBuyRates: PublicBuyRates;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
+  /** Admin query - returns the games this store currently supports. */
+  getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
   lookupSalesTax: SalesTaxLookupResult;
@@ -593,6 +659,11 @@ export type Query = {
    * Used by the SSR server to render nav visibility without multiple hasPermission calls.
    */
   userPermissions: UserPermissions;
+};
+
+
+export type QuerygetBuyRatesArgs = {
+  categoryId: Scalars['Int']['input'];
 };
 
 
@@ -669,6 +740,11 @@ export type QuerygetProductListingsArgs = {
 };
 
 
+export type QuerygetPublicBuyRatesArgs = {
+  organizationId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QuerygetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
@@ -739,6 +815,11 @@ export type SalesTaxLookupResult = {
   currency?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
   type: Scalars['String']['output'];
+};
+
+export type SaveBuyRatesInput = {
+  categoryId: Scalars['Int']['input'];
+  entries: Array<BuyRateEntryInput>;
 };
 
 export type Set = {
@@ -821,6 +902,13 @@ export type SubmitOrderResult = {
   error?: Maybe<Scalars['String']['output']>;
   insufficientItems?: Maybe<Array<InsufficientItem>>;
   order?: Maybe<Order>;
+};
+
+export type SupportedGame = {
+  __typename?: 'SupportedGame';
+  categoryId: Scalars['Int']['output'];
+  displayName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type TransactionLogEntry = {
@@ -1011,6 +1099,9 @@ export type ResolversTypes = {
   BestSeller: ResolverTypeWrapper<BestSeller>;
   BulkDeleteStockInput: BulkDeleteStockInput;
   BulkUpdateStockInput: BulkUpdateStockInput;
+  BuyRateEntry: ResolverTypeWrapper<BuyRateEntry>;
+  BuyRateEntryInput: BuyRateEntryInput;
+  BuyRateTable: ResolverTypeWrapper<BuyRateTable>;
   CancelOrderResult: ResolverTypeWrapper<CancelOrderResult>;
   Card: ResolverTypeWrapper<Card>;
   CardImages: ResolverTypeWrapper<CardImages>;
@@ -1046,12 +1137,14 @@ export type ResolversTypes = {
   ProductListingPagination: ProductListingPagination;
   ProductPrice: ResolverTypeWrapper<ProductPrice>;
   ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
+  PublicBuyRates: ResolverTypeWrapper<PublicBuyRates>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   RestoreResult: ResolverTypeWrapper<RestoreResult>;
   SalesBreakdown: ResolverTypeWrapper<SalesBreakdown>;
   SalesDataPoint: ResolverTypeWrapper<SalesDataPoint>;
   SalesSummary: ResolverTypeWrapper<SalesSummary>;
   SalesTaxLookupResult: ResolverTypeWrapper<SalesTaxLookupResult>;
+  SaveBuyRatesInput: SaveBuyRatesInput;
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
   ShopifyIntegration: ResolverTypeWrapper<ShopifyIntegration>;
@@ -1064,6 +1157,7 @@ export type ResolversTypes = {
   StripeIntegration: ResolverTypeWrapper<StripeIntegration>;
   SubmitOrderInput: SubmitOrderInput;
   SubmitOrderResult: ResolverTypeWrapper<SubmitOrderResult>;
+  SupportedGame: ResolverTypeWrapper<SupportedGame>;
   TransactionLogEntry: ResolverTypeWrapper<TransactionLogEntry>;
   TransactionLogFilters: TransactionLogFilters;
   TransactionLogPage: ResolverTypeWrapper<TransactionLogPage>;
@@ -1093,6 +1187,9 @@ export type ResolversParentTypes = {
   BestSeller: BestSeller;
   BulkDeleteStockInput: BulkDeleteStockInput;
   BulkUpdateStockInput: BulkUpdateStockInput;
+  BuyRateEntry: BuyRateEntry;
+  BuyRateEntryInput: BuyRateEntryInput;
+  BuyRateTable: BuyRateTable;
   CancelOrderResult: CancelOrderResult;
   Card: Card;
   CardImages: CardImages;
@@ -1128,12 +1225,14 @@ export type ResolversParentTypes = {
   ProductListingPagination: ProductListingPagination;
   ProductPrice: ProductPrice;
   ProductSearchResult: ProductSearchResult;
+  PublicBuyRates: PublicBuyRates;
   Query: Record<PropertyKey, never>;
   RestoreResult: RestoreResult;
   SalesBreakdown: SalesBreakdown;
   SalesDataPoint: SalesDataPoint;
   SalesSummary: SalesSummary;
   SalesTaxLookupResult: SalesTaxLookupResult;
+  SaveBuyRatesInput: SaveBuyRatesInput;
   Set: Set;
   SetFilters: SetFilters;
   ShopifyIntegration: ShopifyIntegration;
@@ -1146,6 +1245,7 @@ export type ResolversParentTypes = {
   StripeIntegration: StripeIntegration;
   SubmitOrderInput: SubmitOrderInput;
   SubmitOrderResult: SubmitOrderResult;
+  SupportedGame: SupportedGame;
   TransactionLogEntry: TransactionLogEntry;
   TransactionLogFilters: TransactionLogFilters;
   TransactionLogPage: TransactionLogPage;
@@ -1181,6 +1281,20 @@ export type BestSellerResolvers<ContextType = any, ParentType extends ResolversP
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   totalQuantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalRevenue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+};
+
+export type BuyRateEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateEntry'] = ResolversParentTypes['BuyRateEntry']> = {
+  description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  sortOrder?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
+export type BuyRateTableResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateTable'] = ResolversParentTypes['BuyRateTable']> = {
+  categoryId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  entries?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType>;
+  gameDisplayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
 export type CancelOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult']> = {
@@ -1305,12 +1419,15 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   cancelOrder?: Resolver<ResolversTypes['CancelOrderResult'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
+  deleteBuyRates?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteBuyRatesArgs, 'categoryId'>>;
   deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
   deleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteStockArgs, 'id'>>;
-  firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'userDetails'>>;
+  firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'supportedGameCategoryIds' | 'userDetails'>>;
   removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
   removeStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationremoveStoreLocationArgs, 'id'>>;
+  saveBuyRates?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType, RequireFields<MutationsaveBuyRatesArgs, 'input'>>;
   setActiveStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationsetActiveStoreLocationArgs, 'organizationId'>>;
+  setSupportedGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType, RequireFields<MutationsetSupportedGamesArgs, 'categoryIds'>>;
   submitOrder?: Resolver<ResolversTypes['SubmitOrderResult'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
   triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
@@ -1446,10 +1563,16 @@ export type ProductSearchResultResolvers<ContextType = any, ParentType extends R
   setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
+export type PublicBuyRatesResolvers<ContextType = any, ParentType extends ResolversParentTypes['PublicBuyRates'] = ResolversParentTypes['PublicBuyRates']> = {
+  games?: Resolver<Array<ResolversTypes['BuyRateTable']>, ParentType, ContextType>;
+};
+
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   getActiveStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
+  getAvailableGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType>;
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
+  getBuyRates?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType, RequireFields<QuerygetBuyRatesArgs, 'categoryId'>>;
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
   getDashboardBestSellers?: Resolver<Array<ResolversTypes['BestSeller']>, ParentType, ContextType, RequireFields<QuerygetDashboardBestSellersArgs, 'dateRange' | 'organizationId' | 'sortBy'>>;
   getDashboardInventorySummary?: Resolver<ResolversTypes['InventorySummary'], ParentType, ContextType, RequireFields<QuerygetDashboardInventorySummaryArgs, 'organizationId'>>;
@@ -1464,11 +1587,13 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
+  getPublicBuyRates?: Resolver<ResolversTypes['PublicBuyRates'], ParentType, ContextType, Partial<QuerygetPublicBuyRatesArgs>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
   getStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType, RequireFields<QuerygetStoreLocationArgs, 'id'>>;
   getStoreSettings?: Resolver<ResolversTypes['StoreSettings'], ParentType, ContextType>;
+  getSupportedGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType>;
   getTransactionLogs?: Resolver<ResolversTypes['TransactionLogPage'], ParentType, ContextType, Partial<QuerygetTransactionLogsArgs>>;
   isSetupPending?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lookupSalesTax?: Resolver<ResolversTypes['SalesTaxLookupResult'], ParentType, ContextType, RequireFields<QuerylookupSalesTaxArgs, 'countryCode' | 'stateCode'>>;
@@ -1561,6 +1686,12 @@ export type SubmitOrderResultResolvers<ContextType = any, ParentType extends Res
   order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
 };
 
+export type SupportedGameResolvers<ContextType = any, ParentType extends ResolversParentTypes['SupportedGame'] = ResolversParentTypes['SupportedGame']> = {
+  categoryId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
 export type TransactionLogEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['TransactionLogEntry'] = ResolversParentTypes['TransactionLogEntry']> = {
   action?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1598,6 +1729,8 @@ export type Resolvers<ContextType = any> = {
   BackupResult?: BackupResultResolvers<ContextType>;
   BackupSettings?: BackupSettingsResolvers<ContextType>;
   BestSeller?: BestSellerResolvers<ContextType>;
+  BuyRateEntry?: BuyRateEntryResolvers<ContextType>;
+  BuyRateTable?: BuyRateTableResolvers<ContextType>;
   CancelOrderResult?: CancelOrderResultResolvers<ContextType>;
   Card?: CardResolvers<ContextType>;
   CardImages?: CardImagesResolvers<ContextType>;
@@ -1624,6 +1757,7 @@ export type Resolvers<ContextType = any> = {
   ProductListingPage?: ProductListingPageResolvers<ContextType>;
   ProductPrice?: ProductPriceResolvers<ContextType>;
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
+  PublicBuyRates?: PublicBuyRatesResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RestoreResult?: RestoreResultResolvers<ContextType>;
   SalesBreakdown?: SalesBreakdownResolvers<ContextType>;
@@ -1638,6 +1772,7 @@ export type Resolvers<ContextType = any> = {
   StoreSettings?: StoreSettingsResolvers<ContextType>;
   StripeIntegration?: StripeIntegrationResolvers<ContextType>;
   SubmitOrderResult?: SubmitOrderResultResolvers<ContextType>;
+  SupportedGame?: SupportedGameResolvers<ContextType>;
   TransactionLogEntry?: TransactionLogEntryResolvers<ContextType>;
   TransactionLogPage?: TransactionLogPageResolvers<ContextType>;
   UpdateOrderStatusResult?: UpdateOrderStatusResultResolvers<ContextType>;

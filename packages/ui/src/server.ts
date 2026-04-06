@@ -193,6 +193,10 @@ const router = new Router()
   .get('product-details', '/products/:productId', async (ctx) => {
     return renderPage(ctx, 'product-details');
   })
+  .use('/buy-rates', ensureAnonymousSession)
+  .get('buy-rates', '/buy-rates', async (ctx) => {
+    return renderPage(ctx, 'buy-rates');
+  })
   // Backward-compatible redirects from old card URLs
   .get('cards-redirect', '/games/:game/cards', async (ctx) => {
     const game = ctx.params.game;
@@ -244,6 +248,9 @@ const router = new Router()
   })
   .get('settings-autoprice', '/settings/autoprice', async (ctx) => {
     return renderPage(ctx, 'settings-autoprice');
+  })
+  .get('settings-buyrates', '/settings/buyrates', async (ctx) => {
+    return renderPage(ctx, 'settings-buyrates');
   })
   .get('settings-integrations', '/settings/integrations', async (ctx) => {
     return renderPage(ctx, 'settings-integrations');

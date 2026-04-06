@@ -21,7 +21,7 @@ input CompanySettings {
 }
 
 extend type Mutation {
-  firstTimeSetup(userDetails: UserDetails!, company: CompanySettings!, store: InitialStoreLocation!): String!
+  firstTimeSetup(userDetails: UserDetails!, company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!): String!
 }
 
 extend type Query {
