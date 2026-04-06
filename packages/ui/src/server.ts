@@ -162,7 +162,24 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   return next();
 }
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5174';
+
 const router = new Router()
+  // Proxy /api/status to the API server so client-side code can use a relative URL
+  .get('api-status', '/api/status', async (ctx) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/status`);
+      if (!res.ok) {
+        ctx.status = res.status;
+        ctx.body = { databaseUpdating: false };
+        return;
+      }
+      ctx.body = await res.json();
+    } catch {
+      ctx.status = 502;
+      ctx.body = { databaseUpdating: false };
+    }
+  })
   .use(async (ctx: RouterContext, next: Next) => {
     if ((await isSetupPending()) && ctx._matchedRouteName !== 'first-time-setup') {
       const redirectUrlOrError = router.url('first-time-setup');
@@ -300,7 +317,7 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
 
 async function isDatabaseUpdating(): Promise<boolean> {
   try {
-    const res = await fetch('http://localhost:5174/api/status');
+    const res = await fetch(`${API_BASE_URL}/api/status`);
     if (!res.ok) return false;
     const data = (await res.json()) as { databaseUpdating: boolean };
     return data.databaseUpdating === true;

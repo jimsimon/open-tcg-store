@@ -10,6 +10,7 @@ const {
   mockWriteFileSync,
   mockRenameSync,
   mockUnlinkSync,
+  mockCreateWriteStream,
   mockGetOtcgsClient,
   mockSetDatabaseUpdating,
   mockReconnectTcgData,
@@ -18,12 +19,14 @@ const {
   mockValidationExecute,
   mockClientClose,
   mockFetch,
+  mockPipeline,
 } = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
   mockReadFileSync: vi.fn(),
   mockWriteFileSync: vi.fn(),
   mockRenameSync: vi.fn(),
   mockUnlinkSync: vi.fn(),
+  mockCreateWriteStream: vi.fn(),
   mockGetOtcgsClient: vi.fn(),
   mockSetDatabaseUpdating: vi.fn(),
   mockReconnectTcgData: vi.fn(),
@@ -32,11 +35,7 @@ const {
   mockValidationExecute: vi.fn(),
   mockClientClose: vi.fn(),
   mockFetch: vi.fn(),
-}));
-
-// Mock workspace-root
-vi.mock('workspace-root', () => ({
-  workspaceRootSync: vi.fn(() => '/fake/workspace'),
+  mockPipeline: vi.fn(),
 }));
 
 // Mock node:fs
@@ -46,6 +45,19 @@ vi.mock('node:fs', () => ({
   writeFileSync: mockWriteFileSync,
   renameSync: mockRenameSync,
   unlinkSync: mockUnlinkSync,
+  createWriteStream: mockCreateWriteStream,
+}));
+
+// Mock node:stream/promises
+vi.mock('node:stream/promises', () => ({
+  pipeline: mockPipeline,
+}));
+
+// Mock node:stream (Readable.fromWeb)
+vi.mock('node:stream', () => ({
+  Readable: {
+    fromWeb: vi.fn((body: unknown) => body),
+  },
 }));
 
 // Mock the db modules
@@ -126,11 +138,17 @@ describe('tcg-data-update-service', () => {
     mockGetOtcgsClient.mockReturnValue({ execute: mockOtcgsExecute });
 
     // Default mock for libsql createClient (used in validateDatabase)
-    mockValidationExecute.mockResolvedValue({ rows: [{ name: 'category' }] });
+    mockValidationExecute.mockResolvedValue({
+      rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+    });
     mockCreateClient.mockReturnValue({
       execute: mockValidationExecute,
       close: mockClientClose,
     });
+
+    // Default mocks for streaming download
+    mockPipeline.mockResolvedValue(undefined);
+    mockCreateWriteStream.mockReturnValue({});
   });
 
   afterEach(() => {
@@ -235,20 +253,23 @@ describe('tcg-data-update-service', () => {
   // downloadUpdate
   // -----------------------------------------------------------------------
   describe('downloadUpdate', () => {
-    it('should download the asset and write to temp file', async () => {
+    it('should download the asset and stream to temp file', async () => {
       const release = makeRelease('initial-db-20260405');
+      const fakeBody = { readable: true };
       mockFetch.mockResolvedValue({
         ok: true,
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+        body: fakeBody,
       });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
 
       const result = await downloadUpdate(release);
 
       expect(result).toBe('/fake/workspace/sqlite-data/tcg-data.sqlite.new');
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
+      expect(mockCreateWriteStream).toHaveBeenCalledWith(
         '/fake/workspace/sqlite-data/tcg-data.sqlite.new',
-        expect.any(Buffer),
       );
+      expect(mockPipeline).toHaveBeenCalled();
       expect(mockFetch).toHaveBeenCalledWith(
         release.assets[0].browser_download_url,
         expect.objectContaining({ headers: { 'User-Agent': 'open-tcg-store' } }),
@@ -271,14 +292,26 @@ describe('tcg-data-update-service', () => {
 
       await expect(downloadUpdate(release)).rejects.toThrow('Failed to download asset: 404');
     });
+
+    it('should throw when response body is null', async () => {
+      const release = makeRelease('initial-db-20260405');
+      mockFetch.mockResolvedValue({
+        ok: true,
+        body: null,
+      });
+
+      await expect(downloadUpdate(release)).rejects.toThrow('Response body is null');
+    });
   });
 
   // -----------------------------------------------------------------------
   // validateDatabase
   // -----------------------------------------------------------------------
   describe('validateDatabase', () => {
-    it('should return true when category table exists', async () => {
-      mockValidationExecute.mockResolvedValue({ rows: [{ name: 'category' }] });
+    it('should return true when all required tables exist', async () => {
+      mockValidationExecute.mockResolvedValue({
+        rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+      });
 
       const result = await validateDatabase('/fake/path/db.sqlite');
 
@@ -287,7 +320,18 @@ describe('tcg-data-update-service', () => {
       expect(mockClientClose).toHaveBeenCalled();
     });
 
-    it('should return false when category table is missing', async () => {
+    it('should return false when some required tables are missing', async () => {
+      mockValidationExecute.mockResolvedValue({
+        rows: [{ name: 'category' }],
+      });
+
+      const result = await validateDatabase('/fake/path/db.sqlite');
+
+      expect(result).toBe(false);
+      expect(mockClientClose).toHaveBeenCalled();
+    });
+
+    it('should return false when no tables are found', async () => {
       mockValidationExecute.mockResolvedValue({ rows: [] });
 
       const result = await validateDatabase('/fake/path/db.sqlite');
@@ -313,9 +357,9 @@ describe('tcg-data-update-service', () => {
     it('should perform the full DETACH/rename/ATTACH swap', async () => {
       const release = makeRelease('initial-db-20260405');
 
-      // Start the async operation and advance the 500ms drain timer
+      // Start the async operation and advance the 1000ms drain timer
       const promise = applyUpdate(release);
-      await vi.advanceTimersByTimeAsync(500);
+      await vi.advanceTimersByTimeAsync(1000);
       await promise;
 
       // Should set updating flag
@@ -353,14 +397,14 @@ describe('tcg-data-update-service', () => {
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
 
       const promise = applyUpdate(release).catch(() => {});
-      await vi.advanceTimersByTimeAsync(500);
+      await vi.advanceTimersByTimeAsync(1000);
       await promise;
 
       expect(mockSetDatabaseUpdating).toHaveBeenCalledWith(true);
       expect(mockSetDatabaseUpdating).toHaveBeenCalledWith(false);
     });
 
-    it('should attempt recovery ATTACH on error', async () => {
+    it('should attempt recovery ATTACH on error after DETACH', async () => {
       const release = makeRelease('initial-db-20260405');
       // DETACH succeeds
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
@@ -372,7 +416,7 @@ describe('tcg-data-update-service', () => {
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
 
       const promise = applyUpdate(release).catch(() => {});
-      await vi.advanceTimersByTimeAsync(500);
+      await vi.advanceTimersByTimeAsync(1000);
       await promise;
 
       // Verify recovery was attempted (second execute call is the recovery ATTACH)
@@ -410,10 +454,12 @@ describe('tcg-data-update-service', () => {
         // downloadUpdate fetch
         .mockResolvedValueOnce({
           ok: true,
-          arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+          body: { readable: true },
         });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
 
-      // Validation fails (no category table)
+      // Validation fails (no required tables)
       mockValidationExecute.mockResolvedValue({ rows: [] });
 
       await performUpdateCheck();
@@ -435,12 +481,14 @@ describe('tcg-data-update-service', () => {
         // downloadUpdate fetch
         .mockResolvedValueOnce({
           ok: true,
-          arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+          body: { readable: true },
         });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
 
-      // Start the update check and advance the 500ms drain timer
+      // Start the update check and advance the 1000ms drain timer
       const promise = performUpdateCheck();
-      await vi.advanceTimersByTimeAsync(500);
+      await vi.advanceTimersByTimeAsync(1000);
       await promise;
 
       // Should have performed the swap
@@ -458,6 +506,33 @@ describe('tcg-data-update-service', () => {
 
       // Should not crash, and should attempt cleanup
       expect(mockSetDatabaseUpdating).not.toHaveBeenCalled();
+    });
+
+    it('should skip if another check is already running', async () => {
+      // Simulate a slow update that hasn't resolved yet
+      mockExistsSync.mockReturnValue(false);
+      const releases = [makeRelease('initial-db-20260405')];
+
+      // First call: will block on the checkForUpdate fetch (never resolves)
+      let resolveFirstFetch!: (value: unknown) => void;
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstFetch = resolve;
+        }),
+      );
+
+      const firstCheck = performUpdateCheck();
+
+      // Second call should short-circuit since first is still running
+      mockFetch.mockResolvedValueOnce(mockFetchResponse(releases));
+      await performUpdateCheck();
+
+      // Only one fetch should have been made (the first one)
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Clean up: resolve the first fetch so the promise settles
+      resolveFirstFetch(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      await firstCheck;
     });
   });
 
@@ -477,16 +552,24 @@ describe('tcg-data-update-service', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
-    it('should schedule periodic checks', () => {
+    it('should schedule periodic checks', async () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue('initial-db-20260405');
       mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
 
       startUpdateScheduler();
+
+      // Flush the initial async check so the _isCheckRunning guard clears
+      await vi.advanceTimersByTimeAsync(0);
       vi.clearAllMocks();
 
+      // Re-mock fetch for the periodic check
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260405');
+      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+
       // Advance 24 hours
-      vi.advanceTimersByTime(24 * 60 * 60 * 1000);
+      await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
 
       expect(mockFetch).toHaveBeenCalled();
     });
@@ -508,6 +591,21 @@ describe('tcg-data-update-service', () => {
 
     it('stopUpdateScheduler should be safe to call when not started', () => {
       expect(() => stopUpdateScheduler()).not.toThrow();
+    });
+
+    it('should not leak intervals when startUpdateScheduler is called multiple times', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260405');
+      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+
+      startUpdateScheduler();
+      const firstFetchCount = mockFetch.mock.calls.length;
+
+      // Second call should be a no-op
+      startUpdateScheduler();
+
+      // Should not have triggered another immediate check
+      expect(mockFetch.mock.calls.length).toBe(firstFetchCount);
     });
   });
 });

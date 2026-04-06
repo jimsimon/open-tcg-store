@@ -4,8 +4,11 @@ import * as schema from './schema';
 import * as relations from './relations';
 export * from './schema';
 
-// Use `let` so ESM live bindings allow the export to be reassigned
-// when reconnecting after a database file swap.
+// Use `let` so `reconnectTcgData` can reassign the binding. Note that ESM
+// named exports are live bindings, so modules that import `tcgData` directly
+// (e.g. `import { tcgData } from …`) will see the updated reference after
+// reconnection. However, any consumer that captures the value in a local
+// variable (e.g. `const db = tcgData`) will retain the stale reference.
 let tcgData = drizzle(databaseFile, {
   schema: {
     ...schema,
