@@ -28,26 +28,39 @@ function chainable(rows: unknown[] = []) {
 
 let selectChain: ReturnType<typeof chainable>;
 
-const mockOtcgs = vi.hoisted(() => ({
-  select: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
+const { mockOtcgs, mockIsDatabaseUpdating, mockSetDatabaseUpdating, mockGetOtcgsClient } = vi.hoisted(() => ({
+  mockOtcgs: {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  mockIsDatabaseUpdating: vi.fn().mockReturnValue(false),
+  mockSetDatabaseUpdating: vi.fn(),
+  mockGetOtcgsClient: vi.fn().mockReturnValue({ execute: vi.fn() }),
 }));
 
-const mockTcgData = vi.hoisted(() => ({
-  select: vi.fn(),
+const { mockTcgData, mockReconnectTcgData } = vi.hoisted(() => ({
+  mockTcgData: {
+    select: vi.fn(),
+  },
+  mockReconnectTcgData: vi.fn(),
 }));
 
 vi.mock('./otcgs/index', () => ({
   otcgs: mockOtcgs,
+  isDatabaseUpdating: mockIsDatabaseUpdating,
+  setDatabaseUpdating: mockSetDatabaseUpdating,
+  getOtcgsClient: mockGetOtcgsClient,
+  tcgDataFilePath: '/fake/tcg-data.sqlite',
 }));
 
 vi.mock('./tcg-data/index', () => ({
   tcgData: mockTcgData,
+  reconnectTcgData: mockReconnectTcgData,
 }));
 
-import { otcgs } from './index';
+import { otcgs, isDatabaseUpdating, setDatabaseUpdating, getOtcgsClient } from './index';
 import { user } from './otcgs/auth-schema';
 
 describe('database exports', () => {
@@ -73,5 +86,39 @@ describe('database exports', () => {
     expect(otcgs.insert).toBeTypeOf('function');
     expect(otcgs.update).toBeTypeOf('function');
     expect(otcgs.delete).toBeTypeOf('function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Database update state management exports
+// ---------------------------------------------------------------------------
+
+describe('database update state management', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('isDatabaseUpdating is exported and callable', () => {
+    expect(isDatabaseUpdating).toBeTypeOf('function');
+    isDatabaseUpdating();
+    expect(mockIsDatabaseUpdating).toHaveBeenCalled();
+  });
+
+  it('isDatabaseUpdating returns false by default', () => {
+    mockIsDatabaseUpdating.mockReturnValue(false);
+    expect(isDatabaseUpdating()).toBe(false);
+  });
+
+  it('setDatabaseUpdating is exported and callable', () => {
+    expect(setDatabaseUpdating).toBeTypeOf('function');
+    setDatabaseUpdating(true);
+    expect(mockSetDatabaseUpdating).toHaveBeenCalledWith(true);
+  });
+
+  it('getOtcgsClient is exported and returns the client', () => {
+    expect(getOtcgsClient).toBeTypeOf('function');
+    const client = getOtcgsClient();
+    expect(client).toBeDefined();
+    expect(client.execute).toBeTypeOf('function');
   });
 });
