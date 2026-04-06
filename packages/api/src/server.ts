@@ -44,7 +44,10 @@ const schema = makeExecutableSchema({
   resolvers: resolvers as Resolvers,
 });
 
-// Return 503 during database updates, except for the status endpoint
+// Return 503 during database updates, except for the status endpoint.
+// This intentionally blocks ALL routes including /api/auth — the update
+// window is brief (~1s) and allowing auth requests during a database swap
+// could cause errors since the auth tables live in the same SQLite file.
 app.use(async (ctx, next) => {
   if (isDatabaseUpdating() && ctx.URL.pathname !== '/api/status') {
     ctx.status = 503;

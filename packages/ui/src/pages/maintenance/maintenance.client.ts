@@ -64,7 +64,7 @@ export class OgsMaintenancePage extends LitElement {
 
   private async _checkStatus() {
     try {
-      const res = await fetch('http://localhost:5174/api/status', {
+      const res = await fetch('/api/status', {
         credentials: 'include',
       });
       if (!res.ok) return;

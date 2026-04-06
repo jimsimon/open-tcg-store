@@ -1,6 +1,7 @@
 import { createClient } from '@libsql/client';
-import { renameSync, readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
-import { workspaceRootSync } from 'workspace-root';
+import { renameSync, readFileSync, writeFileSync, existsSync, unlinkSync, createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
 import { getOtcgsClient, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
 import { reconnectTcgData } from '../db/tcg-data/index.ts';
 
@@ -8,13 +9,17 @@ const GITHUB_REPO = 'jimsimon/open-tcg-store';
 const RELEASE_TAG_PREFIX = 'initial-db-';
 const RELEASE_ASSET_NAME = 'tcg-data.sqlite';
 
-const workspaceRoot = workspaceRootSync()!;
-const sqliteDataDir = `${workspaceRoot}/sqlite-data`;
+// Derive paths from tcgDataFilePath (exported by the db layer) to ensure
+// the update service and the ATTACH statement always reference the same file.
+const databaseFilePath = tcgDataFilePath;
+const sqliteDataDir = databaseFilePath.substring(0, databaseFilePath.lastIndexOf('/'));
 const versionFilePath = `${sqliteDataDir}/tcg-data.version`;
-const databaseFilePath = `${sqliteDataDir}/tcg-data.sqlite`;
 const tempDatabaseFilePath = `${sqliteDataDir}/tcg-data.sqlite.new`;
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/** Tables that must exist in a valid tcg-data database. */
+const REQUIRED_TABLES = ['category', 'group', 'product', 'price'] as const;
 
 export interface GitHubRelease {
   tag_name: string;
@@ -68,8 +73,13 @@ export async function checkForUpdate(): Promise<GitHubRelease | null> {
 
   const releases: GitHubRelease[] = await response.json();
 
-  // Find the most recent release with our tag prefix
-  const latestRelease = releases.find((r) => r.tag_name.startsWith(RELEASE_TAG_PREFIX));
+  // Filter to releases with our prefix and sort descending by tag name
+  // (tags are date-based like "initial-db-20260405" so lexicographic sort is correct)
+  const matchingReleases = releases
+    .filter((r) => r.tag_name.startsWith(RELEASE_TAG_PREFIX))
+    .sort((a, b) => b.tag_name.localeCompare(a.tag_name));
+
+  const latestRelease = matchingReleases[0];
   if (!latestRelease) {
     console.log('[tcg-data-update] No matching releases found on GitHub');
     return null;
@@ -103,8 +113,12 @@ export async function downloadUpdate(release: GitHubRelease): Promise<string> {
     throw new Error(`Failed to download asset: ${response.status} ${response.statusText}`);
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  writeFileSync(tempDatabaseFilePath, buffer);
+  // Stream the response body to disk to avoid buffering the entire file in memory
+  if (!response.body) {
+    throw new Error('Response body is null — cannot stream download');
+  }
+  const fileStream = createWriteStream(tempDatabaseFilePath);
+  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
 
   console.log(`[tcg-data-update] Downloaded to ${tempDatabaseFilePath}`);
   return tempDatabaseFilePath;
@@ -112,13 +126,20 @@ export async function downloadUpdate(release: GitHubRelease): Promise<string> {
 
 /**
  * Validate that the downloaded file is a valid SQLite database with expected tables.
+ * Checks for multiple critical tables to reduce the chance of accepting a truncated download.
  */
 export async function validateDatabase(filePath: string): Promise<boolean> {
   const client = createClient({ url: `file:${filePath}` });
   try {
-    const result = await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='category'");
-    if (result.rows.length === 0) {
-      console.error('[tcg-data-update] Validation failed: "category" table not found');
+    const placeholders = REQUIRED_TABLES.map(() => '?').join(', ');
+    const result = await client.execute({
+      sql: `SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`,
+      args: [...REQUIRED_TABLES],
+    });
+    const foundTables = new Set(result.rows.map((r) => r.name as string));
+    const missingTables = REQUIRED_TABLES.filter((t) => !foundTables.has(t));
+    if (missingTables.length > 0) {
+      console.error(`[tcg-data-update] Validation failed: missing tables: ${missingTables.join(', ')}`);
       return false;
     }
     console.log('[tcg-data-update] Validation passed');
@@ -148,17 +169,24 @@ export async function applyUpdate(release: GitHubRelease): Promise<void> {
   setDatabaseUpdating(true);
   console.log('[tcg-data-update] Database updating flag set, draining in-flight requests...');
 
+  let detached = false;
+  let renamed = false;
+
   try {
-    // Brief delay to let in-flight requests complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Drain delay: give in-flight requests time to finish after the 503 flag is set.
+    // The 503 middleware prevents new requests from reaching the database, so this
+    // only needs to cover requests that were already past the middleware check.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Detach the old tcg-data database from the otcgs connection
     console.log('[tcg-data-update] Detaching tcg_data from otcgs connection...');
     await otcgsClient.execute('DETACH DATABASE tcg_data;');
+    detached = true;
 
     // Atomically replace the database file
     console.log('[tcg-data-update] Replacing database file...');
     renameSync(tempDatabaseFilePath, databaseFilePath);
+    renamed = true;
 
     // Re-attach the new database
     console.log('[tcg-data-update] Re-attaching tcg_data...');
@@ -174,13 +202,19 @@ export async function applyUpdate(release: GitHubRelease): Promise<void> {
   } catch (err) {
     console.error('[tcg-data-update] Error during database swap:', err);
 
-    // Attempt recovery: try to re-ATTACH the original file
-    try {
-      console.log('[tcg-data-update] Attempting to re-ATTACH original database...');
-      await otcgsClient.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
-      console.log('[tcg-data-update] Recovery successful');
-    } catch (recoveryErr) {
-      console.error('[tcg-data-update] CRITICAL: Recovery failed, tcg_data is unavailable:', recoveryErr);
+    // Attempt recovery: re-ATTACH the database file.
+    // If the error occurred BEFORE rename, the original file is still at databaseFilePath.
+    // If the error occurred AFTER rename, the new file is now at databaseFilePath.
+    // In both cases, tcgDataFilePath (== databaseFilePath) points to whatever file
+    // is currently on disk, so the ATTACH is valid as long as DETACH succeeded.
+    if (detached) {
+      try {
+        console.log('[tcg-data-update] Attempting to re-ATTACH database...');
+        await otcgsClient.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+        console.log('[tcg-data-update] Recovery successful');
+      } catch (recoveryErr) {
+        console.error('[tcg-data-update] CRITICAL: Recovery failed, tcg_data is unavailable:', recoveryErr);
+      }
     }
 
     throw err;
@@ -203,10 +237,19 @@ function cleanupTempFile(): void {
   }
 }
 
+let _isCheckRunning = false;
+
 /**
  * Orchestrate a full update check: check -> download -> validate -> apply.
+ * Guarded against concurrent execution — if a check is already in progress,
+ * subsequent calls are silently skipped.
  */
 export async function performUpdateCheck(): Promise<void> {
+  if (_isCheckRunning) {
+    console.log('[tcg-data-update] Update check already in progress, skipping');
+    return;
+  }
+  _isCheckRunning = true;
   try {
     console.log('[tcg-data-update] Checking for updates...');
     const release = await checkForUpdate();
@@ -225,6 +268,8 @@ export async function performUpdateCheck(): Promise<void> {
   } catch (err) {
     console.error('[tcg-data-update] Update check failed:', err);
     cleanupTempFile();
+  } finally {
+    _isCheckRunning = false;
   }
 }
 
@@ -232,8 +277,14 @@ let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Start the update scheduler. Checks on startup and then every 24 hours.
+ * Safe to call multiple times — subsequent calls are no-ops if already running.
  */
 export function startUpdateScheduler(): void {
+  if (schedulerInterval !== null) {
+    console.log('[tcg-data-update] Update scheduler already running, ignoring duplicate start');
+    return;
+  }
+
   // Check immediately on startup (async, don't block server startup)
   performUpdateCheck();
 
