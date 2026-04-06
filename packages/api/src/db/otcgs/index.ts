@@ -17,7 +17,7 @@ export * from './schema';
 
 const client = createClient({ url: databaseFile });
 // Strip the "file:" prefix for ATTACH DATABASE since it expects a plain file path
-const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, '');
+export const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, '');
 await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 
 const otcgs = drizzle(client, {
@@ -37,3 +37,20 @@ const otcgs = drizzle(client, {
 });
 
 export { otcgs };
+
+// --- Database update state management ---
+
+let _isDatabaseUpdating = false;
+
+export function isDatabaseUpdating(): boolean {
+  return _isDatabaseUpdating;
+}
+
+export function setDatabaseUpdating(value: boolean): void {
+  _isDatabaseUpdating = value;
+}
+
+/** Access the underlying libsql client for DETACH/ATTACH operations */
+export function getOtcgsClient() {
+  return client;
+}
