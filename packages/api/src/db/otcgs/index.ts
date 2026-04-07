@@ -25,6 +25,43 @@ await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 // on the next query — but that new connection won't have tcg_data ATTACHed.
 // We patch transaction() to re-ATTACH after commit/rollback so the replacement
 // connection is ready for cross-database queries.
+// See: https://github.com/tursodatabase/libsql-client-ts — no upstream fix
+// exists as of @libsql/client@0.17.2. Remove this workaround if the driver
+// stops nulling the connection on transaction().
+const REATTACH_MAX_RETRIES = 3;
+const REATTACH_RETRY_DELAY_MS = 50;
+
+async function ensureTcgDataAttached(): Promise<void> {
+  for (let attempt = 1; attempt <= REATTACH_MAX_RETRIES; attempt++) {
+    try {
+      // Check whether tcg_data is already attached on the current connection.
+      // If the driver is ever fixed upstream this avoids a redundant ATTACH.
+      const result = await client.execute(`SELECT 1 FROM pragma_database_list WHERE name = 'tcg_data'`);
+      if (result.rows.length > 0) return;
+
+      await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      // "already in use" means a concurrent path already re-ATTACHed — safe to ignore.
+      if (message.includes('already in use')) return;
+
+      if (attempt < REATTACH_MAX_RETRIES) {
+        console.warn(`[otcgs] ATTACH tcg_data failed (attempt ${attempt}/${REATTACH_MAX_RETRIES}): ${message}`);
+        await new Promise((r) => setTimeout(r, REATTACH_RETRY_DELAY_MS));
+      } else {
+        // All retries exhausted — log but do NOT throw so the original
+        // commit/rollback result is not masked.
+        console.error(
+          `[otcgs] ATTACH tcg_data failed after ${REATTACH_MAX_RETRIES} attempts: ${message}. ` +
+            'Cross-database queries will fail until the next successful ATTACH.',
+        );
+      }
+    }
+  }
+}
+
 const originalTransaction = client.transaction.bind(client);
 client.transaction = async (mode?: 'write' | 'read' | 'deferred') => {
   const tx = await originalTransaction(mode);
@@ -32,11 +69,11 @@ client.transaction = async (mode?: 'write' | 'read' | 'deferred') => {
   const originalRollback = tx.rollback.bind(tx);
   tx.commit = async () => {
     await originalCommit();
-    await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+    await ensureTcgDataAttached();
   };
   tx.rollback = async () => {
     await originalRollback();
-    await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+    await ensureTcgDataAttached();
   };
   return tx;
 };
