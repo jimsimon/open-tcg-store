@@ -28,7 +28,7 @@ export type BackupProvider = 'google_drive' | 'dropbox' | 'onedrive';
 export async function createSafeBackupFile(): Promise<string> {
   const tempDir = mkdtempSync(join(tmpdir(), 'otcgs-backup-'));
   const tempPath = join(tempDir, 'otcgs-backup.sqlite');
-  await otcgs.run(sql.raw(`VACUUM INTO '${tempPath}'`));
+  await otcgs.run(sql`VACUUM INTO ${tempPath}`);
   return tempPath;
 }
 
