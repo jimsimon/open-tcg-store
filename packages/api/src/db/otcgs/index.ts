@@ -20,6 +20,27 @@ const client = createClient({ url: databaseFile });
 export const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, '');
 await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 
+// Workaround: The libsql sqlite3 driver sets its internal connection to null
+// when transaction() is called, causing a new connection to be lazily created
+// on the next query — but that new connection won't have tcg_data ATTACHed.
+// We patch transaction() to re-ATTACH after commit/rollback so the replacement
+// connection is ready for cross-database queries.
+const originalTransaction = client.transaction.bind(client);
+client.transaction = async (mode?: 'write' | 'read' | 'deferred') => {
+  const tx = await originalTransaction(mode);
+  const originalCommit = tx.commit.bind(tx);
+  const originalRollback = tx.rollback.bind(tx);
+  tx.commit = async () => {
+    await originalCommit();
+    await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+  };
+  tx.rollback = async () => {
+    await originalRollback();
+    await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+  };
+  return tx;
+};
+
 const otcgs = drizzle(client, {
   schema: {
     ...schema,
