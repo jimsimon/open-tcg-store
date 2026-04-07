@@ -74,10 +74,13 @@ vi.mock('../db/otcgs/index', () => ({
   otcgs: { run: mockDbRun },
 }));
 
-// Mock drizzle-orm sql template tag
-vi.mock('drizzle-orm', () => ({
-  sql: { raw: (s: string) => s },
-}));
+// Mock drizzle-orm sql template tag (must be callable as a tagged template literal)
+vi.mock('drizzle-orm', () => {
+  const sqlFn = (strings: TemplateStringsArray, ...values: unknown[]) =>
+    strings.reduce((result, str, i) => result + str + (values[i] ?? ''), '');
+  sqlFn.raw = (s: string) => s;
+  return { sql: sqlFn };
+});
 
 // Mock node:fs
 vi.mock('node:fs', () => ({
