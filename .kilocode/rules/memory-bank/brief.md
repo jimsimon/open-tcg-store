@@ -1,1 +1,0 @@
-Build a Lit web app to support operating a Trading Card Game Store with barcode scanning, single-card inventory management, sales tracking, store performance analysis, and customer retention programs.
