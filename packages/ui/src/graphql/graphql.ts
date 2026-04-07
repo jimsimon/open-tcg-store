@@ -173,6 +173,21 @@ export type DashboardDateRange = {
   startDate: Scalars['String']['input'];
 };
 
+export type DataUpdateResult = {
+  __typename?: 'DataUpdateResult';
+  message?: Maybe<Scalars['String']['output']>;
+  newVersion?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DataUpdateStatus = {
+  __typename?: 'DataUpdateStatus';
+  currentVersion?: Maybe<Scalars['String']['output']>;
+  isUpdating: Scalars['Boolean']['output'];
+  latestVersion?: Maybe<Scalars['String']['output']>;
+  updateAvailable: Scalars['Boolean']['output'];
+};
+
 export type InitialStoreLocation = {
   city: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -295,6 +310,7 @@ export type Mutation = {
   setSupportedGames: Array<SupportedGame>;
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
+  triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
   updateBackupSettings: BackupSettings;
   updateInventoryItem: InventoryItem;
@@ -629,6 +645,7 @@ export type Query = {
   getDashboardOpenOrders: Array<OpenOrder>;
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
+  getDataUpdateStatus: DataUpdateStatus;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;

@@ -162,7 +162,24 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   return next();
 }
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5174';
+
 const router = new Router()
+  // Proxy /api/status to the API server so client-side code can use a relative URL
+  .get('api-status', '/api/status', async (ctx) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/status`);
+      if (!res.ok) {
+        ctx.status = res.status;
+        ctx.body = { databaseUpdating: false };
+        return;
+      }
+      ctx.body = await res.json();
+    } catch {
+      ctx.status = 502;
+      ctx.body = { databaseUpdating: false };
+    }
+  })
   .use(async (ctx: RouterContext, next: Next) => {
     if ((await isSetupPending()) && ctx._matchedRouteName !== 'first-time-setup') {
       const redirectUrlOrError = router.url('first-time-setup');
@@ -174,11 +191,25 @@ const router = new Router()
     }
     return next();
   })
+  .use(async (ctx: RouterContext, next: Next) => {
+    if ((await isDatabaseUpdating()) && ctx._matchedRouteName !== 'maintenance') {
+      const redirectUrlOrError = router.url('maintenance');
+      if (redirectUrlOrError instanceof Error) {
+        throw redirectUrlOrError;
+      }
+      ctx.redirect(redirectUrlOrError);
+      return;
+    }
+    return next();
+  })
   .get('dashboard', '/', async (ctx) => {
     return renderPage(ctx, 'home');
   })
   .get('first-time-setup', '/first-time-setup', async (ctx) => {
     return renderPage(ctx, 'first-time-setup');
+  })
+  .get('maintenance', '/maintenance', async (ctx) => {
+    return renderPage(ctx, 'maintenance');
   })
   .use('/products', ensureAnonymousSession)
   .get('products-redirect', '/products', async (ctx) => {
@@ -252,6 +283,9 @@ const router = new Router()
   .get('settings-buyrates', '/settings/buyrates', async (ctx) => {
     return renderPage(ctx, 'settings-buyrates');
   })
+  .get('settings-data-updates', '/settings/data-updates', async (ctx) => {
+    return renderPage(ctx, 'settings-data-updates');
+  })
   .get('settings-integrations', '/settings/integrations', async (ctx) => {
     return renderPage(ctx, 'settings-integrations');
   })
@@ -282,6 +316,18 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );
   ctx.body = renderShellTemplate(pageDirectory, await pageTemplate(ctx));
+}
+
+async function isDatabaseUpdating(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/status`);
+    if (!res.ok) return false;
+    const data = (await res.json()) as { databaseUpdating: boolean };
+    return data.databaseUpdating === true;
+  } catch {
+    // If the API is unreachable, don't block the UI with a maintenance page
+    return false;
+  }
 }
 
 async function isSetupPending() {

@@ -21,6 +21,8 @@ import {
   getOneDriveAuthUrl,
   handleOneDriveCallback,
 } from './services/backup-service.ts';
+import { isDatabaseUpdating } from './db/otcgs/index.ts';
+import { startUpdateScheduler } from './services/tcg-data-update-service.ts';
 
 export type GraphqlContext = {
   auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
@@ -40,6 +42,22 @@ app.use(
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers: resolvers as Resolvers,
+});
+
+// Return 503 during database updates, except for the status endpoint.
+// This intentionally blocks ALL routes including /api/auth — the update
+// window is brief (~1s) and allowing auth requests during a database swap
+// could cause errors since the auth tables live in the same SQLite file.
+app.use(async (ctx, next) => {
+  if (isDatabaseUpdating() && ctx.URL.pathname !== '/api/status') {
+    ctx.status = 503;
+    ctx.body = {
+      errors: [{ message: 'The product database is being updated. Please try again in a moment.' }],
+    };
+    ctx.set('Retry-After', '10');
+    return;
+  }
+  return next();
 });
 
 app.use(async (ctx, next) => {
@@ -72,6 +90,9 @@ app.use(
 );
 
 const router = new Router()
+  .get('/api/status', (ctx: RouterContext) => {
+    ctx.body = { databaseUpdating: isDatabaseUpdating() };
+  })
   .get('/graphiql', (ctx: RouterContext) => {
     ctx.status = 200;
     ctx.type = 'html';
@@ -131,4 +152,7 @@ app
     console.log('Routes:');
     console.log(router.stack.map((i) => i.path));
     console.log(`Server is listening on port ${port}`);
+
+    // Start the tcg-data database update scheduler
+    startUpdateScheduler();
   });
