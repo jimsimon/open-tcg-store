@@ -2,7 +2,7 @@ import { createClient } from '@libsql/client';
 import { renameSync, readFileSync, writeFileSync, existsSync, unlinkSync, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
-import { getOtcgsClient, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
+import { client, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
 import { reconnectTcgData } from '../db/tcg-data/index.ts';
 
 const GITHUB_REPO = 'jimsimon/open-tcg-store';
@@ -164,13 +164,10 @@ export async function validateDatabase(filePath: string): Promise<boolean> {
  * 8. Clear updating flag
  */
 export async function applyUpdate(release: GitHubRelease): Promise<void> {
-  const otcgsClient = getOtcgsClient();
-
   setDatabaseUpdating(true);
   console.log('[tcg-data-update] Database updating flag set, draining in-flight requests...');
 
   let detached = false;
-  let renamed = false;
 
   try {
     // Drain delay: give in-flight requests time to finish after the 503 flag is set.
@@ -180,17 +177,16 @@ export async function applyUpdate(release: GitHubRelease): Promise<void> {
 
     // Detach the old tcg-data database from the otcgs connection
     console.log('[tcg-data-update] Detaching tcg_data from otcgs connection...');
-    await otcgsClient.execute('DETACH DATABASE tcg_data;');
+    await client.execute('DETACH DATABASE tcg_data;');
     detached = true;
 
     // Atomically replace the database file
     console.log('[tcg-data-update] Replacing database file...');
     renameSync(tempDatabaseFilePath, databaseFilePath);
-    renamed = true;
 
     // Re-attach the new database
     console.log('[tcg-data-update] Re-attaching tcg_data...');
-    await otcgsClient.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+    await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 
     // Reconnect the standalone tcgData drizzle connection
     console.log('[tcg-data-update] Reconnecting standalone tcgData connection...');
@@ -210,7 +206,7 @@ export async function applyUpdate(release: GitHubRelease): Promise<void> {
     if (detached) {
       try {
         console.log('[tcg-data-update] Attempting to re-ATTACH database...');
-        await otcgsClient.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+        await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
         console.log('[tcg-data-update] Recovery successful');
       } catch (recoveryErr) {
         console.error('[tcg-data-update] CRITICAL: Recovery failed, tcg_data is unavailable:', recoveryErr);

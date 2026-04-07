@@ -55,8 +55,3 @@ export function isDatabaseUpdating(): boolean {
 export function setDatabaseUpdating(value: boolean): void {
   _isDatabaseUpdating = value;
 }
-
-/** Access the underlying libsql client for DETACH/ATTACH operations */
-export function getOtcgsClient() {
-  return client;
-}

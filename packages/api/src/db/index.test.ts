@@ -60,7 +60,7 @@ vi.mock('./tcg-data/index', () => ({
   reconnectTcgData: mockReconnectTcgData,
 }));
 
-import { otcgs, isDatabaseUpdating, setDatabaseUpdating, getOtcgsClient } from './index';
+import { otcgs, isDatabaseUpdating, setDatabaseUpdating, client } from './index';
 import { user } from './otcgs/auth-schema';
 
 describe('database exports', () => {
@@ -116,8 +116,6 @@ describe('database update state management', () => {
   });
 
   it('getOtcgsClient is exported and returns the client', () => {
-    expect(getOtcgsClient).toBeTypeOf('function');
-    const client = getOtcgsClient();
     expect(client).toBeDefined();
     expect(client.execute).toBeTypeOf('function');
   });
