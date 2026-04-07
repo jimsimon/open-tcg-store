@@ -8,7 +8,7 @@ export const getSupportedGames: NonNullable<QueryResolvers['getSupportedGames']>
   _arg,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['read'] });
+  await assertPermission(ctx, { companySettings: ['read'] });
   const orgId = getOrganizationId(ctx);
   return await getSupportedGamesService(orgId);
 };

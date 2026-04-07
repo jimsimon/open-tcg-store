@@ -19,7 +19,7 @@ export const statement = {
   ...adminDefaultStatements,
   inventory: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
-  storeSettings: ['read', 'update'],
+  companySettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
   userManagement: ['create', 'read', 'update', 'delete'],
   transactionLog: ['read'],
@@ -43,7 +43,7 @@ export const ownerRole = ac.newRole({
   // Custom app permissions
   inventory: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
-  storeSettings: ['read', 'update'],
+  companySettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
   userManagement: ['create', 'read', 'update', 'delete'],
   transactionLog: ['read'],

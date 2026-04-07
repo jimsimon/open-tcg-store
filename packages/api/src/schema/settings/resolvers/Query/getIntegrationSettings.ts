@@ -8,6 +8,6 @@ export const getIntegrationSettings: NonNullable<QueryResolvers['getIntegrationS
   _arg,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['read'] });
+  await assertPermission(ctx, { companySettings: ['read'] });
   return await getIntegrationSettingsService();
 };

@@ -9,7 +9,7 @@ export const triggerBackup: NonNullable<MutationResolvers['triggerBackup']> = as
   _arg,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
 
   const settings = await getBackupSettings();
   if (!settings.provider) {

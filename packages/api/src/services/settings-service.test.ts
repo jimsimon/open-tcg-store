@@ -43,27 +43,27 @@ vi.mock('../db/otcgs/index', () => ({
   otcgs: mockOtcgs,
 }));
 
-vi.mock('../db/otcgs/settings-schema', () => ({
-  storeSettings: {
-    id: 'store_settings.id',
-    companyName: 'store_settings.company_name',
-    ein: 'store_settings.ein',
-    backupProvider: 'store_settings.backup_provider',
-    backupFrequency: 'store_settings.backup_frequency',
-    lastBackupAt: 'store_settings.last_backup_at',
-    stripeEnabled: 'store_settings.stripe_enabled',
-    stripeApiKey: 'store_settings.stripe_api_key',
-    shopifyEnabled: 'store_settings.shopify_enabled',
-    shopifyApiKey: 'store_settings.shopify_api_key',
-    shopifyShopDomain: 'store_settings.shopify_shop_domain',
-    googleDriveAccessToken: 'store_settings.google_drive_access_token',
-    googleDriveRefreshToken: 'store_settings.google_drive_refresh_token',
-    dropboxAccessToken: 'store_settings.dropbox_access_token',
-    dropboxRefreshToken: 'store_settings.dropbox_refresh_token',
-    onedriveAccessToken: 'store_settings.onedrive_access_token',
-    onedriveRefreshToken: 'store_settings.onedrive_refresh_token',
-    updatedAt: 'store_settings.updated_at',
-    updatedBy: 'store_settings.updated_by',
+vi.mock('../db/otcgs/company-settings-schema', () => ({
+  companySettings: {
+    id: 'company_settings.id',
+    companyName: 'company_settings.company_name',
+    ein: 'company_settings.ein',
+    backupProvider: 'company_settings.backup_provider',
+    backupFrequency: 'company_settings.backup_frequency',
+    lastBackupAt: 'company_settings.last_backup_at',
+    stripeEnabled: 'company_settings.stripe_enabled',
+    stripeApiKey: 'company_settings.stripe_api_key',
+    shopifyEnabled: 'company_settings.shopify_enabled',
+    shopifyApiKey: 'company_settings.shopify_api_key',
+    shopifyShopDomain: 'company_settings.shopify_shop_domain',
+    googleDriveAccessToken: 'company_settings.google_drive_access_token',
+    googleDriveRefreshToken: 'company_settings.google_drive_refresh_token',
+    dropboxAccessToken: 'company_settings.dropbox_access_token',
+    dropboxRefreshToken: 'company_settings.dropbox_refresh_token',
+    onedriveAccessToken: 'company_settings.onedrive_access_token',
+    onedriveRefreshToken: 'company_settings.onedrive_refresh_token',
+    updatedAt: 'company_settings.updated_at',
+    updatedBy: 'company_settings.updated_by',
   },
 }));
 

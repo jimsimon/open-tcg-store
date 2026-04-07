@@ -8,6 +8,6 @@ export const lookupSalesTax: NonNullable<QueryResolvers['lookupSalesTax']> = asy
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['read'] });
+  await assertPermission(ctx, { companySettings: ['read'] });
   return await lookupSalesTaxService(args.countryCode, args.stateCode);
 };

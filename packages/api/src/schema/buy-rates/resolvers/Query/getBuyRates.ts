@@ -4,7 +4,7 @@ import { getBuyRates as getBuyRatesService } from '../../../../services/buy-rate
 import type { QueryResolvers } from './../../../types.generated';
 
 export const getBuyRates: NonNullable<QueryResolvers['getBuyRates']> = async (_parent, args, ctx: GraphqlContext) => {
-  await assertPermission(ctx, { storeSettings: ['read'] });
+  await assertPermission(ctx, { companySettings: ['read'] });
   const orgId = getOrganizationId(ctx);
   return await getBuyRatesService(orgId, args.categoryId);
 };

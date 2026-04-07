@@ -80,7 +80,7 @@ describe('userPermissions resolver', () => {
     ).map((call) => Object.keys(call[0].body.permissions)[0]);
     expect(calledResources).toContain('inventory');
     expect(calledResources).toContain('transactionLog');
-    expect(calledResources).toContain('storeSettings');
+    expect(calledResources).toContain('companySettings');
     expect(calledResources).toContain('storeLocations');
     expect(calledResources).toContain('userManagement');
     expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(5);
@@ -89,7 +89,7 @@ describe('userPermissions resolver', () => {
   it('returns false for a permission when hasPermission throws', async () => {
     mockAuth.api.hasPermission.mockImplementation(({ body }: { body: { permissions: Record<string, string[]> } }) => {
       const resource = Object.keys(body.permissions)[0];
-      if (resource === 'storeSettings') return Promise.reject(new Error('Auth server error'));
+      if (resource === 'companySettings') return Promise.reject(new Error('Auth server error'));
       return Promise.resolve({ success: true });
     });
 

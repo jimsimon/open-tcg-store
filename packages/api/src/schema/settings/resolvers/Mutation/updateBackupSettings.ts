@@ -8,7 +8,7 @@ export const updateBackupSettings: NonNullable<MutationResolvers['updateBackupSe
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const userId = getUserId(ctx);
   return await updateBackupSettingsService(args.input, userId);
 };

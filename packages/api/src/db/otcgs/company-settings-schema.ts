@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
-export const storeSettings = sqliteTable('store_settings', {
+export const companySettings = sqliteTable('company_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
 
   // Company Info (address/tax moved to store_location)

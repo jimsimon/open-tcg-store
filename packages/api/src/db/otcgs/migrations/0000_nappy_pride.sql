@@ -221,7 +221,7 @@ CREATE INDEX `order_item_order_id_idx` ON `order_item` (`order_id`);--> statemen
 CREATE INDEX `order_item_product_id_idx` ON `order_item` (`product_id`);--> statement-breakpoint
 CREATE INDEX `order_item_inventory_item_id_idx` ON `order_item` (`inventory_item_id`);--> statement-breakpoint
 CREATE INDEX `order_item_stock_id_idx` ON `order_item` (`inventory_item_stock_id`);--> statement-breakpoint
-CREATE TABLE `store_settings` (
+CREATE TABLE `company_settings` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`company_name` text,
 	`ein` text,
@@ -269,4 +269,29 @@ CREATE INDEX `txn_log_org_id_idx` ON `transaction_log` (`organization_id`);--> s
 CREATE INDEX `txn_log_created_at_idx` ON `transaction_log` (`created_at`);--> statement-breakpoint
 CREATE INDEX `txn_log_action_idx` ON `transaction_log` (`action`);--> statement-breakpoint
 CREATE INDEX `txn_log_resource_type_idx` ON `transaction_log` (`resource_type`);--> statement-breakpoint
-CREATE INDEX `txn_log_user_id_idx` ON `transaction_log` (`user_id`);
+CREATE INDEX `txn_log_user_id_idx` ON `transaction_log` (`user_id`);--> statement-breakpoint
+CREATE TABLE `store_supported_game` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`organization_id` text NOT NULL,
+	`category_id` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `store_supported_game_org_category_idx` ON `store_supported_game` (`organization_id`,`category_id`);--> statement-breakpoint
+CREATE INDEX `store_supported_game_org_id_idx` ON `store_supported_game` (`organization_id`);--> statement-breakpoint
+CREATE INDEX `store_supported_game_category_id_idx` ON `store_supported_game` (`category_id`);--> statement-breakpoint
+CREATE TABLE `buy_rate` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`organization_id` text NOT NULL,
+	`category_id` integer NOT NULL,
+	`description` text NOT NULL,
+	`rate` real NOT NULL,
+	`sort_order` integer DEFAULT 0 NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `buy_rate_org_category_idx` ON `buy_rate` (`organization_id`,`category_id`);--> statement-breakpoint
+CREATE INDEX `buy_rate_org_id_idx` ON `buy_rate` (`organization_id`);--> statement-breakpoint
+CREATE INDEX `buy_rate_category_id_idx` ON `buy_rate` (`category_id`);--> statement-breakpoint
+CREATE INDEX `buy_rate_sort_order_idx` ON `buy_rate` (`sort_order`);

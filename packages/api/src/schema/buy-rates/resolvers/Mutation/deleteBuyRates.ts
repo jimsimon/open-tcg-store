@@ -8,7 +8,7 @@ export const deleteBuyRates: NonNullable<MutationResolvers['deleteBuyRates']> = 
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const orgId = getOrganizationId(ctx);
   return await deleteBuyRatesService(orgId, args.categoryId);
 };

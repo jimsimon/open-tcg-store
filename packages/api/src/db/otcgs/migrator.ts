@@ -7,62 +7,6 @@ import { databaseFilePath } from './drizzle.config';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, 'migrations');
-const MIGRATIONS_TABLE = '__drizzle_migrations';
-
-// ---------------------------------------------------------------------------
-// Baseline Seeding
-// ---------------------------------------------------------------------------
-
-/**
- * For databases created before the migration system was introduced (via
- * `drizzle-kit push`), we need to seed the __drizzle_migrations table with
- * the initial migration so it gets skipped. This detects existing databases
- * by checking for application tables without a migrations tracking table.
- */
-async function seedBaselineIfNeeded(db: LibSQLDatabase<Record<string, unknown>>): Promise<void> {
-  // Check if __drizzle_migrations table exists
-  const tables = await db.values<[string]>(
-    sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${MIGRATIONS_TABLE}`,
-  );
-
-  if (tables.length > 0) {
-    // Migrations table exists — not a first-time run
-    return;
-  }
-
-  // Check if application tables exist (indicating a pre-migration database)
-  const appTables = await db.values<[string]>(
-    sql`SELECT name FROM sqlite_master WHERE type='table' AND name='store_settings'`,
-  );
-
-  if (appTables.length === 0) {
-    // Fresh database — no seeding needed, migrate() will apply all migrations
-    return;
-  }
-
-  // Existing database without migration tracking — seed the baseline
-  console.log('[migrator] Detected existing database without migration tracking. Seeding baseline...');
-
-  const migrations = readMigrationFiles({ migrationsFolder: MIGRATIONS_FOLDER });
-  if (migrations.length === 0) {
-    return;
-  }
-
-  // Seed the first (baseline) migration as already applied
-  const baseline = migrations[0];
-  await db.run(sql`
-    CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      hash text NOT NULL,
-      created_at numeric
-    )
-  `);
-  await db.run(
-    sql`INSERT INTO ${sql.identifier(MIGRATIONS_TABLE)} ("hash", "created_at") VALUES(${baseline.hash}, ${baseline.folderMillis})`,
-  );
-
-  console.log('[migrator] Baseline migration seeded successfully.');
-}
 
 // ---------------------------------------------------------------------------
 // Pending Migration Detection
@@ -81,17 +25,17 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
     return false;
   }
 
-  // Ensure the table exists before querying
-  await db.run(sql`
-    CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      hash text NOT NULL,
-      created_at numeric
-    )
-  `);
+  // Check if the migrations table exists
+  const tables = await db.values<[string]>(
+    sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+  );
 
-  const dbMigrations = await db.values<[string]>(sql`SELECT hash FROM ${sql.identifier(MIGRATIONS_TABLE)}`);
+  if (tables.length === 0) {
+    // No migrations table yet — all migrations are pending
+    return true;
+  }
 
+  const dbMigrations = await db.values<[string]>(sql`SELECT hash FROM "__drizzle_migrations"`);
   const appliedHashes = new Set(dbMigrations.map((row) => row[0]));
 
   for (const migration of migrations) {
@@ -221,18 +165,14 @@ async function handleMigrationFailure(
  * Apply pending database migrations with automatic backup and rollback.
  *
  * Flow:
- * 1. Seed baseline for existing databases (pre-migration era)
- * 2. Check for pending migrations (return early if none)
- * 3. Create local backup via VACUUM INTO
- * 4. Attempt cloud backup if configured (non-blocking)
- * 5. Run drizzle migrations
- * 6. On failure: verify integrity, restore from backup if needed
+ * 1. Check for pending migrations (return early if none)
+ * 2. Create local backup via VACUUM INTO
+ * 3. Attempt cloud backup if configured (non-blocking)
+ * 4. Run drizzle migrations
+ * 5. On failure: verify integrity, restore from backup if needed
  */
 export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>>): Promise<void> {
-  // 1. Seed baseline for existing databases
-  await seedBaselineIfNeeded(db);
-
-  // 2. Check for pending migrations
+  // 1. Check for pending migrations
   const hasPending = await hasPendingMigrations(db);
   if (!hasPending) {
     console.log('[migrator] No pending migrations.');
@@ -241,13 +181,13 @@ export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>
 
   console.log('[migrator] Pending migrations detected. Starting migration process...');
 
-  // 3. Local backup via VACUUM INTO (always)
+  // 2. Local backup via VACUUM INTO (always)
   const backupPath = await createLocalBackup(db);
 
-  // 4. Cloud backup (best-effort, non-blocking)
+  // 3. Cloud backup (best-effort, non-blocking)
   await attemptCloudBackup();
 
-  // 5. Run migrations with rollback protection
+  // 4. Run migrations with rollback protection
   try {
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
     console.log('[migrator] Migrations applied successfully.');

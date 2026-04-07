@@ -8,7 +8,7 @@ export const saveBuyRates: NonNullable<MutationResolvers['saveBuyRates']> = asyn
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const orgId = getOrganizationId(ctx);
   return await saveBuyRatesService(orgId, args.input.categoryId, args.input.entries);
 };

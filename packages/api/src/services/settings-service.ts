@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index';
-import { storeSettings } from '../db/otcgs/settings-schema';
+import { companySettings } from '../db/otcgs/company-settings-schema';
 import { encrypt, encryptIfPresent, decryptIfPresent } from '../lib/encryption';
 import SalesTax from 'sales-tax';
 
@@ -16,13 +16,13 @@ function formatDate(d: Date | null | undefined): string | null {
  * Ensure the single settings row exists. Returns the row.
  */
 async function ensureSettingsRow() {
-  const [existing] = await otcgs.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+  const [existing] = await otcgs.select().from(companySettings).where(eq(companySettings.id, 1)).limit(1);
 
   if (existing) return existing;
 
   // Create the initial row
   const [created] = await otcgs
-    .insert(storeSettings)
+    .insert(companySettings)
     .values({
       id: 1,
       updatedAt: new Date(),
@@ -68,7 +68,7 @@ export async function updateStoreSettings(
   if (input.companyName !== undefined) updates.companyName = input.companyName;
   if (input.ein !== undefined) updates.ein = input.ein;
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
   return getStoreSettings();
 }
@@ -136,7 +136,7 @@ export async function updateBackupSettings(
   if (input.provider !== undefined) updates.backupProvider = input.provider;
   if (input.frequency !== undefined) updates.backupFrequency = input.frequency;
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
   return getBackupSettings();
 }
@@ -186,7 +186,7 @@ export async function updateStripeIntegration(
     updates.stripeApiKey = encryptIfPresent(input.apiKey);
   }
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
   const row = await ensureSettingsRow();
   return {
@@ -218,7 +218,7 @@ export async function updateShopifyIntegration(
   }
   if (input.shopDomain !== undefined) updates.shopifyShopDomain = input.shopDomain;
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
   const row = await ensureSettingsRow();
   return {
@@ -256,7 +256,7 @@ export async function storeOAuthTokens(
       break;
   }
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 }
 
 export async function getOAuthTokens(
@@ -303,13 +303,13 @@ export async function clearOAuthTokens(provider: 'google_drive' | 'dropbox' | 'o
       break;
   }
 
-  await otcgs.update(storeSettings).set(updates).where(eq(storeSettings.id, 1));
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 }
 
 export async function updateLastBackupAt(): Promise<void> {
   await ensureSettingsRow();
   await otcgs
-    .update(storeSettings)
+    .update(companySettings)
     .set({ lastBackupAt: new Date(), updatedAt: new Date() })
-    .where(eq(storeSettings.id, 1));
+    .where(eq(companySettings.id, 1));
 }

@@ -8,6 +8,6 @@ export const getStoreSettings: NonNullable<QueryResolvers['getStoreSettings']> =
   _arg,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['read'] });
+  await assertPermission(ctx, { companySettings: ['read'] });
   return await getStoreSettingsService();
 };

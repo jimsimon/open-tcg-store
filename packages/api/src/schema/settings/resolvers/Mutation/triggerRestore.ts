@@ -8,6 +8,6 @@ export const triggerRestore: NonNullable<MutationResolvers['triggerRestore']> = 
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   return await performRestore(args.provider as 'google_drive' | 'dropbox' | 'onedrive');
 };

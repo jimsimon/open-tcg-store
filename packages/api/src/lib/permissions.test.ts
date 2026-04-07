@@ -19,8 +19,8 @@ describe('permissions', () => {
       expect(statement.order).toEqual(['create', 'read', 'update', 'cancel']);
     });
 
-    it('should define storeSettings resource with read, update actions', () => {
-      expect(statement.storeSettings).toEqual(['read', 'update']);
+    it('should define companySettings resource with read, update actions', () => {
+      expect(statement.companySettings).toEqual(['read', 'update']);
     });
 
     it('should define storeLocations resource with CRUD actions', () => {

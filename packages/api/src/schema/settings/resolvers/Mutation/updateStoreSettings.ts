@@ -8,7 +8,7 @@ export const updateStoreSettings: NonNullable<MutationResolvers['updateStoreSett
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const userId = getUserId(ctx);
   return await updateStoreSettingsService(args.input, userId);
 };
