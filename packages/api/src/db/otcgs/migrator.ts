@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { databaseFilePath } from './drizzle.config';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import type { Client } from '@libsql/client';
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, 'migrations');
 const MIGRATIONS_TABLE = '__drizzle_migrations';
@@ -120,6 +121,7 @@ async function attemptCloudBackup(db: LibSQLDatabase<Record<string, unknown>>): 
 
 async function handleMigrationFailure(
   db: LibSQLDatabase<Record<string, unknown>>,
+  client: Client,
   backupPath: string,
   error: unknown,
 ): Promise<void> {
@@ -143,13 +145,15 @@ async function handleMigrationFailure(
   }
 
   // Integrity check failed or errored — restore from backup.
-  // Close the connection first to release any locks and WAL/SHM handles.
+  // Flush WAL to the main database file, then close the connection to
+  // release all file locks before overwriting the database on disk.
   console.log('[migrator] Closing database connection before restore...');
   try {
     await db.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);
   } catch {
     // Best-effort — connection may already be in a bad state
   }
+  client.close();
 
   console.log(`[migrator] Restoring database from backup: ${backupPath}`);
   try {
@@ -182,7 +186,7 @@ async function handleMigrationFailure(
  * 4. Run drizzle migrations
  * 5. On failure: verify integrity, restore from backup if needed
  */
-export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>>): Promise<void> {
+export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>>, client: Client): Promise<void> {
   // 1. Check for pending migrations
   const hasPending = await hasPendingMigrations(db);
   if (!hasPending) {
@@ -203,7 +207,7 @@ export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER, migrationsTable: MIGRATIONS_TABLE });
     console.log('[migrator] Migrations applied successfully.');
   } catch (error) {
-    await handleMigrationFailure(db, backupPath, error);
+    await handleMigrationFailure(db, client, backupPath, error);
     throw error; // Always re-throw to prevent server from starting with bad state
   }
 }
