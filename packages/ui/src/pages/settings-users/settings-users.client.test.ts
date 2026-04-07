@@ -35,7 +35,6 @@ async function waitForLoaded(el: OgsSettingsUsersPage, timeout = 2000): Promise<
   const deadline = Date.now() + timeout;
   while (el.loading && Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 10));
-    await new Promise((r) => setTimeout(r, 10));
   }
   if (el.loading) throw new Error('waitForLoaded timed out — element still loading');
   await el.updateComplete;
