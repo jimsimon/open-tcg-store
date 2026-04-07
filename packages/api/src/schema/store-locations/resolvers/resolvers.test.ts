@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const {
   mockAssertPermission,
+  mockGetUserId,
   mockGetAllStoreLocations,
   mockGetStoreLocation,
   mockGetActiveStoreLocation,
@@ -12,6 +13,7 @@ const {
   mockSetActiveStore,
 } = vi.hoisted(() => ({
   mockAssertPermission: vi.fn(),
+  mockGetUserId: vi.fn().mockReturnValue('user-1'),
   mockGetAllStoreLocations: vi.fn(),
   mockGetStoreLocation: vi.fn(),
   mockGetActiveStoreLocation: vi.fn(),
@@ -24,6 +26,7 @@ const {
 
 vi.mock('../../../lib/assert-permission', () => ({
   assertPermission: mockAssertPermission,
+  getUserId: mockGetUserId,
 }));
 
 vi.mock('../../../services/store-location-service', () => ({
@@ -83,9 +86,10 @@ describe('store-locations resolvers', () => {
   });
 
   describe('getActiveStoreLocation', () => {
-    it('should pass headers to service', async () => {
+    it('should require authentication and pass headers to service', async () => {
       mockGetActiveStoreLocation.mockResolvedValue({ id: 'org-1' });
       await getActiveStoreLocation(null, {}, ctx());
+      expect(mockGetUserId).toHaveBeenCalledWith(expect.objectContaining({ auth: expect.anything() }));
       expect(mockGetActiveStoreLocation).toHaveBeenCalledWith(
         expect.objectContaining({ authorization: 'Bearer token' }),
       );
@@ -93,9 +97,10 @@ describe('store-locations resolvers', () => {
   });
 
   describe('getEmployeeStoreLocations', () => {
-    it('should pass headers to service', async () => {
+    it('should require authentication and pass headers to service', async () => {
       mockGetEmployeeStoreLocations.mockResolvedValue([]);
       await getEmployeeStoreLocations(null, {}, ctx());
+      expect(mockGetUserId).toHaveBeenCalledWith(expect.objectContaining({ auth: expect.anything() }));
       expect(mockGetEmployeeStoreLocations).toHaveBeenCalledWith(
         expect.objectContaining({ authorization: 'Bearer token' }),
       );
@@ -147,11 +152,12 @@ describe('store-locations resolvers', () => {
   });
 
   describe('setActiveStoreLocation', () => {
-    it('should delegate to service and return true', async () => {
+    it('should require authentication and delegate to service', async () => {
       mockSetActiveStore.mockResolvedValue(undefined);
 
       const result = await setActiveStoreLocation(null, { organizationId: 'org-1' }, ctx());
 
+      expect(mockGetUserId).toHaveBeenCalledWith(expect.objectContaining({ auth: expect.anything() }));
       expect(mockSetActiveStore).toHaveBeenCalledWith(
         'org-1',
         expect.objectContaining({ authorization: 'Bearer token' }),

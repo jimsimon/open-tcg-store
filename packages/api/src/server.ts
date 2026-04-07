@@ -89,6 +89,37 @@ app.use(
   ),
 );
 
+/**
+ * Verify the current request has an authenticated session with companySettings:update
+ * permission. Returns true if authorized, false otherwise (also sets ctx.status = 403).
+ */
+async function requireCompanySettingsUpdate(ctx: RouterContext): Promise<boolean> {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(ctx.req.headers),
+  });
+  if (!session?.user) {
+    ctx.status = 403;
+    ctx.body = { error: 'Forbidden: Authentication required' };
+    return false;
+  }
+  try {
+    const result = await auth.api.hasPermission({
+      headers: fromNodeHeaders(ctx.req.headers) as unknown as Record<string, string>,
+      body: { permissions: { companySettings: ['update'] } },
+    });
+    if (!result.success) {
+      ctx.status = 403;
+      ctx.body = { error: 'Forbidden: Insufficient permissions' };
+      return false;
+    }
+  } catch {
+    ctx.status = 403;
+    ctx.body = { error: 'Forbidden: Insufficient permissions' };
+    return false;
+  }
+  return true;
+}
+
 const router = new Router()
   .get('/api/status', (ctx: RouterContext) => {
     ctx.body = { databaseUpdating: isDatabaseUpdating() };
@@ -101,7 +132,8 @@ const router = new Router()
     });
   })
   // OAuth callback routes for backup providers
-  .get('/api/backup/oauth/google_drive/authorize', (ctx: RouterContext) => {
+  .get('/api/backup/oauth/google_drive/authorize', async (ctx: RouterContext) => {
+    if (!(await requireCompanySettingsUpdate(ctx))) return;
     ctx.redirect(getGoogleDriveAuthUrl());
   })
   .get('/api/backup/oauth/google_drive/callback', async (ctx: RouterContext) => {
@@ -115,7 +147,8 @@ const router = new Router()
       ctx.redirect(`http://localhost:5173/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
-  .get('/api/backup/oauth/dropbox/authorize', (ctx: RouterContext) => {
+  .get('/api/backup/oauth/dropbox/authorize', async (ctx: RouterContext) => {
+    if (!(await requireCompanySettingsUpdate(ctx))) return;
     ctx.redirect(getDropboxAuthUrl());
   })
   .get('/api/backup/oauth/dropbox/callback', async (ctx: RouterContext) => {
@@ -129,7 +162,8 @@ const router = new Router()
       ctx.redirect(`http://localhost:5173/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
-  .get('/api/backup/oauth/onedrive/authorize', (ctx: RouterContext) => {
+  .get('/api/backup/oauth/onedrive/authorize', async (ctx: RouterContext) => {
+    if (!(await requireCompanySettingsUpdate(ctx))) return;
     ctx.redirect(getOneDriveAuthUrl());
   })
   .get('/api/backup/oauth/onedrive/callback', async (ctx: RouterContext) => {
