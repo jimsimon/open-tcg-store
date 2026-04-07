@@ -68,8 +68,18 @@ async function createLocalBackup(db: LibSQLDatabase<Record<string, unknown>>): P
 // Cloud Backup (Best-Effort)
 // ---------------------------------------------------------------------------
 
-async function attemptCloudBackup(): Promise<void> {
+async function attemptCloudBackup(db: LibSQLDatabase<Record<string, unknown>>): Promise<void> {
   try {
+    // Skip cloud backup on fresh databases — no migrations table means this is the
+    // first run, there's nothing to back up, and importing settings-service would
+    // deadlock due to the top-level await in index.ts.
+    const tables = await db.values<[string]>(
+      sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+    );
+    if (tables.length === 0) {
+      return;
+    }
+
     // Dynamically import to avoid circular dependency issues at module load time
     const { getBackupSettings } = await import('../../services/settings-service');
     const settings = await getBackupSettings();
@@ -185,7 +195,7 @@ export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>
   const backupPath = await createLocalBackup(db);
 
   // 3. Cloud backup (best-effort, non-blocking)
-  await attemptCloudBackup();
+  await attemptCloudBackup(db);
 
   // 4. Run migrations with rollback protection
   try {
