@@ -30,6 +30,16 @@ import { execute } from '../../lib/graphql';
 
 // --- Helpers ---
 
+/** Poll until the element has finished loading (async data + Lit render). */
+async function waitForLoaded(el: OgsSettingsUsersPage, timeout = 2000): Promise<void> {
+  const deadline = Date.now() + timeout;
+  while (el.loading && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  if (el.loading) throw new Error('waitForLoaded timed out — element still loading');
+  await el.updateComplete;
+}
+
 function fakeUser(overrides: Record<string, unknown> = {}) {
   return {
     id: 'user-1',
@@ -69,9 +79,7 @@ describe('ogs-settings-users-page', () => {
 
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await waitForLoaded(element);
   });
 
   afterEach(() => {
@@ -177,9 +185,7 @@ describe('ogs-settings-users-page', () => {
     element.remove();
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await waitForLoaded(element);
 
     const errorCallout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(errorCallout).toBeTruthy();
@@ -192,9 +198,7 @@ describe('ogs-settings-users-page', () => {
     element.remove();
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await waitForLoaded(element);
 
     const errorCallout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(errorCallout).toBeTruthy();
@@ -207,9 +211,7 @@ describe('ogs-settings-users-page', () => {
     element.remove();
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await waitForLoaded(element);
 
     const emptyState = element.shadowRoot!.querySelector('.empty-state');
     expect(emptyState).toBeTruthy();
@@ -240,9 +242,7 @@ describe('ogs-settings-users-page', () => {
     element.remove();
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await waitForLoaded(element);
 
     const rows = element.shadowRoot!.querySelectorAll('tbody tr');
     expect(rows.length).toBe(1); // Only the non-anonymous user
