@@ -115,7 +115,7 @@ describe('database update state management', () => {
     expect(mockSetDatabaseUpdating).toHaveBeenCalledWith(true);
   });
 
-  it('getOtcgsClient is exported and returns the client', () => {
+  it('client is exported and returns the client', () => {
     expect(client).toBeDefined();
     expect(client.execute).toBeTypeOf('function');
   });
