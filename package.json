@@ -72,7 +72,7 @@
     "drizzle-kit": "^0.31.10",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "oxfmt": "^0.43.0",
+    "oxfmt": "^0.44.0",
     "oxlint": "^1.57.0",
     "playwright": "^1.58.2",
     "shadow-dom-testing-library": "^1.13.1",
