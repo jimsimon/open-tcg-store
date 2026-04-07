@@ -28,7 +28,7 @@ function chainable(rows: unknown[] = []) {
 
 let selectChain: ReturnType<typeof chainable>;
 
-const { mockOtcgs, mockIsDatabaseUpdating, mockSetDatabaseUpdating, mockGetOtcgsClient } = vi.hoisted(() => ({
+const { mockOtcgs, mockIsDatabaseUpdating, mockSetDatabaseUpdating, mockClient } = vi.hoisted(() => ({
   mockOtcgs: {
     select: vi.fn(),
     insert: vi.fn(),
@@ -37,7 +37,7 @@ const { mockOtcgs, mockIsDatabaseUpdating, mockSetDatabaseUpdating, mockGetOtcgs
   },
   mockIsDatabaseUpdating: vi.fn().mockReturnValue(false),
   mockSetDatabaseUpdating: vi.fn(),
-  mockGetOtcgsClient: vi.fn().mockReturnValue({ execute: vi.fn() }),
+  mockClient: { execute: vi.fn() },
 }));
 
 const { mockTcgData, mockReconnectTcgData } = vi.hoisted(() => ({
@@ -51,7 +51,7 @@ vi.mock('./otcgs/index', () => ({
   otcgs: mockOtcgs,
   isDatabaseUpdating: mockIsDatabaseUpdating,
   setDatabaseUpdating: mockSetDatabaseUpdating,
-  getOtcgsClient: mockGetOtcgsClient,
+  client: mockClient,
   tcgDataFilePath: '/fake/tcg-data.sqlite',
 }));
 

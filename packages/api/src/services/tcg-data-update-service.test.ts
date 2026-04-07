@@ -11,7 +11,6 @@ const {
   mockRenameSync,
   mockUnlinkSync,
   mockCreateWriteStream,
-  mockGetOtcgsClient,
   mockSetDatabaseUpdating,
   mockReconnectTcgData,
   mockCreateClient,
@@ -27,7 +26,6 @@ const {
   mockRenameSync: vi.fn(),
   mockUnlinkSync: vi.fn(),
   mockCreateWriteStream: vi.fn(),
-  mockGetOtcgsClient: vi.fn(),
   mockSetDatabaseUpdating: vi.fn(),
   mockReconnectTcgData: vi.fn(),
   mockCreateClient: vi.fn(),
@@ -62,7 +60,7 @@ vi.mock('node:stream', () => ({
 
 // Mock the db modules
 vi.mock('../db/otcgs/index', () => ({
-  getOtcgsClient: mockGetOtcgsClient,
+  client: { execute: mockOtcgsExecute },
   setDatabaseUpdating: mockSetDatabaseUpdating,
   tcgDataFilePath: '/fake/workspace/sqlite-data/tcg-data.sqlite',
 }));
@@ -135,7 +133,6 @@ describe('tcg-data-update-service', () => {
 
     // Default mock for the otcgs client (separate from validation client)
     mockOtcgsExecute.mockResolvedValue(undefined);
-    mockGetOtcgsClient.mockReturnValue({ execute: mockOtcgsExecute });
 
     // Default mock for libsql createClient (used in validateDatabase)
     mockValidationExecute.mockResolvedValue({
@@ -266,9 +263,7 @@ describe('tcg-data-update-service', () => {
       const result = await downloadUpdate(release);
 
       expect(result).toBe('/fake/workspace/sqlite-data/tcg-data.sqlite.new');
-      expect(mockCreateWriteStream).toHaveBeenCalledWith(
-        '/fake/workspace/sqlite-data/tcg-data.sqlite.new',
-      );
+      expect(mockCreateWriteStream).toHaveBeenCalledWith('/fake/workspace/sqlite-data/tcg-data.sqlite.new');
       expect(mockPipeline).toHaveBeenCalled();
       expect(mockFetch).toHaveBeenCalledWith(
         release.assets[0].browser_download_url,
