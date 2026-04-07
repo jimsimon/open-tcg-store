@@ -85,7 +85,7 @@
       "pnpm run lint",
       "pnpm run format"
     ],
-    "*.{json,css,html}": [
+    "!(**/migrations/*).{json,css,html}": [
       "pnpm run format"
     ]
   },

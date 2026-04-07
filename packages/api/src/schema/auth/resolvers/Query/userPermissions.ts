@@ -25,7 +25,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     await Promise.all([
       checkPerm(ctx, { inventory: ['read'] }),
       checkPerm(ctx, { transactionLog: ['read'] }),
-      checkPerm(ctx, { storeSettings: ['read'] }),
+      checkPerm(ctx, { companySettings: ['read'] }),
       checkPerm(ctx, { storeLocations: ['read'] }),
       checkPerm(ctx, { userManagement: ['read'] }),
     ]);

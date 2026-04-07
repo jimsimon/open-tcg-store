@@ -4,7 +4,7 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { eq } from 'drizzle-orm';
 import { otcgs } from '../../../../db/index.ts';
 import { user as userTable } from '../../../../db/otcgs/schema.ts';
-import { storeSettings } from '../../../../db/otcgs/settings-schema.ts';
+import { companySettings } from '../../../../db/otcgs/company-settings-schema.ts';
 import { storeSupportedGame } from '../../../../db/otcgs/store-supported-game-schema.ts';
 import { GraphqlContext } from '../../../../server.ts';
 
@@ -44,15 +44,15 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
     // plugin permissions. The organization membership handles app-level permissions.
     await otcgs.update(userTable).set({ role: 'owner' }).where(eq(userTable.id, createdUserId));
 
-    // 3. Save company settings (companyName + ein) to store_settings
+    // 3. Save company settings (companyName + ein) to company_settings
     await otcgs
-      .insert(storeSettings)
+      .insert(companySettings)
       .values({
         companyName: args.company.companyName,
         ein: args.company.ein,
       })
       .onConflictDoUpdate({
-        target: storeSettings.id,
+        target: companySettings.id,
         set: {
           companyName: args.company.companyName,
           ein: args.company.ein,

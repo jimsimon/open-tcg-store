@@ -80,3 +80,36 @@ jobs:
 
       - name: Run UI browser tests
         run: pnpm vitest run --project UI
+
+  check-migrations:
+    name: Check Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate migrations
+        run: pnpm --filter @open-tcgs/api run db:generate
+
+      - name: Check for uncommitted migrations
+        run: |
+          if ! git diff --exit-code packages/api/src/db/otcgs/migrations/; then
+            echo "::error::Schema changes detected without corresponding migrations. Run 'pnpm --filter @open-tcgs/api run db:generate' and commit the results."
+            exit 1
+          fi
+
+      - name: Verify migration metadata integrity
+        run: pnpm --filter @open-tcgs/api run db:check

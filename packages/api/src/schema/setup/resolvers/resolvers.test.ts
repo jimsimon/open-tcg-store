@@ -59,11 +59,11 @@ vi.mock('../../../db/index', () => ({
   otcgs: mockOtcgs,
 }));
 
-vi.mock('../../../db/otcgs/settings-schema', () => ({
-  storeSettings: {
-    id: 'store_settings.id',
-    companyName: 'store_settings.company_name',
-    ein: 'store_settings.ein',
+vi.mock('../../../db/otcgs/company-settings-schema', () => ({
+  companySettings: {
+    id: 'company_settings.id',
+    companyName: 'company_settings.company_name',
+    ein: 'company_settings.ein',
   },
 }));
 

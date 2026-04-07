@@ -40,7 +40,7 @@ export function getOrganizationIdOptional(ctx: GraphqlContext): string | null {
  *
  * @param ctx - The GraphQL context containing auth session and request headers
  * @param permissions - A record of resource names to arrays of required actions.
- *   Example: `{ inventory: ['create'], storeSettings: ['read'] }`
+ *   Example: `{ inventory: ['create'], companySettings: ['read'] }`
  *
  * @throws Error if the user doesn't have the required permissions
  */

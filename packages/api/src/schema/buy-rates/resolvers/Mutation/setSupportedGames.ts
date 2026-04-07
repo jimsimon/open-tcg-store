@@ -8,7 +8,7 @@ export const setSupportedGames: NonNullable<MutationResolvers['setSupportedGames
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const orgId = getOrganizationId(ctx);
   return await setSupportedGamesService(orgId, args.categoryIds);
 };

@@ -8,7 +8,7 @@ export const updateShopifyIntegration: NonNullable<MutationResolvers['updateShop
   args,
   ctx: GraphqlContext,
 ) => {
-  await assertPermission(ctx, { storeSettings: ['update'] });
+  await assertPermission(ctx, { companySettings: ['update'] });
   const userId = ctx.auth?.user?.id;
   return await updateShopifyService(args.input, userId);
 };

@@ -12,6 +12,9 @@ const {
   mockReadFileSync,
   mockWriteFileSync,
   mockCreateReadStream,
+  mockUnlinkSync,
+  mockRmSync,
+  mockMkdtempSync,
   mockAuthorizeURL,
   mockGetToken,
   mockCreateToken,
@@ -25,6 +28,7 @@ const {
   mockOneDriveListChildren,
   mockOneDriveUploadSimple,
   mockOneDriveDownload,
+  mockDbRun,
 } = vi.hoisted(() => ({
   mockStoreOAuthTokens: vi.fn(),
   mockGetOAuthTokens: vi.fn(),
@@ -33,6 +37,9 @@ const {
   mockReadFileSync: vi.fn(),
   mockWriteFileSync: vi.fn(),
   mockCreateReadStream: vi.fn(),
+  mockUnlinkSync: vi.fn(),
+  mockRmSync: vi.fn(),
+  mockMkdtempSync: vi.fn(() => '/tmp/otcgs-backup-xyz'),
   mockAuthorizeURL: vi.fn(),
   mockGetToken: vi.fn(),
   mockCreateToken: vi.fn(),
@@ -46,6 +53,7 @@ const {
   mockOneDriveListChildren: vi.fn(),
   mockOneDriveUploadSimple: vi.fn(),
   mockOneDriveDownload: vi.fn(),
+  mockDbRun: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock settings-service
@@ -55,10 +63,24 @@ vi.mock('./settings-service', () => ({
   updateLastBackupAt: mockUpdateLastBackupAt,
 }));
 
-// Mock workspace-root
-vi.mock('workspace-root', () => ({
-  workspaceRootSync: vi.fn(() => '/fake/workspace'),
+// Mock drizzle config (provides databaseFilePath)
+vi.mock('../db/otcgs/drizzle.config', () => ({
+  databaseFile: 'file:/fake/workspace/sqlite-data/otcgs.sqlite',
+  databaseFilePath: '/fake/workspace/sqlite-data/otcgs.sqlite',
 }));
+
+// Mock otcgs database instance
+vi.mock('../db/otcgs/index', () => ({
+  otcgs: { run: mockDbRun },
+}));
+
+// Mock drizzle-orm sql template tag (must be callable as a tagged template literal)
+vi.mock('drizzle-orm', () => {
+  const sqlFn = (strings: TemplateStringsArray, ...values: unknown[]) =>
+    strings.reduce((result, str, i) => result + str + (values[i] ?? ''), '');
+  sqlFn.raw = (s: string) => s;
+  return { sql: sqlFn };
+});
 
 // Mock node:fs
 vi.mock('node:fs', () => ({
@@ -66,6 +88,14 @@ vi.mock('node:fs', () => ({
   readFileSync: mockReadFileSync,
   writeFileSync: mockWriteFileSync,
   createReadStream: mockCreateReadStream,
+  unlinkSync: mockUnlinkSync,
+  rmSync: mockRmSync,
+  mkdtempSync: mockMkdtempSync,
+}));
+
+// Mock node:os
+vi.mock('node:os', () => ({
+  tmpdir: vi.fn(() => '/tmp'),
 }));
 
 // Mock simple-oauth2 - use a class so `new AuthorizationCode(...)` works

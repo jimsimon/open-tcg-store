@@ -235,8 +235,8 @@ const router = new Router()
   .get('import-inventory', '/inventory/import', async (ctx) => {
     return renderPage(ctx, 'inventory-import');
   })
-  // Settings routes - require storeSettings:read permission
-  .use('/settings', requirePermission('storeSettings', 'read'))
+  // Settings routes - require companySettings:read permission
+  .use('/settings', requirePermission('companySettings', 'read'))
   .get('settings-redirect', '/settings', async (ctx) => {
     ctx.redirect('/settings/general');
   })
