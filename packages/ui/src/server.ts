@@ -283,6 +283,9 @@ const router = new Router()
   .get('settings-buyrates', '/settings/buyrates', async (ctx) => {
     return renderPage(ctx, 'settings-buyrates');
   })
+  .get('settings-data-updates', '/settings/data-updates', async (ctx) => {
+    return renderPage(ctx, 'settings-data-updates');
+  })
   .get('settings-integrations', '/settings/integrations', async (ctx) => {
     return renderPage(ctx, 'settings-integrations');
   })

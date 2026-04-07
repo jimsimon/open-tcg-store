@@ -45,6 +45,19 @@ type RestoreResult {
   message: String
 }
 
+type DataUpdateStatus {
+  currentVersion: String
+  latestVersion: String
+  updateAvailable: Boolean!
+  isUpdating: Boolean!
+}
+
+type DataUpdateResult {
+  success: Boolean!
+  message: String
+  newVersion: String
+}
+
 input UpdateStoreSettingsInput {
   companyName: String
   ein: String
@@ -71,6 +84,7 @@ extend type Query {
   getBackupSettings: BackupSettings!
   getIntegrationSettings: IntegrationSettings!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
+  getDataUpdateStatus: DataUpdateStatus!
 }
 
 extend type Mutation {
@@ -80,4 +94,5 @@ extend type Mutation {
   triggerRestore(provider: String!): RestoreResult!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
+  triggerDataUpdate: DataUpdateResult!
 }

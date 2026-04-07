@@ -86,6 +86,9 @@ import {
   performUpdateCheck,
   startUpdateScheduler,
   stopUpdateScheduler,
+  getDataUpdateStatus,
+  refreshUpdateStatus,
+  triggerManualUpdate,
 } from './tcg-data-update-service';
 import type { GitHubRelease } from './tcg-data-update-service';
 
@@ -601,6 +604,175 @@ describe('tcg-data-update-service', () => {
 
       // Should not have triggered another immediate check
       expect(mockFetch.mock.calls.length).toBe(firstFetchCount);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // getDataUpdateStatus
+  // -----------------------------------------------------------------------
+  describe('getDataUpdateStatus', () => {
+    it('should return current version and no update available when cache is empty', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260405');
+
+      const status = getDataUpdateStatus();
+
+      expect(status.currentVersion).toBe('initial-db-20260405');
+      expect(status.latestVersion).toBe('initial-db-20260405');
+      expect(status.updateAvailable).toBe(false);
+      expect(status.isUpdating).toBe(false);
+    });
+
+    it('should return null versions when no version file exists and no cache', () => {
+      mockExistsSync.mockReturnValue(false);
+
+      const status = getDataUpdateStatus();
+
+      expect(status.currentVersion).toBeNull();
+      expect(status.latestVersion).toBeNull();
+      expect(status.updateAvailable).toBe(false);
+    });
+
+    it('should reflect cached release info after a scheduler check finds an update', async () => {
+      // Simulate: version file exists with old version, scheduler finds new release
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260404');
+      const releases = [makeRelease('initial-db-20260405'), makeRelease('initial-db-20260404')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        // downloadUpdate will need a fetch too — make it fail so we don't go through the full pipeline
+        .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' });
+
+      // Run a scheduler check — it will find the update, try to download, and fail
+      await performUpdateCheck();
+
+      // Now getDataUpdateStatus should reflect the cached release
+      const status = getDataUpdateStatus();
+      expect(status.currentVersion).toBe('initial-db-20260404');
+      expect(status.latestVersion).toBe('initial-db-20260405');
+      expect(status.updateAvailable).toBe(true);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // refreshUpdateStatus
+  // -----------------------------------------------------------------------
+  describe('refreshUpdateStatus', () => {
+    it('should query GitHub and update cached release info', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260404');
+      const releases = [makeRelease('initial-db-20260405')];
+      mockFetch.mockResolvedValue(mockFetchResponse(releases));
+
+      const status = await refreshUpdateStatus();
+
+      expect(status.updateAvailable).toBe(true);
+      expect(status.latestVersion).toBe('initial-db-20260405');
+    });
+
+    it('should not throw when GitHub API fails', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260405');
+      mockFetch.mockRejectedValue(new Error('network error'));
+
+      const status = await refreshUpdateStatus();
+
+      // Should not crash, returns current status
+      expect(status.currentVersion).toBe('initial-db-20260405');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // triggerManualUpdate
+  // -----------------------------------------------------------------------
+  describe('triggerManualUpdate', () => {
+    it('should return success after a full update', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260404');
+      mockRenameSync.mockImplementation(() => {});
+      const releases = [makeRelease('initial-db-20260405')];
+      mockFetch
+        // checkForUpdate
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        // downloadUpdate
+        .mockResolvedValueOnce({ ok: true, body: { readable: true } });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
+      mockValidationExecute.mockResolvedValue({
+        rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+      });
+
+      const promise = triggerManualUpdate();
+      await vi.advanceTimersByTimeAsync(1000);
+      const result = await promise;
+
+      expect(result.success).toBe(true);
+      expect(result.newVersion).toBe('initial-db-20260405');
+      expect(result.message).toContain('initial-db-20260405');
+    });
+
+    it('should return failure when no update is available', async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue('initial-db-20260405');
+      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+
+      const result = await triggerManualUpdate();
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('No update available');
+    });
+
+    it('should return failure when validation fails', async () => {
+      mockExistsSync.mockReturnValue(false);
+      const releases = [makeRelease('initial-db-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce({ ok: true, body: { readable: true } });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
+      mockValidationExecute.mockResolvedValue({ rows: [] });
+
+      const result = await triggerManualUpdate();
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Downloaded database failed validation');
+    });
+
+    it('should return failure when download fails', async () => {
+      mockExistsSync.mockReturnValue(false);
+      const releases = [makeRelease('initial-db-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' });
+
+      const result = await triggerManualUpdate();
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Failed to download asset');
+    });
+
+    it('should return failure when already in progress', async () => {
+      // Start a slow update that blocks
+      mockExistsSync.mockReturnValue(false);
+      const releases = [makeRelease('initial-db-20260405')];
+      let resolveFirstFetch!: (value: unknown) => void;
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstFetch = resolve;
+        }),
+      );
+
+      const firstUpdate = triggerManualUpdate();
+
+      // Second call should fail immediately
+      mockFetch.mockResolvedValueOnce(mockFetchResponse(releases));
+      const secondResult = await triggerManualUpdate();
+      expect(secondResult.success).toBe(false);
+      expect(secondResult.message).toBe('An update is already in progress');
+
+      // Clean up: resolve the first fetch
+      resolveFirstFetch(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      await firstUpdate;
     });
   });
 });

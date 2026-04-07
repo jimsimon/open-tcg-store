@@ -15,6 +15,8 @@ const {
   mockUpdateShopifyIntegration,
   mockPerformBackup,
   mockPerformRestore,
+  mockGetDataUpdateStatus,
+  mockTriggerManualUpdate,
   mockAssertPermission,
   mockGetUserId,
 } = vi.hoisted(() => ({
@@ -28,6 +30,8 @@ const {
   mockUpdateShopifyIntegration: vi.fn(),
   mockPerformBackup: vi.fn(),
   mockPerformRestore: vi.fn(),
+  mockGetDataUpdateStatus: vi.fn(),
+  mockTriggerManualUpdate: vi.fn(),
   mockAssertPermission: vi.fn(),
   mockGetUserId: vi.fn().mockReturnValue('admin-1'),
 }));
@@ -46,6 +50,11 @@ vi.mock('../../../services/settings-service', () => ({
 vi.mock('../../../services/backup-service', () => ({
   performBackup: mockPerformBackup,
   performRestore: mockPerformRestore,
+}));
+
+vi.mock('../../../services/tcg-data-update-service', () => ({
+  getDataUpdateStatus: mockGetDataUpdateStatus,
+  triggerManualUpdate: mockTriggerManualUpdate,
 }));
 
 vi.mock('../../../lib/assert-permission', () => ({
@@ -68,6 +77,8 @@ import { triggerBackup as _triggerBackup } from './Mutation/triggerBackup';
 import { triggerRestore as _triggerRestore } from './Mutation/triggerRestore';
 import { updateStripeIntegration as _updateStripeIntegration } from './Mutation/updateStripeIntegration';
 import { updateShopifyIntegration as _updateShopifyIntegration } from './Mutation/updateShopifyIntegration';
+import { getDataUpdateStatus as _getDataUpdateStatus } from './Query/getDataUpdateStatus';
+import { triggerDataUpdate as _triggerDataUpdate } from './Mutation/triggerDataUpdate';
 
 // Cast to callable functions
 const getStoreSettings = _getStoreSettings as (...args: unknown[]) => Promise<unknown>;
@@ -80,6 +91,8 @@ const triggerBackup = _triggerBackup as (...args: unknown[]) => Promise<unknown>
 const triggerRestore = _triggerRestore as (...args: unknown[]) => Promise<unknown>;
 const updateStripeIntegration = _updateStripeIntegration as (...args: unknown[]) => Promise<unknown>;
 const updateShopifyIntegration = _updateShopifyIntegration as (...args: unknown[]) => Promise<unknown>;
+const getDataUpdateStatus = _getDataUpdateStatus as (...args: unknown[]) => Promise<unknown>;
+const triggerDataUpdate = _triggerDataUpdate as (...args: unknown[]) => Promise<unknown>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -194,6 +207,18 @@ describe('settings resolvers', () => {
 
     it('should reject non-admin users for updateShopifyIntegration', async () => {
       await expect(updateShopifyIntegration({}, { input: { enabled: true } }, employeeContext(), {})).rejects.toThrow(
+        'Unauthorized: Insufficient permissions',
+      );
+    });
+
+    it('should reject non-admin users for getDataUpdateStatus', async () => {
+      await expect(getDataUpdateStatus({}, {}, employeeContext(), {})).rejects.toThrow(
+        'Unauthorized: Insufficient permissions',
+      );
+    });
+
+    it('should reject non-admin users for triggerDataUpdate', async () => {
+      await expect(triggerDataUpdate({}, {}, employeeContext(), {})).rejects.toThrow(
         'Unauthorized: Insufficient permissions',
       );
     });
@@ -355,6 +380,82 @@ describe('settings resolvers', () => {
 
       expect(result).toEqual(mockResult);
       expect(mockUpdateShopifyIntegration).toHaveBeenCalledWith(input, 'admin-1');
+    });
+  });
+
+  describe('getDataUpdateStatus resolver', () => {
+    it('should return data update status for admin', async () => {
+      const mockResult = {
+        currentVersion: 'initial-db-20260405',
+        latestVersion: 'initial-db-20260406',
+        updateAvailable: true,
+        isUpdating: false,
+      };
+      mockGetDataUpdateStatus.mockReturnValue(mockResult);
+
+      const result = await getDataUpdateStatus({}, {}, adminContext(), {});
+
+      expect(result).toEqual(mockResult);
+      expect(mockGetDataUpdateStatus).toHaveBeenCalled();
+    });
+
+    it('should return up-to-date status when no update available', async () => {
+      const mockResult = {
+        currentVersion: 'initial-db-20260405',
+        latestVersion: 'initial-db-20260405',
+        updateAvailable: false,
+        isUpdating: false,
+      };
+      mockGetDataUpdateStatus.mockReturnValue(mockResult);
+
+      const result = await getDataUpdateStatus({}, {}, adminContext(), {});
+
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('triggerDataUpdate resolver', () => {
+    it('should trigger data update for admin', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Successfully updated to initial-db-20260406',
+        newVersion: 'initial-db-20260406',
+      };
+      mockTriggerManualUpdate.mockResolvedValue(mockResult);
+
+      const result = (await triggerDataUpdate({}, {}, adminContext(), {})) as {
+        success: boolean;
+        message: string;
+      };
+
+      expect(result.success).toBe(true);
+      expect(mockTriggerManualUpdate).toHaveBeenCalled();
+    });
+
+    it('should return failure when no update is available', async () => {
+      const mockResult = { success: false, message: 'No update available', newVersion: null };
+      mockTriggerManualUpdate.mockResolvedValue(mockResult);
+
+      const result = (await triggerDataUpdate({}, {}, adminContext(), {})) as {
+        success: boolean;
+        message: string;
+      };
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('No update available');
+    });
+
+    it('should return failure when update is already in progress', async () => {
+      const mockResult = { success: false, message: 'An update is already in progress', newVersion: null };
+      mockTriggerManualUpdate.mockResolvedValue(mockResult);
+
+      const result = (await triggerDataUpdate({}, {}, adminContext(), {})) as {
+        success: boolean;
+        message: string;
+      };
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('An update is already in progress');
     });
   });
 });

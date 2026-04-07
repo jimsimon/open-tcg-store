@@ -173,6 +173,21 @@ export type DashboardDateRange = {
   startDate: Scalars['String']['input'];
 };
 
+export type DataUpdateResult = {
+  __typename?: 'DataUpdateResult';
+  message?: Maybe<Scalars['String']['output']>;
+  newVersion?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DataUpdateStatus = {
+  __typename?: 'DataUpdateStatus';
+  currentVersion?: Maybe<Scalars['String']['output']>;
+  isUpdating: Scalars['Boolean']['output'];
+  latestVersion?: Maybe<Scalars['String']['output']>;
+  updateAvailable: Scalars['Boolean']['output'];
+};
+
 export type InitialStoreLocation = {
   city: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -295,6 +310,7 @@ export type Mutation = {
   setSupportedGames: Array<SupportedGame>;
   submitOrder: SubmitOrderResult;
   triggerBackup: BackupResult;
+  triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
   updateBackupSettings: BackupSettings;
   updateInventoryItem: InventoryItem;
@@ -629,6 +645,7 @@ export type Query = {
   getDashboardOpenOrders: Array<OpenOrder>;
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
+  getDataUpdateStatus: DataUpdateStatus;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
@@ -1111,6 +1128,8 @@ export type ResolversTypes = {
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
   DashboardDateRange: DashboardDateRange;
+  DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
+  DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
   InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: ResolverTypeWrapper<InsufficientItem>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
@@ -1199,6 +1218,8 @@ export type ResolversParentTypes = {
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
   DashboardDateRange: DashboardDateRange;
+  DataUpdateResult: DataUpdateResult;
+  DataUpdateStatus: DataUpdateStatus;
   InitialStoreLocation: InitialStoreLocation;
   InsufficientItem: InsufficientItem;
   IntegrationSettings: IntegrationSettings;
@@ -1344,6 +1365,19 @@ export type ConditionInventoryResolvers<ContextType = any, ParentType extends Re
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type DataUpdateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['DataUpdateResult'] = ResolversParentTypes['DataUpdateResult']> = {
+  message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  newVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+};
+
+export type DataUpdateStatusResolvers<ContextType = any, ParentType extends ResolversParentTypes['DataUpdateStatus'] = ResolversParentTypes['DataUpdateStatus']> = {
+  currentVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  isUpdating?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  latestVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updateAvailable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+};
+
 export type InsufficientItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem']> = {
   available?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1430,6 +1464,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   setSupportedGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType, RequireFields<MutationsetSupportedGamesArgs, 'categoryIds'>>;
   submitOrder?: Resolver<ResolversTypes['SubmitOrderResult'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
+  triggerDataUpdate?: Resolver<ResolversTypes['DataUpdateResult'], ParentType, ContextType>;
   triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
   updateBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType, RequireFields<MutationupdateBackupSettingsArgs, 'input'>>;
   updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
@@ -1579,6 +1614,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getDashboardOpenOrders?: Resolver<Array<ResolversTypes['OpenOrder']>, ParentType, ContextType, RequireFields<QuerygetDashboardOpenOrdersArgs, 'organizationId'>>;
   getDashboardOrderStatus?: Resolver<ResolversTypes['OrderStatusBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardOrderStatusArgs, 'dateRange' | 'organizationId'>>;
   getDashboardSales?: Resolver<ResolversTypes['SalesBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardSalesArgs, 'dateRange' | 'organizationId'>>;
+  getDataUpdateStatus?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
@@ -1737,6 +1773,8 @@ export type Resolvers<ContextType = any> = {
   CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
+  DataUpdateResult?: DataUpdateResultResolvers<ContextType>;
+  DataUpdateStatus?: DataUpdateStatusResolvers<ContextType>;
   InsufficientItem?: InsufficientItemResolvers<ContextType>;
   IntegrationSettings?: IntegrationSettingsResolvers<ContextType>;
   InventoryItem?: InventoryItemResolvers<ContextType>;

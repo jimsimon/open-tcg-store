@@ -233,6 +233,94 @@ function cleanupTempFile(): void {
   }
 }
 
+// Cache the latest release info from the last check so the UI can query it
+// without hitting the GitHub API on every page load.
+let _cachedLatestRelease: GitHubRelease | null = null;
+
+/**
+ * Return the current data update status for the settings UI.
+ * Uses cached release info from the last scheduler check to avoid
+ * hitting the GitHub API on every page load.
+ */
+export function getDataUpdateStatus(): {
+  currentVersion: string | null;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  isUpdating: boolean;
+} {
+  const currentVersion = getCurrentVersion();
+  const latestVersion = _cachedLatestRelease?.tag_name ?? currentVersion;
+  const updateAvailable = _cachedLatestRelease !== null;
+  return {
+    currentVersion,
+    latestVersion,
+    updateAvailable,
+    isUpdating: _isCheckRunning,
+  };
+}
+
+/**
+ * Check for updates by querying GitHub (refreshes the cached release info).
+ * Returns the updated status.
+ */
+export async function refreshUpdateStatus(): Promise<{
+  currentVersion: string | null;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  isUpdating: boolean;
+}> {
+  try {
+    _cachedLatestRelease = await checkForUpdate();
+  } catch (err) {
+    console.error('[tcg-data-update] Failed to refresh update status:', err);
+  }
+  return getDataUpdateStatus();
+}
+
+/**
+ * Manually trigger a data update. Returns a result object indicating success/failure.
+ * Rejects if an update check is already in progress.
+ */
+export async function triggerManualUpdate(): Promise<{
+  success: boolean;
+  message: string;
+  newVersion: string | null;
+}> {
+  if (_isCheckRunning) {
+    return { success: false, message: 'An update is already in progress', newVersion: null };
+  }
+
+  _isCheckRunning = true;
+  try {
+    // Refresh the cached release info first
+    _cachedLatestRelease = await checkForUpdate();
+    if (!_cachedLatestRelease) {
+      return { success: false, message: 'No update available', newVersion: null };
+    }
+
+    // Run the full update pipeline (reuses performUpdateCheck logic inline
+    // because we need to return a result object instead of void)
+    const release = _cachedLatestRelease;
+    const tempPath = await downloadUpdate(release);
+
+    const isValid = await validateDatabase(tempPath);
+    if (!isValid) {
+      cleanupTempFile();
+      return { success: false, message: 'Downloaded database failed validation', newVersion: null };
+    }
+
+    await applyUpdate(release);
+    _cachedLatestRelease = null; // Clear cache since we just applied the update
+    return { success: true, message: `Successfully updated to ${release.tag_name}`, newVersion: release.tag_name };
+  } catch (err) {
+    cleanupTempFile();
+    const message = err instanceof Error ? err.message : 'Update failed';
+    return { success: false, message, newVersion: null };
+  } finally {
+    _isCheckRunning = false;
+  }
+}
+
 let _isCheckRunning = false;
 
 /**
@@ -249,6 +337,7 @@ export async function performUpdateCheck(): Promise<void> {
   try {
     console.log('[tcg-data-update] Checking for updates...');
     const release = await checkForUpdate();
+    _cachedLatestRelease = release;
     if (!release) return;
 
     const tempPath = await downloadUpdate(release);
@@ -261,6 +350,7 @@ export async function performUpdateCheck(): Promise<void> {
     }
 
     await applyUpdate(release);
+    _cachedLatestRelease = null; // Clear cache after successful update
   } catch (err) {
     console.error('[tcg-data-update] Update check failed:', err);
     cleanupTempFile();

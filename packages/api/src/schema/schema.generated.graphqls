@@ -144,6 +144,19 @@ input DashboardDateRange {
   startDate: String!
 }
 
+type DataUpdateResult {
+  message: String
+  newVersion: String
+  success: Boolean!
+}
+
+type DataUpdateStatus {
+  currentVersion: String
+  isUpdating: Boolean!
+  latestVersion: String
+  updateAvailable: Boolean!
+}
+
 input InitialStoreLocation {
   city: String!
   name: String!
@@ -263,6 +276,7 @@ type Mutation {
   setSupportedGames(categoryIds: [Int!]!): [SupportedGame!]!
   submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   triggerBackup: BackupResult!
+  triggerDataUpdate: DataUpdateResult!
   triggerRestore(provider: String!): RestoreResult!
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
@@ -449,6 +463,7 @@ type Query {
   getDashboardOpenOrders(limit: Int, organizationId: String!): [OpenOrder!]!
   getDashboardOrderStatus(dateRange: DashboardDateRange!, organizationId: String!): OrderStatusBreakdown!
   getDashboardSales(dateRange: DashboardDateRange!, organizationId: String!): SalesBreakdown!
+  getDataUpdateStatus: DataUpdateStatus!
 
   """
   Stores the current user is assigned to (for authenticated employees/managers/owners)

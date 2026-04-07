@@ -1,0 +1,186 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+vi.mock('../../lib/graphql.ts', () => ({
+  execute: vi.fn().mockResolvedValue({
+    data: {
+      getDataUpdateStatus: {
+        currentVersion: 'initial-db-20260405',
+        latestVersion: 'initial-db-20260405',
+        updateAvailable: false,
+        isUpdating: false,
+      },
+    },
+  }),
+}));
+
+import './settings-data-updates.client.ts';
+import { OgsSettingsDataUpdatesPage } from './settings-data-updates.client.ts';
+import { execute } from '../../lib/graphql.ts';
+
+const mockExecute = execute as ReturnType<typeof vi.fn>;
+
+function setupDefaultMock(overrides: Record<string, unknown> = {}) {
+  mockExecute.mockResolvedValue({
+    data: {
+      getDataUpdateStatus: {
+        currentVersion: 'initial-db-20260405',
+        latestVersion: 'initial-db-20260405',
+        updateAvailable: false,
+        isUpdating: false,
+        ...overrides,
+      },
+    },
+  });
+}
+
+describe('ogs-settings-data-updates-page', () => {
+  let element: OgsSettingsDataUpdatesPage;
+
+  beforeEach(async () => {
+    setupDefaultMock();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    element.remove();
+    vi.clearAllMocks();
+  });
+
+  test('should render the component', () => {
+    expect(element).toBeInstanceOf(OgsSettingsDataUpdatesPage);
+    expect(element.shadowRoot).toBeTruthy();
+  });
+
+  test('should display the page header', () => {
+    const header = element.shadowRoot!.querySelector('.page-header h2');
+    expect(header).toBeTruthy();
+    expect(header?.textContent).toContain('Card Data Updates');
+  });
+
+  test('should display the page description', () => {
+    const desc = element.shadowRoot!.querySelector('.page-header p');
+    expect(desc).toBeTruthy();
+    expect(desc?.textContent).toContain('Manage your TCG product database');
+  });
+
+  test('should display Database Status section', () => {
+    const sections = element.shadowRoot!.querySelectorAll('.section-header h3');
+    const sectionTexts = Array.from(sections).map((s) => s.textContent?.trim());
+    expect(sectionTexts).toContain('Database Status');
+  });
+
+  test('should display current version', () => {
+    const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
+    const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
+    // The formatted version "2026-04-05" should be present
+    expect(texts).toContain('2026-04-05');
+  });
+
+  test('should display up-to-date callout when no update available', () => {
+    const successCallout = element.shadowRoot!.querySelector('wa-callout[variant="success"]');
+    expect(successCallout).toBeTruthy();
+    expect(successCallout?.textContent).toContain('up to date');
+  });
+
+  test('should display Update Now button', () => {
+    const updateBtn = element.shadowRoot!.querySelector('.action-bar wa-button[variant="brand"]');
+    expect(updateBtn).toBeTruthy();
+    expect(updateBtn?.textContent).toContain('Update Now');
+  });
+
+  test('should disable Update Now button when no update available', () => {
+    const updateBtn = element.shadowRoot!.querySelector('.action-bar wa-button[variant="brand"]');
+    expect(updateBtn).toBeTruthy();
+    expect(updateBtn?.hasAttribute('disabled')).toBe(true);
+  });
+
+  test('should show update available callout when update exists', async () => {
+    setupDefaultMock({
+      latestVersion: 'initial-db-20260406',
+      updateAvailable: true,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const warningCallout = element.shadowRoot!.querySelector('wa-callout[variant="warning"]');
+    expect(warningCallout).toBeTruthy();
+    expect(warningCallout?.textContent).toContain('new card data update is available');
+  });
+
+  test('should enable Update Now button when update available', async () => {
+    setupDefaultMock({
+      latestVersion: 'initial-db-20260406',
+      updateAvailable: true,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const updateBtn = element.shadowRoot!.querySelector('.action-bar wa-button[variant="brand"]');
+    expect(updateBtn).toBeTruthy();
+    expect(updateBtn?.hasAttribute('disabled')).toBe(false);
+  });
+
+  test('should make GraphQL call on load', () => {
+    expect(mockExecute).toHaveBeenCalled();
+  });
+
+  test('should show loading spinner initially', async () => {
+    mockExecute.mockReturnValue(new Promise(() => {}));
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await new Promise((r) => setTimeout(r, 50));
+    const spinner = element.shadowRoot!.querySelector('wa-spinner');
+    expect(spinner).toBeTruthy();
+  });
+
+  test('should show error message on load failure', async () => {
+    mockExecute.mockRejectedValue(new Error('Network error'));
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const errorCallout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
+    expect(errorCallout).toBeTruthy();
+    expect(errorCallout?.textContent).toContain('Network error');
+  });
+
+  test('should format version tag as date', () => {
+    const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
+    const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
+    // "initial-db-20260405" should be formatted as "2026-04-05"
+    expect(texts.some((t) => t === '2026-04-05')).toBe(true);
+  });
+
+  test('should display Unknown for null version', async () => {
+    setupDefaultMock({
+      currentVersion: null,
+      latestVersion: null,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
+    const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
+    expect(texts.filter((t) => t === 'Unknown').length).toBe(2);
+  });
+});
