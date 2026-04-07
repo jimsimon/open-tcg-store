@@ -237,6 +237,8 @@ const router = new Router()
     ctx.redirect(`/products/${ctx.params.cardId}`);
   })
   .get('orders', '/orders', async (ctx) => {
+    await requirePermission('order', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'orders');
   })
   .get('transaction-log', '/transaction-log', async (ctx) => {
@@ -248,9 +250,13 @@ const router = new Router()
     ctx.redirect('/inventory/singles');
   })
   .get('inventory-singles', '/inventory/singles', async (ctx) => {
+    await requirePermission('inventory', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-singles');
   })
   .get('inventory-sealed', '/inventory/sealed', async (ctx) => {
+    await requirePermission('inventory', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-sealed');
   })
   .get('inventory-singles-detail', '/inventory/singles/:inventoryItemId', async (ctx) => {
@@ -264,6 +270,8 @@ const router = new Router()
     return renderPage(ctx, 'inventory-detail');
   })
   .get('import-inventory', '/inventory/import', async (ctx) => {
+    await requirePermission('inventory', 'create')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-import');
   })
   // Settings routes - require companySettings:read permission
