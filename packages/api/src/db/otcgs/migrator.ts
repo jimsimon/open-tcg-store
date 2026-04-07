@@ -7,6 +7,7 @@ import { databaseFilePath } from './drizzle.config';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, 'migrations');
+const MIGRATIONS_TABLE = '__drizzle_migrations';
 
 // ---------------------------------------------------------------------------
 // Pending Migration Detection
@@ -27,7 +28,7 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
 
   // Check if the migrations table exists
   const tables = await db.values<[string]>(
-    sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+    sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${MIGRATIONS_TABLE}`,
   );
 
   if (tables.length === 0) {
@@ -35,7 +36,7 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
     return true;
   }
 
-  const dbMigrations = await db.values<[string]>(sql`SELECT hash FROM "__drizzle_migrations"`);
+  const dbMigrations = await db.values<[string]>(sql`SELECT hash FROM ${sql.identifier(MIGRATIONS_TABLE)}`);
   const appliedHashes = new Set(dbMigrations.map((row) => row[0]));
 
   for (const migration of migrations) {
@@ -74,7 +75,7 @@ async function attemptCloudBackup(db: LibSQLDatabase<Record<string, unknown>>): 
     // first run, there's nothing to back up, and importing settings-service would
     // deadlock due to the top-level await in index.ts.
     const tables = await db.values<[string]>(
-      sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+      sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${MIGRATIONS_TABLE}`,
     );
     if (tables.length === 0) {
       return;
@@ -199,7 +200,7 @@ export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>
 
   // 4. Run migrations with rollback protection
   try {
-    await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER, migrationsTable: MIGRATIONS_TABLE });
     console.log('[migrator] Migrations applied successfully.');
   } catch (error) {
     await handleMigrationFailure(db, backupPath, error);
