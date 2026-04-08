@@ -226,10 +226,17 @@ async function buildLotResult(lotRow: typeof lot.$inferSelect): Promise<LotResul
 }
 
 // ---------------------------------------------------------------------------
+// Database handle type — accepts either the top-level otcgs or a transaction
+// ---------------------------------------------------------------------------
+
+type DbHandle = typeof otcgs;
+
+// ---------------------------------------------------------------------------
 // findOrCreateInventoryItem — Reuse pattern from inventory-service
 // ---------------------------------------------------------------------------
 
 async function findOrCreateInventoryItem(
+  db: DbHandle,
   organizationId: string,
   productId: number,
   condition: string,
@@ -238,7 +245,7 @@ async function findOrCreateInventoryItem(
 ): Promise<number> {
   const now = new Date();
 
-  const [existing] = await otcgs
+  const [existing] = await db
     .select()
     .from(inventoryItem)
     .where(
@@ -254,7 +261,7 @@ async function findOrCreateInventoryItem(
     return existing.id;
   }
 
-  const [inserted] = await otcgs
+  const [inserted] = await db
     .insert(inventoryItem)
     .values({
       organizationId,
@@ -275,8 +282,8 @@ async function findOrCreateInventoryItem(
 // getMarketPriceForProduct — helper to fetch sell price for new inventory items
 // ---------------------------------------------------------------------------
 
-async function getMarketPriceForProduct(productId: number): Promise<number> {
-  const priceRows = await otcgs
+async function getMarketPriceForProduct(db: DbHandle, productId: number): Promise<number> {
+  const priceRows = await db
     .select({
       subTypeName: price.subTypeName,
       marketPrice: price.marketPrice,
@@ -322,8 +329,15 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
     // Create lot items and corresponding inventory entries
     for (const item of input.items) {
       const condition = item.condition ?? 'NM';
-      const sellPrice = await getMarketPriceForProduct(item.productId);
-      const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
+      const sellPrice = await getMarketPriceForProduct(tx, item.productId);
+      const parentId = await findOrCreateInventoryItem(
+        tx,
+        organizationId,
+        item.productId,
+        condition,
+        sellPrice,
+        userId,
+      );
 
       // Create stock entry with lot reference
       // Check for existing stock with same costBasis + acquisitionDate (unique index)
@@ -493,8 +507,15 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
         }
       } else {
         // New item — create inventory + stock + lot item
-        const sellPrice = await getMarketPriceForProduct(item.productId);
-        const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
+        const sellPrice = await getMarketPriceForProduct(tx, item.productId);
+        const parentId = await findOrCreateInventoryItem(
+          tx,
+          organizationId,
+          item.productId,
+          condition,
+          sellPrice,
+          userId,
+        );
 
         const [existingStock] = await tx
           .select()
