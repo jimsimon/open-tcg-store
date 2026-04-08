@@ -31,7 +31,7 @@ interface Category {
 interface Group {
   groupId: number;
   name: string;
-  abbreviation: string;
+  abbreviation: string | null;
   isSupplemental: boolean;
   publishedOn: string;
   modifiedOn: string;
@@ -146,7 +146,7 @@ async function fetchTcgData() {
             tcgpGroupId: group.groupId,
             tcgpCategoryId: group.categoryId,
             name: group.name,
-            abbreviation: group.abbreviation,
+            abbreviation: group.abbreviation ?? '',
             isSupplemental: group.isSupplemental,
             publishedOn: new Date(group.publishedOn),
             modifiedOn: new Date(group.modifiedOn),
