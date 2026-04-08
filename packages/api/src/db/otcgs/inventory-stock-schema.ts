@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { inventoryItem } from './inventory-schema';
 import { user } from './auth-schema';
+import { lot } from './lot-schema';
 
 export const inventoryItemStock = sqliteTable(
   'inventory_item_stock',
@@ -12,6 +13,7 @@ export const inventoryItemStock = sqliteTable(
     costBasis: real('cost_basis').notNull().default(0),
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     notes: text('notes', { length: 1000 }),
+    lotId: integer('lot_id'),
     deletedAt: integer('deleted_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .default(sql`(CURRENT_TIMESTAMP)`)
@@ -37,6 +39,12 @@ export const inventoryItemStock = sqliteTable(
       columns: [table.inventoryItemId],
       foreignColumns: [inventoryItem.id],
       name: 'inventory_stock_item_id_fkey',
+    }),
+    index('inventory_stock_lot_id_idx').on(table.lotId),
+    foreignKey({
+      columns: [table.lotId],
+      foreignColumns: [lot.id],
+      name: 'inventory_stock_lot_id_fkey',
     }),
     foreignKey({
       columns: [table.createdBy],

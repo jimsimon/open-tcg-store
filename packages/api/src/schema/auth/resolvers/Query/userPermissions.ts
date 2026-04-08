@@ -21,9 +21,10 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
 ) => {
   // Run all permission checks in parallel — auth.api.hasPermission is in-process,
   // so there is no HTTP overhead per call.
-  const [canManageInventory, canViewTransactionLog, canAccessSettings, canManageStoreLocations, canManageUsers] =
+  const [canManageInventory, canManageLots, canViewTransactionLog, canAccessSettings, canManageStoreLocations, canManageUsers] =
     await Promise.all([
       checkPerm(ctx, { inventory: ['read'] }),
+      checkPerm(ctx, { lot: ['read'] }),
       checkPerm(ctx, { transactionLog: ['read'] }),
       checkPerm(ctx, { companySettings: ['read'] }),
       checkPerm(ctx, { storeLocations: ['read'] }),
@@ -35,6 +36,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
 
   return {
     canManageInventory,
+    canManageLots,
     canViewDashboard,
     canAccessSettings,
     canManageStoreLocations,

@@ -33,6 +33,7 @@ interface OrderItem {
   unitPrice: number;
   costBasis: number | null;
   profit: number | null;
+  lotId: number | null;
 }
 
 interface Order {
@@ -70,6 +71,7 @@ const GetOrdersQuery = new TypedDocumentString(`
           unitPrice
           costBasis
           profit
+          lotId
         }
       }
       totalCount
@@ -183,6 +185,8 @@ export class OrdersPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean })
+  canManageLots = false;
   @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
@@ -788,6 +792,7 @@ export class OrdersPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canManageLots="${this.canManageLots}"
         ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
@@ -1055,6 +1060,7 @@ export class OrdersPage extends LitElement {
                         <th class="price-cell">Qty</th>
                         <th class="price-cell">Subtotal</th>
                         <th class="price-cell">Profit</th>
+                        <th>Lot</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1076,6 +1082,11 @@ export class OrdersPage extends LitElement {
                                   : ''}"
                             >
                               ${formatCurrency(item.profit)}
+                            </td>
+                            <td>
+                              ${item.lotId
+                                ? html`<a href="/lots/${item.lotId}" @click="${(e: Event) => e.stopPropagation()}">#${item.lotId}</a>`
+                                : '-'}
                             </td>
                           </tr>
                         `,

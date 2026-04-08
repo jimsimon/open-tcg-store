@@ -7,6 +7,7 @@ const UserPermissionsQuery = graphql(`
   query UserPermissions {
     userPermissions {
       canManageInventory
+      canManageLots
       canViewDashboard
       canAccessSettings
       canManageStoreLocations
@@ -20,6 +21,7 @@ interface PageAttributes {
   isAnonymous: boolean;
   userName: string;
   canManageInventory: boolean;
+  canManageLots: boolean;
   canViewDashboard: boolean;
   canAccessSettings: boolean;
   canManageStoreLocations: boolean;
@@ -31,6 +33,7 @@ interface PageAttributes {
 
 const NO_PERMISSIONS = {
   canManageInventory: false,
+  canManageLots: false,
   canViewDashboard: false,
   canAccessSettings: false,
   canManageStoreLocations: false,
@@ -80,6 +83,7 @@ export async function renderPageAttributes(
     // Always show the user menu so users can sign in/out from any page
     'showUserMenu',
     attrs.canManageInventory ? 'canManageInventory' : '',
+    attrs.canManageLots ? 'canManageLots' : '',
     attrs.canViewDashboard ? 'canViewDashboard' : '',
     attrs.canAccessSettings ? 'canAccessSettings' : '',
     attrs.canManageStoreLocations ? 'canManageStoreLocations' : '',

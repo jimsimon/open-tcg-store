@@ -20,6 +20,7 @@ type OrderItem {
   unitPrice: Float!
   costBasis: Float
   profit: Float
+  lotId: Int
 }
 
 type OrderPage {

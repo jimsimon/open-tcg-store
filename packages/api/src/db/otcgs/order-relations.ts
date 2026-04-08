@@ -4,6 +4,7 @@ import { user } from './auth-schema';
 import { product } from '../tcg-data/schema';
 import { inventoryItem } from './inventory-schema';
 import { inventoryItemStock } from './inventory-stock-schema';
+import { lot } from './lot-schema';
 
 export const orderRelations = relations(order, ({ one, many }) => ({
   user: one(user, {
@@ -29,5 +30,9 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
   inventoryItemStock: one(inventoryItemStock, {
     fields: [orderItem.inventoryItemStockId],
     references: [inventoryItemStock.id],
+  }),
+  lot: one(lot, {
+    fields: [orderItem.lotId],
+    references: [lot.id],
   }),
 }));

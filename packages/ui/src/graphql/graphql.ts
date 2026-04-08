@@ -87,14 +87,18 @@ export type BuyRateEntry = {
   __typename?: 'BuyRateEntry';
   description: Scalars['String']['output'];
   id: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
   sortOrder: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type BuyRateEntryInput = {
   description: Scalars['String']['input'];
+  rarity?: InputMaybe<Scalars['String']['input']>;
   rate: Scalars['Float']['input'];
   sortOrder: Scalars['Int']['input'];
+  type: Scalars['String']['input'];
 };
 
 export type BuyRateTable = {
@@ -166,6 +170,15 @@ export type ConditionInventory = {
   __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+};
+
+export type CreateLotInput = {
+  acquisitionDate: Scalars['String']['input'];
+  amountPaid: Scalars['Float']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  items: Array<LotItemInput>;
+  name: Scalars['String']['input'];
+  useBuyListForCost: Scalars['Boolean']['input'];
 };
 
 export type DashboardDateRange = {
@@ -282,6 +295,64 @@ export type InventorySummary = {
   totalUnits: Scalars['Int']['output'];
 };
 
+export type Lot = {
+  __typename?: 'Lot';
+  acquisitionDate: Scalars['String']['output'];
+  amountPaid: Scalars['Float']['output'];
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  items: Array<LotItem>;
+  name: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
+  projectedProfitLoss: Scalars['Float']['output'];
+  projectedProfitMargin: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+  totalMarketValue: Scalars['Float']['output'];
+  updatedAt: Scalars['String']['output'];
+  useBuyListForCost: Scalars['Boolean']['output'];
+};
+
+export type LotFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type LotItem = {
+  __typename?: 'LotItem';
+  condition?: Maybe<Scalars['String']['output']>;
+  costBasis: Scalars['Float']['output'];
+  costOverridden: Scalars['Boolean']['output'];
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  lotId: Scalars['Int']['output'];
+  marketValue?: Maybe<Scalars['Float']['output']>;
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+};
+
+export type LotItemInput = {
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis: Scalars['Float']['input'];
+  costOverridden: Scalars['Boolean']['input'];
+  id?: InputMaybe<Scalars['Int']['input']>;
+  productId: Scalars['Int']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type LotPage = {
+  __typename?: 'LotPage';
+  lots: Array<Lot>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
@@ -293,9 +364,11 @@ export type Mutation = {
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  createLot: Lot;
   /** Admin mutation - delete all buy rates for a game. */
   deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
+  deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
@@ -315,6 +388,7 @@ export type Mutation = {
   updateBackupSettings: BackupSettings;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
+  updateLot: Lot;
   updateOrderStatus: UpdateOrderStatusResult;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
@@ -359,12 +433,22 @@ export type MutationCancelOrderArgs = {
 };
 
 
+export type MutationCreateLotArgs = {
+  input: CreateLotInput;
+};
+
+
 export type MutationDeleteBuyRatesArgs = {
   categoryId: Scalars['Int']['input'];
 };
 
 
 export type MutationDeleteInventoryItemArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteLotArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -429,6 +513,11 @@ export type MutationUpdateInventoryItemArgs = {
 
 export type MutationUpdateItemInCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationUpdateLotArgs = {
+  input: UpdateLotInput;
 };
 
 
@@ -497,6 +586,7 @@ export type OrderItem = {
   condition: Scalars['String']['output'];
   costBasis?: Maybe<Scalars['Float']['output']>;
   id: Scalars['Int']['output'];
+  lotId?: Maybe<Scalars['Int']['output']>;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   profit?: Maybe<Scalars['Float']['output']>;
@@ -646,12 +736,15 @@ export type Query = {
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
   getDataUpdateStatus: DataUpdateStatus;
+  getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
   getInventory: InventoryPage;
   getInventoryItem?: Maybe<InventoryItem>;
   getInventoryItemDetails: InventoryStockPage;
+  getLot?: Maybe<Lot>;
+  getLots: LotPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
@@ -721,6 +814,11 @@ export type QueryGetDashboardSalesArgs = {
 };
 
 
+export type QueryGetDistinctRaritiesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
+
 export type QueryGetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
@@ -734,6 +832,17 @@ export type QueryGetInventoryItemArgs = {
 
 export type QueryGetInventoryItemDetailsArgs = {
   inventoryItemId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryGetLotArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryGetLotsArgs = {
+  filters?: InputMaybe<LotFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
@@ -793,6 +902,8 @@ export type QueryLookupSalesTaxArgs = {
 
 export type QuerySearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
+  isSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  isSingle?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm: Scalars['String']['input'];
 };
 
@@ -968,6 +1079,16 @@ export type UpdateInventoryItemInput = {
   price?: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type UpdateLotInput = {
+  acquisitionDate: Scalars['String']['input'];
+  amountPaid: Scalars['Float']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['Int']['input'];
+  items: Array<LotItemInput>;
+  name: Scalars['String']['input'];
+  useBuyListForCost: Scalars['Boolean']['input'];
+};
+
 export type UpdateOrderStatusResult = {
   __typename?: 'UpdateOrderStatusResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -1025,6 +1146,7 @@ export type UserPermissions = {
   __typename?: 'UserPermissions';
   canAccessSettings: Scalars['Boolean']['output'];
   canManageInventory: Scalars['Boolean']['output'];
+  canManageLots: Scalars['Boolean']['output'];
   canManageStoreLocations: Scalars['Boolean']['output'];
   canManageUsers: Scalars['Boolean']['output'];
   canViewDashboard: Scalars['Boolean']['output'];
@@ -1039,7 +1161,7 @@ export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart:
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean } };
+export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean } };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
@@ -1094,6 +1216,7 @@ export const UserPermissionsDocument = new TypedDocumentString(`
     query UserPermissions {
   userPermissions {
     canManageInventory
+    canManageLots
     canViewDashboard
     canAccessSettings
     canManageStoreLocations

@@ -1,0 +1,85 @@
+type Lot {
+  id: Int!
+  organizationId: String!
+  name: String!
+  description: String
+  amountPaid: Float!
+  acquisitionDate: String!
+  useBuyListForCost: Boolean!
+  items: [LotItem!]!
+  totalMarketValue: Float!
+  totalCost: Float!
+  projectedProfitLoss: Float!
+  projectedProfitMargin: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type LotItem {
+  id: Int!
+  lotId: Int!
+  productId: Int!
+  productName: String!
+  gameName: String!
+  setName: String!
+  rarity: String
+  isSingle: Boolean!
+  isSealed: Boolean!
+  condition: String
+  quantity: Int!
+  costBasis: Float!
+  costOverridden: Boolean!
+  marketValue: Float
+}
+
+type LotPage {
+  lots: [Lot!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+input CreateLotInput {
+  name: String!
+  description: String
+  amountPaid: Float!
+  acquisitionDate: String!
+  useBuyListForCost: Boolean!
+  items: [LotItemInput!]!
+}
+
+input UpdateLotInput {
+  id: Int!
+  name: String!
+  description: String
+  amountPaid: Float!
+  acquisitionDate: String!
+  useBuyListForCost: Boolean!
+  items: [LotItemInput!]!
+}
+
+input LotItemInput {
+  id: Int
+  productId: Int!
+  condition: String
+  quantity: Int!
+  costBasis: Float!
+  costOverridden: Boolean!
+}
+
+input LotFilters {
+  searchTerm: String
+}
+
+extend type Query {
+  getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
+  getLot(id: Int!): Lot
+  getDistinctRarities(categoryId: Int!): [String!]!
+}
+
+extend type Mutation {
+  createLot(input: CreateLotInput!): Lot!
+  updateLot(input: UpdateLotInput!): Lot!
+  deleteLot(id: Int!): Boolean!
+}

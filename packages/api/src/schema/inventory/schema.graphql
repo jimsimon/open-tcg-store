@@ -107,7 +107,7 @@ extend type Query {
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
   getInventoryItem(id: Int!): InventoryItem
   getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
-  searchProducts(searchTerm: String!, game: String): [ProductSearchResult!]!
+  searchProducts(searchTerm: String!, game: String, isSingle: Boolean, isSealed: Boolean): [ProductSearchResult!]!
 }
 
 type ProductSearchResult {

@@ -25,6 +25,7 @@ interface OrderItemResult {
   unitPrice: number;
   costBasis: number | null;
   profit: number | null;
+  lotId: number | null;
 }
 
 interface OrderResult {
@@ -53,6 +54,7 @@ function mapOrderItems(
     quantity: number;
     unitPrice: number;
     costBasis: number | null;
+    lotId?: number | null;
   }[],
 ): OrderItemResult[] {
   return orderItems.map((oi) => {
@@ -68,6 +70,7 @@ function mapOrderItems(
       unitPrice: oi.unitPrice,
       costBasis: oi.costBasis,
       profit,
+      lotId: oi.lotId ?? null,
     };
   });
 }
@@ -205,6 +208,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     quantity: number;
     unitPrice: number;
     costBasis: number | null;
+    lotId: number | null;
   }[] = [];
 
   for (const item of cartItemsWithInventory) {
@@ -214,6 +218,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
         id: inventoryItemStock.id,
         quantity: inventoryItemStock.quantity,
         costBasis: inventoryItemStock.costBasis,
+        lotId: inventoryItemStock.lotId,
       })
       .from(inventoryItemStock)
       .where(
@@ -250,6 +255,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
         quantity: deduct,
         unitPrice: item.unitPrice,
         costBasis: stockEntry.costBasis,
+        lotId: stockEntry.lotId ?? null,
       });
 
       remaining -= deduct;
