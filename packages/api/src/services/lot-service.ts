@@ -301,91 +301,95 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
 
   const now = new Date();
 
-  // Create lot record
-  const [lotRow] = await otcgs
-    .insert(lot)
-    .values({
-      organizationId,
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      amountPaid: input.amountPaid,
-      acquisitionDate: input.acquisitionDate,
-      useBuyListForCost: input.useBuyListForCost ? 1 : 0,
-      createdBy: userId,
-      updatedBy: userId,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning();
+  const lotRow = await otcgs.transaction(async (tx) => {
+    // Create lot record
+    const [newLot] = await tx
+      .insert(lot)
+      .values({
+        organizationId,
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        amountPaid: input.amountPaid,
+        acquisitionDate: input.acquisitionDate,
+        useBuyListForCost: input.useBuyListForCost ? 1 : 0,
+        createdBy: userId,
+        updatedBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
-  // Create lot items and corresponding inventory entries
-  for (const item of input.items) {
-    const condition = item.condition ?? 'NM';
-    const sellPrice = await getMarketPriceForProduct(item.productId);
-    const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
+    // Create lot items and corresponding inventory entries
+    for (const item of input.items) {
+      const condition = item.condition ?? 'NM';
+      const sellPrice = await getMarketPriceForProduct(item.productId);
+      const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
 
-    // Create stock entry with lot reference
-    // Check for existing stock with same costBasis + acquisitionDate (unique index)
-    const [existingStock] = await otcgs
-      .select()
-      .from(inventoryItemStock)
-      .where(
-        and(
-          eq(inventoryItemStock.inventoryItemId, parentId),
-          eq(inventoryItemStock.costBasis, item.costBasis),
-          eq(inventoryItemStock.acquisitionDate, input.acquisitionDate),
-        ),
-      )
-      .limit(1);
+      // Create stock entry with lot reference
+      // Check for existing stock with same costBasis + acquisitionDate (unique index)
+      const [existingStock] = await tx
+        .select()
+        .from(inventoryItemStock)
+        .where(
+          and(
+            eq(inventoryItemStock.inventoryItemId, parentId),
+            eq(inventoryItemStock.costBasis, item.costBasis),
+            eq(inventoryItemStock.acquisitionDate, input.acquisitionDate),
+          ),
+        )
+        .limit(1);
 
-    let stockId: number;
+      let stockId: number;
 
-    if (existingStock) {
-      const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
-      await otcgs
-        .update(inventoryItemStock)
-        .set({
-          quantity: baseQty + item.quantity,
-          lotId: lotRow.id,
-          deletedAt: null,
-          updatedBy: userId,
-          updatedAt: now,
-        })
-        .where(eq(inventoryItemStock.id, existingStock.id));
-      stockId = existingStock.id;
-    } else {
-      const [inserted] = await otcgs
-        .insert(inventoryItemStock)
-        .values({
-          inventoryItemId: parentId,
-          quantity: item.quantity,
-          costBasis: item.costBasis,
-          acquisitionDate: input.acquisitionDate,
-          lotId: lotRow.id,
-          createdBy: userId,
-          updatedBy: userId,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      stockId = inserted.id;
+      if (existingStock) {
+        const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
+        await tx
+          .update(inventoryItemStock)
+          .set({
+            quantity: baseQty + item.quantity,
+            lotId: newLot.id,
+            deletedAt: null,
+            updatedBy: userId,
+            updatedAt: now,
+          })
+          .where(eq(inventoryItemStock.id, existingStock.id));
+        stockId = existingStock.id;
+      } else {
+        const [inserted] = await tx
+          .insert(inventoryItemStock)
+          .values({
+            inventoryItemId: parentId,
+            quantity: item.quantity,
+            costBasis: item.costBasis,
+            acquisitionDate: input.acquisitionDate,
+            lotId: newLot.id,
+            createdBy: userId,
+            updatedBy: userId,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning();
+        stockId = inserted.id;
+      }
+
+      // Create lot item record
+      await tx.insert(lotItem).values({
+        lotId: newLot.id,
+        productId: item.productId,
+        condition: item.condition ?? null,
+        quantity: item.quantity,
+        costBasis: item.costBasis,
+        costOverridden: item.costOverridden ? 1 : 0,
+        inventoryItemStockId: stockId,
+        createdAt: now,
+        updatedAt: now,
+      });
     }
 
-    // Create lot item record
-    await otcgs.insert(lotItem).values({
-      lotId: lotRow.id,
-      productId: item.productId,
-      condition: item.condition ?? null,
-      quantity: item.quantity,
-      costBasis: item.costBasis,
-      costOverridden: item.costOverridden ? 1 : 0,
-      inventoryItemStockId: stockId,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
+    return newLot;
+  });
 
-  // Log transaction
+  // Log transaction (outside DB transaction — logging failure shouldn't roll back the lot)
   await logTransaction({
     organizationId,
     userId,
@@ -411,7 +415,7 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 
   const now = new Date();
 
-  // Verify lot exists and belongs to org
+  // Verify lot exists and belongs to org (outside transaction — read-only check)
   const [existingLot] = await otcgs
     .select()
     .from(lot)
@@ -420,137 +424,139 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 
   if (!existingLot) throw new Error('Lot not found');
 
-  // Update lot metadata
-  await otcgs
-    .update(lot)
-    .set({
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      amountPaid: input.amountPaid,
-      acquisitionDate: input.acquisitionDate,
-      useBuyListForCost: input.useBuyListForCost ? 1 : 0,
-      updatedBy: userId,
-      updatedAt: now,
-    })
-    .where(eq(lot.id, input.id));
+  await otcgs.transaction(async (tx) => {
+    // Update lot metadata
+    await tx
+      .update(lot)
+      .set({
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        amountPaid: input.amountPaid,
+        acquisitionDate: input.acquisitionDate,
+        useBuyListForCost: input.useBuyListForCost ? 1 : 0,
+        updatedBy: userId,
+        updatedAt: now,
+      })
+      .where(eq(lot.id, input.id));
 
-  // Get existing lot items
-  const existingItems = await otcgs.select().from(lotItem).where(eq(lotItem.lotId, input.id));
-  const existingItemMap = new Map(existingItems.map((i) => [i.id, i]));
+    // Get existing lot items
+    const existingItems = await tx.select().from(lotItem).where(eq(lotItem.lotId, input.id));
+    const existingItemMap = new Map(existingItems.map((i) => [i.id, i]));
 
-  // Determine which items to add, update, or remove
-  const inputItemIds = new Set(input.items.filter((i) => i.id != null).map((i) => i.id!));
-  const removedItems = existingItems.filter((i) => !inputItemIds.has(i.id));
+    // Determine which items to add, update, or remove
+    const inputItemIds = new Set(input.items.filter((i) => i.id != null).map((i) => i.id!));
+    const removedItems = existingItems.filter((i) => !inputItemIds.has(i.id));
 
-  // Remove items: soft-delete associated stock entries, delete lot items
-  for (const removed of removedItems) {
-    if (removed.inventoryItemStockId) {
-      await otcgs
-        .update(inventoryItemStock)
-        .set({ quantity: 0, deletedAt: now, updatedBy: userId, updatedAt: now })
-        .where(eq(inventoryItemStock.id, removed.inventoryItemStockId));
+    // Remove items: soft-delete associated stock entries, delete lot items
+    for (const removed of removedItems) {
+      if (removed.inventoryItemStockId) {
+        await tx
+          .update(inventoryItemStock)
+          .set({ quantity: 0, deletedAt: now, updatedBy: userId, updatedAt: now })
+          .where(eq(inventoryItemStock.id, removed.inventoryItemStockId));
+      }
+      await tx.delete(lotItem).where(eq(lotItem.id, removed.id));
     }
-    await otcgs.delete(lotItem).where(eq(lotItem.id, removed.id));
-  }
 
-  // Process input items
-  for (const item of input.items) {
-    const condition = item.condition ?? 'NM';
+    // Process input items
+    for (const item of input.items) {
+      const condition = item.condition ?? 'NM';
 
-    if (item.id != null && existingItemMap.has(item.id)) {
-      // Update existing item
-      const existing = existingItemMap.get(item.id)!;
+      if (item.id != null && existingItemMap.has(item.id)) {
+        // Update existing item
+        const existing = existingItemMap.get(item.id)!;
 
-      // Update lot item record
-      await otcgs
-        .update(lotItem)
-        .set({
+        // Update lot item record
+        await tx
+          .update(lotItem)
+          .set({
+            productId: item.productId,
+            condition: item.condition ?? null,
+            quantity: item.quantity,
+            costBasis: item.costBasis,
+            costOverridden: item.costOverridden ? 1 : 0,
+            updatedAt: now,
+          })
+          .where(eq(lotItem.id, item.id));
+
+        // Update associated stock entry
+        if (existing.inventoryItemStockId) {
+          await tx
+            .update(inventoryItemStock)
+            .set({
+              quantity: item.quantity,
+              costBasis: item.costBasis,
+              updatedBy: userId,
+              updatedAt: now,
+            })
+            .where(eq(inventoryItemStock.id, existing.inventoryItemStockId));
+        }
+      } else {
+        // New item — create inventory + stock + lot item
+        const sellPrice = await getMarketPriceForProduct(item.productId);
+        const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
+
+        const [existingStock] = await tx
+          .select()
+          .from(inventoryItemStock)
+          .where(
+            and(
+              eq(inventoryItemStock.inventoryItemId, parentId),
+              eq(inventoryItemStock.costBasis, item.costBasis),
+              eq(inventoryItemStock.acquisitionDate, input.acquisitionDate),
+            ),
+          )
+          .limit(1);
+
+        let stockId: number;
+
+        if (existingStock) {
+          const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
+          await tx
+            .update(inventoryItemStock)
+            .set({
+              quantity: baseQty + item.quantity,
+              lotId: input.id,
+              deletedAt: null,
+              updatedBy: userId,
+              updatedAt: now,
+            })
+            .where(eq(inventoryItemStock.id, existingStock.id));
+          stockId = existingStock.id;
+        } else {
+          const [inserted] = await tx
+            .insert(inventoryItemStock)
+            .values({
+              inventoryItemId: parentId,
+              quantity: item.quantity,
+              costBasis: item.costBasis,
+              acquisitionDate: input.acquisitionDate,
+              lotId: input.id,
+              createdBy: userId,
+              updatedBy: userId,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .returning();
+          stockId = inserted.id;
+        }
+
+        await tx.insert(lotItem).values({
+          lotId: input.id,
           productId: item.productId,
           condition: item.condition ?? null,
           quantity: item.quantity,
           costBasis: item.costBasis,
           costOverridden: item.costOverridden ? 1 : 0,
+          inventoryItemStockId: stockId,
+          createdAt: now,
           updatedAt: now,
-        })
-        .where(eq(lotItem.id, item.id));
-
-      // Update associated stock entry
-      if (existing.inventoryItemStockId) {
-        await otcgs
-          .update(inventoryItemStock)
-          .set({
-            quantity: item.quantity,
-            costBasis: item.costBasis,
-            updatedBy: userId,
-            updatedAt: now,
-          })
-          .where(eq(inventoryItemStock.id, existing.inventoryItemStockId));
+        });
       }
-    } else {
-      // New item — create inventory + stock + lot item
-      const sellPrice = await getMarketPriceForProduct(item.productId);
-      const parentId = await findOrCreateInventoryItem(organizationId, item.productId, condition, sellPrice, userId);
-
-      const [existingStock] = await otcgs
-        .select()
-        .from(inventoryItemStock)
-        .where(
-          and(
-            eq(inventoryItemStock.inventoryItemId, parentId),
-            eq(inventoryItemStock.costBasis, item.costBasis),
-            eq(inventoryItemStock.acquisitionDate, input.acquisitionDate),
-          ),
-        )
-        .limit(1);
-
-      let stockId: number;
-
-      if (existingStock) {
-        const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
-        await otcgs
-          .update(inventoryItemStock)
-          .set({
-            quantity: baseQty + item.quantity,
-            lotId: input.id,
-            deletedAt: null,
-            updatedBy: userId,
-            updatedAt: now,
-          })
-          .where(eq(inventoryItemStock.id, existingStock.id));
-        stockId = existingStock.id;
-      } else {
-        const [inserted] = await otcgs
-          .insert(inventoryItemStock)
-          .values({
-            inventoryItemId: parentId,
-            quantity: item.quantity,
-            costBasis: item.costBasis,
-            acquisitionDate: input.acquisitionDate,
-            lotId: input.id,
-            createdBy: userId,
-            updatedBy: userId,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .returning();
-        stockId = inserted.id;
-      }
-
-      await otcgs.insert(lotItem).values({
-        lotId: input.id,
-        productId: item.productId,
-        condition: item.condition ?? null,
-        quantity: item.quantity,
-        costBasis: item.costBasis,
-        costOverridden: item.costOverridden ? 1 : 0,
-        inventoryItemStockId: stockId,
-        createdAt: now,
-        updatedAt: now,
-      });
     }
-  }
+  });
 
-  // Log transaction
+  // Log transaction (outside DB transaction — logging failure shouldn't roll back the update)
   await logTransaction({
     organizationId,
     userId,
@@ -575,7 +581,7 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 export async function deleteLot(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
 
-  // Verify lot exists and belongs to org
+  // Verify lot exists and belongs to org (outside transaction — read-only check)
   const [existingLot] = await otcgs
     .select()
     .from(lot)
@@ -584,19 +590,21 @@ export async function deleteLot(id: number, organizationId: string, userId: stri
 
   if (!existingLot) throw new Error('Lot not found');
 
-  // Soft-delete all stock entries associated with this lot
-  await otcgs
-    .update(inventoryItemStock)
-    .set({ quantity: 0, deletedAt: now, updatedBy: userId, updatedAt: now })
-    .where(eq(inventoryItemStock.lotId, id));
+  await otcgs.transaction(async (tx) => {
+    // Soft-delete all stock entries associated with this lot
+    await tx
+      .update(inventoryItemStock)
+      .set({ quantity: 0, deletedAt: now, updatedBy: userId, updatedAt: now })
+      .where(eq(inventoryItemStock.lotId, id));
 
-  // Delete lot items
-  await otcgs.delete(lotItem).where(eq(lotItem.lotId, id));
+    // Delete lot items
+    await tx.delete(lotItem).where(eq(lotItem.lotId, id));
 
-  // Delete the lot
-  await otcgs.delete(lot).where(eq(lot.id, id));
+    // Delete the lot
+    await tx.delete(lot).where(eq(lot.id, id));
+  });
 
-  // Log transaction
+  // Log transaction (outside DB transaction — logging failure shouldn't roll back the delete)
   await logTransaction({
     organizationId,
     userId,
@@ -627,7 +635,8 @@ export async function getLots(
   const conditions: ReturnType<typeof eq>[] = [eq(lot.organizationId, organizationId)];
 
   if (filters?.searchTerm) {
-    conditions.push(like(lot.name, `%${filters.searchTerm}%`));
+    const escaped = filters.searchTerm.replace(/[%_]/g, '\\$&');
+    conditions.push(like(lot.name, `%${escaped}%`));
   }
 
   const whereClause = and(...conditions);
@@ -659,8 +668,12 @@ export async function getLots(
 // getLot
 // ---------------------------------------------------------------------------
 
-export async function getLot(id: number): Promise<LotResult | null> {
-  const [lotRow] = await otcgs.select().from(lot).where(eq(lot.id, id)).limit(1);
+export async function getLot(id: number, organizationId: string): Promise<LotResult | null> {
+  const [lotRow] = await otcgs
+    .select()
+    .from(lot)
+    .where(and(eq(lot.id, id), eq(lot.organizationId, organizationId)))
+    .limit(1);
   if (!lotRow) return null;
   return buildLotResult(lotRow);
 }
