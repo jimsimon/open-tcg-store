@@ -43,6 +43,14 @@ export default defineConfig({
           },
         },
       },
+      {
+        test: {
+          name: 'scripts',
+          root: 'scripts',
+          include: ['**/*.test.ts'],
+          environment: 'node',
+        },
+      },
     ],
     coverage: {
       provider: 'v8',
