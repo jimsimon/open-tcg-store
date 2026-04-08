@@ -225,7 +225,7 @@ async function fetchTcgData() {
             const extendedData = product.extendedData.map<typeof productExtendedData.$inferInsert>((ed) => {
               // Map single-letter rarity codes to full names for Magic cards
               const value =
-                ed.name === 'Rarity' && categoryId === MAGIC_CATEGORY_ID ? (mapRarity(ed.value) ?? ed.value) : ed.value;
+                ed.name === 'Rarity' && categoryId === MAGIC_CATEGORY_ID ? mapRarity(ed.value)! : ed.value;
               return {
                 productId: tcgpProductIdToProductIdMap[product.productId],
                 name: ed.name,
