@@ -53,7 +53,7 @@ interface Product {
     releasedOn: string;
     note: string;
   };
-  extendedData: ExtendedData[];
+  extendedData: ExtendedData[] | null;
 }
 
 interface ExtendedData {
@@ -222,7 +222,7 @@ async function fetchTcgData() {
 
         const insertableExtendedData = products.reduce(
           (array, product) => {
-            const extendedData = product.extendedData.map<typeof productExtendedData.$inferInsert>((ed) => {
+            const extendedData = (product.extendedData ?? []).map<typeof productExtendedData.$inferInsert>((ed) => {
               // Map single-letter rarity codes to full names for Magic cards
               const value = ed.name === 'Rarity' && categoryId === MAGIC_CATEGORY_ID ? mapRarity(ed.value)! : ed.value;
               return {
