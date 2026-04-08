@@ -44,6 +44,7 @@ export const orderItem = sqliteTable(
     quantity: integer('quantity').notNull(),
     unitPrice: real('unit_price').notNull(),
     costBasis: real('cost_basis'),
+    lotId: integer('lot_id'),
   },
   (table) => [
     foreignKey({

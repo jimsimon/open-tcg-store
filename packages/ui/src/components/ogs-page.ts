@@ -495,6 +495,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
   canManageInventory = false;
 
   @property({ type: Boolean })
+  canManageLots = false;
+
+  @property({ type: Boolean })
   canViewDashboard = false;
 
   @property({ type: Boolean })
@@ -759,6 +762,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
                   ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}
                   ${this.renderNavSubLink('/inventory/sealed', 'Sealed', 'inventory/sealed')}
+                  ${when(this.canManageLots, () => this.renderNavLink('/lots', 'layer-group', 'Lots', 'lots'))}
                   ${when(this.canViewTransactionLog, () =>
                     this.renderNavLink('/transaction-log', 'clock-rotate-left', 'Transaction Log', 'Transaction Log'),
                   )}

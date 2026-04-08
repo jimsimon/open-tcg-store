@@ -274,6 +274,22 @@ const router = new Router()
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-import');
   })
+  // Lot routes
+  .get('lots', '/lots', async (ctx) => {
+    await requirePermission('lot', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'lots');
+  })
+  .get('lot-new', '/lots/new', async (ctx) => {
+    await requirePermission('lot', 'create')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'lot');
+  })
+  .get('lot-detail', '/lots/:lotId', async (ctx) => {
+    await requirePermission('lot', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'lot');
+  })
   // Settings routes - require companySettings:read permission
   .use('/settings', requirePermission('companySettings', 'read'))
   .get('settings-redirect', '/settings', async (ctx) => {

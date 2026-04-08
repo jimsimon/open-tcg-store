@@ -87,14 +87,18 @@ export type BuyRateEntry = {
   __typename?: 'BuyRateEntry';
   description: Scalars['String']['output'];
   id: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
   sortOrder: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type BuyRateEntryInput = {
   description: Scalars['String']['input'];
+  rarity?: InputMaybe<Scalars['String']['input']>;
   rate: Scalars['Float']['input'];
   sortOrder: Scalars['Int']['input'];
+  type: Scalars['String']['input'];
 };
 
 export type BuyRateTable = {
@@ -166,6 +170,15 @@ export type ConditionInventory = {
   __typename?: 'ConditionInventory';
   price: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
+};
+
+export type CreateLotInput = {
+  acquisitionDate: Scalars['String']['input'];
+  amountPaid: Scalars['Float']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  items: Array<LotItemInput>;
+  name: Scalars['String']['input'];
+  useBuyListForCost: Scalars['Boolean']['input'];
 };
 
 export type DashboardDateRange = {
@@ -282,6 +295,64 @@ export type InventorySummary = {
   totalUnits: Scalars['Int']['output'];
 };
 
+export type Lot = {
+  __typename?: 'Lot';
+  acquisitionDate: Scalars['String']['output'];
+  amountPaid: Scalars['Float']['output'];
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  items: Array<LotItem>;
+  name: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
+  projectedProfitLoss: Scalars['Float']['output'];
+  projectedProfitMargin: Scalars['Float']['output'];
+  totalCost: Scalars['Float']['output'];
+  totalMarketValue: Scalars['Float']['output'];
+  updatedAt: Scalars['String']['output'];
+  useBuyListForCost: Scalars['Boolean']['output'];
+};
+
+export type LotFilters = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type LotItem = {
+  __typename?: 'LotItem';
+  condition?: Maybe<Scalars['String']['output']>;
+  costBasis: Scalars['Float']['output'];
+  costOverridden: Scalars['Boolean']['output'];
+  gameName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isSealed: Scalars['Boolean']['output'];
+  isSingle: Scalars['Boolean']['output'];
+  lotId: Scalars['Int']['output'];
+  marketValue?: Maybe<Scalars['Float']['output']>;
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  rarity?: Maybe<Scalars['String']['output']>;
+  setName: Scalars['String']['output'];
+};
+
+export type LotItemInput = {
+  condition?: InputMaybe<Scalars['String']['input']>;
+  costBasis: Scalars['Float']['input'];
+  costOverridden: Scalars['Boolean']['input'];
+  id?: InputMaybe<Scalars['Int']['input']>;
+  productId: Scalars['Int']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
+export type LotPage = {
+  __typename?: 'LotPage';
+  lots: Array<Lot>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
@@ -293,9 +364,11 @@ export type Mutation = {
   cancelOrder: CancelOrderResult;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  createLot: Lot;
   /** Admin mutation - delete all buy rates for a game. */
   deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
+  deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   firstTimeSetup: Scalars['String']['output'];
   removeFromCart: ShoppingCart;
@@ -315,6 +388,7 @@ export type Mutation = {
   updateBackupSettings: BackupSettings;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
+  updateLot: Lot;
   updateOrderStatus: UpdateOrderStatusResult;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
@@ -359,12 +433,22 @@ export type MutationcancelOrderArgs = {
 };
 
 
+export type MutationcreateLotArgs = {
+  input: CreateLotInput;
+};
+
+
 export type MutationdeleteBuyRatesArgs = {
   categoryId: Scalars['Int']['input'];
 };
 
 
 export type MutationdeleteInventoryItemArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationdeleteLotArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -429,6 +513,11 @@ export type MutationupdateInventoryItemArgs = {
 
 export type MutationupdateItemInCartArgs = {
   cartItem: CartItemInput;
+};
+
+
+export type MutationupdateLotArgs = {
+  input: UpdateLotInput;
 };
 
 
@@ -497,6 +586,7 @@ export type OrderItem = {
   condition: Scalars['String']['output'];
   costBasis?: Maybe<Scalars['Float']['output']>;
   id: Scalars['Int']['output'];
+  lotId?: Maybe<Scalars['Int']['output']>;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   profit?: Maybe<Scalars['Float']['output']>;
@@ -646,12 +736,15 @@ export type Query = {
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
   getDataUpdateStatus: DataUpdateStatus;
+  getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
   getIntegrationSettings: IntegrationSettings;
   getInventory: InventoryPage;
   getInventoryItem?: Maybe<InventoryItem>;
   getInventoryItemDetails: InventoryStockPage;
+  getLot?: Maybe<Lot>;
+  getLots: LotPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
@@ -721,6 +814,11 @@ export type QuerygetDashboardSalesArgs = {
 };
 
 
+export type QuerygetDistinctRaritiesArgs = {
+  categoryId: Scalars['Int']['input'];
+};
+
+
 export type QuerygetInventoryArgs = {
   filters?: InputMaybe<InventoryFilters>;
   pagination?: InputMaybe<PaginationInput>;
@@ -734,6 +832,17 @@ export type QuerygetInventoryItemArgs = {
 
 export type QuerygetInventoryItemDetailsArgs = {
   inventoryItemId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QuerygetLotArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QuerygetLotsArgs = {
+  filters?: InputMaybe<LotFilters>;
   pagination?: InputMaybe<PaginationInput>;
 };
 
@@ -793,6 +902,8 @@ export type QuerylookupSalesTaxArgs = {
 
 export type QuerysearchProductsArgs = {
   game?: InputMaybe<Scalars['String']['input']>;
+  isSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  isSingle?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm: Scalars['String']['input'];
 };
 
@@ -968,6 +1079,16 @@ export type UpdateInventoryItemInput = {
   price?: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type UpdateLotInput = {
+  acquisitionDate: Scalars['String']['input'];
+  amountPaid: Scalars['Float']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['Int']['input'];
+  items: Array<LotItemInput>;
+  name: Scalars['String']['input'];
+  useBuyListForCost: Scalars['Boolean']['input'];
+};
+
 export type UpdateOrderStatusResult = {
   __typename?: 'UpdateOrderStatusResult';
   error?: Maybe<Scalars['String']['output']>;
@@ -1025,6 +1146,7 @@ export type UserPermissions = {
   __typename?: 'UserPermissions';
   canAccessSettings: Scalars['Boolean']['output'];
   canManageInventory: Scalars['Boolean']['output'];
+  canManageLots: Scalars['Boolean']['output'];
   canManageStoreLocations: Scalars['Boolean']['output'];
   canManageUsers: Scalars['Boolean']['output'];
   canViewDashboard: Scalars['Boolean']['output'];
@@ -1127,6 +1249,7 @@ export type ResolversTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
+  CreateLotInput: CreateLotInput;
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
@@ -1139,6 +1262,11 @@ export type ResolversTypes = {
   InventoryPage: ResolverTypeWrapper<InventoryPage>;
   InventoryStockPage: ResolverTypeWrapper<InventoryStockPage>;
   InventorySummary: ResolverTypeWrapper<InventorySummary>;
+  Lot: ResolverTypeWrapper<Lot>;
+  LotFilters: LotFilters;
+  LotItem: ResolverTypeWrapper<LotItem>;
+  LotItemInput: LotItemInput;
+  LotPage: ResolverTypeWrapper<LotPage>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   OpenOrder: ResolverTypeWrapper<OpenOrder>;
   Order: ResolverTypeWrapper<Order>;
@@ -1182,6 +1310,7 @@ export type ResolversTypes = {
   TransactionLogPage: ResolverTypeWrapper<TransactionLogPage>;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
+  UpdateLotInput: UpdateLotInput;
   UpdateOrderStatusResult: ResolverTypeWrapper<UpdateOrderStatusResult>;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
@@ -1217,6 +1346,7 @@ export type ResolversParentTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
+  CreateLotInput: CreateLotInput;
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: DataUpdateResult;
   DataUpdateStatus: DataUpdateStatus;
@@ -1229,6 +1359,11 @@ export type ResolversParentTypes = {
   InventoryPage: InventoryPage;
   InventoryStockPage: InventoryStockPage;
   InventorySummary: InventorySummary;
+  Lot: Lot;
+  LotFilters: LotFilters;
+  LotItem: LotItem;
+  LotItemInput: LotItemInput;
+  LotPage: LotPage;
   Mutation: Record<PropertyKey, never>;
   OpenOrder: OpenOrder;
   Order: Order;
@@ -1272,6 +1407,7 @@ export type ResolversParentTypes = {
   TransactionLogPage: TransactionLogPage;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
+  UpdateLotInput: UpdateLotInput;
   UpdateOrderStatusResult: UpdateOrderStatusResult;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
@@ -1307,8 +1443,10 @@ export type BestSellerResolvers<ContextType = any, ParentType extends ResolversP
 export type BuyRateEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateEntry'] = ResolversParentTypes['BuyRateEntry']> = {
   description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   sortOrder?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
 
 export type BuyRateTableResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateTable'] = ResolversParentTypes['BuyRateTable']> = {
@@ -1443,6 +1581,48 @@ export type InventorySummaryResolvers<ContextType = any, ParentType extends Reso
   totalUnits?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type LotResolvers<ContextType = any, ParentType extends ResolversParentTypes['Lot'] = ResolversParentTypes['Lot']> = {
+  acquisitionDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  amountPaid?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['LotItem']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  projectedProfitLoss?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  projectedProfitMargin?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalMarketValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  useBuyListForCost?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+};
+
+export type LotItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotItem'] = ResolversParentTypes['LotItem']> = {
+  condition?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  costBasis?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  costOverridden?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  isSealed?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isSingle?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  lotId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  marketValue?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
+  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  setName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type LotPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotPage'] = ResolversParentTypes['LotPage']> = {
+  lots?: Resolver<Array<ResolversTypes['Lot']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
   addStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationaddStockArgs, 'input'>>;
@@ -1453,8 +1633,10 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   cancelOrder?: Resolver<ResolversTypes['CancelOrderResult'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
+  createLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationcreateLotArgs, 'input'>>;
   deleteBuyRates?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteBuyRatesArgs, 'categoryId'>>;
   deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
+  deleteLot?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteLotArgs, 'id'>>;
   deleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteStockArgs, 'id'>>;
   firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'supportedGameCategoryIds' | 'userDetails'>>;
   removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
@@ -1469,6 +1651,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType, RequireFields<MutationupdateBackupSettingsArgs, 'input'>>;
   updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
+  updateLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationupdateLotArgs, 'input'>>;
   updateOrderStatus?: Resolver<ResolversTypes['UpdateOrderStatusResult'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
   updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
   updateStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationupdateStockArgs, 'input'>>;
@@ -1503,6 +1686,7 @@ export type OrderItemResolvers<ContextType = any, ParentType extends ResolversPa
   condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   costBasis?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lotId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   profit?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
@@ -1615,11 +1799,14 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getDashboardOrderStatus?: Resolver<ResolversTypes['OrderStatusBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardOrderStatusArgs, 'dateRange' | 'organizationId'>>;
   getDashboardSales?: Resolver<ResolversTypes['SalesBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardSalesArgs, 'dateRange' | 'organizationId'>>;
   getDataUpdateStatus?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
+  getDistinctRarities?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType, RequireFields<QuerygetDistinctRaritiesArgs, 'categoryId'>>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
   getInventoryItem?: Resolver<Maybe<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<QuerygetInventoryItemArgs, 'id'>>;
   getInventoryItemDetails?: Resolver<ResolversTypes['InventoryStockPage'], ParentType, ContextType, RequireFields<QuerygetInventoryItemDetailsArgs, 'inventoryItemId'>>;
+  getLot?: Resolver<Maybe<ResolversTypes['Lot']>, ParentType, ContextType, RequireFields<QuerygetLotArgs, 'id'>>;
+  getLots?: Resolver<ResolversTypes['LotPage'], ParentType, ContextType, Partial<QuerygetLotsArgs>>;
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
@@ -1755,6 +1942,7 @@ export type UpdateOrderStatusResultResolvers<ContextType = any, ParentType exten
 export type UserPermissionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserPermissions'] = ResolversParentTypes['UserPermissions']> = {
   canAccessSettings?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canManageLots?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageStoreLocations?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageUsers?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canViewDashboard?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1782,6 +1970,9 @@ export type Resolvers<ContextType = any> = {
   InventoryPage?: InventoryPageResolvers<ContextType>;
   InventoryStockPage?: InventoryStockPageResolvers<ContextType>;
   InventorySummary?: InventorySummaryResolvers<ContextType>;
+  Lot?: LotResolvers<ContextType>;
+  LotItem?: LotItemResolvers<ContextType>;
+  LotPage?: LotPageResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   OpenOrder?: OpenOrderResolvers<ContextType>;
   Order?: OrderResolvers<ContextType>;

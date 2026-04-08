@@ -9,5 +9,5 @@ export const searchProducts: NonNullable<QueryResolvers['searchProducts']> = asy
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { inventory: ['read'] });
-  return await searchProductsService(args.searchTerm, args.game);
+  return await searchProductsService(args.searchTerm, args.game, args.isSingle, args.isSealed);
 };

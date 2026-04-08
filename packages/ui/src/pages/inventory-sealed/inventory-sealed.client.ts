@@ -42,6 +42,8 @@ export class OgsInventorySealedPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
+  @property({ type: Boolean })
+  canManageLots = false;
   @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
@@ -363,6 +365,7 @@ export class OgsInventorySealedPage extends LitElement {
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
+        ?canManageLots="${this.canManageLots}"
         ?canViewDashboard="${this.canViewDashboard}"
         ?canAccessSettings="${this.canAccessSettings}"
         ?canManageStoreLocations="${this.canManageStoreLocations}"
@@ -485,6 +488,10 @@ export class OgsInventorySealedPage extends LitElement {
         <wa-button variant="brand" @click="${this.openAddDialog}">
           <wa-icon slot="start" name="plus"></wa-icon>
           Add
+        </wa-button>
+        <wa-button variant="neutral" href="/lots/new">
+          <wa-icon slot="start" name="layer-group"></wa-icon>
+          Add Lot
         </wa-button>
         <wa-button variant="neutral" href="/inventory/import">
           <wa-icon slot="start" name="upload"></wa-icon>

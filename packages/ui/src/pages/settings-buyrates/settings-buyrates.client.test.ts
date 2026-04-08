@@ -21,10 +21,9 @@ const mockExecute = execute as ReturnType<typeof vi.fn>;
 // --- Default mock data ---
 
 function setupDefaultMock() {
-  let callIndex = 0;
-  mockExecute.mockImplementation(() => {
-    callIndex++;
-    if (callIndex === 1) {
+  mockExecute.mockImplementation((query: { toString: () => string }) => {
+    const queryStr = String(query);
+    if (queryStr.includes('GetSupportedGames')) {
       return Promise.resolve({
         data: {
           getSupportedGames: [
@@ -34,24 +33,22 @@ function setupDefaultMock() {
         },
       });
     }
-    if (callIndex === 2) {
+    if (queryStr.includes('GetDistinctRarities')) {
+      return Promise.resolve({
+        data: { getDistinctRarities: ['Common', 'Rare'] },
+      });
+    }
+    if (queryStr.includes('GetBuyRates')) {
       return Promise.resolve({
         data: {
           getBuyRates: [
-            { id: 1, description: 'Commons & Uncommons', rate: 0.01, sortOrder: 0 },
-            { id: 2, description: 'Rares (Non-Holo)', rate: 0.02, sortOrder: 1 },
+            { id: 1, description: 'Common', rate: 0.01, type: 'fixed', rarity: 'Common', sortOrder: 0 },
+            { id: 2, description: 'Rare', rate: 0.05, type: 'fixed', rarity: 'Rare', sortOrder: 1 },
           ],
         },
       });
     }
-    if (callIndex === 3) {
-      return Promise.resolve({
-        data: {
-          getBuyRates: [{ id: 3, description: 'Holos and Reverse Holos', rate: 0.05, sortOrder: 0 }],
-        },
-      });
-    }
-    return Promise.resolve({ data: { getBuyRates: [] } });
+    return Promise.resolve({ data: {} });
   });
 }
 
@@ -116,9 +113,14 @@ describe('ogs-settings-buyrates-page', () => {
     expect(saveBtn?.textContent).toContain('Save Buy Rates');
   });
 
-  test('should display delete button for each row', () => {
+  test('should not display delete button for rarity default rows', () => {
+    // Rarity default rows should not have delete buttons
+    const rateActionsContainers = element.shadowRoot!.querySelectorAll('.rate-actions');
+    // With only rarity defaults, all .rate-actions should be empty (no trash buttons)
     const deleteButtons = element.shadowRoot!.querySelectorAll('.rate-actions wa-button');
-    expect(deleteButtons.length).toBeGreaterThanOrEqual(1);
+    // Default mock only has rarity-default entries, so no delete buttons expected
+    expect(rateActionsContainers.length).toBeGreaterThanOrEqual(0);
+    expect(deleteButtons.length).toBe(0);
   });
 
   test('should show empty state when no supported games', async () => {
@@ -166,15 +168,19 @@ describe('ogs-settings-buyrates-page', () => {
     expect(errorCallout?.textContent).toContain('Network error');
   });
 
-  test('should show message when game has no buy rate entries', async () => {
-    let callIndex = 0;
-    mockExecute.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) {
+  test('should show rarity default rows when game has rarities but no saved buy rates', async () => {
+    mockExecute.mockImplementation((query: { toString: () => string }) => {
+      const queryStr = String(query);
+      if (queryStr.includes('GetSupportedGames')) {
         return Promise.resolve({
           data: {
             getSupportedGames: [{ categoryId: 1, name: 'Magic', displayName: 'Magic: The Gathering' }],
           },
+        });
+      }
+      if (queryStr.includes('GetDistinctRarities')) {
+        return Promise.resolve({
+          data: { getDistinctRarities: ['Common', 'Uncommon'] },
         });
       }
       return Promise.resolve({ data: { getBuyRates: [] } });
@@ -187,7 +193,9 @@ describe('ogs-settings-buyrates-page', () => {
     await new Promise((r) => setTimeout(r, 100));
     await element.updateComplete;
 
-    const emptyText = element.shadowRoot!.querySelector('.tab-content p');
-    expect(emptyText?.textContent).toContain('No buy rate entries yet');
+    // Should display a table with rarity default rows even when no buy rates are saved
+    const sectionLabel = element.shadowRoot!.querySelector('.rarity-section-label');
+    expect(sectionLabel).toBeTruthy();
+    expect(sectionLabel?.textContent).toContain('Rarity Defaults');
   });
 });

@@ -994,11 +994,35 @@ async function mergeStockDuplicates(parentId: number, userId: string): Promise<v
 // 9. searchProducts — unchanged (queries product table, not inventory)
 // ---------------------------------------------------------------------------
 
-export async function searchProducts(searchTerm: string, game?: string | null): Promise<ProductSearchResult[]> {
+export async function searchProducts(
+  searchTerm: string,
+  game?: string | null,
+  isSingle?: boolean | null,
+  isSealed?: boolean | null,
+): Promise<ProductSearchResult[]> {
   const conditions: ReturnType<typeof eq>[] = [like(product.name, `%${searchTerm}%`)];
 
   if (game) {
     conditions.push(like(category.seoCategoryName, `${game.toLowerCase()}%`));
+  }
+
+  // Filter by product type (singles have Rarity or Number extended data; sealed do not)
+  if (isSingle === true) {
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM ${productExtendedData}
+        WHERE ${productExtendedData.productId} = ${product.id}
+          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
+      )`,
+    );
+  } else if (isSealed === true) {
+    conditions.push(
+      sql`NOT EXISTS (
+        SELECT 1 FROM ${productExtendedData}
+        WHERE ${productExtendedData.productId} = ${product.id}
+          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
+      )`,
+    );
   }
 
   const rows = await otcgs

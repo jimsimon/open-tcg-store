@@ -221,9 +221,9 @@ describe('buy-rate-service', () => {
   describe('getBuyRates', () => {
     it('should return buy rates for a game ordered by sortOrder', async () => {
       const rows = [
-        { id: 1, description: 'Commons', rate: 0.01, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, sortOrder: 2 },
+        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, sortOrder: 0 },
+        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, sortOrder: 1 },
+        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, sortOrder: 2 },
       ];
       selectChain = chainable(rows);
       mockOtcgs.select.mockImplementation(() => selectChain);
@@ -231,9 +231,9 @@ describe('buy-rate-service', () => {
       const result = await getBuyRates('org-1', 1);
 
       expect(result).toEqual([
-        { id: 1, description: 'Commons', rate: 0.01, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, sortOrder: 2 },
+        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, sortOrder: 0 },
+        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, sortOrder: 1 },
+        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, sortOrder: 2 },
       ]);
     });
 
@@ -261,8 +261,8 @@ describe('buy-rate-service', () => {
       mockOtcgs.select.mockImplementation(() => selectChain);
 
       const result = await saveBuyRates('org-1', 1, [
-        { description: 'Commons', rate: 0.01, sortOrder: 0 },
-        { description: 'Rares', rate: 0.05, sortOrder: 1 },
+        { description: 'Commons', rate: 0.01, type: 'fixed', sortOrder: 0 },
+        { description: 'Rares', rate: 0.05, type: 'fixed', sortOrder: 1 },
       ]);
 
       expect(mockOtcgs.delete).toHaveBeenCalled();

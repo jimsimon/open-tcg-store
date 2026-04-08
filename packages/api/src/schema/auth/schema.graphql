@@ -5,6 +5,7 @@ correctly reflect dynamic access control (DAC) overrides.
 """
 type UserPermissions {
   canManageInventory: Boolean!
+  canManageLots: Boolean!
   canViewDashboard: Boolean!
   canAccessSettings: Boolean!
   canManageStoreLocations: Boolean!

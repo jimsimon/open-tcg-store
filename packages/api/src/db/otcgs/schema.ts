@@ -8,3 +8,5 @@ export * from './store-hours-schema';
 export * from './transaction-log-schema';
 export * from './store-supported-game-schema';
 export * from './buy-rate-schema';
+export * from './lot-schema';
+export * from './lot-item-schema';

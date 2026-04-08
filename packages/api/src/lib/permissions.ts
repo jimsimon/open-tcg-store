@@ -18,6 +18,7 @@ export const statement = {
   ...defaultStatements,
   ...adminDefaultStatements,
   inventory: ['create', 'read', 'update', 'delete'],
+  lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
   companySettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
@@ -42,6 +43,7 @@ export const ownerRole = ac.newRole({
   ac: ['create', 'read', 'update', 'delete'],
   // Custom app permissions
   inventory: ['create', 'read', 'update', 'delete'],
+  lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
   companySettings: ['read', 'update'],
   storeLocations: ['create', 'read', 'update', 'delete'],
@@ -55,6 +57,7 @@ export const ownerRole = ac.newRole({
  */
 export const managerRole = ac.newRole({
   inventory: ['create', 'read', 'update', 'delete'],
+  lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
   transactionLog: ['read'],
 });
@@ -67,6 +70,7 @@ export const memberRole = ac.newRole({
   // No default org permissions (members can't manage other members/invitations)
   // Custom app permissions
   inventory: ['create', 'read', 'update', 'delete'],
+  lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
 });
 

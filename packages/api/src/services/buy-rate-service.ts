@@ -18,6 +18,8 @@ export interface BuyRateEntryResult {
   id: number;
   description: string;
   rate: number;
+  type: string;
+  rarity: string | null;
   sortOrder: number;
 }
 
@@ -35,6 +37,8 @@ export interface PublicBuyRatesResult {
 export interface BuyRateEntryInput {
   description: string;
   rate: number;
+  type: string;
+  rarity?: string | null;
   sortOrder: number;
 }
 
@@ -124,6 +128,8 @@ export async function getBuyRates(orgId: string, categoryId: number): Promise<Bu
     id: row.id,
     description: row.description,
     rate: row.rate,
+    type: row.type ?? 'fixed',
+    rarity: row.rarity ?? null,
     sortOrder: row.sortOrder,
   }));
 }
@@ -141,6 +147,18 @@ export async function saveBuyRates(
     if (!entry.description || entry.description.trim().length === 0) {
       throw new Error('Description must not be empty');
     }
+    const validTypes = ['fixed', 'percentage'];
+    if (entry.type && !validTypes.includes(entry.type)) {
+      throw new Error(`Invalid type: ${entry.type}. Must be one of: ${validTypes.join(', ')}`);
+    }
+  }
+
+  // Validate all rarity-default rows have non-zero rates
+  const rarityEntries = entries.filter((e) => e.rarity);
+  for (const entry of rarityEntries) {
+    if (entry.rate <= 0) {
+      throw new Error(`Buy rate for rarity "${entry.rarity}" must be greater than 0`);
+    }
   }
 
   await otcgs.transaction(async (tx) => {
@@ -155,6 +173,8 @@ export async function saveBuyRates(
           categoryId,
           description: entry.description,
           rate: entry.rate,
+          type: entry.type || 'fixed',
+          rarity: entry.rarity || null,
           sortOrder: entry.sortOrder,
         })),
       );
@@ -214,6 +234,8 @@ export async function getPublicBuyRates(orgId: string): Promise<PublicBuyRatesRe
       id: rate.id,
       description: rate.description,
       rate: rate.rate,
+      type: rate.type ?? 'fixed',
+      rarity: rate.rarity ?? null,
       sortOrder: rate.sortOrder,
     });
     ratesByCategory.set(rate.categoryId, existing);

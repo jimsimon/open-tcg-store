@@ -254,7 +254,7 @@ describe('inventory resolvers', () => {
       await searchProducts(null, { searchTerm: 'Charizard', game: 'pokemon' }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['read'] });
-      expect(mockSearchProducts).toHaveBeenCalledWith('Charizard', 'pokemon');
+      expect(mockSearchProducts).toHaveBeenCalledWith('Charizard', 'pokemon', undefined, undefined);
     });
   });
 });

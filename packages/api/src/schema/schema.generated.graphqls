@@ -65,14 +65,18 @@ input BulkUpdateStockInput {
 type BuyRateEntry {
   description: String!
   id: Int!
+  rarity: String
   rate: Float!
   sortOrder: Int!
+  type: String!
 }
 
 input BuyRateEntryInput {
   description: String!
+  rarity: String
   rate: Float!
   sortOrder: Int!
+  type: String!
 }
 
 type BuyRateTable {
@@ -137,6 +141,15 @@ type ConditionInventories {
 type ConditionInventory {
   price: String!
   quantity: Int!
+}
+
+input CreateLotInput {
+  acquisitionDate: String!
+  amountPaid: Float!
+  description: String
+  items: [LotItemInput!]!
+  name: String!
+  useBuyListForCost: Boolean!
 }
 
 input DashboardDateRange {
@@ -244,6 +257,61 @@ type InventorySummary {
   totalUnits: Int!
 }
 
+type Lot {
+  acquisitionDate: String!
+  amountPaid: Float!
+  createdAt: String!
+  description: String
+  id: Int!
+  items: [LotItem!]!
+  name: String!
+  organizationId: String!
+  projectedProfitLoss: Float!
+  projectedProfitMargin: Float!
+  totalCost: Float!
+  totalMarketValue: Float!
+  updatedAt: String!
+  useBuyListForCost: Boolean!
+}
+
+input LotFilters {
+  searchTerm: String
+}
+
+type LotItem {
+  condition: String
+  costBasis: Float!
+  costOverridden: Boolean!
+  gameName: String!
+  id: Int!
+  isSealed: Boolean!
+  isSingle: Boolean!
+  lotId: Int!
+  marketValue: Float
+  productId: Int!
+  productName: String!
+  quantity: Int!
+  rarity: String
+  setName: String!
+}
+
+input LotItemInput {
+  condition: String
+  costBasis: Float!
+  costOverridden: Boolean!
+  id: Int
+  productId: Int!
+  quantity: Int!
+}
+
+type LotPage {
+  lots: [Lot!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
 type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addStock(input: AddStockInput!): InventoryItemStock!
@@ -254,10 +322,12 @@ type Mutation {
   cancelOrder(orderId: Int!): CancelOrderResult!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
+  createLot(input: CreateLotInput!): Lot!
 
   """Admin mutation - delete all buy rates for a game."""
   deleteBuyRates(categoryId: Int!): Boolean!
   deleteInventoryItem(id: Int!): Boolean!
+  deleteLot(id: Int!): Boolean!
   deleteStock(id: Int!): Boolean!
   firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!, userDetails: UserDetails!): String!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
@@ -281,6 +351,7 @@ type Mutation {
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
+  updateLot(input: UpdateLotInput!): Lot!
   updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   updateStock(input: UpdateStockInput!): InventoryItemStock!
@@ -321,6 +392,7 @@ type OrderItem {
   condition: String!
   costBasis: Float
   id: Int!
+  lotId: Int
   productId: Int!
   productName: String!
   profit: Float
@@ -464,6 +536,7 @@ type Query {
   getDashboardOrderStatus(dateRange: DashboardDateRange!, organizationId: String!): OrderStatusBreakdown!
   getDashboardSales(dateRange: DashboardDateRange!, organizationId: String!): SalesBreakdown!
   getDataUpdateStatus: DataUpdateStatus!
+  getDistinctRarities(categoryId: Int!): [String!]!
 
   """
   Stores the current user is assigned to (for authenticated employees/managers/owners)
@@ -473,6 +546,8 @@ type Query {
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
   getInventoryItem(id: Int!): InventoryItem
   getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
+  getLot(id: Int!): Lot
+  getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(organizationId: String, productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
@@ -493,7 +568,7 @@ type Query {
   getTransactionLogs(filters: TransactionLogFilters, pagination: PaginationInput): TransactionLogPage!
   isSetupPending: Boolean!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
-  searchProducts(game: String, searchTerm: String!): [ProductSearchResult!]!
+  searchProducts(game: String, isSealed: Boolean, isSingle: Boolean, searchTerm: String!): [ProductSearchResult!]!
 
   """
   Returns all permission flags for the current user in a single round trip.
@@ -658,6 +733,16 @@ input UpdateInventoryItemInput {
   price: Float
 }
 
+input UpdateLotInput {
+  acquisitionDate: String!
+  amountPaid: Float!
+  description: String
+  id: Int!
+  items: [LotItemInput!]!
+  name: String!
+  useBuyListForCost: Boolean!
+}
+
 type UpdateOrderStatusResult {
   error: String
   order: Order
@@ -713,6 +798,7 @@ correctly reflect dynamic access control (DAC) overrides.
 type UserPermissions {
   canAccessSettings: Boolean!
   canManageInventory: Boolean!
+  canManageLots: Boolean!
   canManageStoreLocations: Boolean!
   canManageUsers: Boolean!
   canViewDashboard: Boolean!
