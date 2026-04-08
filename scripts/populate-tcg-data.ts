@@ -9,6 +9,7 @@ import {
   productExtendedData,
   price,
 } from '../packages/api/src/db/tcg-data/schema';
+import { mapRarity } from './lib/rarity';
 
 // Types for the API responses
 interface Category {
@@ -222,11 +223,14 @@ async function fetchTcgData() {
         const insertableExtendedData = products.reduce(
           (array, product) => {
             const extendedData = product.extendedData.map<typeof productExtendedData.$inferInsert>((ed) => {
+              // Map single-letter rarity codes to full names for Magic cards
+              const value =
+                ed.name === 'Rarity' && categoryId === MAGIC_CATEGORY_ID ? (mapRarity(ed.value) ?? ed.value) : ed.value;
               return {
                 productId: tcgpProductIdToProductIdMap[product.productId],
                 name: ed.name,
                 displayName: ed.displayName,
-                value: ed.value,
+                value,
               };
             });
             array.push(...extendedData);
