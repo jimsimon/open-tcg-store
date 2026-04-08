@@ -109,43 +109,144 @@ export class OgsLotsPage extends LitElement {
   @property({ type: Boolean }) showStoreSelector = false;
 
   static styles = [
-    css`${unsafeCSS(nativeStyle)}`,
-    css`${unsafeCSS(utilityStyles)}`,
     css`
-      :host { box-sizing: border-box; }
-      *, *::before, *::after { box-sizing: border-box; }
+      ${unsafeCSS(nativeStyle)}
+    `,
+    css`
+      ${unsafeCSS(utilityStyles)}
+    `,
+    css`
+      :host {
+        box-sizing: border-box;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-      .page-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
-      .page-header-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--wa-border-radius-l); background: var(--wa-color-brand-fill-normal); color: var(--wa-color-brand-on-normal); flex-shrink: 0; }
-      .page-header-content { flex: 1; }
-      .page-header h2 { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: 700; }
-      .page-header p { margin: 0.25rem 0 0 0; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); }
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      .page-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--wa-border-radius-l);
+        background: var(--wa-color-brand-fill-normal);
+        color: var(--wa-color-brand-on-normal);
+        flex-shrink: 0;
+      }
+      .page-header-content {
+        flex: 1;
+      }
+      .page-header h2 {
+        margin: 0;
+        font-size: var(--wa-font-size-2xl);
+        font-weight: 700;
+      }
+      .page-header p {
+        margin: 0.25rem 0 0 0;
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
 
-      .action-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-      .action-bar .search-spacer { flex: 1; }
+      .action-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .action-bar .search-spacer {
+        flex: 1;
+      }
 
-      .filter-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-      .filter-bar wa-input { flex: 1; max-width: 400px; }
+      .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .filter-bar wa-input {
+        flex: 1;
+        max-width: 400px;
+      }
 
-      .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; gap: 1rem; }
-      .loading-container span { color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); }
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+        gap: 1rem;
+      }
+      .loading-container span {
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
 
-      table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding: 0.5rem 0.75rem; font-size: var(--wa-font-size-s); font-weight: 600; color: var(--wa-color-text-muted); border-bottom: 2px solid var(--wa-color-surface-border); white-space: nowrap; }
-      td { padding: 0.625rem 0.75rem; vertical-align: middle; font-size: var(--wa-font-size-s); }
-      tr:not(:last-child) td { border-bottom: 1px solid var(--wa-color-surface-border); }
-      tr.clickable-row { cursor: pointer; }
-      tr.clickable-row:hover td { background: var(--wa-color-surface-alt); }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        font-size: var(--wa-font-size-s);
+        font-weight: 600;
+        color: var(--wa-color-text-muted);
+        border-bottom: 2px solid var(--wa-color-surface-border);
+        white-space: nowrap;
+      }
+      td {
+        padding: 0.625rem 0.75rem;
+        vertical-align: middle;
+        font-size: var(--wa-font-size-s);
+      }
+      tr:not(:last-child) td {
+        border-bottom: 1px solid var(--wa-color-surface-border);
+      }
+      tr.clickable-row {
+        cursor: pointer;
+      }
+      tr.clickable-row:hover td {
+        background: var(--wa-color-surface-alt);
+      }
 
-      .profit-positive { color: var(--wa-color-success-text); }
-      .profit-negative { color: var(--wa-color-danger-text); }
+      .profit-positive {
+        color: var(--wa-color-success-text);
+      }
+      .profit-negative {
+        color: var(--wa-color-danger-text);
+      }
 
-      .empty-state { text-align: center; padding: 3rem; color: var(--wa-color-text-muted); }
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--wa-color-text-muted);
+      }
 
-      .pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
-      .pagination span { font-size: var(--wa-font-size-s); color: var(--wa-color-text-muted); }
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      .pagination span {
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-muted);
+      }
 
-      .actions-cell { display: flex; gap: 0.25rem; }
+      .actions-cell {
+        display: flex;
+        gap: 0.25rem;
+      }
     `,
   ];
 
@@ -245,11 +346,7 @@ export class OgsLotsPage extends LitElement {
         </div>
 
         <div class="filter-bar">
-          <wa-input
-            placeholder="Search lots..."
-            .value="${this.searchTerm}"
-            @input="${this.handleSearch}"
-          >
+          <wa-input placeholder="Search lots..." .value="${this.searchTerm}" @input="${this.handleSearch}">
             <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
           </wa-input>
         </div>
@@ -264,7 +361,6 @@ export class OgsLotsPage extends LitElement {
           `,
           () => this.renderLotsTable(),
         )}
-
         ${this.renderDeleteDialog()}
       </ogs-page>
     `;
@@ -315,7 +411,13 @@ export class OgsLotsPage extends LitElement {
                       <wa-button variant="text" size="small" href="/lots/${lot.id}">
                         <wa-icon name="pen-to-square"></wa-icon>
                       </wa-button>
-                      <wa-button variant="text" size="small" @click="${() => { this.deleteConfirmLotId = lot.id; }}">
+                      <wa-button
+                        variant="text"
+                        size="small"
+                        @click="${() => {
+                          this.deleteConfirmLotId = lot.id;
+                        }}"
+                      >
                         <wa-icon name="trash"></wa-icon>
                       </wa-button>
                     </div>
@@ -334,15 +436,23 @@ export class OgsLotsPage extends LitElement {
                 variant="text"
                 size="small"
                 ?disabled="${this.currentPage <= 1}"
-                @click="${() => { this.currentPage--; this.fetchLots(); }}"
-              >Previous</wa-button>
+                @click="${() => {
+                  this.currentPage--;
+                  this.fetchLots();
+                }}"
+                >Previous</wa-button
+              >
               <span>Page ${this.currentPage} of ${this.totalPages} (${this.totalCount} lots)</span>
               <wa-button
                 variant="text"
                 size="small"
                 ?disabled="${this.currentPage >= this.totalPages}"
-                @click="${() => { this.currentPage++; this.fetchLots(); }}"
-              >Next</wa-button>
+                @click="${() => {
+                  this.currentPage++;
+                  this.fetchLots();
+                }}"
+                >Next</wa-button
+              >
             </div>
           `
         : nothing}
@@ -354,11 +464,19 @@ export class OgsLotsPage extends LitElement {
       <wa-dialog
         ?open="${this.deleteConfirmLotId != null}"
         label="Delete Lot"
-        @wa-after-hide="${() => { this.deleteConfirmLotId = null; }}"
+        @wa-after-hide="${() => {
+          this.deleteConfirmLotId = null;
+        }}"
       >
         <p>Are you sure you want to delete this lot? This will also remove the associated inventory stock entries.</p>
         <div slot="footer" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-          <wa-button variant="neutral" @click="${() => { this.deleteConfirmLotId = null; }}">Cancel</wa-button>
+          <wa-button
+            variant="neutral"
+            @click="${() => {
+              this.deleteConfirmLotId = null;
+            }}"
+            >Cancel</wa-button
+          >
           <wa-button variant="danger" ?loading="${this.deleting}" @click="${this.handleDelete}">Delete</wa-button>
         </div>
       </wa-dialog>

@@ -145,34 +145,123 @@ export class OgsSettingsBuyRatesPage extends LitElement {
   @property({ type: String }) activeOrganizationId = '';
 
   static styles = [
-    css`${unsafeCSS(nativeStyle)}`,
-    css`${unsafeCSS(utilityStyles)}`,
     css`
-      :host { box-sizing: border-box; }
-      *, *::before, *::after { box-sizing: border-box; }
+      ${unsafeCSS(nativeStyle)}
+    `,
+    css`
+      ${unsafeCSS(utilityStyles)}
+    `,
+    css`
+      :host {
+        box-sizing: border-box;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-      .page-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
-      .page-header-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--wa-border-radius-l); background: var(--wa-color-brand-fill-normal); color: var(--wa-color-brand-on-normal); flex-shrink: 0; }
-      .page-header-content { flex: 1; }
-      .page-header h2 { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: 700; letter-spacing: -0.01em; }
-      .page-header p { margin: 0.25rem 0 0 0; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); }
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      .page-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--wa-border-radius-l);
+        background: var(--wa-color-brand-fill-normal);
+        color: var(--wa-color-brand-on-normal);
+        flex-shrink: 0;
+      }
+      .page-header-content {
+        flex: 1;
+      }
+      .page-header h2 {
+        margin: 0;
+        font-size: var(--wa-font-size-2xl);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .page-header p {
+        margin: 0.25rem 0 0 0;
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
 
-      .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; gap: 1rem; }
-      .loading-container span { color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); }
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+        gap: 1rem;
+      }
+      .loading-container span {
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
 
-      .rate-table { width: 100%; border-collapse: collapse; }
-      .rate-table th { text-align: left; padding: 0.5rem 0.75rem; font-size: var(--wa-font-size-s); font-weight: 600; color: var(--wa-color-text-muted); border-bottom: 2px solid var(--wa-color-surface-border); }
-      .rate-table td { padding: 0.375rem 0.75rem; vertical-align: middle; }
-      .rate-table tr:not(:last-child) td { border-bottom: 1px solid var(--wa-color-surface-border); }
-      .rate-table wa-input { --wa-input-height-m: 2.25rem; }
-      .rate-table wa-select { --wa-input-height-m: 2.25rem; }
-      .rate-actions { display: flex; gap: 0.25rem; justify-content: center; }
+      .rate-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .rate-table th {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        font-size: var(--wa-font-size-s);
+        font-weight: 600;
+        color: var(--wa-color-text-muted);
+        border-bottom: 2px solid var(--wa-color-surface-border);
+      }
+      .rate-table td {
+        padding: 0.375rem 0.75rem;
+        vertical-align: middle;
+      }
+      .rate-table tr:not(:last-child) td {
+        border-bottom: 1px solid var(--wa-color-surface-border);
+      }
+      .rate-table wa-input {
+        --wa-input-height-m: 2.25rem;
+      }
+      .rate-table wa-select {
+        --wa-input-height-m: 2.25rem;
+      }
+      .rate-actions {
+        display: flex;
+        gap: 0.25rem;
+        justify-content: center;
+      }
 
-      .rarity-label { font-size: var(--wa-font-size-s); font-weight: 500; color: var(--wa-color-text-base); }
-      .rarity-section-label { font-size: var(--wa-font-size-xs); color: var(--wa-color-text-muted); padding: 0.75rem 0.75rem 0.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+      .rarity-label {
+        font-size: var(--wa-font-size-s);
+        font-weight: 500;
+        color: var(--wa-color-text-base);
+      }
+      .rarity-section-label {
+        font-size: var(--wa-font-size-xs);
+        color: var(--wa-color-text-muted);
+        padding: 0.75rem 0.75rem 0.25rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
 
-      .tab-content { padding: 1rem 0; }
-      .tab-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--wa-color-surface-border); }
+      .tab-content {
+        padding: 1rem 0;
+      }
+      .tab-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--wa-color-surface-border);
+      }
     `,
   ];
 
@@ -215,9 +304,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           rarityMap.set(r.categoryId, r.rarities);
 
           // Build rows: rarity defaults first, then custom
-          const existingByRarity = new Map(
-            r.entries.filter((e) => e.rarity).map((e) => [e.rarity!, e]),
-          );
+          const existingByRarity = new Map(r.entries.filter((e) => e.rarity).map((e) => [e.rarity!, e]));
           const customEntries = r.entries.filter((e) => !e.rarity);
 
           const rows: BuyRateRow[] = [];
@@ -273,14 +360,20 @@ export class OgsSettingsBuyRatesPage extends LitElement {
   }
 
   private handleAddRow(categoryId: number) {
-    const rows = [...this.getRows(categoryId), { description: '', rate: 0, type: 'fixed', rarity: null, isRarityDefault: false }];
+    const rows = [
+      ...this.getRows(categoryId),
+      { description: '', rate: 0, type: 'fixed', rarity: null, isRarityDefault: false },
+    ];
     this.setRows(categoryId, rows);
   }
 
   private handleRemoveRow(categoryId: number, index: number) {
     const rows = this.getRows(categoryId);
     if (rows[index]?.isRarityDefault) return; // Can't remove rarity defaults
-    this.setRows(categoryId, rows.filter((_, i) => i !== index));
+    this.setRows(
+      categoryId,
+      rows.filter((_, i) => i !== index),
+    );
   }
 
   private handleRowDescriptionChange(categoryId: number, index: number, value: string) {
@@ -339,9 +432,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
         // Rebuild rows from saved data merged with rarities
         const rarities = this.raritiesByGame.get(categoryId) ?? [];
         const savedEntries = result.data.saveBuyRates;
-        const existingByRarity = new Map(
-          savedEntries.filter((e) => e.rarity).map((e) => [e.rarity!, e]),
-        );
+        const existingByRarity = new Map(savedEntries.filter((e) => e.rarity).map((e) => [e.rarity!, e]));
         const customEntries = savedEntries.filter((e) => !e.rarity);
 
         const newRows: BuyRateRow[] = [];
@@ -367,7 +458,9 @@ export class OgsSettingsBuyRatesPage extends LitElement {
         this.setRows(categoryId, newRows);
 
         this.successMessage = 'Buy rates saved successfully';
-        setTimeout(() => { this.successMessage = ''; }, 3000);
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to save buy rates';
@@ -423,25 +516,31 @@ export class OgsSettingsBuyRatesPage extends LitElement {
 
   private renderContent() {
     return html`
-      ${this.successMessage ? html`
-        <wa-callout variant="success" style="margin-bottom: 1rem;">
-          <wa-icon slot="icon" name="circle-check"></wa-icon>
-          ${this.successMessage}
-        </wa-callout>
-      ` : nothing}
-      ${this.errorMessage ? html`
-        <wa-callout variant="danger" style="margin-bottom: 1rem;">
-          <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-          ${this.errorMessage}
-        </wa-callout>
-      ` : nothing}
-      ${this.supportedGames.length === 0 ? html`
-        <wa-callout variant="neutral">
-          <wa-icon slot="icon" name="circle-info"></wa-icon>
-          No supported games configured. Go to
-          <a href="/settings/general">General Settings</a> to select which games your store supports.
-        </wa-callout>
-      ` : this.renderGameTabs()}
+      ${this.successMessage
+        ? html`
+            <wa-callout variant="success" style="margin-bottom: 1rem;">
+              <wa-icon slot="icon" name="circle-check"></wa-icon>
+              ${this.successMessage}
+            </wa-callout>
+          `
+        : nothing}
+      ${this.errorMessage
+        ? html`
+            <wa-callout variant="danger" style="margin-bottom: 1rem;">
+              <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+              ${this.errorMessage}
+            </wa-callout>
+          `
+        : nothing}
+      ${this.supportedGames.length === 0
+        ? html`
+            <wa-callout variant="neutral">
+              <wa-icon slot="icon" name="circle-info"></wa-icon>
+              No supported games configured. Go to
+              <a href="/settings/general">General Settings</a> to select which games your store supports.
+            </wa-callout>
+          `
+        : this.renderGameTabs()}
     `;
   }
 
@@ -457,9 +556,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
             (game) => html`<wa-tab slot="nav" panel="game-${game.categoryId}">${game.displayName}</wa-tab>`,
           )}
           ${this.supportedGames.map(
-            (game) => html`
-              <wa-tab-panel name="game-${game.categoryId}">${this.renderGamePanel(game)}</wa-tab-panel>
-            `,
+            (game) => html` <wa-tab-panel name="game-${game.categoryId}">${this.renderGamePanel(game)}</wa-tab-panel> `,
           )}
         </wa-tab-group>
       </wa-card>
@@ -484,20 +581,28 @@ export class OgsSettingsBuyRatesPage extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${rarityRows.length > 0 ? html`
-              <tr><td colspan="4"><div class="rarity-section-label">Rarity Defaults (Required)</div></td></tr>
-              ${rarityRows.map((row) => {
-                const idx = rows.indexOf(row);
-                return this.renderRateRow(game.categoryId, row, idx, true);
-              })}
-            ` : nothing}
-            ${customRows.length > 0 ? html`
-              <tr><td colspan="4"><div class="rarity-section-label">Custom Entries</div></td></tr>
-              ${customRows.map((row) => {
-                const idx = rows.indexOf(row);
-                return this.renderRateRow(game.categoryId, row, idx, false);
-              })}
-            ` : nothing}
+            ${rarityRows.length > 0
+              ? html`
+                  <tr>
+                    <td colspan="4"><div class="rarity-section-label">Rarity Defaults (Required)</div></td>
+                  </tr>
+                  ${rarityRows.map((row) => {
+                    const idx = rows.indexOf(row);
+                    return this.renderRateRow(game.categoryId, row, idx, true);
+                  })}
+                `
+              : nothing}
+            ${customRows.length > 0
+              ? html`
+                  <tr>
+                    <td colspan="4"><div class="rarity-section-label">Custom Entries</div></td>
+                  </tr>
+                  ${customRows.map((row) => {
+                    const idx = rows.indexOf(row);
+                    return this.renderRateRow(game.categoryId, row, idx, false);
+                  })}
+                `
+              : nothing}
           </tbody>
         </table>
 

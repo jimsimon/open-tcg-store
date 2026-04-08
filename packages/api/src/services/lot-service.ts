@@ -105,7 +105,9 @@ function validateLotInput(input: CreateLotInput): void {
   // Validate cost total matches amount paid
   const totalCost = input.items.reduce((sum, item) => sum + item.costBasis * item.quantity, 0);
   if (Math.abs(totalCost - input.amountPaid) > 0.01) {
-    throw new Error(`Total cost ($${totalCost.toFixed(2)}) does not match amount paid ($${input.amountPaid.toFixed(2)})`);
+    throw new Error(
+      `Total cost ($${totalCost.toFixed(2)}) does not match amount paid ($${input.amountPaid.toFixed(2)})`,
+    );
   }
 }
 
@@ -294,11 +296,7 @@ async function getMarketPriceForProduct(productId: number): Promise<number> {
 // createLot
 // ---------------------------------------------------------------------------
 
-export async function createLot(
-  organizationId: string,
-  input: CreateLotInput,
-  userId: string,
-): Promise<LotResult> {
+export async function createLot(organizationId: string, input: CreateLotInput, userId: string): Promise<LotResult> {
   validateLotInput(input);
 
   const now = new Date();
@@ -408,11 +406,7 @@ export async function createLot(
 // updateLot
 // ---------------------------------------------------------------------------
 
-export async function updateLot(
-  input: UpdateLotInput,
-  userId: string,
-  organizationId: string,
-): Promise<LotResult> {
+export async function updateLot(input: UpdateLotInput, userId: string, organizationId: string): Promise<LotResult> {
   validateLotInput(input);
 
   const now = new Date();
@@ -578,11 +572,7 @@ export async function updateLot(
 // deleteLot
 // ---------------------------------------------------------------------------
 
-export async function deleteLot(
-  id: number,
-  organizationId: string,
-  userId: string,
-): Promise<boolean> {
+export async function deleteLot(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
 
   // Verify lot exists and belongs to org
@@ -686,9 +676,7 @@ export async function getDistinctRarities(categoryId: number): Promise<string[]>
     })
     .from(productExtendedData)
     .innerJoin(product, eq(productExtendedData.productId, product.id))
-    .where(
-      and(eq(product.categoryId, categoryId), eq(productExtendedData.name, 'Rarity')),
-    )
+    .where(and(eq(product.categoryId, categoryId), eq(productExtendedData.name, 'Rarity')))
     .groupBy(productExtendedData.value)
     .orderBy(productExtendedData.value);
 

@@ -1085,7 +1085,9 @@ export class OrdersPage extends LitElement {
                             </td>
                             <td>
                               ${item.lotId
-                                ? html`<a href="/lots/${item.lotId}" @click="${(e: Event) => e.stopPropagation()}">#${item.lotId}</a>`
+                                ? html`<a href="/lots/${item.lotId}" @click="${(e: Event) => e.stopPropagation()}"
+                                    >#${item.lotId}</a
+                                  >`
                                 : '-'}
                             </td>
                           </tr>

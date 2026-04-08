@@ -36,8 +36,14 @@ const SearchProductsQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     searchProducts: Array<{
-      id: number; name: string; gameName: string; setName: string;
-      rarity: string | null; imageUrl: string | null; isSingle: boolean; isSealed: boolean;
+      id: number;
+      name: string;
+      gameName: string;
+      setName: string;
+      rarity: string | null;
+      imageUrl: string | null;
+      isSingle: boolean;
+      isSealed: boolean;
       prices: Array<{ subTypeName: string; marketPrice: number | null; midPrice: number | null }>;
     }>;
   },
@@ -58,16 +64,31 @@ const GetLotQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     getLot: {
-      id: number; name: string; description: string | null; amountPaid: number;
-      acquisitionDate: string; useBuyListForCost: boolean;
+      id: number;
+      name: string;
+      description: string | null;
+      amountPaid: number;
+      acquisitionDate: string;
+      useBuyListForCost: boolean;
       items: Array<{
-        id: number; productId: number; productName: string; gameName: string;
-        setName: string; rarity: string | null; isSingle: boolean; isSealed: boolean;
-        condition: string | null; quantity: number; costBasis: number;
-        costOverridden: boolean; marketValue: number | null;
+        id: number;
+        productId: number;
+        productName: string;
+        gameName: string;
+        setName: string;
+        rarity: string | null;
+        isSingle: boolean;
+        isSealed: boolean;
+        condition: string | null;
+        quantity: number;
+        costBasis: number;
+        costOverridden: boolean;
+        marketValue: number | null;
       }>;
-      totalMarketValue: number; totalCost: number;
-      projectedProfitLoss: number; projectedProfitMargin: number;
+      totalMarketValue: number;
+      totalCost: number;
+      projectedProfitLoss: number;
+      projectedProfitMargin: number;
     } | null;
   },
   { id: number }
@@ -80,7 +101,16 @@ const GetBuyRatesQuery = new TypedDocumentString(`
     }
   }
 `) as unknown as TypedDocumentString<
-  { getBuyRates: Array<{ id: number; description: string; rate: number; type: string; rarity: string | null; sortOrder: number }> },
+  {
+    getBuyRates: Array<{
+      id: number;
+      description: string;
+      rate: number;
+      type: string;
+      rarity: string | null;
+      sortOrder: number;
+    }>;
+  },
   { categoryId: number }
 >;
 
@@ -126,8 +156,13 @@ interface LotItemRow {
   searching: boolean;
   searchTerm: string;
   searchResults: Array<{
-    id: number; name: string; gameName: string; setName: string;
-    rarity: string | null; isSingle: boolean; isSealed: boolean;
+    id: number;
+    name: string;
+    gameName: string;
+    setName: string;
+    rarity: string | null;
+    isSingle: boolean;
+    isSealed: boolean;
     marketPrice: number;
   }>;
 }
@@ -184,58 +219,207 @@ export class OgsLotPage extends LitElement {
   @property({ type: String }) lotId = '';
 
   static styles = [
-    css`${unsafeCSS(nativeStyle)}`,
-    css`${unsafeCSS(utilityStyles)}`,
     css`
-      :host { box-sizing: border-box; }
-      *, *::before, *::after { box-sizing: border-box; }
+      ${unsafeCSS(nativeStyle)}
+    `,
+    css`
+      ${unsafeCSS(utilityStyles)}
+    `,
+    css`
+      :host {
+        box-sizing: border-box;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-      .page-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
-      .page-header-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--wa-border-radius-l); background: var(--wa-color-brand-fill-normal); color: var(--wa-color-brand-on-normal); flex-shrink: 0; }
-      .page-header h2 { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: 700; }
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      .page-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--wa-border-radius-l);
+        background: var(--wa-color-brand-fill-normal);
+        color: var(--wa-color-brand-on-normal);
+        flex-shrink: 0;
+      }
+      .page-header h2 {
+        margin: 0;
+        font-size: var(--wa-font-size-2xl);
+        font-weight: 700;
+      }
 
-      .form-section { margin-bottom: 1.5rem; }
-      .form-fields { display: flex; flex-direction: column; gap: 1rem; }
+      .form-section {
+        margin-bottom: 1.5rem;
+      }
+      .form-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
 
-      .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-      .summary-item { padding: 0.75rem; border-radius: var(--wa-border-radius-m); background: var(--wa-color-surface-alt); }
-      .summary-item .label { font-size: var(--wa-font-size-xs); color: var(--wa-color-text-muted); margin-bottom: 0.25rem; }
-      .summary-item .value { font-size: var(--wa-font-size-l); font-weight: 600; }
-      .profit-positive { color: var(--wa-color-success-text); }
-      .profit-negative { color: var(--wa-color-danger-text); }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+      .summary-item {
+        padding: 0.75rem;
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-surface-alt);
+      }
+      .summary-item .label {
+        font-size: var(--wa-font-size-xs);
+        color: var(--wa-color-text-muted);
+        margin-bottom: 0.25rem;
+      }
+      .summary-item .value {
+        font-size: var(--wa-font-size-l);
+        font-weight: 600;
+      }
+      .profit-positive {
+        color: var(--wa-color-success-text);
+      }
+      .profit-negative {
+        color: var(--wa-color-danger-text);
+      }
 
-      .product-section { margin-top: 1.5rem; }
-      .tab-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+      .product-section {
+        margin-top: 1.5rem;
+      }
+      .tab-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
 
-      table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding: 0.5rem 0.5rem; font-size: var(--wa-font-size-xs); font-weight: 600; color: var(--wa-color-text-muted); border-bottom: 2px solid var(--wa-color-surface-border); white-space: nowrap; }
-      td { padding: 0.375rem 0.5rem; vertical-align: middle; font-size: var(--wa-font-size-s); }
-      tr:not(:last-child) td { border-bottom: 1px solid var(--wa-color-surface-border); }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        padding: 0.5rem 0.5rem;
+        font-size: var(--wa-font-size-xs);
+        font-weight: 600;
+        color: var(--wa-color-text-muted);
+        border-bottom: 2px solid var(--wa-color-surface-border);
+        white-space: nowrap;
+      }
+      td {
+        padding: 0.375rem 0.5rem;
+        vertical-align: middle;
+        font-size: var(--wa-font-size-s);
+      }
+      tr:not(:last-child) td {
+        border-bottom: 1px solid var(--wa-color-surface-border);
+      }
 
-      .product-cell { position: relative; min-width: 200px; }
-      .search-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; max-height: 200px; overflow-y: auto; background: var(--wa-color-surface-base); border: 1px solid var(--wa-color-surface-border); border-radius: var(--wa-border-radius-m); box-shadow: var(--wa-shadow-m); }
-      .search-result-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: pointer; font-size: var(--wa-font-size-s); }
-      .search-result-item:hover { background: var(--wa-color-surface-alt); }
-      .result-info { display: flex; flex-direction: column; }
-      .result-info strong { font-size: var(--wa-font-size-s); }
-      .result-info small { color: var(--wa-color-text-muted); font-size: var(--wa-font-size-xs); }
+      .product-cell {
+        position: relative;
+        min-width: 200px;
+      }
+      .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        max-height: 200px;
+        overflow-y: auto;
+        background: var(--wa-color-surface-base);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+        box-shadow: var(--wa-shadow-m);
+      }
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        cursor: pointer;
+        font-size: var(--wa-font-size-s);
+      }
+      .search-result-item:hover {
+        background: var(--wa-color-surface-alt);
+      }
+      .result-info {
+        display: flex;
+        flex-direction: column;
+      }
+      .result-info strong {
+        font-size: var(--wa-font-size-s);
+      }
+      .result-info small {
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-xs);
+      }
 
-      .quantity-cell { width: 70px; }
-      .cost-cell { width: 100px; position: relative; }
-      .cost-cell .reset-btn { position: absolute; top: 2px; right: 2px; }
-      .market-cell { width: 100px; }
-      .condition-cell { width: 100px; }
-      .actions-cell-td { width: 50px; }
+      .quantity-cell {
+        width: 70px;
+      }
+      .cost-cell {
+        width: 100px;
+        position: relative;
+      }
+      .cost-cell .reset-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+      }
+      .market-cell {
+        width: 100px;
+      }
+      .condition-cell {
+        width: 100px;
+      }
+      .actions-cell-td {
+        width: 50px;
+      }
 
-      .empty-table { text-align: center; padding: 2rem; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); }
+      .empty-table {
+        text-align: center;
+        padding: 2rem;
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
 
-      .save-bar { display: flex; gap: 0.75rem; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--wa-color-surface-border); }
-      .save-bar .spacer { flex: 1; }
+      .save-bar {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--wa-color-surface-border);
+      }
+      .save-bar .spacer {
+        flex: 1;
+      }
 
-      .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; gap: 1rem; }
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+        gap: 1rem;
+      }
 
-      wa-input { --wa-input-height-m: 2.25rem; }
-      wa-select { --wa-input-height-m: 2.25rem; }
+      wa-input {
+        --wa-input-height-m: 2.25rem;
+      }
+      wa-select {
+        --wa-input-height-m: 2.25rem;
+      }
     `,
   ];
 
@@ -283,7 +467,9 @@ export class OgsLotPage extends LitElement {
       const rateMap = new Map<number, BuyRateEntry[]>();
       for (const r of results) rateMap.set(r.categoryId, r.entries);
       this.buyRatesByGame = rateMap;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   private async loadLot() {
@@ -326,7 +512,9 @@ export class OgsLotPage extends LitElement {
       }
       this.singlesItems = singles;
       this.sealedItems = sealed;
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       this.loading = false;
     }
   }
@@ -361,9 +549,8 @@ export class OgsLotPage extends LitElement {
       const rate = this.getBuyRateForRarity(item.gameName, item.rarity);
       let buyRateCost = 0;
       if (rate) {
-        buyRateCost = rate.type === 'percentage'
-          ? rate.rate * item.marketPrice * item.quantity
-          : rate.rate * item.quantity;
+        buyRateCost =
+          rate.type === 'percentage' ? rate.rate * item.marketPrice * item.quantity : rate.rate * item.quantity;
       }
       itemBuyRateCosts.set(item.clientId, buyRateCost);
       totalBuyRateCost += buyRateCost;
@@ -374,7 +561,7 @@ export class OgsLotPage extends LitElement {
     for (const item of autoItems) {
       const buyRateCost = itemBuyRateCosts.get(item.clientId) ?? 0;
       if (totalBuyRateCost > 0 && item.quantity > 0) {
-        item.costBasis = Math.round(((buyRateCost / totalBuyRateCost) * remainingBudget / item.quantity) * 100) / 100;
+        item.costBasis = Math.round((((buyRateCost / totalBuyRateCost) * remainingBudget) / item.quantity) * 100) / 100;
       } else if (autoItems.length > 0 && item.quantity > 0) {
         item.costBasis = Math.round((remainingBudget / autoItems.reduce((s, i) => s + i.quantity, 0)) * 100) / 100;
       }
@@ -453,7 +640,8 @@ export class OgsLotPage extends LitElement {
     if (idx === -1) return;
 
     items[idx] = { ...items[idx], searching: true };
-    if (isSingle) this.singlesItems = [...items]; else this.sealedItems = [...items];
+    if (isSingle) this.singlesItems = [...items];
+    else this.sealedItems = [...items];
 
     try {
       const result = await execute(SearchProductsQuery, {
@@ -467,8 +655,13 @@ export class OgsLotPage extends LitElement {
         const fallback = p.prices[0];
         const priceRow = normalPrice ?? fallback;
         return {
-          id: p.id, name: p.name, gameName: p.gameName, setName: p.setName,
-          rarity: p.rarity, isSingle: p.isSingle, isSealed: p.isSealed,
+          id: p.id,
+          name: p.name,
+          gameName: p.gameName,
+          setName: p.setName,
+          rarity: p.rarity,
+          isSingle: p.isSingle,
+          isSealed: p.isSealed,
           marketPrice: priceRow?.marketPrice ?? priceRow?.midPrice ?? 0,
         };
       });
@@ -477,14 +670,16 @@ export class OgsLotPage extends LitElement {
       const latestIdx = latestItems.findIndex((i) => i.clientId === clientId);
       if (latestIdx !== -1) {
         latestItems[latestIdx] = { ...latestItems[latestIdx], searching: false, searchResults: mapped };
-        if (isSingle) this.singlesItems = [...latestItems]; else this.sealedItems = [...latestItems];
+        if (isSingle) this.singlesItems = [...latestItems];
+        else this.sealedItems = [...latestItems];
       }
     } catch {
       const latestItems = isSingle ? this.singlesItems : this.sealedItems;
       const latestIdx = latestItems.findIndex((i) => i.clientId === clientId);
       if (latestIdx !== -1) {
         latestItems[latestIdx] = { ...latestItems[latestIdx], searching: false };
-        if (isSingle) this.singlesItems = [...latestItems]; else this.sealedItems = [...latestItems];
+        if (isSingle) this.singlesItems = [...latestItems];
+        else this.sealedItems = [...latestItems];
       }
     }
   }
@@ -506,7 +701,8 @@ export class OgsLotPage extends LitElement {
       searchResults: [],
       searchTerm: '',
     };
-    if (isSingle) this.singlesItems = [...items]; else this.sealedItems = [...items];
+    if (isSingle) this.singlesItems = [...items];
+    else this.sealedItems = [...items];
     this.recalculateAutoCosts();
   }
 
@@ -515,7 +711,8 @@ export class OgsLotPage extends LitElement {
     const idx = items.findIndex((i) => i.clientId === clientId);
     if (idx === -1) return;
     items[idx] = { ...items[idx], [field]: value };
-    if (isSingle) this.singlesItems = [...items]; else this.sealedItems = [...items];
+    if (isSingle) this.singlesItems = [...items];
+    else this.sealedItems = [...items];
 
     if (field === 'quantity') this.recalculateAutoCosts();
   }
@@ -525,7 +722,8 @@ export class OgsLotPage extends LitElement {
     const idx = items.findIndex((i) => i.clientId === clientId);
     if (idx === -1) return;
     items[idx] = { ...items[idx], costBasis: value, costOverridden: true };
-    if (isSingle) this.singlesItems = [...items]; else this.sealedItems = [...items];
+    if (isSingle) this.singlesItems = [...items];
+    else this.sealedItems = [...items];
     this.recalculateAutoCosts();
   }
 
@@ -534,7 +732,8 @@ export class OgsLotPage extends LitElement {
     const idx = items.findIndex((i) => i.clientId === clientId);
     if (idx === -1) return;
     items[idx] = { ...items[idx], costOverridden: false };
-    if (isSingle) this.singlesItems = [...items]; else this.sealedItems = [...items];
+    if (isSingle) this.singlesItems = [...items];
+    else this.sealedItems = [...items];
     this.recalculateAutoCosts();
   }
 
@@ -553,7 +752,9 @@ export class OgsLotPage extends LitElement {
 
     const totalCost = allItems.reduce((sum, i) => sum + i.costBasis * i.quantity, 0);
     if (Math.abs(totalCost - this.amountPaid) > 0.01) {
-      errors.push(`Total cost (${formatCurrency(totalCost)}) does not match amount paid (${formatCurrency(this.amountPaid)})`);
+      errors.push(
+        `Total cost (${formatCurrency(totalCost)}) does not match amount paid (${formatCurrency(this.amountPaid)})`,
+      );
     }
 
     return errors;
@@ -628,37 +829,41 @@ export class OgsLotPage extends LitElement {
           <h2>${this.isEditMode ? 'Edit Lot' : 'Add Lot'}</h2>
         </div>
 
-        ${when(this.loading, () => html`
-          <div class="loading-container">
-            <wa-spinner style="font-size: 2rem;"></wa-spinner>
-            <span>Loading lot...</span>
-          </div>
-        `, () => html`
-          ${this.validationErrors.length > 0 ? html`
-            <wa-callout variant="danger" style="margin-bottom: 1rem;">
-              <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-              ${this.validationErrors.map((e) => html`<div>${e}</div>`)}
-            </wa-callout>
-          ` : nothing}
+        ${when(
+          this.loading,
+          () => html`
+            <div class="loading-container">
+              <wa-spinner style="font-size: 2rem;"></wa-spinner>
+              <span>Loading lot...</span>
+            </div>
+          `,
+          () => html`
+            ${this.validationErrors.length > 0
+              ? html`
+                  <wa-callout variant="danger" style="margin-bottom: 1rem;">
+                    <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                    ${this.validationErrors.map((e) => html`<div>${e}</div>`)}
+                  </wa-callout>
+                `
+              : nothing}
 
-          <ogs-two-pane-panel>
-            <div slot="start">${this.renderLotDetails()}</div>
-            <div slot="end">${this.renderSummary()}</div>
-          </ogs-two-pane-panel>
+            <ogs-two-pane-panel>
+              <div slot="start">${this.renderLotDetails()}</div>
+              <div slot="end">${this.renderSummary()}</div>
+            </ogs-two-pane-panel>
 
-          <div class="product-section">
-            ${this.renderProductList()}
-          </div>
+            <div class="product-section">${this.renderProductList()}</div>
 
-          <div class="save-bar">
-            <wa-button variant="neutral" href="/lots">Cancel</wa-button>
-            <div class="spacer"></div>
-            <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
-              <wa-icon slot="start" name="floppy-disk"></wa-icon>
-              ${this.isEditMode ? 'Update Lot' : 'Save Lot'}
-            </wa-button>
-          </div>
-        `)}
+            <div class="save-bar">
+              <wa-button variant="neutral" href="/lots">Cancel</wa-button>
+              <div class="spacer"></div>
+              <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
+                <wa-icon slot="start" name="floppy-disk"></wa-icon>
+                ${this.isEditMode ? 'Update Lot' : 'Save Lot'}
+              </wa-button>
+            </div>
+          `,
+        )}
       </ogs-page>
     `;
   }
@@ -668,13 +873,49 @@ export class OgsLotPage extends LitElement {
       <wa-card appearance="outline">
         <div slot="header" style="font-weight: 600;">Lot Details</div>
         <div class="form-fields">
-          <wa-input label="Lot Name" .value="${this.name}" @input="${(e: Event) => { this.name = (e.target as HTMLInputElement).value; }}"></wa-input>
-          <wa-textarea label="Description" .value="${this.description}" @input="${(e: Event) => { this.description = (e.target as HTMLTextAreaElement).value; }}" rows="2"></wa-textarea>
-          <wa-input label="Amount Paid" type="number" step="0.01" min="0" .value="${String(this.amountPaid)}" @input="${(e: Event) => { this.amountPaid = parseFloat((e.target as HTMLInputElement).value) || 0; this.recalculateAutoCosts(); }}">
+          <wa-input
+            label="Lot Name"
+            .value="${this.name}"
+            @input="${(e: Event) => {
+              this.name = (e.target as HTMLInputElement).value;
+            }}"
+          ></wa-input>
+          <wa-textarea
+            label="Description"
+            .value="${this.description}"
+            @input="${(e: Event) => {
+              this.description = (e.target as HTMLTextAreaElement).value;
+            }}"
+            rows="2"
+          ></wa-textarea>
+          <wa-input
+            label="Amount Paid"
+            type="number"
+            step="0.01"
+            min="0"
+            .value="${String(this.amountPaid)}"
+            @input="${(e: Event) => {
+              this.amountPaid = parseFloat((e.target as HTMLInputElement).value) || 0;
+              this.recalculateAutoCosts();
+            }}"
+          >
             <span slot="prefix">$</span>
           </wa-input>
-          <wa-input label="Acquisition Date" type="date" .value="${this.acquisitionDate}" @input="${(e: Event) => { this.acquisitionDate = (e.target as HTMLInputElement).value; }}"></wa-input>
-          <wa-checkbox ?checked="${this.useBuyListForCost}" @wa-change="${(e: CustomEvent) => { this.useBuyListForCost = (e.target as HTMLInputElement).checked; this.recalculateAutoCosts(); }}">
+          <wa-input
+            label="Acquisition Date"
+            type="date"
+            .value="${this.acquisitionDate}"
+            @input="${(e: Event) => {
+              this.acquisitionDate = (e.target as HTMLInputElement).value;
+            }}"
+          ></wa-input>
+          <wa-checkbox
+            ?checked="${this.useBuyListForCost}"
+            @wa-change="${(e: CustomEvent) => {
+              this.useBuyListForCost = (e.target as HTMLInputElement).checked;
+              this.recalculateAutoCosts();
+            }}"
+          >
             Use buy list for cost
           </wa-checkbox>
         </div>
@@ -715,9 +956,12 @@ export class OgsLotPage extends LitElement {
   private renderProductList() {
     return html`
       <wa-card appearance="outline">
-        <wa-tab-group @wa-tab-show="${(e: CustomEvent) => {
-          this.activeTab = (e.target as HTMLElement).querySelector('wa-tab[active]')?.getAttribute('panel') ?? 'singles';
-        }}">
+        <wa-tab-group
+          @wa-tab-show="${(e: CustomEvent) => {
+            this.activeTab =
+              (e.target as HTMLElement).querySelector('wa-tab[active]')?.getAttribute('panel') ?? 'singles';
+          }}"
+        >
           <wa-tab slot="nav" panel="singles">Singles</wa-tab>
           <wa-tab slot="nav" panel="sealed">Sealed</wa-tab>
 
@@ -757,7 +1001,10 @@ export class OgsLotPage extends LitElement {
             <th>Product</th>
             <th>Game</th>
             <th>Set</th>
-            ${isSingle ? html`<th>Rarity</th><th class="condition-cell">Condition</th>` : nothing}
+            ${isSingle
+              ? html`<th>Rarity</th>
+                  <th class="condition-cell">Condition</th>`
+              : nothing}
             <th class="quantity-cell">Qty</th>
             <th class="cost-cell">Cost</th>
             <th class="market-cell">Market</th>
@@ -793,40 +1040,64 @@ export class OgsLotPage extends LitElement {
                   <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
                   ${when(item.searching, () => html`<wa-spinner slot="suffix"></wa-spinner>`)}
                 </wa-input>
-                ${item.searchResults.length > 0 ? html`
-                  <div class="search-results">
-                    ${item.searchResults.map((p) => html`
-                      <div class="search-result-item" @click="${() => this.selectProduct(item.clientId, p, isSingle)}">
-                        <div class="result-info">
-                          <strong>${p.name}</strong>
-                          <small>${p.setName}${p.rarity ? ` - ${p.rarity}` : ''}</small>
-                        </div>
+                ${item.searchResults.length > 0
+                  ? html`
+                      <div class="search-results">
+                        ${item.searchResults.map(
+                          (p) => html`
+                            <div
+                              class="search-result-item"
+                              @click="${() => this.selectProduct(item.clientId, p, isSingle)}"
+                            >
+                              <div class="result-info">
+                                <strong>${p.name}</strong>
+                                <small>${p.setName}${p.rarity ? ` - ${p.rarity}` : ''}</small>
+                              </div>
+                            </div>
+                          `,
+                        )}
                       </div>
-                    `)}
-                  </div>
-                ` : nothing}
+                    `
+                  : nothing}
               `}
         </td>
         <td>${item.gameName}</td>
         <td>${item.setName}</td>
-        ${isSingle ? html`
-          <td>${item.rarity ?? ''}</td>
-          <td class="condition-cell">
-            <wa-select size="small" .value="${item.condition}" @wa-change="${(e: CustomEvent) => {
-              this.updateItemField(item.clientId, isSingle, 'condition', (e.target as HTMLSelectElement).value);
-            }}">
-              <wa-option value="NM">NM</wa-option>
-              <wa-option value="LP">LP</wa-option>
-              <wa-option value="MP">MP</wa-option>
-              <wa-option value="HP">HP</wa-option>
-              <wa-option value="D">D</wa-option>
-            </wa-select>
-          </td>
-        ` : nothing}
+        ${isSingle
+          ? html`
+              <td>${item.rarity ?? ''}</td>
+              <td class="condition-cell">
+                <wa-select
+                  size="small"
+                  .value="${item.condition}"
+                  @wa-change="${(e: CustomEvent) => {
+                    this.updateItemField(item.clientId, isSingle, 'condition', (e.target as HTMLSelectElement).value);
+                  }}"
+                >
+                  <wa-option value="NM">NM</wa-option>
+                  <wa-option value="LP">LP</wa-option>
+                  <wa-option value="MP">MP</wa-option>
+                  <wa-option value="HP">HP</wa-option>
+                  <wa-option value="D">D</wa-option>
+                </wa-select>
+              </td>
+            `
+          : nothing}
         <td class="quantity-cell">
-          <wa-input size="small" type="number" min="1" .value="${String(item.quantity)}" @input="${(e: Event) => {
-            this.updateItemField(item.clientId, isSingle, 'quantity', parseInt((e.target as HTMLInputElement).value, 10) || 1);
-          }}"></wa-input>
+          <wa-input
+            size="small"
+            type="number"
+            min="1"
+            .value="${String(item.quantity)}"
+            @input="${(e: Event) => {
+              this.updateItemField(
+                item.clientId,
+                isSingle,
+                'quantity',
+                parseInt((e.target as HTMLInputElement).value, 10) || 1,
+              );
+            }}"
+          ></wa-input>
         </td>
         <td class="cost-cell">
           <wa-input
@@ -849,13 +1120,19 @@ export class OgsLotPage extends LitElement {
           >
             <span slot="prefix">$</span>
           </wa-input>
-          ${this.useBuyListForCost && item.costOverridden ? html`
-            <wa-button class="reset-btn" variant="text" size="small"
-              @click="${() => this.resetCost(item.clientId, isSingle)}"
-              title="Reset to auto-calculated">
-              <wa-icon name="rotate-left" style="font-size: 0.75rem;"></wa-icon>
-            </wa-button>
-          ` : nothing}
+          ${this.useBuyListForCost && item.costOverridden
+            ? html`
+                <wa-button
+                  class="reset-btn"
+                  variant="text"
+                  size="small"
+                  @click="${() => this.resetCost(item.clientId, isSingle)}"
+                  title="Reset to auto-calculated"
+                >
+                  <wa-icon name="rotate-left" style="font-size: 0.75rem;"></wa-icon>
+                </wa-button>
+              `
+            : nothing}
         </td>
         <td class="market-cell">${item.marketPrice > 0 ? formatCurrency(item.marketPrice) : '-'}</td>
         <td class="actions-cell-td">
