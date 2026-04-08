@@ -77,7 +77,6 @@ interface ApiResponse<T> {
 }
 
 const MAGIC_CATEGORY_ID = 1;
-const POKEMON_CATEGORY_ID = 3;
 
 /**
  * Per //tcgcsv.com/faq#missing-categories:
@@ -89,7 +88,6 @@ const POKEMON_CATEGORY_ID = 3;
  * For these reasons, I would strongly suggest skipping categories 21, 69, and 70 when processing all categories.
  */
 const categoryIdsToSkip = [21, 69, 70];
-const categoryIdsToProcess = [MAGIC_CATEGORY_ID, POKEMON_CATEGORY_ID];
 
 async function fetchTcgData() {
   try {
@@ -101,9 +99,7 @@ async function fetchTcgData() {
     }
     const categoriesData: ApiResponse<Category> = await categoriesResponse.json();
     const allCategories = categoriesData.results;
-    const categoriesToProcess = allCategories.filter(
-      (c) => !categoryIdsToSkip.includes(c.categoryId) && categoryIdsToProcess.includes(c.categoryId),
-    );
+    const categoriesToProcess = allCategories.filter((c) => !categoryIdsToSkip.includes(c.categoryId));
 
     for (const category of categoriesToProcess) {
       const { categoryId } = category;
