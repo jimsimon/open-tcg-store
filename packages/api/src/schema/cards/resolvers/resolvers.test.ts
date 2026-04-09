@@ -6,6 +6,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockOtcgs = vi.hoisted(() => ({
   query: {
+    category: {
+      findFirst: vi.fn(),
+    },
     group: {
       findMany: vi.fn(),
     },
@@ -35,6 +38,7 @@ describe('cards resolvers', () => {
 
   describe('getSets', () => {
     it('should return sets for magic (categoryId=1)', async () => {
+      mockOtcgs.query.category.findFirst.mockResolvedValue({ id: 1 });
       mockOtcgs.query.group.findMany.mockResolvedValue([
         { id: 10, name: 'Alpha' },
         { id: 20, name: 'Beta' },
@@ -49,6 +53,7 @@ describe('cards resolvers', () => {
     });
 
     it('should return sets for pokemon (categoryId=2)', async () => {
+      mockOtcgs.query.category.findFirst.mockResolvedValue({ id: 2 });
       mockOtcgs.query.group.findMany.mockResolvedValue([{ id: 30, name: 'Base Set' }]);
 
       const result = await getSets(null, { game: 'pokemon', filters: null }, {});
@@ -57,10 +62,12 @@ describe('cards resolvers', () => {
     });
 
     it('should throw for unsupported game', async () => {
+      mockOtcgs.query.category.findFirst.mockResolvedValue(undefined);
       await expect(getSets(null, { game: 'yugioh', filters: null }, {})).rejects.toThrow('Unsupported game: yugioh');
     });
 
     it('should pass search filter to query', async () => {
+      mockOtcgs.query.category.findFirst.mockResolvedValue({ id: 1 });
       mockOtcgs.query.group.findMany.mockResolvedValue([]);
 
       await getSets(null, { game: 'magic', filters: { searchTerm: 'Alpha' } }, {});
@@ -73,6 +80,7 @@ describe('cards resolvers', () => {
     });
 
     it('should return empty array when no sets match', async () => {
+      mockOtcgs.query.category.findFirst.mockResolvedValue({ id: 1 });
       mockOtcgs.query.group.findMany.mockResolvedValue([]);
 
       const result = await getSets(null, { game: 'magic', filters: { searchTerm: 'nonexistent' } }, {});

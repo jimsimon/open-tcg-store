@@ -303,7 +303,7 @@ export const productTableStyles = css`
     color: var(--wa-color-text-quiet);
     padding: 0.875rem 1rem;
     text-align: left;
-    border-bottom: 2px solid var(--wa-color-border-quiet);
+    border-bottom: 1px solid var(--wa-color-border-quiet);
   }
 
   .wa-table td {
@@ -336,6 +336,7 @@ export const productTableStyles = css`
     background: var(--wa-color-fill-quiet);
     color: var(--wa-color-text-quiet);
     font-size: 20px;
+    object-fit: contain;
   }
 
   .card-thumbnail img {
@@ -484,6 +485,15 @@ export const cartControlsStyles = css`
 
   .cart-controls wa-input {
     width: 70px;
+  }
+
+  .cart-controls wa-input::part(form-control) {
+    display: flex;
+    align-items: center;
+  }
+
+  .cart-controls wa-input::part(form-control-label) {
+    display: none;
   }
 
   .cart-controls wa-input::part(base) {
