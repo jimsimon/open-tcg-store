@@ -1,5 +1,5 @@
 ---
-description: Submit a pull request with full checks
+description: Submit a pull request
 ---
 
 # Submit PR Workflow
