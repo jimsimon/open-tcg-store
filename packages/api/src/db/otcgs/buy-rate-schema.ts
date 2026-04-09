@@ -1,11 +1,10 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, integer, real, text, index } from 'drizzle-orm/sqlite-core';
 
 export const buyRate = sqliteTable(
   'buy_rate',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    organizationId: text('organization_id').notNull(),
     categoryId: integer('category_id').notNull(),
     description: text('description').notNull(),
     rate: real('rate').notNull(),
@@ -20,8 +19,6 @@ export const buyRate = sqliteTable(
       .notNull(),
   },
   (table) => [
-    index('buy_rate_org_category_idx').on(table.organizationId, table.categoryId),
-    index('buy_rate_org_id_idx').on(table.organizationId),
     index('buy_rate_category_id_idx').on(table.categoryId),
     index('buy_rate_sort_order_idx').on(table.sortOrder),
   ],

@@ -98,13 +98,12 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
       },
     });
 
-    // 5b. Save supported games for the newly created organization
+    // 5b. Save supported games (company-wide setting)
     if (!args.supportedGameCategoryIds || args.supportedGameCategoryIds.length === 0) {
       throw new Error('At least one supported game must be selected');
     }
     await otcgs.insert(storeSupportedGame).values(
       args.supportedGameCategoryIds.map((categoryId: number) => ({
-        organizationId: orgResponse.id,
         categoryId,
       })),
     );

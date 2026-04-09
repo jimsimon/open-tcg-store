@@ -57,7 +57,6 @@ vi.mock('../db/otcgs/index', () => ({
 vi.mock('../db/otcgs/store-supported-game-schema', () => ({
   storeSupportedGame: {
     id: 'store_supported_game.id',
-    organizationId: 'store_supported_game.organization_id',
     categoryId: 'store_supported_game.category_id',
   },
 }));
@@ -65,7 +64,6 @@ vi.mock('../db/otcgs/store-supported-game-schema', () => ({
 vi.mock('../db/otcgs/buy-rate-schema', () => ({
   buyRate: {
     id: 'buy_rate.id',
-    organizationId: 'buy_rate.organization_id',
     categoryId: 'buy_rate.category_id',
     description: 'buy_rate.description',
     rate: 'buy_rate.rate',
@@ -83,7 +81,6 @@ vi.mock('../db/tcg-data/schema', () => ({
 
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
-  and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
   asc: vi.fn((...args: unknown[]) => ({ type: 'asc', args })),
   inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
 }));
@@ -149,7 +146,7 @@ describe('buy-rate-service', () => {
   // getSupportedGames
   // -----------------------------------------------------------------------
   describe('getSupportedGames', () => {
-    it('should return supported games for an organization', async () => {
+    it('should return supported games', async () => {
       const rows = [
         { categoryId: 1, name: 'Magic', displayName: 'Magic: The Gathering' },
         { categoryId: 3, name: 'Pokemon', displayName: 'Pokemon' },
@@ -157,7 +154,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable(rows);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await getSupportedGames('org-1');
+      const result = await getSupportedGames();
 
       expect(result).toEqual(rows);
       expect(mockOtcgs.select).toHaveBeenCalled();
@@ -167,7 +164,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await getSupportedGames('org-1');
+      const result = await getSupportedGames();
 
       expect(result).toEqual([]);
     });
@@ -193,7 +190,7 @@ describe('buy-rate-service', () => {
         ]);
       });
 
-      const result = await setSupportedGames('org-1', [1, 5]);
+      const result = await setSupportedGames([1, 5]);
 
       // Should have called delete for buy rates of removed game (categoryId: 3)
       expect(mockOtcgs.delete).toHaveBeenCalled();
@@ -207,7 +204,7 @@ describe('buy-rate-service', () => {
         return chainable([{ categoryId: 1 }]);
       });
 
-      await setSupportedGames('org-1', []);
+      await setSupportedGames([]);
 
       // Should delete existing games and buy rates for removed game
       expect(mockOtcgs.delete).toHaveBeenCalled();
@@ -228,7 +225,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable(rows);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await getBuyRates('org-1', 1);
+      const result = await getBuyRates(1);
 
       expect(result).toEqual([
         { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, sortOrder: 0 },
@@ -241,7 +238,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await getBuyRates('org-1', 1);
+      const result = await getBuyRates(1);
 
       expect(result).toEqual([]);
     });
@@ -260,7 +257,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable(savedRows);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await saveBuyRates('org-1', 1, [
+      const result = await saveBuyRates(1, [
         { description: 'Commons', rate: 0.01, type: 'fixed', sortOrder: 0 },
         { description: 'Rares', rate: 0.05, type: 'fixed', sortOrder: 1 },
       ]);
@@ -275,7 +272,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await saveBuyRates('org-1', 1, []);
+      const result = await saveBuyRates(1, []);
 
       expect(mockOtcgs.delete).toHaveBeenCalled();
       expect(result).toEqual([]);
@@ -287,7 +284,7 @@ describe('buy-rate-service', () => {
   // -----------------------------------------------------------------------
   describe('deleteBuyRates', () => {
     it('should delete all buy rates for a game and return true', async () => {
-      const result = await deleteBuyRates('org-1', 1);
+      const result = await deleteBuyRates(1);
 
       expect(mockOtcgs.delete).toHaveBeenCalled();
       expect(result).toBe(true);
@@ -317,7 +314,7 @@ describe('buy-rate-service', () => {
         ]);
       });
 
-      const result = await getPublicBuyRates('org-1');
+      const result = await getPublicBuyRates();
 
       expect(result.games).toHaveLength(2);
       expect(result.games[0].gameName).toBe('Magic');
@@ -330,7 +327,7 @@ describe('buy-rate-service', () => {
       selectChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
-      const result = await getPublicBuyRates('org-1');
+      const result = await getPublicBuyRates();
 
       expect(result.games).toEqual([]);
     });
@@ -349,7 +346,7 @@ describe('buy-rate-service', () => {
         return chainable([{ id: 1, categoryId: 1, description: 'Commons', rate: 0.01, sortOrder: 0 }]);
       });
 
-      const result = await getPublicBuyRates('org-1');
+      const result = await getPublicBuyRates();
 
       expect(result.games).toHaveLength(1);
       expect(result.games[0].gameName).toBe('Magic');

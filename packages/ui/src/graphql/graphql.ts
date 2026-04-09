@@ -758,7 +758,10 @@ export type Query = {
   getSingleCardInventory: Array<Card>;
   getStoreLocation?: Maybe<StoreLocation>;
   getStoreSettings: StoreSettings;
-  /** Admin query - returns the games this store currently supports. */
+  /**
+   * Returns the games this store currently supports.
+   * No authentication required (uses session org context).
+   */
   getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];

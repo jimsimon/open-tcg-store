@@ -23,18 +23,36 @@ import { execute } from '../../lib/graphql.ts';
 
 const mockExecute = execute as ReturnType<typeof vi.fn>;
 
-function mockInventoryResponse(items: Record<string, unknown>[] = [], totalCount = 0, totalPages = 0) {
-  return {
-    data: {
-      getInventory: {
-        items,
-        totalCount,
-        page: 1,
-        pageSize: 25,
-        totalPages,
+const mockSupportedGames = [
+  { categoryId: 1, name: 'magic', displayName: 'Magic' },
+  { categoryId: 2, name: 'pokemon', displayName: 'Pokemon' },
+];
+
+function setupDefaultMock(
+  items: Record<string, unknown>[] = [],
+  totalCount = 0,
+  totalPages = 0,
+  supportedGames = mockSupportedGames,
+) {
+  mockExecute.mockImplementation((query: { toString: () => string }) => {
+    const queryStr = String(query);
+    if (queryStr.includes('GetSupportedGames')) {
+      return Promise.resolve({
+        data: { getSupportedGames: supportedGames },
+      });
+    }
+    return Promise.resolve({
+      data: {
+        getInventory: {
+          items,
+          totalCount,
+          page: 1,
+          pageSize: 25,
+          totalPages,
+        },
       },
-    },
-  };
+    });
+  });
 }
 
 function makeFakeItem(overrides: Record<string, unknown> = {}) {
@@ -63,11 +81,13 @@ describe('ogs-inventory-singles-page', () => {
   let element: OgsInventorySinglesPage;
 
   beforeEach(async () => {
-    mockExecute.mockResolvedValue(mockInventoryResponse());
+    setupDefaultMock();
 
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
     element.canManageInventory = true;
     document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
   });
 
@@ -109,7 +129,7 @@ describe('ogs-inventory-singles-page', () => {
 
   test('should render the inventory table with Rarity and Condition columns', async () => {
     const items = [makeFakeItem()];
-    mockExecute.mockResolvedValue(mockInventoryResponse(items, 1, 1));
+    setupDefaultMock(items, 1, 1);
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
@@ -135,7 +155,7 @@ describe('ogs-inventory-singles-page', () => {
 
   test('should render clickable rows that navigate to detail page', async () => {
     const items = [makeFakeItem()];
-    mockExecute.mockResolvedValue(mockInventoryResponse(items, 1, 1));
+    setupDefaultMock(items, 1, 1);
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
@@ -170,7 +190,7 @@ describe('ogs-inventory-singles-page', () => {
 
   test('should display pagination controls when multiple pages', async () => {
     const items = Array.from({ length: 25 }, (_, i) => makeFakeItem({ id: i + 1, productName: `Card ${i + 1}` }));
-    mockExecute.mockResolvedValue(mockInventoryResponse(items, 50, 2));
+    setupDefaultMock(items, 50, 2);
 
     element.remove();
     element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
@@ -191,5 +211,63 @@ describe('ogs-inventory-singles-page', () => {
     const nextButton = pagination!.querySelector('wa-button:last-of-type wa-icon[name="chevron-right"]');
     expect(prevButton).toBeTruthy();
     expect(nextButton).toBeTruthy();
+  });
+
+  test('should render game dropdown options from supported games', async () => {
+    const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
+    expect(gameSelect).toBeTruthy();
+
+    const options = gameSelect!.querySelectorAll('wa-option');
+    // "All Games" + the 2 supported games
+    expect(options.length).toBe(3);
+    expect(options[0].getAttribute('value')).toBe('');
+    expect(options[0].textContent?.trim()).toBe('All Games');
+    expect(options[1].getAttribute('value')).toBe('magic');
+    expect(options[1].textContent?.trim()).toBe('Magic');
+    expect(options[2].getAttribute('value')).toBe('pokemon');
+    expect(options[2].textContent?.trim()).toBe('Pokemon');
+  });
+
+  test('should show only All Games option when no supported games configured', async () => {
+    setupDefaultMock([], 0, 0, []);
+
+    element.remove();
+    element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
+    expect(gameSelect).toBeTruthy();
+
+    const options = gameSelect!.querySelectorAll('wa-option');
+    expect(options.length).toBe(1);
+    expect(options[0].textContent?.trim()).toBe('All Games');
+  });
+
+  test('should render all supported games when more than two are configured', async () => {
+    const threeGames = [
+      { categoryId: 1, name: 'magic', displayName: 'Magic' },
+      { categoryId: 2, name: 'pokemon', displayName: 'Pokemon' },
+      { categoryId: 5, name: 'yugioh', displayName: 'Yu-Gi-Oh' },
+    ];
+    setupDefaultMock([], 0, 0, threeGames);
+
+    element.remove();
+    element = document.createElement('ogs-inventory-singles-page') as OgsInventorySinglesPage;
+    element.canManageInventory = true;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
+    const options = gameSelect!.querySelectorAll('wa-option');
+    // "All Games" + 3 supported games
+    expect(options.length).toBe(4);
+    expect(options[3].getAttribute('value')).toBe('yugioh');
+    expect(options[3].textContent?.trim()).toBe('Yu-Gi-Oh');
   });
 });
