@@ -379,6 +379,10 @@ export class OgsLotPage extends LitElement {
       .market-cell {
         width: 100px;
       }
+      .total-cell {
+        width: 100px;
+        white-space: nowrap;
+      }
       .condition-cell {
         width: 100px;
       }
@@ -1006,8 +1010,10 @@ export class OgsLotPage extends LitElement {
                   <th class="condition-cell">Condition</th>`
               : nothing}
             <th class="quantity-cell">Qty</th>
-            <th class="cost-cell">Cost</th>
-            <th class="market-cell">Market</th>
+            <th class="cost-cell">Unit Cost</th>
+            <th class="total-cell">Cost Total</th>
+            <th class="market-cell">Unit Market</th>
+            <th class="total-cell">Market Total</th>
             <th class="actions-cell-td"></th>
           </tr>
         </thead>
@@ -1134,7 +1140,9 @@ export class OgsLotPage extends LitElement {
               `
             : nothing}
         </td>
-        <td class="market-cell">${item.marketPrice > 0 ? formatCurrency(item.marketPrice) : '-'}</td>
+        <td class="total-cell">${item.productId ? formatCurrency(item.costBasis * item.quantity) : '-'}</td>
+        <td class="market-cell">${item.productId ? formatCurrency(item.marketPrice) : '-'}</td>
+        <td class="total-cell">${item.productId ? formatCurrency(item.marketPrice * item.quantity) : '-'}</td>
         <td class="actions-cell-td">
           <wa-button variant="text" size="small" @click="${() => this.removeRow(item.clientId, isSingle)}">
             <wa-icon name="trash"></wa-icon>
