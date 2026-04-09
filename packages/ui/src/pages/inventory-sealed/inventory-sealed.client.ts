@@ -13,6 +13,7 @@ import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
 import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
+import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
@@ -20,7 +21,6 @@ import {
   type InventoryItem,
   type ProductSearchResult,
   GetInventoryQuery,
-  GetSupportedGamesQuery,
   SearchProductsQuery,
   AddInventoryItemMutation,
   debounce,

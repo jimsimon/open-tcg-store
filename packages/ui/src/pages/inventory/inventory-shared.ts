@@ -276,25 +276,6 @@ export const BulkDeleteStockMutation = new TypedDocumentString(`
   }
 `) as unknown as TypedDocumentString<{ bulkDeleteStock: boolean }, { input: { ids: number[] } }>;
 
-export const GetSupportedGamesQuery = new TypedDocumentString(`
-  query GetSupportedGamesForInventory {
-    getSupportedGames {
-      categoryId
-      name
-      displayName
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    getSupportedGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  Record<string, never>
->;
-
 // --- Interfaces ---
 
 export interface AddForm {

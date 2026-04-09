@@ -14,6 +14,7 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
+import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
@@ -121,25 +122,6 @@ const GetProductListingsQuery = new TypedDocumentString(`
     } | null;
     pagination?: { page?: number | null; pageSize?: number | null } | null;
   }
->;
-
-const GetSupportedGamesQuery = new TypedDocumentString(`
-  query GetSupportedGamesForProductsSealed {
-    getSupportedGames {
-      categoryId
-      name
-      displayName
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    getSupportedGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  Record<string, never>
 >;
 
 // --- Debounce utility ---

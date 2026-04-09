@@ -17,30 +17,12 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
+import { GetSupportedGamesQuery } from '../../lib/shared-queries';
 import { TypedDocumentString } from '../../graphql/graphql';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
 // ---------------------------------------------------------------------------
-
-const GetSupportedGamesQuery = new TypedDocumentString(`
-  query GetSupportedGamesForBuyRates {
-    getSupportedGames {
-      categoryId
-      name
-      displayName
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    getSupportedGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  Record<string, never>
->;
 
 const GetBuyRatesQuery = new TypedDocumentString(`
   query GetBuyRates($categoryId: Int!) {
