@@ -42,7 +42,7 @@ extend type Query {
   Public query - returns buy rate tables for all supported games.
   No authentication required.
   """
-  getPublicBuyRates(organizationId: String): PublicBuyRates!
+  getPublicBuyRates: PublicBuyRates!
 
   """
   Public query - returns all available game categories from the TCG data catalog.

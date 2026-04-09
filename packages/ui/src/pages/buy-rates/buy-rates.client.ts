@@ -19,8 +19,8 @@ import { TypedDocumentString } from '../../graphql/graphql';
 // ---------------------------------------------------------------------------
 
 const GetPublicBuyRatesQuery = new TypedDocumentString(`
-  query GetPublicBuyRates($organizationId: String) {
-    getPublicBuyRates(organizationId: $organizationId) {
+  query GetPublicBuyRates {
+    getPublicBuyRates {
       games {
         categoryId
         gameName
@@ -50,7 +50,7 @@ const GetPublicBuyRatesQuery = new TypedDocumentString(`
       }>;
     };
   },
-  { organizationId?: string | null }
+  Record<string, never>
 >;
 
 // ---------------------------------------------------------------------------
@@ -235,9 +235,7 @@ export class OgsBuyRatesPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      const result = await execute(GetPublicBuyRatesQuery, {
-        organizationId: this.activeOrganizationId || null,
-      });
+      const result = await execute(GetPublicBuyRatesQuery);
 
       if (result?.data?.getPublicBuyRates) {
         this.games = result.data.getPublicBuyRates.games;
