@@ -17,7 +17,7 @@ vi.mock('../../lib/graphql.ts', () => ({
 
 // Mock the cart-state module
 vi.mock('../../lib/cart-state.ts', () => ({
-  cartState: { get: () => null, set: vi.fn() },
+  cartState: { get: () => ({ items: [] }), set: vi.fn() },
 }));
 
 import './products-sealed.client.ts';
