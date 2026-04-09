@@ -24,7 +24,6 @@ interface CreateLotInput {
   description?: string | null;
   amountPaid: number;
   acquisitionDate: string;
-  useBuyListForCost: boolean;
   items: LotItemInput[];
 }
 
@@ -60,7 +59,6 @@ interface LotResult {
   description: string | null;
   amountPaid: number;
   acquisitionDate: string;
-  useBuyListForCost: boolean;
   items: LotItemResult[];
   totalMarketValue: number;
   totalCost: number;
@@ -217,7 +215,6 @@ async function buildLotResult(lotRow: typeof lot.$inferSelect): Promise<LotResul
     description: lotRow.description ?? null,
     amountPaid: lotRow.amountPaid,
     acquisitionDate: lotRow.acquisitionDate,
-    useBuyListForCost: Boolean(lotRow.useBuyListForCost),
     items,
     ...summary,
     createdAt: formatDate(lotRow.createdAt) ?? new Date().toISOString(),
@@ -318,7 +315,6 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
         description: input.description?.trim() || null,
         amountPaid: input.amountPaid,
         acquisitionDate: input.acquisitionDate,
-        useBuyListForCost: input.useBuyListForCost ? 1 : 0,
         createdBy: userId,
         updatedBy: userId,
         createdAt: now,
@@ -447,7 +443,6 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
         description: input.description?.trim() || null,
         amountPaid: input.amountPaid,
         acquisitionDate: input.acquisitionDate,
-        useBuyListForCost: input.useBuyListForCost ? 1 : 0,
         updatedBy: userId,
         updatedAt: now,
       })

@@ -5,7 +5,6 @@ type Lot {
   description: String
   amountPaid: Float!
   acquisitionDate: String!
-  useBuyListForCost: Boolean!
   items: [LotItem!]!
   totalMarketValue: Float!
   totalCost: Float!
@@ -45,7 +44,6 @@ input CreateLotInput {
   description: String
   amountPaid: Float!
   acquisitionDate: String!
-  useBuyListForCost: Boolean!
   items: [LotItemInput!]!
 }
 
@@ -55,7 +53,6 @@ input UpdateLotInput {
   description: String
   amountPaid: Float!
   acquisitionDate: String!
-  useBuyListForCost: Boolean!
   items: [LotItemInput!]!
 }
 

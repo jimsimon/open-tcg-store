@@ -9,25 +9,15 @@ import './lot.client.ts';
 import { OgsLotPage } from './lot.client.ts';
 import { execute } from '../../lib/graphql.ts';
 
-// --- Helpers ---
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 const mockExecute = execute as ReturnType<typeof vi.fn>;
 
-function mockSupportedGamesResponse() {
-  return {
-    data: {
-      getSupportedGames: [{ categoryId: 1, name: 'Magic', displayName: 'Magic: The Gathering' }],
-    },
-  };
-}
-
-function mockBuyRatesResponse() {
-  return {
-    data: {
-      getBuyRates: [{ id: 1, description: 'Bulk', rate: 0.3, type: 'percentage', rarity: 'Rare', sortOrder: 0 }],
-    },
-  };
-}
+/** Reach into Lit reactive state that is marked `@state()` (private). */
+// biome-ignore lint: test-only cast
+type LotPageInternal = OgsLotPage & Record<string, any>;
 
 function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
   return {
@@ -38,7 +28,6 @@ function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
         description: 'A test lot',
         amountPaid: 100,
         acquisitionDate: '2025-01-15',
-        useBuyListForCost: true,
         items: [
           {
             id: 10,
@@ -81,8 +70,8 @@ function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
   };
 }
 
-async function createElement(props: Partial<Record<string, unknown>> = {}): Promise<OgsLotPage> {
-  const el = document.createElement('ogs-lot-page') as OgsLotPage;
+async function createElement(props: Partial<Record<string, unknown>> = {}): Promise<LotPageInternal> {
+  const el = document.createElement('ogs-lot-page') as LotPageInternal;
   el.canManageLots = true;
   for (const [key, value] of Object.entries(props)) {
     (el as Record<string, unknown>)[key] = value;
@@ -94,13 +83,12 @@ async function createElement(props: Partial<Record<string, unknown>> = {}): Prom
   return el;
 }
 
-function addProductRow(element: OgsLotPage, isSingle: boolean) {
-  // Call the component's method directly to avoid shadow DOM boundary issues with wa-tab-panel
+function addProductRow(element: LotPageInternal, isSingle: boolean) {
   element['addProductRow'](isSingle);
 }
 
 /** Simulate selecting a product from search results by directly calling the component method. */
-function selectProductOnRow(element: OgsLotPage, isSingle: boolean, overrides: Record<string, unknown> = {}) {
+function selectProductOnRow(element: LotPageInternal, isSingle: boolean, overrides: Record<string, unknown> = {}) {
   const items = isSingle ? element['singlesItems'] : element['sealedItems'];
   const lastItem = items[items.length - 1];
   if (!lastItem) throw new Error('No items to select product for');
@@ -120,24 +108,70 @@ function selectProductOnRow(element: OgsLotPage, isSingle: boolean, overrides: R
   element['selectProduct'](lastItem.clientId, product, isSingle);
 }
 
-// --- Tests ---
+interface ItemLike {
+  clientId?: string;
+  productId?: number | null;
+  productName?: string;
+  gameName?: string;
+  setName?: string;
+  rarity?: string | null;
+  isSingle?: boolean;
+  condition?: string;
+  quantity?: number;
+  costBasis?: number;
+  costOverridden?: boolean;
+  marketPrice?: number;
+  searching?: boolean;
+  searchTerm?: string;
+  searchResults?: unknown[];
+}
+
+let clientIdSeq = 0;
+function makeItem(overrides: ItemLike = {}): Required<ItemLike> {
+  clientIdSeq += 1;
+  return {
+    clientId: `test-${clientIdSeq}`,
+    productId: clientIdSeq,
+    productName: `Card ${clientIdSeq}`,
+    gameName: 'Magic',
+    setName: 'Alpha',
+    rarity: 'Rare',
+    isSingle: true,
+    condition: 'NM',
+    quantity: 1,
+    costBasis: 0,
+    costOverridden: false,
+    marketPrice: 10,
+    searching: false,
+    searchTerm: '',
+    searchResults: [],
+    ...overrides,
+  };
+}
+
+/**
+ * Triggers the private `recalculateAutoCosts` method by calling it directly.
+ * This mirrors what `selectProduct`, `updateItemField`, and the amountPaid input do.
+ */
+function recalculate(el: LotPageInternal) {
+  el.recalculateAutoCosts();
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('ogs-lot-page', () => {
-  let element: OgsLotPage;
-
-  beforeEach(() => {
-    // Default: mock supported-games then buy-rates calls for connectedCallback
-    mockExecute.mockImplementation((_doc: unknown, vars?: Record<string, unknown>) => {
-      if (vars && 'categoryId' in vars) return Promise.resolve(mockBuyRatesResponse());
-      // GetSupportedGames (no vars or empty vars)
-      return Promise.resolve(mockSupportedGamesResponse());
-    });
-  });
+  let element: LotPageInternal;
 
   afterEach(() => {
     element?.remove();
     vi.clearAllMocks();
   });
+
+  // -----------------------------------------------------------------------
+  // Rendering
+  // -----------------------------------------------------------------------
 
   test('should render the component', async () => {
     element = await createElement();
@@ -154,8 +188,7 @@ describe('ogs-lot-page', () => {
   test('should display "Edit Lot" header when lotId is set', async () => {
     mockExecute.mockImplementation((_doc: unknown, vars?: Record<string, unknown>) => {
       if (vars && 'id' in vars) return Promise.resolve(mockGetLotResponse());
-      if (vars && 'categoryId' in vars) return Promise.resolve(mockBuyRatesResponse());
-      return Promise.resolve(mockSupportedGamesResponse());
+      return Promise.resolve({ data: {} });
     });
 
     element = await createElement({ lotId: '1' });
@@ -205,12 +238,21 @@ describe('ogs-lot-page', () => {
     expect(empty?.textContent).toContain('No products added yet');
   });
 
+  test('should not render the buy list checkbox', async () => {
+    element = await createElement();
+    const checkbox = element.shadowRoot!.querySelector('wa-checkbox');
+    expect(checkbox).toBeFalsy();
+  });
+
+  // -----------------------------------------------------------------------
+  // Table columns
+  // -----------------------------------------------------------------------
+
   describe('singles table columns', () => {
     beforeEach(async () => {
       mockExecute.mockImplementation((_doc: unknown, vars?: Record<string, unknown>) => {
         if (vars && 'id' in vars) return Promise.resolve(mockGetLotResponse());
-        if (vars && 'categoryId' in vars) return Promise.resolve(mockBuyRatesResponse());
-        return Promise.resolve(mockSupportedGamesResponse());
+        return Promise.resolve({ data: {} });
       });
 
       element = await createElement({ lotId: '1' });
@@ -220,7 +262,6 @@ describe('ogs-lot-page', () => {
       const tables = element.shadowRoot!.querySelectorAll('table');
       expect(tables.length).toBeGreaterThanOrEqual(1);
 
-      // The first table should be the singles table
       const headers = Array.from(tables[0].querySelectorAll('th')).map((th) => th.textContent?.trim());
       expect(headers).toContain('Product');
       expect(headers).toContain('Game');
@@ -240,7 +281,6 @@ describe('ogs-lot-page', () => {
       const unitCostIdx = headers.findIndex((th) => th.textContent?.trim() === 'Unit Cost');
       expect(unitCostIdx).toBeGreaterThan(-1);
 
-      // The cost cell contains a wa-input with the per-unit costBasis value
       const rows = table.querySelectorAll('tbody tr');
       expect(rows.length).toBeGreaterThan(0);
       const costCell = rows[0].querySelectorAll('td')[unitCostIdx];
@@ -314,13 +354,11 @@ describe('ogs-lot-page', () => {
             }),
           );
         }
-        if (vars && 'categoryId' in vars) return Promise.resolve(mockBuyRatesResponse());
-        return Promise.resolve(mockSupportedGamesResponse());
+        return Promise.resolve({ data: {} });
       });
 
       element = await createElement({ lotId: '1' });
 
-      // Find the sealed tab panel table
       const tabPanels = element.shadowRoot!.querySelectorAll('wa-tab-panel');
       const sealedPanel = Array.from(tabPanels).find((p) => p.getAttribute('name') === 'sealed');
       expect(sealedPanel).toBeTruthy();
@@ -342,7 +380,6 @@ describe('ogs-lot-page', () => {
     test('should display dashes for cost total and market total when no product selected', async () => {
       element = await createElement();
 
-      // Programmatically add a row without a product
       const addBtn = element.shadowRoot!.querySelector('wa-button[size="small"]') as HTMLElement;
       addBtn.click();
       await element.updateComplete;
@@ -361,54 +398,48 @@ describe('ogs-lot-page', () => {
     });
   });
 
+  // -----------------------------------------------------------------------
+  // Cost override behavior (UI)
+  // -----------------------------------------------------------------------
+
   describe('cost override behavior', () => {
     beforeEach(async () => {
       element = await createElement();
+      element.amountPaid = 100;
 
-      // Ensure useBuyListForCost is on (default)
-      element['useBuyListForCost'] = true;
-      element['amountPaid'] = 100;
-
-      // Add a product row and select a product
       addProductRow(element, true);
       await element.updateComplete;
       selectProductOnRow(element, true);
       await element.updateComplete;
-      // Allow async buy-rate loading and re-renders to settle
       await new Promise((r) => setTimeout(r, 50));
       await element.updateComplete;
     });
 
     test('should not mark cost as overridden when field is focused without changing value', async () => {
-      // Verify the item starts as not overridden
-      const item = element['singlesItems'][0];
+      const item = element.singlesItems[0];
       expect(item.productId).toBe(100);
       expect(item.costOverridden).toBe(false);
       const originalCostBasis = item.costBasis;
 
-      // Target only cost inputs (inside .cost-wrapper) rather than all wa-input elements,
-      // so this test stays precise if @focus handlers are added to other fields.
       const costInputs = element.shadowRoot!.querySelectorAll('.cost-wrapper wa-input');
       for (const input of costInputs) {
         input.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
       }
       await element.updateComplete;
 
-      // The item should still NOT be overridden — the old @focus handler was removed
-      const itemAfterFocus = element['singlesItems'][0];
+      const itemAfterFocus = element.singlesItems[0];
       expect(itemAfterFocus.costOverridden).toBe(false);
       expect(itemAfterFocus.costBasis).toBe(originalCostBasis);
     });
 
     test('should mark cost as overridden when user changes value via input', async () => {
-      const item = element['singlesItems'][0];
+      const item = element.singlesItems[0];
       expect(item.costOverridden).toBe(false);
 
-      // Directly call overrideCost to simulate what the @input handler does
-      element['overrideCost'](item.clientId, true, 5.0);
+      element.overrideCost(item.clientId, true, 5.0);
       await element.updateComplete;
 
-      const itemAfterInput = element['singlesItems'][0];
+      const itemAfterInput = element.singlesItems[0];
       expect(itemAfterInput.costOverridden).toBe(true);
       expect(itemAfterInput.costBasis).toBe(5.0);
     });
@@ -418,40 +449,28 @@ describe('ogs-lot-page', () => {
       expect(resetBtn).toBeFalsy();
     });
 
-    test('should show reset button when cost is overridden and useBuyListForCost is on', async () => {
-      const item = element['singlesItems'][0];
-      element['overrideCost'](item.clientId, true, 5.0);
+    test('should show reset button when cost is overridden', async () => {
+      const item = element.singlesItems[0];
+      element.overrideCost(item.clientId, true, 5.0);
       await element.updateComplete;
 
       const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
       expect(resetBtn).toBeTruthy();
     });
 
-    test('should not show reset button when useBuyListForCost is off even if overridden', async () => {
-      const item = element['singlesItems'][0];
-      element['overrideCost'](item.clientId, true, 5.0);
-      await element.updateComplete;
-
-      element['useBuyListForCost'] = false;
-      await element.updateComplete;
-
-      const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
-      expect(resetBtn).toBeFalsy();
-    });
-
     test('should clear override when reset button is clicked', async () => {
-      const item = element['singlesItems'][0];
-      element['overrideCost'](item.clientId, true, 5.0);
+      const item = element.singlesItems[0];
+      element.overrideCost(item.clientId, true, 5.0);
       await element.updateComplete;
 
-      expect(element['singlesItems'][0].costOverridden).toBe(true);
+      expect(element.singlesItems[0].costOverridden).toBe(true);
 
       const resetBtn = element.shadowRoot!.querySelector('.reset-btn') as HTMLElement;
       expect(resetBtn).toBeTruthy();
       resetBtn.click();
       await element.updateComplete;
 
-      expect(element['singlesItems'][0].costOverridden).toBe(false);
+      expect(element.singlesItems[0].costOverridden).toBe(false);
     });
 
     test('should render cost input inside a flex wrapper', async () => {
@@ -471,6 +490,10 @@ describe('ogs-lot-page', () => {
     });
   });
 
+  // -----------------------------------------------------------------------
+  // Save / validation
+  // -----------------------------------------------------------------------
+
   test('should show Save and Cancel buttons', async () => {
     element = await createElement();
     const saveBar = element.shadowRoot!.querySelector('.save-bar');
@@ -485,8 +508,7 @@ describe('ogs-lot-page', () => {
   test('should show loading spinner when loading a lot', async () => {
     mockExecute.mockImplementation((_doc: unknown, vars?: Record<string, unknown>) => {
       if (vars && 'id' in vars) return new Promise(() => {}); // never resolves
-      if (vars && 'categoryId' in vars) return Promise.resolve(mockBuyRatesResponse());
-      return Promise.resolve(mockSupportedGamesResponse());
+      return Promise.resolve({ data: {} });
     });
 
     element = await createElement({ lotId: '1' });
@@ -497,7 +519,6 @@ describe('ogs-lot-page', () => {
   test('should display validation errors when saving incomplete lot', async () => {
     element = await createElement();
 
-    // Click save with empty form
     const saveBtn = element.shadowRoot!.querySelector('.save-bar wa-button[variant="brand"]') as HTMLElement;
     saveBtn.click();
     await element.updateComplete;
@@ -505,5 +526,331 @@ describe('ogs-lot-page', () => {
     const callout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(callout).toBeTruthy();
     expect(callout?.textContent).toContain('Lot name is required');
+  });
+
+  // -----------------------------------------------------------------------
+  // Market-price-weighted cost distribution
+  // -----------------------------------------------------------------------
+
+  describe('market-price-weighted cost distribution', () => {
+    beforeEach(async () => {
+      clientIdSeq = 0;
+      element = document.createElement('ogs-lot-page') as LotPageInternal;
+      document.body.appendChild(element);
+      await element.updateComplete;
+    });
+
+    test('distributes cost proportionally by market price for a single item', () => {
+      const item = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item];
+      element.amountPaid = 15;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(15);
+    });
+
+    test('distributes cost proportionally across two items with different market prices', () => {
+      const item1 = makeItem({ marketPrice: 30, quantity: 1 });
+      const item2 = makeItem({ marketPrice: 10, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      // Total market value = 30 + 10 = 40
+      // item1: 30/40 * 20 = 15
+      // item2: 10/40 * 20 = 5
+      expect(element.singlesItems[0].costBasis).toBe(15);
+      expect(element.singlesItems[1].costBasis).toBe(5);
+    });
+
+    test('accounts for quantity when distributing cost', () => {
+      const item1 = makeItem({ marketPrice: 10, quantity: 3 });
+      const item2 = makeItem({ marketPrice: 5, quantity: 2 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      // Total market value = (10*3) + (5*2) = 30 + 10 = 40
+      // item1 row cost: 30/40 * 20 = 15, per unit: 15/3 = 5
+      // item2 row cost: 10/40 * 20 = 5, per unit: 5/2 = 2.5
+      expect(element.singlesItems[0].costBasis).toBe(5);
+      expect(element.singlesItems[1].costBasis).toBe(2.5);
+    });
+
+    test('mixes singles and sealed items in cost distribution', () => {
+      const single = makeItem({ marketPrice: 20, quantity: 1, isSingle: true });
+      const sealed = makeItem({ marketPrice: 80, quantity: 1, isSingle: false });
+      element.singlesItems = [single];
+      element.sealedItems = [sealed];
+      element.amountPaid = 50;
+      recalculate(element);
+
+      // Total market value = 20 + 80 = 100
+      // single: 20/100 * 50 = 10
+      // sealed: 80/100 * 50 = 40
+      expect(element.singlesItems[0].costBasis).toBe(10);
+      expect(element.sealedItems[0].costBasis).toBe(40);
+    });
+
+    test('rounds cost basis to two decimal places', () => {
+      const item1 = makeItem({ marketPrice: 10, quantity: 1 });
+      const item2 = makeItem({ marketPrice: 10, quantity: 1 });
+      const item3 = makeItem({ marketPrice: 10, quantity: 1 });
+      element.singlesItems = [item1, item2, item3];
+      element.amountPaid = 10;
+      recalculate(element);
+
+      // 10/30 * 10 = 3.333... → rounded to 3.33
+      expect(element.singlesItems[0].costBasis).toBe(3.33);
+      expect(element.singlesItems[1].costBasis).toBe(3.33);
+      expect(element.singlesItems[2].costBasis).toBe(3.33);
+    });
+
+    test('handles zero amount paid', () => {
+      const item = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item];
+      element.amountPaid = 0;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(0);
+    });
+
+    test('leaves cost at zero when all market prices are zero', () => {
+      const item1 = makeItem({ marketPrice: 0, quantity: 2 });
+      const item2 = makeItem({ marketPrice: 0, quantity: 3 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 10;
+      recalculate(element);
+
+      // No market price data → cannot distribute proportionally, cost stays at 0
+      expect(element.singlesItems[0].costBasis).toBe(0);
+      expect(element.singlesItems[1].costBasis).toBe(0);
+    });
+
+    test('skips items without a productId', () => {
+      const itemWithProduct = makeItem({ marketPrice: 10, quantity: 1 });
+      const itemWithout = makeItem({ productId: null, marketPrice: 0, quantity: 1 });
+      element.singlesItems = [itemWithProduct, itemWithout];
+      element.amountPaid = 8;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(8);
+      expect(element.singlesItems[1].costBasis).toBe(0);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Cost overrides (calculation logic)
+  // -----------------------------------------------------------------------
+
+  describe('cost override calculations', () => {
+    beforeEach(async () => {
+      clientIdSeq = 0;
+      element = document.createElement('ogs-lot-page') as LotPageInternal;
+      document.body.appendChild(element);
+      await element.updateComplete;
+    });
+
+    test('subtracts overridden item cost from budget before distributing', () => {
+      const item1 = makeItem({ marketPrice: 20, quantity: 1, costBasis: 5, costOverridden: true });
+      const item2 = makeItem({ marketPrice: 20, quantity: 1 });
+      const item3 = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item1, item2, item3];
+      element.amountPaid = 25;
+      recalculate(element);
+
+      // Overridden total = 5
+      // Remaining budget = 25 - 5 = 20
+      // item2 and item3 have equal market prices → each gets 10
+      expect(element.singlesItems[0].costBasis).toBe(5);
+      expect(element.singlesItems[0].costOverridden).toBe(true);
+      expect(element.singlesItems[1].costBasis).toBe(10);
+      expect(element.singlesItems[2].costBasis).toBe(10);
+    });
+
+    test('distributes remaining budget by market price with overridden items excluded', () => {
+      const overridden = makeItem({ marketPrice: 50, quantity: 1, costBasis: 10, costOverridden: true });
+      const auto1 = makeItem({ marketPrice: 30, quantity: 1 });
+      const auto2 = makeItem({ marketPrice: 10, quantity: 1 });
+      element.singlesItems = [overridden, auto1, auto2];
+      element.amountPaid = 30;
+      recalculate(element);
+
+      // Remaining = 30 - 10 = 20
+      // Total auto market value = 30 + 10 = 40
+      // auto1: 30/40 * 20 = 15
+      // auto2: 10/40 * 20 = 5
+      expect(element.singlesItems[0].costBasis).toBe(10);
+      expect(element.singlesItems[1].costBasis).toBe(15);
+      expect(element.singlesItems[2].costBasis).toBe(5);
+    });
+
+    test('handles multiple overridden items with quantities', () => {
+      const overridden1 = makeItem({ marketPrice: 20, quantity: 2, costBasis: 3, costOverridden: true });
+      const overridden2 = makeItem({ marketPrice: 10, quantity: 1, costBasis: 4, costOverridden: true });
+      const auto = makeItem({ marketPrice: 15, quantity: 1 });
+      element.singlesItems = [overridden1, overridden2, auto];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      // Overridden total = (3*2) + (4*1) = 10
+      // Remaining = 20 - 10 = 10
+      expect(element.singlesItems[0].costBasis).toBe(3);
+      expect(element.singlesItems[1].costBasis).toBe(4);
+      expect(element.singlesItems[2].costBasis).toBe(10);
+    });
+
+    test('overrideCost sets costOverridden flag and recalculates others', async () => {
+      const item1 = makeItem({ marketPrice: 20, quantity: 1 });
+      const item2 = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(10);
+      expect(element.singlesItems[1].costBasis).toBe(10);
+
+      element.overrideCost(item1.clientId, true, 6);
+
+      expect(element.singlesItems[0].costBasis).toBe(6);
+      expect(element.singlesItems[0].costOverridden).toBe(true);
+
+      // overrideCost uses a debounced recalculation, wait for it to fire
+      await new Promise((r) => setTimeout(r, 350));
+
+      expect(element.singlesItems[1].costBasis).toBe(14);
+    });
+
+    test('resetCost clears override and recalculates', () => {
+      const item1 = makeItem({ marketPrice: 20, quantity: 1, costBasis: 6, costOverridden: true });
+      const item2 = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      expect(element.singlesItems[1].costBasis).toBe(14);
+
+      element.resetCost(item1.clientId, true);
+
+      expect(element.singlesItems[0].costOverridden).toBe(false);
+      expect(element.singlesItems[0].costBasis).toBe(10);
+      expect(element.singlesItems[1].costBasis).toBe(10);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Rendered cost display
+  // -----------------------------------------------------------------------
+
+  describe('rendered cost display', () => {
+    beforeEach(async () => {
+      clientIdSeq = 0;
+      element = document.createElement('ogs-lot-page') as LotPageInternal;
+      document.body.appendChild(element);
+      await element.updateComplete;
+    });
+
+    test('shows summary totals', async () => {
+      const item1 = makeItem({ marketPrice: 30, quantity: 1 });
+      const item2 = makeItem({ marketPrice: 10, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 20;
+      recalculate(element);
+      await element.updateComplete;
+
+      const summaryItems = element.shadowRoot!.querySelectorAll('.summary-item');
+      const values = Array.from(summaryItems).map((item) => {
+        const label = item.querySelector('.label')?.textContent?.trim();
+        const value = item.querySelector('.value')?.textContent?.trim();
+        return { label, value };
+      });
+
+      const marketValue = values.find((v) => v.label === 'Total Market Value');
+      const totalCost = values.find((v) => v.label === 'Total Cost');
+      expect(marketValue?.value).toBe('$40.00');
+      expect(totalCost?.value).toBe('$20.00');
+    });
+
+    test('shows reset button only on overridden items', async () => {
+      const item1 = makeItem({ marketPrice: 20, quantity: 1, costBasis: 5, costOverridden: true });
+      const item2 = makeItem({ marketPrice: 20, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 15;
+      recalculate(element);
+      await element.updateComplete;
+
+      const resetBtns = element.shadowRoot!.querySelectorAll('.reset-btn');
+      expect(resetBtns.length).toBe(1);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Edge cases
+  // -----------------------------------------------------------------------
+
+  describe('edge cases', () => {
+    beforeEach(async () => {
+      clientIdSeq = 0;
+      element = document.createElement('ogs-lot-page') as LotPageInternal;
+      document.body.appendChild(element);
+      await element.updateComplete;
+    });
+
+    test('handles a single item with quantity > 1', () => {
+      const item = makeItem({ marketPrice: 10, quantity: 4 });
+      element.singlesItems = [item];
+      element.amountPaid = 20;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(5);
+    });
+
+    test('handles many items with varying prices and quantities', () => {
+      const items = [
+        makeItem({ marketPrice: 100, quantity: 1 }),
+        makeItem({ marketPrice: 50, quantity: 2 }),
+        makeItem({ marketPrice: 25, quantity: 4 }),
+      ];
+      element.singlesItems = items;
+      element.amountPaid = 150;
+      recalculate(element);
+
+      // Total market value = 100 + 100 + 100 = 300
+      // item1: 100/300 * 150 / 1 = 50
+      // item2: 100/300 * 150 / 2 = 25
+      // item3: 100/300 * 150 / 4 = 12.5
+      expect(element.singlesItems[0].costBasis).toBe(50);
+      expect(element.singlesItems[1].costBasis).toBe(25);
+      expect(element.singlesItems[2].costBasis).toBe(12.5);
+    });
+
+    test('handles zero quantity items gracefully', () => {
+      const item1 = makeItem({ marketPrice: 10, quantity: 0 });
+      const item2 = makeItem({ marketPrice: 10, quantity: 1 });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 10;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(0);
+      expect(element.singlesItems[1].costBasis).toBe(10);
+    });
+
+    test('no items means no recalculation errors', () => {
+      element.singlesItems = [];
+      element.sealedItems = [];
+      element.amountPaid = 100;
+      expect(() => recalculate(element)).not.toThrow();
+    });
+
+    test('all items overridden leaves no auto items to distribute to', () => {
+      const item1 = makeItem({ marketPrice: 20, quantity: 1, costBasis: 8, costOverridden: true });
+      const item2 = makeItem({ marketPrice: 10, quantity: 1, costBasis: 2, costOverridden: true });
+      element.singlesItems = [item1, item2];
+      element.amountPaid = 10;
+      recalculate(element);
+
+      expect(element.singlesItems[0].costBasis).toBe(8);
+      expect(element.singlesItems[1].costBasis).toBe(2);
+    });
   });
 });
