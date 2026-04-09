@@ -20,6 +20,7 @@ import {
   type InventoryItem,
   type ProductSearchResult,
   GetInventoryQuery,
+  GetSupportedGamesQuery,
   SearchProductsQuery,
   AddInventoryItemMutation,
   debounce,
@@ -51,6 +52,9 @@ export class OgsInventorySealedPage extends LitElement {
   @property({ type: Boolean }) canViewTransactionLog = false;
   @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
+
+  // Supported games
+  @state() private supportedGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
 
   // Filter state (no condition or rarity for sealed)
   @state() private gameFilter = '';
@@ -104,6 +108,7 @@ export class OgsInventorySealedPage extends LitElement {
     super.connectedCallback();
     this.loadFiltersFromUrl();
     this.fetchInventory();
+    this.fetchSupportedGames();
   }
 
   protected firstUpdated(_changedProperties: PropertyValues) {
@@ -146,6 +151,17 @@ export class OgsInventorySealedPage extends LitElement {
   }
 
   // --- Data fetching ---
+
+  private async fetchSupportedGames() {
+    try {
+      const result = await execute(GetSupportedGamesQuery);
+      if (result?.data?.getSupportedGames) {
+        this.supportedGames = result.data.getSupportedGames;
+      }
+    } catch {
+      // Fall back to empty list — dropdown will just show "All Games"
+    }
+  }
 
   private async fetchInventory() {
     this.loading = true;
@@ -473,8 +489,7 @@ export class OgsInventorySealedPage extends LitElement {
           clearable
         >
           <wa-option value="">All Games</wa-option>
-          <wa-option value="magic">Magic</wa-option>
-          <wa-option value="pokemon">Pokemon</wa-option>
+          ${this.supportedGames.map((g) => html`<wa-option value="${g.name}">${g.displayName}</wa-option>`)}
         </wa-select>
       </div>
     `;

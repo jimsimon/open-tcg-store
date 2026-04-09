@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 vi.mock('../../lib/graphql.ts', () => ({
   execute: vi.fn().mockResolvedValue({
     data: {
-      getInventory: {
+      getProductListings: {
         items: [],
         totalCount: 0,
         page: 1,
@@ -15,8 +15,13 @@ vi.mock('../../lib/graphql.ts', () => ({
   }),
 }));
 
-import './inventory-sealed.client.ts';
-import { OgsInventorySealedPage } from './inventory-sealed.client.ts';
+// Mock the cart-state module
+vi.mock('../../lib/cart-state.ts', () => ({
+  cartState: { get: () => null, set: vi.fn() },
+}));
+
+import './products-singles.client.ts';
+import { OgsProductsSinglesPage } from './products-singles.client.ts';
 import { execute } from '../../lib/graphql.ts';
 
 // --- Helpers ---
@@ -41,9 +46,14 @@ function setupDefaultMock(
         data: { getSupportedGames: supportedGames },
       });
     }
+    if (queryStr.includes('GetSets')) {
+      return Promise.resolve({
+        data: { getSets: [] },
+      });
+    }
     return Promise.resolve({
       data: {
-        getInventory: {
+        getProductListings: {
           items,
           totalCount,
           page: 1,
@@ -55,36 +65,31 @@ function setupDefaultMock(
   });
 }
 
-function makeFakeSealedItem(overrides: Record<string, unknown> = {}) {
+function makeFakeProduct(overrides: Record<string, unknown> = {}) {
   return {
-    id: 1,
-    productId: 200,
-    productName: 'Booster Box - Alpha',
-    gameName: 'Magic',
+    id: '1',
+    name: 'Black Lotus',
     setName: 'Alpha',
-    rarity: null,
-    isSingle: false,
-    isSealed: true,
-    condition: 'NM',
-    price: 500000,
-    totalQuantity: 2,
-    entryCount: 1,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    updatedAt: '2024-06-01T00:00:00.000Z',
+    gameName: 'Magic',
+    rarity: 'Mythic Rare',
+    finishes: [],
+    images: null,
+    totalQuantity: 4,
+    lowestPrice: '50000.00',
+    conditionPrices: [{ inventoryItemId: 10, condition: 'NM', quantity: 4, price: 50000 }],
     ...overrides,
   };
 }
 
 // --- Tests ---
 
-describe('ogs-inventory-sealed-page', () => {
-  let element: OgsInventorySealedPage;
+describe('ogs-products-singles-page', () => {
+  let element: OgsProductsSinglesPage;
 
   beforeEach(async () => {
     setupDefaultMock();
 
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
+    element = document.createElement('ogs-products-singles-page') as OgsProductsSinglesPage;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -97,43 +102,42 @@ describe('ogs-inventory-sealed-page', () => {
   });
 
   test('should render the component', async () => {
-    expect(element).toBeInstanceOf(OgsInventorySealedPage);
+    expect(element).toBeInstanceOf(OgsProductsSinglesPage);
     expect(element.shadowRoot).toBeTruthy();
   });
 
-  test('should display the filter bar with Search and Game filters only', async () => {
-    const searchInput = element.shadowRoot!.querySelector('wa-input[placeholder="Search by name..."]');
+  test('should display the page header', async () => {
+    const header = element.shadowRoot!.querySelector('.page-header h2');
+    expect(header).toBeTruthy();
+    expect(header?.textContent).toContain('Single Cards');
+  });
+
+  test('should display the filter bar with Search, Game, Set, and Condition filters', async () => {
+    const searchInput = element.shadowRoot!.querySelector('wa-input[placeholder="Search cards..."]');
     expect(searchInput).toBeTruthy();
 
     const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
     expect(gameSelect).toBeTruthy();
-  });
 
-  test('should NOT display Condition or Product Type filters', async () => {
+    const setSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Set"]');
+    expect(setSelect).toBeTruthy();
+
     const conditionSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Condition"]');
-    expect(conditionSelect).toBeFalsy();
-
-    const typeSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Product Type"]');
-    expect(typeSelect).toBeFalsy();
+    expect(conditionSelect).toBeTruthy();
   });
 
-  test('should display the action bar with Import button', async () => {
-    const actionBar = element.shadowRoot!.querySelector('.action-bar');
-    expect(actionBar).toBeTruthy();
-
-    const buttons = actionBar!.querySelectorAll('wa-button');
-    const buttonTexts = Array.from(buttons).map((b) => b.textContent?.trim());
-
-    expect(buttonTexts).toContain('Import');
+  test('should display empty state when no products', async () => {
+    const emptyState = element.shadowRoot!.querySelector('.empty-state');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState?.textContent).toContain('No cards found');
   });
 
-  test('should render the inventory table WITHOUT Rarity and Condition columns', async () => {
-    const items = [makeFakeSealedItem()];
+  test('should render product table when products exist', async () => {
+    const items = [makeFakeProduct()];
     setupDefaultMock(items, 1, 1);
 
     element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
+    element = document.createElement('ogs-products-singles-page') as OgsProductsSinglesPage;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -143,76 +147,25 @@ describe('ogs-inventory-sealed-page', () => {
     expect(table).toBeTruthy();
 
     const headers = Array.from(table!.querySelectorAll('th')).map((th) => th.textContent?.trim());
-    expect(headers).toContain('Product');
+    expect(headers).toContain('Name');
     expect(headers).toContain('Game');
     expect(headers).toContain('Set');
-    expect(headers).not.toContain('Rarity');
-    expect(headers).not.toContain('Condition');
+    expect(headers).toContain('Rarity');
+    expect(headers).toContain('Condition');
     expect(headers).toContain('Qty');
     expect(headers).toContain('Price');
-    expect(headers).toContain('Entries');
-  });
-
-  test('should render clickable rows that navigate to detail page', async () => {
-    const items = [makeFakeSealedItem()];
-    setupDefaultMock(items, 1, 1);
-
-    element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    const clickableRows = element.shadowRoot!.querySelectorAll('.clickable-row');
-    expect(clickableRows.length).toBeGreaterThan(0);
   });
 
   test('should show loading spinner when loading', async () => {
     mockExecute.mockReturnValue(new Promise(() => {}));
 
     element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
+    element = document.createElement('ogs-products-singles-page') as OgsProductsSinglesPage;
     document.body.appendChild(element);
     await new Promise((r) => setTimeout(r, 50));
 
     const spinner = element.shadowRoot!.querySelector('wa-spinner');
     expect(spinner).toBeTruthy();
-  });
-
-  test('should display empty state when no items', async () => {
-    const emptyState = element.shadowRoot!.querySelector('.empty-state');
-    expect(emptyState).toBeTruthy();
-    expect(emptyState?.textContent).toContain('No sealed products found');
-  });
-
-  test('should display pagination controls when multiple pages', async () => {
-    const items = Array.from({ length: 25 }, (_, i) =>
-      makeFakeSealedItem({ id: i + 1, productName: `Sealed Product ${i + 1}` }),
-    );
-    setupDefaultMock(items, 50, 2);
-
-    element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    const pagination = element.shadowRoot!.querySelector('.pagination');
-    expect(pagination).toBeTruthy();
-
-    const paginationButtons = pagination!.querySelectorAll('wa-button');
-    expect(paginationButtons.length).toBeGreaterThanOrEqual(3); // prev + page numbers + next
-
-    // Previous/Next buttons use chevron icons instead of text
-    const prevButton = pagination!.querySelector('wa-button:first-of-type wa-icon[name="chevron-left"]');
-    const nextButton = pagination!.querySelector('wa-button:last-of-type wa-icon[name="chevron-right"]');
-    expect(prevButton).toBeTruthy();
-    expect(nextButton).toBeTruthy();
   });
 
   test('should render game dropdown options from supported games', async () => {
@@ -234,8 +187,7 @@ describe('ogs-inventory-sealed-page', () => {
     setupDefaultMock([], 0, 0, []);
 
     element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
+    element = document.createElement('ogs-products-singles-page') as OgsProductsSinglesPage;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
@@ -258,8 +210,7 @@ describe('ogs-inventory-sealed-page', () => {
     setupDefaultMock([], 0, 0, threeGames);
 
     element.remove();
-    element = document.createElement('ogs-inventory-sealed-page') as OgsInventorySealedPage;
-    element.canManageInventory = true;
+    element = document.createElement('ogs-products-singles-page') as OgsProductsSinglesPage;
     document.body.appendChild(element);
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 50));

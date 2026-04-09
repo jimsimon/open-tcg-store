@@ -123,6 +123,25 @@ const GetProductListingsQuery = new TypedDocumentString(`
   }
 >;
 
+const GetSupportedGamesQuery = new TypedDocumentString(`
+  query GetSupportedGamesForProductsSealed {
+    getSupportedGames {
+      categoryId
+      name
+      displayName
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    getSupportedGames: Array<{
+      categoryId: number;
+      name: string;
+      displayName: string;
+    }>;
+  },
+  Record<string, never>
+>;
+
 // --- Debounce utility ---
 
 // biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
@@ -176,6 +195,9 @@ export class OgsProductsSealedPage extends LitElement {
   @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
 
+  // Supported games
+  @state() private supportedGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
+
   // Filter state (no Set or Condition for sealed)
   @state() private gameFilter = '';
   @state() private searchTerm = '';
@@ -208,6 +230,7 @@ export class OgsProductsSealedPage extends LitElement {
     super.connectedCallback();
     this.loadFiltersFromUrl();
     this.fetchProducts();
+    this.fetchSupportedGames();
   }
 
   protected firstUpdated(_changedProperties: PropertyValues) {
@@ -256,6 +279,17 @@ export class OgsProductsSealedPage extends LitElement {
   }
 
   // --- Data fetching ---
+
+  private async fetchSupportedGames() {
+    try {
+      const result = await execute(GetSupportedGamesQuery);
+      if (result?.data?.getSupportedGames) {
+        this.supportedGames = result.data.getSupportedGames;
+      }
+    } catch {
+      // Fall back to empty list — dropdown will just show "All Games"
+    }
+  }
 
   private async fetchProducts() {
     this.loading = true;
@@ -435,8 +469,7 @@ export class OgsProductsSealedPage extends LitElement {
         </wa-input>
         <wa-select placeholder="Game" .value="${this.gameFilter}" @change="${this.handleGameFilterChange}" clearable>
           <wa-option value="">All Games</wa-option>
-          <wa-option value="magic">Magic</wa-option>
-          <wa-option value="pokemon">Pokemon</wa-option>
+          ${this.supportedGames.map((g) => html`<wa-option value="${g.name}">${g.displayName}</wa-option>`)}
         </wa-select>
         <div
           class="in-stock-toggle ${this.inStockOnly ? 'active' : ''}"

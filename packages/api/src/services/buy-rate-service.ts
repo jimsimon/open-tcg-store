@@ -1,4 +1,4 @@
-import { eq, and, asc, inArray } from 'drizzle-orm';
+import { eq, asc, inArray } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index';
 import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
 import { buyRate } from '../db/otcgs/buy-rate-schema';
@@ -60,7 +60,7 @@ export async function getAvailableGames(): Promise<SupportedGameResult[]> {
 // Supported Games
 // ---------------------------------------------------------------------------
 
-export async function getSupportedGames(orgId: string): Promise<SupportedGameResult[]> {
+export async function getSupportedGames(): Promise<SupportedGameResult[]> {
   const rows = await otcgs
     .select({
       categoryId: storeSupportedGame.categoryId,
@@ -69,19 +69,15 @@ export async function getSupportedGames(orgId: string): Promise<SupportedGameRes
     })
     .from(storeSupportedGame)
     .innerJoin(category, eq(storeSupportedGame.categoryId, category.id))
-    .where(eq(storeSupportedGame.organizationId, orgId))
     .orderBy(asc(category.displayName));
 
   return rows;
 }
 
-export async function setSupportedGames(orgId: string, categoryIds: number[]): Promise<SupportedGameResult[]> {
+export async function setSupportedGames(categoryIds: number[]): Promise<SupportedGameResult[]> {
   await otcgs.transaction(async (tx) => {
     // Get current supported games
-    const currentGames = await tx
-      .select({ categoryId: storeSupportedGame.categoryId })
-      .from(storeSupportedGame)
-      .where(eq(storeSupportedGame.organizationId, orgId));
+    const currentGames = await tx.select({ categoryId: storeSupportedGame.categoryId }).from(storeSupportedGame);
 
     const currentCategoryIds = new Set(currentGames.map((g) => g.categoryId));
     const newCategoryIds = new Set(categoryIds);
@@ -92,36 +88,35 @@ export async function setSupportedGames(orgId: string, categoryIds: number[]): P
     // Delete buy rates for removed games
     if (removedCategoryIds.length > 0) {
       for (const catId of removedCategoryIds) {
-        await tx.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, catId)));
+        await tx.delete(buyRate).where(eq(buyRate.categoryId, catId));
       }
     }
 
-    // Delete all existing supported game records for this org
-    await tx.delete(storeSupportedGame).where(eq(storeSupportedGame.organizationId, orgId));
+    // Delete all existing supported game records
+    await tx.delete(storeSupportedGame);
 
     // Insert new supported games
     if (categoryIds.length > 0) {
       await tx.insert(storeSupportedGame).values(
         categoryIds.map((catId) => ({
-          organizationId: orgId,
           categoryId: catId,
         })),
       );
     }
   });
 
-  return getSupportedGames(orgId);
+  return getSupportedGames();
 }
 
 // ---------------------------------------------------------------------------
 // Buy Rates (Admin)
 // ---------------------------------------------------------------------------
 
-export async function getBuyRates(orgId: string, categoryId: number): Promise<BuyRateEntryResult[]> {
+export async function getBuyRates(categoryId: number): Promise<BuyRateEntryResult[]> {
   const rows = await otcgs
     .select()
     .from(buyRate)
-    .where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, categoryId)))
+    .where(eq(buyRate.categoryId, categoryId))
     .orderBy(asc(buyRate.sortOrder));
 
   return rows.map((row) => ({
@@ -134,11 +129,7 @@ export async function getBuyRates(orgId: string, categoryId: number): Promise<Bu
   }));
 }
 
-export async function saveBuyRates(
-  orgId: string,
-  categoryId: number,
-  entries: BuyRateEntryInput[],
-): Promise<BuyRateEntryResult[]> {
+export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInput[]): Promise<BuyRateEntryResult[]> {
   // Validate entries
   for (const entry of entries) {
     if (entry.rate < 0) {
@@ -162,14 +153,13 @@ export async function saveBuyRates(
   }
 
   await otcgs.transaction(async (tx) => {
-    // Delete existing entries for this org+game
-    await tx.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, categoryId)));
+    // Delete existing entries for this game
+    await tx.delete(buyRate).where(eq(buyRate.categoryId, categoryId));
 
     // Insert new entries
     if (entries.length > 0) {
       await tx.insert(buyRate).values(
         entries.map((entry) => ({
-          organizationId: orgId,
           categoryId,
           description: entry.description,
           rate: entry.rate,
@@ -181,11 +171,11 @@ export async function saveBuyRates(
     }
   });
 
-  return getBuyRates(orgId, categoryId);
+  return getBuyRates(categoryId);
 }
 
-export async function deleteBuyRates(orgId: string, categoryId: number): Promise<boolean> {
-  await otcgs.delete(buyRate).where(and(eq(buyRate.organizationId, orgId), eq(buyRate.categoryId, categoryId)));
+export async function deleteBuyRates(categoryId: number): Promise<boolean> {
+  await otcgs.delete(buyRate).where(eq(buyRate.categoryId, categoryId));
 
   return true;
 }
@@ -194,8 +184,8 @@ export async function deleteBuyRates(orgId: string, categoryId: number): Promise
 // Public Buy Rates
 // ---------------------------------------------------------------------------
 
-export async function getPublicBuyRates(orgId: string): Promise<PublicBuyRatesResult> {
-  // Get all supported games for this org
+export async function getPublicBuyRates(): Promise<PublicBuyRatesResult> {
+  // Get all supported games (company-wide setting)
   const supportedGames = await otcgs
     .select({
       categoryId: storeSupportedGame.categoryId,
@@ -204,7 +194,6 @@ export async function getPublicBuyRates(orgId: string): Promise<PublicBuyRatesRe
     })
     .from(storeSupportedGame)
     .innerJoin(category, eq(storeSupportedGame.categoryId, category.id))
-    .where(eq(storeSupportedGame.organizationId, orgId))
     .orderBy(asc(category.displayName));
 
   if (supportedGames.length === 0) {
@@ -216,12 +205,9 @@ export async function getPublicBuyRates(orgId: string): Promise<PublicBuyRatesRe
     .select()
     .from(buyRate)
     .where(
-      and(
-        eq(buyRate.organizationId, orgId),
-        inArray(
-          buyRate.categoryId,
-          supportedGames.map((g) => g.categoryId),
-        ),
+      inArray(
+        buyRate.categoryId,
+        supportedGames.map((g) => g.categoryId),
       ),
     )
     .orderBy(asc(buyRate.sortOrder));

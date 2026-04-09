@@ -70,7 +70,6 @@ vi.mock('../../../db/otcgs/company-settings-schema', () => ({
 vi.mock('../../../db/otcgs/store-supported-game-schema', () => ({
   storeSupportedGame: {
     id: 'store_supported_game.id',
-    organizationId: 'store_supported_game.organization_id',
     categoryId: 'store_supported_game.category_id',
   },
 }));
