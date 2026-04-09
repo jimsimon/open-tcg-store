@@ -94,6 +94,32 @@ async function createElement(props: Partial<Record<string, unknown>> = {}): Prom
   return el;
 }
 
+function addProductRow(element: OgsLotPage, isSingle: boolean) {
+  // Call the component's method directly to avoid shadow DOM boundary issues with wa-tab-panel
+  element['addProductRow'](isSingle);
+}
+
+/** Simulate selecting a product from search results by directly calling the component method. */
+function selectProductOnRow(element: OgsLotPage, isSingle: boolean, overrides: Record<string, unknown> = {}) {
+  const items = isSingle ? element['singlesItems'] : element['sealedItems'];
+  const lastItem = items[items.length - 1];
+  if (!lastItem) throw new Error('No items to select product for');
+
+  const product = {
+    id: 100,
+    name: 'Test Card',
+    gameName: 'Magic',
+    setName: 'Alpha',
+    rarity: 'Rare',
+    isSingle,
+    isSealed: !isSingle,
+    marketPrice: 10.0,
+    ...overrides,
+  };
+
+  element['selectProduct'](lastItem.clientId, product, isSingle);
+}
+
 // --- Tests ---
 
 describe('ogs-lot-page', () => {
@@ -332,6 +358,116 @@ describe('ogs-lot-page', () => {
       const cells = row.querySelectorAll('td');
       expect(cells[costTotalIdx].textContent?.trim()).toBe('-');
       expect(cells[marketTotalIdx].textContent?.trim()).toBe('-');
+    });
+  });
+
+  describe('cost override behavior', () => {
+    beforeEach(async () => {
+      element = await createElement();
+
+      // Ensure useBuyListForCost is on (default)
+      element['useBuyListForCost'] = true;
+      element['amountPaid'] = 100;
+
+      // Add a product row and select a product
+      addProductRow(element, true);
+      await element.updateComplete;
+      selectProductOnRow(element, true);
+      await element.updateComplete;
+      // Allow async buy-rate loading and re-renders to settle
+      await new Promise((r) => setTimeout(r, 50));
+      await element.updateComplete;
+    });
+
+    test('should not mark cost as overridden when field is focused without changing value', async () => {
+      // Verify the item starts as not overridden
+      const item = element['singlesItems'][0];
+      expect(item.productId).toBe(100);
+      expect(item.costOverridden).toBe(false);
+      const originalCostBasis = item.costBasis;
+
+      // Target only cost inputs (inside .cost-wrapper) rather than all wa-input elements,
+      // so this test stays precise if @focus handlers are added to other fields.
+      const costInputs = element.shadowRoot!.querySelectorAll('.cost-wrapper wa-input');
+      for (const input of costInputs) {
+        input.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+      }
+      await element.updateComplete;
+
+      // The item should still NOT be overridden — the old @focus handler was removed
+      const itemAfterFocus = element['singlesItems'][0];
+      expect(itemAfterFocus.costOverridden).toBe(false);
+      expect(itemAfterFocus.costBasis).toBe(originalCostBasis);
+    });
+
+    test('should mark cost as overridden when user changes value via input', async () => {
+      const item = element['singlesItems'][0];
+      expect(item.costOverridden).toBe(false);
+
+      // Directly call overrideCost to simulate what the @input handler does
+      element['overrideCost'](item.clientId, true, 5.0);
+      await element.updateComplete;
+
+      const itemAfterInput = element['singlesItems'][0];
+      expect(itemAfterInput.costOverridden).toBe(true);
+      expect(itemAfterInput.costBasis).toBe(5.0);
+    });
+
+    test('should not show reset button when cost is not overridden', async () => {
+      const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
+      expect(resetBtn).toBeFalsy();
+    });
+
+    test('should show reset button when cost is overridden and useBuyListForCost is on', async () => {
+      const item = element['singlesItems'][0];
+      element['overrideCost'](item.clientId, true, 5.0);
+      await element.updateComplete;
+
+      const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
+      expect(resetBtn).toBeTruthy();
+    });
+
+    test('should not show reset button when useBuyListForCost is off even if overridden', async () => {
+      const item = element['singlesItems'][0];
+      element['overrideCost'](item.clientId, true, 5.0);
+      await element.updateComplete;
+
+      element['useBuyListForCost'] = false;
+      await element.updateComplete;
+
+      const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
+      expect(resetBtn).toBeFalsy();
+    });
+
+    test('should clear override when reset button is clicked', async () => {
+      const item = element['singlesItems'][0];
+      element['overrideCost'](item.clientId, true, 5.0);
+      await element.updateComplete;
+
+      expect(element['singlesItems'][0].costOverridden).toBe(true);
+
+      const resetBtn = element.shadowRoot!.querySelector('.reset-btn') as HTMLElement;
+      expect(resetBtn).toBeTruthy();
+      resetBtn.click();
+      await element.updateComplete;
+
+      expect(element['singlesItems'][0].costOverridden).toBe(false);
+    });
+
+    test('should render cost input inside a flex wrapper', async () => {
+      const costWrapper = element.shadowRoot!.querySelector('.cost-cell .cost-wrapper');
+      expect(costWrapper).toBeTruthy();
+
+      const costInput = costWrapper?.querySelector('wa-input');
+      expect(costInput).toBeTruthy();
+    });
+
+    test('should not have readonly attribute on cost input', async () => {
+      const html = element.shadowRoot!.innerHTML;
+      expect(html).toContain('cost-cell');
+      const costCellMatch = html.match(/cost-cell[\s\S]*?<\/td>/);
+      expect(costCellMatch).toBeTruthy();
+      expect(costCellMatch![0]).not.toContain('readonly');
     });
   });
 

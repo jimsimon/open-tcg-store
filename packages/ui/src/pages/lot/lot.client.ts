@@ -183,12 +183,14 @@ function nextClientId(): string {
   return `lot-item-${++clientIdCounter}`;
 }
 
-function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
+function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T & { cancel(): void } {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: never[]) => {
+  const debounced = ((...args: never[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
-  }) as unknown as T;
+  }) as unknown as T & { cancel(): void };
+  debounced.cancel = () => clearTimeout(timer);
+  return debounced;
 }
 
 function getTodayDateString(): string {
@@ -369,12 +371,15 @@ export class OgsLotPage extends LitElement {
       }
       .cost-cell {
         width: 100px;
-        position: relative;
       }
-      .cost-cell .reset-btn {
-        position: absolute;
-        top: 2px;
-        right: 2px;
+      .cost-cell .cost-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .cost-cell .cost-wrapper wa-input {
+        flex: 1;
+        min-width: 0;
       }
       .market-cell {
         width: 100px;
@@ -721,6 +726,10 @@ export class OgsLotPage extends LitElement {
     if (field === 'quantity') this.recalculateAutoCosts();
   }
 
+  private debouncedRecalculate = debounce(() => {
+    this.recalculateAutoCosts();
+  }, 300);
+
   private overrideCost(clientId: string, isSingle: boolean, value: number) {
     const items = isSingle ? this.singlesItems : this.sealedItems;
     const idx = items.findIndex((i) => i.clientId === clientId);
@@ -728,7 +737,7 @@ export class OgsLotPage extends LitElement {
     items[idx] = { ...items[idx], costBasis: value, costOverridden: true };
     if (isSingle) this.singlesItems = [...items];
     else this.sealedItems = [...items];
-    this.recalculateAutoCosts();
+    this.debouncedRecalculate();
   }
 
   private resetCost(clientId: string, isSingle: boolean) {
@@ -738,6 +747,7 @@ export class OgsLotPage extends LitElement {
     items[idx] = { ...items[idx], costOverridden: false };
     if (isSingle) this.singlesItems = [...items];
     else this.sealedItems = [...items];
+    this.debouncedRecalculate.cancel();
     this.recalculateAutoCosts();
   }
 
@@ -1025,8 +1035,6 @@ export class OgsLotPage extends LitElement {
   }
 
   private renderItemRow(item: LotItemRow, isSingle: boolean) {
-    const costReadOnly = this.useBuyListForCost && !item.costOverridden;
-
     return html`
       <tr>
         <td class="product-cell">
@@ -1106,39 +1114,33 @@ export class OgsLotPage extends LitElement {
           ></wa-input>
         </td>
         <td class="cost-cell">
-          <wa-input
-            size="small"
-            type="number"
-            step="0.01"
-            min="0"
-            .value="${String(item.costBasis)}"
-            ?readonly="${costReadOnly}"
-            @input="${(e: Event) => {
-              if (!costReadOnly) {
+          <div class="cost-wrapper">
+            <wa-input
+              size="small"
+              type="number"
+              step="0.01"
+              min="0"
+              .value="${String(item.costBasis)}"
+              @input="${(e: Event) => {
                 this.overrideCost(item.clientId, isSingle, parseFloat((e.target as HTMLInputElement).value) || 0);
-              }
-            }}"
-            @focus="${() => {
-              if (this.useBuyListForCost && !item.costOverridden) {
-                this.overrideCost(item.clientId, isSingle, item.costBasis);
-              }
-            }}"
-          >
-            <span slot="prefix">$</span>
-          </wa-input>
-          ${this.useBuyListForCost && item.costOverridden
-            ? html`
-                <wa-button
-                  class="reset-btn"
-                  variant="text"
-                  size="small"
-                  @click="${() => this.resetCost(item.clientId, isSingle)}"
-                  title="Reset to auto-calculated"
-                >
-                  <wa-icon name="rotate-left" style="font-size: 0.75rem;"></wa-icon>
-                </wa-button>
-              `
-            : nothing}
+              }}"
+            >
+              <span slot="prefix">$</span>
+            </wa-input>
+            ${this.useBuyListForCost && item.costOverridden
+              ? html`
+                  <wa-button
+                    class="reset-btn"
+                    variant="text"
+                    size="small"
+                    @click="${() => this.resetCost(item.clientId, isSingle)}"
+                    title="Reset to auto-calculated"
+                  >
+                    <wa-icon name="rotate-left" style="font-size: 0.75rem;"></wa-icon>
+                  </wa-button>
+                `
+              : nothing}
+          </div>
         </td>
         <td class="total-cell">${item.productId ? formatCurrency(item.costBasis * item.quantity) : '-'}</td>
         <td class="market-cell">${item.productId ? formatCurrency(item.marketPrice) : '-'}</td>
