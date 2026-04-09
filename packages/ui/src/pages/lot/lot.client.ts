@@ -183,12 +183,14 @@ function nextClientId(): string {
   return `lot-item-${++clientIdCounter}`;
 }
 
-function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
+function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T & { cancel(): void } {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: never[]) => {
+  const debounced = ((...args: never[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
-  }) as unknown as T;
+  }) as unknown as T & { cancel(): void };
+  debounced.cancel = () => clearTimeout(timer);
+  return debounced;
 }
 
 function getTodayDateString(): string {
@@ -745,6 +747,7 @@ export class OgsLotPage extends LitElement {
     items[idx] = { ...items[idx], costOverridden: false };
     if (isSingle) this.singlesItems = [...items];
     else this.sealedItems = [...items];
+    this.debouncedRecalculate.cancel();
     this.recalculateAutoCosts();
   }
 
