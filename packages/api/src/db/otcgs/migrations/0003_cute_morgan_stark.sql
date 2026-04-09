@@ -1,0 +1,1 @@
+ALTER TABLE `lot` DROP COLUMN `use_buy_list_for_cost`;

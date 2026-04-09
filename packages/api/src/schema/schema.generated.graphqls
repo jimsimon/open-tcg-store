@@ -149,7 +149,6 @@ input CreateLotInput {
   description: String
   items: [LotItemInput!]!
   name: String!
-  useBuyListForCost: Boolean!
 }
 
 input DashboardDateRange {
@@ -271,7 +270,6 @@ type Lot {
   totalCost: Float!
   totalMarketValue: Float!
   updatedAt: String!
-  useBuyListForCost: Boolean!
 }
 
 input LotFilters {
@@ -556,7 +554,7 @@ type Query {
   Public query - returns buy rate tables for all supported games.
   No authentication required.
   """
-  getPublicBuyRates(organizationId: String): PublicBuyRates!
+  getPublicBuyRates: PublicBuyRates!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
@@ -565,7 +563,7 @@ type Query {
 
   """
   Returns the games this store currently supports.
-  No authentication required (uses session org context).
+  No authentication required.
   """
   getSupportedGames: [SupportedGame!]!
   getTransactionLogs(filters: TransactionLogFilters, pagination: PaginationInput): TransactionLogPage!
@@ -743,7 +741,6 @@ input UpdateLotInput {
   id: Int!
   items: [LotItemInput!]!
   name: String!
-  useBuyListForCost: Boolean!
 }
 
 type UpdateOrderStatusResult {

@@ -9,7 +9,6 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
-import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
 import '@awesome.me/webawesome/dist/components/tab-group/tab-group.js';
@@ -20,7 +19,6 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { GetSupportedGamesQuery } from '../../lib/shared-queries';
 import { TypedDocumentString } from '../../graphql/graphql';
 
 // ---------------------------------------------------------------------------
@@ -54,7 +52,7 @@ const SearchProductsQuery = new TypedDocumentString(`
 const GetLotQuery = new TypedDocumentString(`
   query GetLot($id: Int!) {
     getLot(id: $id) {
-      id name description amountPaid acquisitionDate useBuyListForCost
+      id name description amountPaid acquisitionDate
       items {
         id productId productName gameName setName rarity isSingle isSealed
         condition quantity costBasis costOverridden marketValue
@@ -70,7 +68,6 @@ const GetLotQuery = new TypedDocumentString(`
       description: string | null;
       amountPaid: number;
       acquisitionDate: string;
-      useBuyListForCost: boolean;
       items: Array<{
         id: number;
         productId: number;
@@ -93,26 +90,6 @@ const GetLotQuery = new TypedDocumentString(`
     } | null;
   },
   { id: number }
->;
-
-const GetBuyRatesQuery = new TypedDocumentString(`
-  query GetBuyRatesForLot($categoryId: Int!) {
-    getBuyRates(categoryId: $categoryId) {
-      id description rate type rarity sortOrder
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    getBuyRates: Array<{
-      id: number;
-      description: string;
-      rate: number;
-      type: string;
-      rarity: string | null;
-      sortOrder: number;
-    }>;
-  },
-  { categoryId: number }
 >;
 
 const CreateLotMutation = new TypedDocumentString(`
@@ -157,13 +134,6 @@ interface LotItemRow {
     isSealed: boolean;
     marketPrice: number;
   }>;
-}
-
-interface BuyRateEntry {
-  description: string;
-  rate: number;
-  type: string;
-  rarity: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -429,47 +399,22 @@ export class OgsLotPage extends LitElement {
   @state() description = '';
   @state() amountPaid = 0;
   @state() acquisitionDate = getTodayDateString();
-  @state() useBuyListForCost = true;
   @state() activeTab = 'singles';
   @state() singlesItems: LotItemRow[] = [];
   @state() sealedItems: LotItemRow[] = [];
   @state() saving = false;
   @state() loading = false;
   @state() validationErrors: string[] = [];
-  @state() buyRatesByGame: Map<number, BuyRateEntry[]> = new Map();
-  @state() gameCategoryMap: Map<string, number> = new Map();
 
   private isEditMode = false;
   private editLotId: number | null = null;
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.loadBuyRates();
     if (this.lotId) {
       this.isEditMode = true;
       this.editLotId = parseInt(this.lotId, 10);
       this.loadLot();
-    }
-  }
-
-  private async loadBuyRates() {
-    try {
-      const gamesResult = await execute(GetSupportedGamesQuery);
-      const games = gamesResult?.data?.getSupportedGames ?? [];
-      const map = new Map<string, number>();
-      for (const g of games) map.set(g.name, g.categoryId);
-      this.gameCategoryMap = map;
-
-      const ratePromises = games.map(async (game) => {
-        const result = await execute(GetBuyRatesQuery, { categoryId: game.categoryId });
-        return { categoryId: game.categoryId, entries: result?.data?.getBuyRates ?? [] };
-      });
-      const results = await Promise.all(ratePromises);
-      const rateMap = new Map<number, BuyRateEntry[]>();
-      for (const r of results) rateMap.set(r.categoryId, r.entries);
-      this.buyRatesByGame = rateMap;
-    } catch {
-      /* ignore */
     }
   }
 
@@ -485,7 +430,6 @@ export class OgsLotPage extends LitElement {
       this.description = lot.description ?? '';
       this.amountPaid = lot.amountPaid;
       this.acquisitionDate = lot.acquisitionDate;
-      this.useBuyListForCost = lot.useBuyListForCost;
 
       const singles: LotItemRow[] = [];
       const sealed: LotItemRow[] = [];
@@ -520,18 +464,9 @@ export class OgsLotPage extends LitElement {
     }
   }
 
-  // --- Buy rate helpers ---
-
-  private getBuyRateForRarity(gameName: string, rarity: string | null): BuyRateEntry | null {
-    const categoryId = this.gameCategoryMap.get(gameName);
-    if (!categoryId) return null;
-    const entries = this.buyRatesByGame.get(categoryId) ?? [];
-    if (!rarity) return entries[0] ?? null; // fallback to first entry for sealed
-    return entries.find((e) => e.rarity === rarity) ?? null;
-  }
+  // --- Cost distribution ---
 
   private recalculateAutoCosts() {
-    if (!this.useBuyListForCost) return;
     const allItems = [...this.singlesItems, ...this.sealedItems];
 
     // Pass 1: compute overridden total
@@ -542,29 +477,20 @@ export class OgsLotPage extends LitElement {
       }
     }
 
-    // Pass 2: compute buy-rate-weighted costs for auto items
+    // Pass 2: compute total market value of auto (non-overridden) items
     const autoItems = allItems.filter((i) => !i.costOverridden && i.productId);
-    let totalBuyRateCost = 0;
-    const itemBuyRateCosts: Map<string, number> = new Map();
+    let totalAutoMarketValue = 0;
     for (const item of autoItems) {
-      const rate = this.getBuyRateForRarity(item.gameName, item.rarity);
-      let buyRateCost = 0;
-      if (rate) {
-        buyRateCost =
-          rate.type === 'percentage' ? rate.rate * item.marketPrice * item.quantity : rate.rate * item.quantity;
-      }
-      itemBuyRateCosts.set(item.clientId, buyRateCost);
-      totalBuyRateCost += buyRateCost;
+      totalAutoMarketValue += item.marketPrice * item.quantity;
     }
 
-    // Pass 3: distribute remaining budget
+    // Pass 3: distribute remaining budget proportionally by market price
     const remainingBudget = this.amountPaid - overriddenTotal;
     for (const item of autoItems) {
-      const buyRateCost = itemBuyRateCosts.get(item.clientId) ?? 0;
-      if (totalBuyRateCost > 0 && item.quantity > 0) {
-        item.costBasis = Math.round((((buyRateCost / totalBuyRateCost) * remainingBudget) / item.quantity) * 100) / 100;
-      } else if (autoItems.length > 0 && item.quantity > 0) {
-        item.costBasis = Math.round((remainingBudget / autoItems.reduce((s, i) => s + i.quantity, 0)) * 100) / 100;
+      if (totalAutoMarketValue > 0 && item.quantity > 0) {
+        const rowMarketValue = item.marketPrice * item.quantity;
+        item.costBasis =
+          Math.round((((rowMarketValue / totalAutoMarketValue) * remainingBudget) / item.quantity) * 100) / 100;
       }
     }
 
@@ -791,7 +717,6 @@ export class OgsLotPage extends LitElement {
       description: this.description.trim() || null,
       amountPaid: this.amountPaid,
       acquisitionDate: this.acquisitionDate,
-      useBuyListForCost: this.useBuyListForCost,
       items,
     };
 
@@ -915,15 +840,6 @@ export class OgsLotPage extends LitElement {
               this.acquisitionDate = (e.target as HTMLInputElement).value;
             }}"
           ></wa-input>
-          <wa-checkbox
-            ?checked="${this.useBuyListForCost}"
-            @wa-change="${(e: CustomEvent) => {
-              this.useBuyListForCost = (e.target as HTMLInputElement).checked;
-              this.recalculateAutoCosts();
-            }}"
-          >
-            Use buy list for cost
-          </wa-checkbox>
         </div>
       </wa-card>
     `;
@@ -1119,7 +1035,7 @@ export class OgsLotPage extends LitElement {
             >
               <span slot="prefix">$</span>
             </wa-input>
-            ${this.useBuyListForCost && item.costOverridden
+            ${item.costOverridden
               ? html`
                   <wa-button
                     class="reset-btn"

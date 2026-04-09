@@ -11,7 +11,6 @@ export const lot = sqliteTable(
     description: text('description', { length: 2000 }),
     amountPaid: real('amount_paid').notNull(),
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
-    useBuyListForCost: integer('use_buy_list_for_cost').notNull().default(1), // boolean
     createdAt: integer('created_at', { mode: 'timestamp' })
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),

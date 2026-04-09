@@ -178,7 +178,6 @@ export type CreateLotInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
-  useBuyListForCost: Scalars['Boolean']['input'];
 };
 
 export type DashboardDateRange = {
@@ -310,7 +309,6 @@ export type Lot = {
   totalCost: Scalars['Float']['output'];
   totalMarketValue: Scalars['Float']['output'];
   updatedAt: Scalars['String']['output'];
-  useBuyListForCost: Scalars['Boolean']['output'];
 };
 
 export type LotFilters = {
@@ -760,7 +758,7 @@ export type Query = {
   getStoreSettings: StoreSettings;
   /**
    * Returns the games this store currently supports.
-   * No authentication required (uses session org context).
+   * No authentication required.
    */
   getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
@@ -866,11 +864,6 @@ export type QuerygetProductListingsArgs = {
   filters?: InputMaybe<ProductListingFilters>;
   organizationId?: InputMaybe<Scalars['String']['input']>;
   pagination?: InputMaybe<ProductListingPagination>;
-};
-
-
-export type QuerygetPublicBuyRatesArgs = {
-  organizationId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1089,7 +1082,6 @@ export type UpdateLotInput = {
   id: Scalars['Int']['input'];
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
-  useBuyListForCost: Scalars['Boolean']['input'];
 };
 
 export type UpdateOrderStatusResult = {
@@ -1598,7 +1590,6 @@ export type LotResolvers<ContextType = any, ParentType extends ResolversParentTy
   totalCost?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   totalMarketValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  useBuyListForCost?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
 export type LotItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotItem'] = ResolversParentTypes['LotItem']> = {
@@ -1813,7 +1804,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
-  getPublicBuyRates?: Resolver<ResolversTypes['PublicBuyRates'], ParentType, ContextType, Partial<QuerygetPublicBuyRatesArgs>>;
+  getPublicBuyRates?: Resolver<ResolversTypes['PublicBuyRates'], ParentType, ContextType>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
