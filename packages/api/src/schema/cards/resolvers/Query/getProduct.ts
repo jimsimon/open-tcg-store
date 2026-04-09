@@ -30,6 +30,11 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (
           name: true,
         },
       },
+      category: {
+        columns: {
+          name: true,
+        },
+      },
       prices: {
         columns: {
           marketPrice: true,
@@ -90,18 +95,11 @@ export const getProduct: NonNullable<QueryResolvers['getProduct']> = async (
     )
     .orderBy(inventoryItem.price);
 
-  // Map game name from categoryId
-  function getGameName(catId: number | null | undefined): string {
-    if (catId === 1) return 'Magic';
-    if (catId === 2) return 'Pokemon';
-    return 'Unknown';
-  }
-
   return {
     id: result.id.toString(),
     name: result.name,
     setName: result.group?.name ?? 'Unknown Set',
-    gameName: getGameName(result.categoryId),
+    gameName: result.category?.name ?? 'Unknown',
     rarity: extendedDataMap.Rarity ?? null,
     type: extendedDataMap.SubType ?? extendedDataMap['Card Type'] ?? null,
     text: extendedDataMap.OracleText ?? extendedDataMap.CardText ?? null,

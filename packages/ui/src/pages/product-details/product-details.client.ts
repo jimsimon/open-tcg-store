@@ -134,6 +134,89 @@ export class ProductDetailsPage extends LitElement {
       ${unsafeCSS(utilityStyles)}
     `,
     css`
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      /* --- Breadcrumb --- */
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-muted);
+      }
+
+      .breadcrumb a {
+        color: var(--wa-color-text-link);
+        text-decoration: none;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .breadcrumb wa-icon {
+        font-size: 0.75rem;
+      }
+
+      /* --- Page Header --- */
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .page-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--wa-border-radius-l);
+        background: var(--wa-color-brand-fill-normal);
+        color: var(--wa-color-brand-on-normal);
+        flex-shrink: 0;
+      }
+
+      .page-header-content {
+        flex: 1;
+      }
+
+      .page-header h2 {
+        margin: 0;
+        font-size: var(--wa-font-size-2xl);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .page-header p {
+        margin: 0.25rem 0 0 0;
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
+
+      /* --- Section Header --- */
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-size: var(--wa-font-size-l);
+        font-weight: 700;
+      }
+
+      .section-header wa-icon {
+        color: var(--wa-color-brand-60);
+        font-size: 1.125rem;
+      }
+
       caption {
         text-align: left;
         font-size: var(--wa-font-size-xl);
@@ -154,6 +237,10 @@ export class ProductDetailsPage extends LitElement {
         width: 100%;
       }
 
+      .cart-controls wa-input::part(form-control-label) {
+        display: none;
+      }
+
       .out-of-stock {
         color: var(--wa-color-text-secondary);
         font-style: italic;
@@ -168,6 +255,10 @@ export class ProductDetailsPage extends LitElement {
         text-align: center;
       }
 
+      td {
+        vertical-align: middle;
+      }
+
       .sealed-cart-section {
         display: flex;
         gap: 1rem;
@@ -175,6 +266,21 @@ export class ProductDetailsPage extends LitElement {
         margin-top: 1rem;
         padding-top: 1rem;
         border-top: 1px solid var(--wa-color-surface-border);
+      }
+
+      .sealed-cart-section wa-input::part(form-control-label) {
+        display: none;
+      }
+
+      .sealed-price {
+        font-size: var(--wa-font-size-2xl);
+        font-weight: 700;
+        color: var(--wa-color-text-normal);
+      }
+
+      .sealed-available {
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-quiet);
       }
 
       .loading-container {
@@ -318,8 +424,27 @@ export class ProductDetailsPage extends LitElement {
 
     if (!this.product) return nothing;
 
+    const p = this.product;
+    const icon = p.isSingle ? 'id-card' : 'box';
+    const backUrl = p.isSingle ? '/products/singles' : '/products/sealed';
+    const backLabel = p.isSingle ? 'Single Cards' : 'Sealed Products';
+    const subtitle = [p.gameName, p.setName].filter(Boolean).join(' / ');
+
     return html`
-      <h1>${this.product.name}</h1>
+      <div class="breadcrumb">
+        <a href="${backUrl}">${backLabel}</a>
+        <wa-icon name="chevron-right"></wa-icon>
+        <span>${p.name}</span>
+      </div>
+      <div class="page-header">
+        <div class="page-header-icon">
+          <wa-icon name="${icon}" style="font-size: 1.5rem;"></wa-icon>
+        </div>
+        <div class="page-header-content">
+          <h2>${p.name}</h2>
+          <p>${subtitle}</p>
+        </div>
+      </div>
       ${this.cartMessage
         ? html`<wa-callout variant="success" style="margin-bottom: 1rem;">
             <wa-icon slot="icon" name="circle-check"></wa-icon>
@@ -334,7 +459,7 @@ export class ProductDetailsPage extends LitElement {
         : nothing}
       <div class="wa-stack">
         ${this.product.isSingle ? this.renderSingleDetails() : this.renderSealedDetails()}
-        ${this.renderPricingSection()}
+        ${this.product.isSingle ? this.renderPricingSection() : nothing}
       </div>
     `;
   }
@@ -345,7 +470,6 @@ export class ProductDetailsPage extends LitElement {
     const p = this.product!;
     return html`
       <wa-card appearance="outlined">
-        <h2 slot="header">Details</h2>
         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
             <img src="${p.images?.large}" alt="" />
@@ -396,7 +520,6 @@ export class ProductDetailsPage extends LitElement {
 
     return html`
       <wa-card appearance="outlined">
-        <h2 slot="header">Details</h2>
         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
             <img src="${p.images?.large}" alt="" />
@@ -417,7 +540,12 @@ export class ProductDetailsPage extends LitElement {
         ${inStock
           ? html`
               <div class="sealed-cart-section">
-                <wa-input type="number" min="1" max="${totalQuantity}" value="1" style="width: 100px;">
+                ${p.inventoryRecords[0]?.price != null
+                  ? html`<span class="sealed-price">$${p.inventoryRecords[0].price.toFixed(2)}</span>`
+                  : nothing}
+                <span class="sealed-available">${totalQuantity} available</span>
+                <div style="flex: 1;"></div>
+                <wa-input type="number" min="1" max="${totalQuantity}" value="1" style="width: 80px;">
                   <span slot="label" class="wa-visually-hidden">Quantity</span>
                 </wa-input>
                 <wa-button
@@ -428,7 +556,6 @@ export class ProductDetailsPage extends LitElement {
                   <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
                   ${this.addingToCart ? 'Adding...' : 'Add to Cart'}
                 </wa-button>
-                <span>${totalQuantity} available</span>
               </div>
             `
           : html`<div class="sealed-cart-section"><span class="out-of-stock">Out of Stock</span></div>`}
@@ -445,7 +572,10 @@ export class ProductDetailsPage extends LitElement {
     if (records.length === 0) {
       return html`
         <wa-card appearance="outlined">
-          <h2 slot="header">Pricing & Availability</h2>
+          <div slot="header" class="section-header">
+            <wa-icon name="tags"></wa-icon>
+            <span>Pricing & Availability</span>
+          </div>
           <div class="out-of-stock" style="padding: 1rem; text-align: center;">Out of Stock</div>
         </wa-card>
       `;
@@ -490,7 +620,10 @@ export class ProductDetailsPage extends LitElement {
 
     return html`
       <wa-card appearance="outlined">
-        <h2 slot="header">Pricing & Availability</h2>
+        <div slot="header" class="section-header">
+          <wa-icon name="tags"></wa-icon>
+          <span>Pricing & Availability</span>
+        </div>
         <table class="wa-table wa-zebra-rows wa-hover-rows">
           <thead>
             <tr>

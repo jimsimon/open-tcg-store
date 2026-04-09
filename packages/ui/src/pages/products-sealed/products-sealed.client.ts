@@ -54,6 +54,11 @@ interface ProductListingPage {
   totalPages: number;
 }
 
+interface SetOption {
+  code: string;
+  name: string;
+}
+
 // --- GraphQL ---
 
 const AddToCartMutation = new TypedDocumentString(`
@@ -116,12 +121,25 @@ const GetProductListingsQuery = new TypedDocumentString(`
     filters?: {
       searchTerm?: string | null;
       gameName?: string | null;
+      setCode?: string | null;
       inStockOnly?: boolean | null;
       includeSingles?: boolean | null;
       includeSealed?: boolean | null;
     } | null;
     pagination?: { page?: number | null; pageSize?: number | null } | null;
   }
+>;
+
+const GetSetsQuery = new TypedDocumentString(`
+  query GetSets($game: String!, $filters: SetFilters) {
+    getSets(game: $game, filters: $filters) {
+      code
+      name
+    }
+  }
+`) as unknown as TypedDocumentString<
+  { getSets: SetOption[] },
+  { game: string; filters?: { searchTerm?: string | null } | null }
 >;
 
 // --- Debounce utility ---
@@ -180,10 +198,15 @@ export class OgsProductsSealedPage extends LitElement {
   // Supported games
   @state() private supportedGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
 
-  // Filter state (no Set or Condition for sealed)
+  // Filter state
   @state() private gameFilter = '';
+  @state() private setFilter = '';
   @state() private searchTerm = '';
   @state() private inStockOnly = true;
+
+  // Sets data
+  @state() private sets: SetOption[] = [];
+  @state() private setsLoading = false;
 
   // Pagination state
   @state() private currentPage = 1;
@@ -199,6 +222,9 @@ export class OgsProductsSealedPage extends LitElement {
   @state() private cartError = '';
   @state() private addingToCart = false;
 
+  // Request counter to prevent stale responses from overwriting newer data
+  private fetchRequestId = 0;
+
   // --- Debounced handlers ---
 
   private debouncedSearch = debounce(() => {
@@ -212,6 +238,7 @@ export class OgsProductsSealedPage extends LitElement {
     super.connectedCallback();
     this.loadFiltersFromUrl();
     this.fetchProducts();
+    this.fetchSets();
     this.fetchSupportedGames();
   }
 
@@ -231,6 +258,7 @@ export class OgsProductsSealedPage extends LitElement {
     const params = new URLSearchParams(window.location.search);
     this.searchTerm = params.get('search') ?? '';
     this.gameFilter = params.get('game') ?? '';
+    this.setFilter = params.get('set') ?? '';
     this.inStockOnly = params.get('inStock') !== 'false'; // defaults to true
     const page = params.get('page');
     if (page) this.currentPage = Number.parseInt(page, 10) || 1;
@@ -247,6 +275,7 @@ export class OgsProductsSealedPage extends LitElement {
     };
     setOrDelete('search', this.searchTerm);
     setOrDelete('game', this.gameFilter);
+    setOrDelete('set', this.setFilter);
     if (!this.inStockOnly) {
       url.searchParams.set('inStock', 'false');
     } else {
@@ -273,7 +302,26 @@ export class OgsProductsSealedPage extends LitElement {
     }
   }
 
+  private async fetchSets() {
+    if (!this.gameFilter) {
+      this.sets = [];
+      return;
+    }
+    this.setsLoading = true;
+    try {
+      const result = await execute(GetSetsQuery, { game: this.gameFilter });
+      if (result?.data?.getSets) {
+        this.sets = result.data.getSets;
+      }
+    } catch {
+      this.sets = [];
+    } finally {
+      this.setsLoading = false;
+    }
+  }
+
   private async fetchProducts() {
+    const requestId = ++this.fetchRequestId;
     this.loading = true;
     this.error = '';
     this.updateQueryParams();
@@ -285,12 +333,16 @@ export class OgsProductsSealedPage extends LitElement {
     };
     if (this.searchTerm) filters.searchTerm = this.searchTerm;
     if (this.gameFilter) filters.gameName = this.gameFilter;
+    if (this.setFilter) filters.setCode = this.setFilter;
 
     try {
       const result = await execute(GetProductListingsQuery, {
         filters,
         pagination: { page: this.currentPage, pageSize: this.pageSize },
       });
+
+      // Discard stale response if a newer request was fired
+      if (requestId !== this.fetchRequestId) return;
 
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
@@ -302,9 +354,13 @@ export class OgsProductsSealedPage extends LitElement {
         this.currentPage = data.page;
       }
     } catch (e) {
+      // Discard stale error if a newer request was fired
+      if (requestId !== this.fetchRequestId) return;
       this.error = e instanceof Error ? e.message : 'Failed to load products';
     } finally {
-      this.loading = false;
+      if (requestId === this.fetchRequestId) {
+        this.loading = false;
+      }
     }
   }
 
@@ -320,6 +376,16 @@ export class OgsProductsSealedPage extends LitElement {
     const select = event.target as WaSelect;
     const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
     this.gameFilter = value;
+    this.setFilter = ''; // reset set when game changes
+    this.currentPage = 1;
+    this.fetchSets();
+    this.fetchProducts();
+  }
+
+  private handleSetFilterChange(event: Event) {
+    const select = event.target as WaSelect;
+    const value = Array.isArray(select.value) ? select.value.join(',') : (select.value as string);
+    this.setFilter = value;
     this.currentPage = 1;
     this.fetchProducts();
   }
@@ -436,7 +502,7 @@ export class OgsProductsSealedPage extends LitElement {
     `;
   }
 
-  // --- Filter Bar (no Set filter for sealed) ---
+  // --- Filter Bar ---
 
   private renderFilterBar() {
     return html`
@@ -452,6 +518,16 @@ export class OgsProductsSealedPage extends LitElement {
         <wa-select placeholder="Game" .value="${this.gameFilter}" @change="${this.handleGameFilterChange}" clearable>
           <wa-option value="">All Games</wa-option>
           ${this.supportedGames.map((g) => html`<wa-option value="${g.name}">${g.displayName}</wa-option>`)}
+        </wa-select>
+        <wa-select
+          placeholder="Set"
+          .value="${this.setFilter}"
+          @change="${this.handleSetFilterChange}"
+          clearable
+          ?disabled="${!this.gameFilter || this.setsLoading}"
+        >
+          <wa-option value="">All Sets</wa-option>
+          ${this.sets.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
         </wa-select>
         <div
           class="in-stock-toggle ${this.inStockOnly ? 'active' : ''}"
@@ -537,9 +613,7 @@ export class OgsProductsSealedPage extends LitElement {
                   </td>
                   <td class="price-cell">
                     ${product.lowestPrice != null
-                      ? html`<span class="price-value"
-                          ><span class="price-from">from</span> $${product.lowestPrice}</span
-                        >`
+                      ? html`<span class="price-value">$${product.lowestPrice}</span>`
                       : html`<span class="out-of-stock-text">—</span>`}
                   </td>
                   <td>

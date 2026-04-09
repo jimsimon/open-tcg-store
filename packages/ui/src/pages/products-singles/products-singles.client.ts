@@ -286,6 +286,9 @@ export class OgsProductsSinglesPage extends LitElement {
   @state() private cartError = '';
   @state() private addingToCart = false;
 
+  // Request counter to prevent stale responses from overwriting newer data
+  private fetchRequestId = 0;
+
   // --- Debounced handlers ---
 
   private debouncedSearch = debounce(() => {
@@ -366,6 +369,7 @@ export class OgsProductsSinglesPage extends LitElement {
   }
 
   private async fetchProducts() {
+    const requestId = ++this.fetchRequestId;
     this.loading = true;
     this.error = '';
     this.selectedConditions = new Map();
@@ -387,6 +391,9 @@ export class OgsProductsSinglesPage extends LitElement {
         pagination: { page: this.currentPage, pageSize: this.pageSize },
       });
 
+      // Discard stale response if a newer request was fired
+      if (requestId !== this.fetchRequestId) return;
+
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
@@ -397,9 +404,13 @@ export class OgsProductsSinglesPage extends LitElement {
         this.currentPage = data.page;
       }
     } catch (e) {
+      // Discard stale error if a newer request was fired
+      if (requestId !== this.fetchRequestId) return;
       this.error = e instanceof Error ? e.message : 'Failed to load products';
     } finally {
-      this.loading = false;
+      if (requestId === this.fetchRequestId) {
+        this.loading = false;
+      }
     }
   }
 

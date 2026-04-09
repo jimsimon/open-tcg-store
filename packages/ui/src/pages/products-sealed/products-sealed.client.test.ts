@@ -46,6 +46,11 @@ function setupDefaultMock(
         data: { getSupportedGames: supportedGames },
       });
     }
+    if (queryStr.includes('GetSets')) {
+      return Promise.resolve({
+        data: { getSets: [] },
+      });
+    }
     return Promise.resolve({
       data: {
         getProductListings: {
@@ -107,17 +112,21 @@ describe('ogs-products-sealed-page', () => {
     expect(header?.textContent).toContain('Sealed Products');
   });
 
-  test('should display the filter bar with Search and Game filters', async () => {
+  test('should display the filter bar with Search, Game, and Set filters', async () => {
     const searchInput = element.shadowRoot!.querySelector('wa-input[placeholder="Search products..."]');
     expect(searchInput).toBeTruthy();
 
     const gameSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Game"]');
     expect(gameSelect).toBeTruthy();
+
+    const setSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Set"]');
+    expect(setSelect).toBeTruthy();
   });
 
-  test('should NOT display Set or Condition filters', async () => {
+  test('should display Set filter (disabled without game) and NOT display Condition filter', async () => {
     const setSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Set"]');
-    expect(setSelect).toBeFalsy();
+    expect(setSelect).toBeTruthy();
+    expect(setSelect?.hasAttribute('disabled')).toBe(true);
 
     const conditionSelect = element.shadowRoot!.querySelector('wa-select[placeholder="Condition"]');
     expect(conditionSelect).toBeFalsy();

@@ -17,19 +17,28 @@ export const getCard: NonNullable<QueryResolvers['getCard']> = async (
 
   const organizationId = getOrganizationIdOptional(ctx);
 
+  const cat = await otcgs.query.category.findFirst({
+    columns: { id: true },
+    where: (c, { eq }) => eq(c.name, game),
+  });
+
+  if (!cat) {
+    throw new Error(`Unsupported game: ${game}`);
+  }
+
   try {
-    if (game === 'magic' || game === 'pokemon') {
-      return await getCardFromDb(Number.parseInt(cardId, 10), organizationId);
-    }
+    return await getCardFromDb(Number.parseInt(cardId, 10), cat.id, organizationId);
   } catch (e) {
     console.error(e);
     throw e;
   }
-
-  throw new Error(`Unsupported game: ${game}`);
 };
 
-async function getCardFromDb(cardId: number, organizationId: string | null): Promise<NonNullable<Card>> {
+async function getCardFromDb(
+  cardId: number,
+  categoryId: number,
+  organizationId: string | null,
+): Promise<NonNullable<Card>> {
   const result = await otcgs.query.product.findFirst({
     columns: {
       id: true,
@@ -56,7 +65,7 @@ async function getCardFromDb(cardId: number, organizationId: string | null): Pro
         },
       },
     },
-    where: (product, { eq }) => eq(product.id, cardId),
+    where: (product, { eq, and }) => and(eq(product.id, cardId), eq(product.categoryId, categoryId)),
   });
 
   if (!result) {

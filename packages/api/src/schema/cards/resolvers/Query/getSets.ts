@@ -2,14 +2,16 @@ import { otcgs } from '../../../../db';
 import type { QueryResolvers } from '../../../types.generated';
 
 export const getSets: NonNullable<QueryResolvers['getSets']> = async (_parent, { game, filters }, _ctx) => {
-  let categoryId;
-  if (game === 'magic') {
-    categoryId = 1;
-  } else if (game === 'pokemon') {
-    categoryId = 2;
-  } else {
+  const cat = await otcgs.query.category.findFirst({
+    columns: { id: true },
+    where: (c, { eq }) => eq(c.name, game),
+  });
+
+  if (!cat) {
     throw new Error(`Unsupported game: ${game}`);
   }
+
+  const categoryId = cat.id;
 
   const results = await otcgs.query.group.findMany({
     columns: {

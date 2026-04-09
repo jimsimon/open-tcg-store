@@ -38,12 +38,16 @@ async function queryProductListings(
   const includeSealed = filters?.includeSealed;
   const inStockOnly = filters?.inStockOnly ?? false;
 
-  // Resolve game name to category ID
+  // Resolve game name to category ID via database lookup
   let categoryId: number | undefined;
-  if (filters?.gameName === 'magic') {
-    categoryId = 1;
-  } else if (filters?.gameName === 'pokemon') {
-    categoryId = 2;
+  if (filters?.gameName) {
+    const cat = await otcgs.query.category.findFirst({
+      columns: { id: true },
+      where: (c, { eq }) => eq(c.name, filters.gameName!),
+    });
+    if (cat) {
+      categoryId = cat.id;
+    }
   }
 
   // Resolve condition filter
@@ -201,6 +205,11 @@ async function queryProductListings(
           name: true,
         },
       },
+      category: {
+        columns: {
+          name: true,
+        },
+      },
       prices: {
         columns: {
           subTypeName: true,
@@ -219,13 +228,6 @@ async function queryProductListings(
 
   // Build a lookup map
   const productMap = new Map(productsWithGroups.map((p) => [p.id, p]));
-
-  // Map game name from categoryId
-  function getGameName(catId: number | null | undefined): string {
-    if (catId === 1) return 'Magic';
-    if (catId === 2) return 'Pokemon';
-    return 'Unknown';
-  }
 
   // Fetch per-condition pricing for all product IDs
   // Join inventory_item with stock to derive quantity per condition
@@ -346,7 +348,7 @@ async function queryProductListings(
       id: r.id.toString(),
       name: r.name,
       setName: productData?.group?.name ?? 'Unknown Set',
-      gameName: getGameName(productData?.categoryId),
+      gameName: productData?.category?.name ?? 'Unknown',
       rarity: extendedDataMap.Rarity ?? null,
       finishes,
       images: {

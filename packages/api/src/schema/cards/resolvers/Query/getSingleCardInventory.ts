@@ -14,17 +14,21 @@ export const getSingleCardInventory: NonNullable<QueryResolvers['getSingleCardIn
 ) => {
   const organizationId = getOrganizationIdOptional(ctx);
 
-  try {
-    if (game === 'magic') {
-      return await getInventory(1, filters, organizationId);
-    } else if (game === 'pokemon') {
-      return await getInventory(2, filters, organizationId);
-    }
-  } catch (e) {
-    console.error(e);
+  const cat = await otcgs.query.category.findFirst({
+    columns: { id: true },
+    where: (c, { eq }) => eq(c.name, game),
+  });
+
+  if (!cat) {
+    throw new Error(`Unsupported game: ${game}`);
   }
 
-  throw new Error(`Unsupported game: ${game}`);
+  try {
+    return await getInventory(cat.id, filters, organizationId);
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 };
 
 async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFilters>, organizationId: string | null) {
