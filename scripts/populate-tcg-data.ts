@@ -1,5 +1,7 @@
 #!/usr/bin/env -S npx tsx
 
+import { SQL, getTableColumns, sql, inArray } from 'drizzle-orm';
+import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { tcgData } from '../packages/api/src/db/tcg-data/index';
 import {
   category as dbCategory,
@@ -11,7 +13,10 @@ import {
 } from '../packages/api/src/db/tcg-data/schema';
 import { mapRarity } from './lib/rarity';
 
+// ---------------------------------------------------------------------------
 // Types for the API responses
+// ---------------------------------------------------------------------------
+
 interface Category {
   categoryId: number;
   name: string;
@@ -76,7 +81,12 @@ interface ApiResponse<T> {
   results: T[];
 }
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const MAGIC_CATEGORY_ID = 1;
+const BATCH_SIZE = 500;
 
 /**
  * Per //tcgcsv.com/faq#missing-categories:
@@ -89,204 +99,379 @@ const MAGIC_CATEGORY_ID = 1;
  */
 const categoryIdsToSkip = [21, 69, 70];
 
-async function fetchTcgData() {
-  try {
-    const categoriesUrl = 'https://tcgcsv.com/tcgplayer/categories';
-    console.log(`Fetching categories: ${categoriesUrl}`);
-    const categoriesResponse = await fetch(categoriesUrl);
-    if (!categoriesResponse.ok) {
-      throw new Error(`Failed to fetch categories: ${categoriesResponse.status} ${categoriesResponse.statusText}`);
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Split an array into batches of a given size. */
+function batchify<T>(items: T[], size: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    batches.push(items.slice(i, i + size));
+  }
+  return batches;
+}
+
+/**
+ * Build an object that maps each column key to `excluded.<column_name>`,
+ * for use as the `set` in `onConflictDoUpdate`.
+ */
+function buildConflictUpdateColumns<T extends SQLiteTable, Q extends keyof T['_']['columns']>(table: T, columns: Q[]) {
+  const cls = getTableColumns(table);
+  return columns.reduce(
+    (acc, column) => {
+      const colName = cls[column].name;
+      acc[column] = sql.raw(`excluded.${colName}`);
+      return acc;
+    },
+    {} as Record<Q, SQL>,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Fetch helpers
+// ---------------------------------------------------------------------------
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+// ---------------------------------------------------------------------------
+// Pre-built conflict update column sets
+// ---------------------------------------------------------------------------
+
+const categoryUpdateColumns = buildConflictUpdateColumns(dbCategory, [
+  'tcgpCategoryId',
+  'displayName',
+  'seoCategoryName',
+  'categoryDescription',
+  'categoryPageTitle',
+  'sealedLabel',
+  'nonSealedLabel',
+  'conditionGuideUrl',
+  'isScannable',
+  'popularity',
+  'isDirect',
+  'modifiedOn',
+]);
+
+const groupUpdateColumns = buildConflictUpdateColumns(dbGroup, [
+  'tcgpGroupId',
+  'tcgpCategoryId',
+  'abbreviation',
+  'isSupplemental',
+  'publishedOn',
+  'modifiedOn',
+]);
+
+const productUpdateColumns = buildConflictUpdateColumns(dbProduct, [
+  'tcgpProductId',
+  'tcgpGroupId',
+  'tcgpCategoryId',
+  'categoryId',
+  'cleanName',
+  'imageUrl',
+  'url',
+  'modifiedOn',
+  'imageCount',
+]);
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function populateTcgData() {
+  const isFresh = process.argv.includes('--fresh');
+
+  if (isFresh) {
+    console.log('--fresh flag detected: truncating all tables before inserting');
+    // Delete child tables first to respect foreign key constraints
+    await tcgData.delete(productExtendedData);
+    await tcgData.delete(productPresaleInfo);
+    await tcgData.delete(price);
+    await tcgData.delete(dbProduct);
+    await tcgData.delete(dbGroup);
+    await tcgData.delete(dbCategory);
+    console.log('All tables truncated');
+  }
+
+  // --- Fetch and upsert categories ------------------------------------------
+
+  const categoriesUrl = 'https://tcgcsv.com/tcgplayer/categories';
+  console.log(`Fetching categories: ${categoriesUrl}`);
+  const categoriesData = await fetchJson<ApiResponse<Category>>(categoriesUrl);
+  const allCategories = categoriesData.results.filter((c) => !categoryIdsToSkip.includes(c.categoryId));
+
+  // Verify category names are unique
+  const seenCategoryNames = new Set<string>();
+  for (const c of allCategories) {
+    if (seenCategoryNames.has(c.name)) {
+      throw new Error(
+        `Duplicate category name "${c.name}" (tcgpCategoryId=${c.categoryId}). Cannot upsert by name when names are not unique.`,
+      );
     }
-    const categoriesData: ApiResponse<Category> = await categoriesResponse.json();
-    const allCategories = categoriesData.results;
-    const categoriesToProcess = allCategories.filter((c) => !categoryIdsToSkip.includes(c.categoryId));
+    seenCategoryNames.add(c.name);
+  }
+  const categories = allCategories;
 
-    for (const category of categoriesToProcess) {
-      const { categoryId } = category;
-      console.log(`Creating category for: ${category.name}`);
-      const [{ insertedCategoryId }] = await tcgData
-        .insert(dbCategory)
-        .values({
-          tcgpCategoryId: category.categoryId,
-          name: category.name,
-          modifiedOn: new Date(category.modifiedOn),
-          displayName: category.displayName,
-          seoCategoryName: category.seoCategoryName,
-          categoryDescription: category.categoryDescription,
-          categoryPageTitle: category.categoryPageTitle,
-          sealedLabel: category.sealedLabel,
-          nonSealedLabel: category.nonSealedLabel,
-          conditionGuideUrl: category.conditionGuideUrl,
-          isScannable: category.isScannable,
-          popularity: category.popularity,
-          isDirect: category.isDirect,
-        })
-        .returning({ insertedCategoryId: dbCategory.id });
+  console.log(`Upserting ${categories.length} categories`);
+  for (const batch of batchify(categories, BATCH_SIZE)) {
+    await tcgData
+      .insert(dbCategory)
+      .values(
+        batch.map((c) => ({
+          tcgpCategoryId: c.categoryId,
+          name: c.name,
+          displayName: c.displayName,
+          seoCategoryName: c.seoCategoryName,
+          categoryDescription: c.categoryDescription,
+          categoryPageTitle: c.categoryPageTitle,
+          sealedLabel: c.sealedLabel,
+          nonSealedLabel: c.nonSealedLabel,
+          conditionGuideUrl: c.conditionGuideUrl,
+          isScannable: c.isScannable,
+          popularity: c.popularity,
+          isDirect: c.isDirect,
+          modifiedOn: new Date(c.modifiedOn),
+        })),
+      )
+      .onConflictDoUpdate({
+        target: dbCategory.name,
+        set: categoryUpdateColumns,
+      });
+  }
 
-      const groupsUrl = `https://tcgcsv.com/tcgplayer/${categoryId}/groups`;
-      console.log(`Fetching groups for ${category.name}: ${groupsUrl}`);
-      const groupsResponse = await fetch(groupsUrl);
+  // Build category name -> internal ID map
+  const categoryNameToId = new Map<string, number>();
+  const categoryRows = await tcgData.select({ id: dbCategory.id, name: dbCategory.name }).from(dbCategory);
+  for (const row of categoryRows) {
+    categoryNameToId.set(row.name, row.id);
+  }
 
-      if (!groupsResponse.ok) {
-        throw new Error(`Failed to fetch groups: ${groupsResponse.status} ${groupsResponse.statusText}`);
+  // --- Process each category's groups and products --------------------------
+
+  for (const category of categories) {
+    const { categoryId: tcgpCategoryId } = category;
+    const internalCategoryId = categoryNameToId.get(category.name)!;
+
+    const groupsUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/groups`;
+    console.log(`Fetching groups for ${category.name}: ${groupsUrl}`);
+    const groupsData = await fetchJson<ApiResponse<Group>>(groupsUrl);
+
+    // Verify group names are unique within this category
+    const seenGroupNames = new Set<string>();
+    for (const g of groupsData.results) {
+      if (seenGroupNames.has(g.name)) {
+        throw new Error(
+          `Duplicate group name "${g.name}" in category ${category.name} (tcgpGroupId=${g.groupId}). Cannot upsert by name when names are not unique.`,
+        );
+      }
+      seenGroupNames.add(g.name);
+    }
+    const groups = groupsData.results;
+
+    console.log(`Upserting ${groups.length} groups`);
+    for (const batch of batchify(groups, BATCH_SIZE)) {
+      await tcgData
+        .insert(dbGroup)
+        .values(
+          batch.map((g) => ({
+            tcgpGroupId: g.groupId,
+            tcgpCategoryId: g.categoryId,
+            name: g.name,
+            abbreviation: g.abbreviation ?? '',
+            isSupplemental: g.isSupplemental,
+            publishedOn: new Date(g.publishedOn),
+            modifiedOn: new Date(g.modifiedOn),
+            categoryId: internalCategoryId,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [dbGroup.categoryId, dbGroup.name],
+          set: groupUpdateColumns,
+        });
+    }
+
+    // Build group name -> internal ID map for this category's groups
+    const groupNameToId = new Map<string, number>();
+    const groupRows = await tcgData
+      .select({ id: dbGroup.id, name: dbGroup.name, tcgpGroupId: dbGroup.tcgpGroupId })
+      .from(dbGroup)
+      .where(sql`${dbGroup.categoryId} = ${internalCategoryId}`);
+    for (const row of groupRows) {
+      groupNameToId.set(row.name, row.id);
+    }
+
+    // --- Process each group's products and prices ---------------------------
+
+    for (const group of groups) {
+      const tcgpGroupId = group.groupId;
+      const internalGroupId = groupNameToId.get(group.name)!;
+
+      // Fetch products
+      const productsUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/${tcgpGroupId}/products`;
+      console.log(`Fetching products for group ${group.name}: ${productsUrl}`);
+      let products: Product[];
+      try {
+        const productsData = await fetchJson<ApiResponse<Product>>(productsUrl);
+        products = productsData.results;
+      } catch (err) {
+        console.error(`Failed to fetch products for group ${tcgpGroupId}: ${err}`);
+        continue;
       }
 
-      const groupsData: ApiResponse<Group> = await groupsResponse.json();
-      const allGroups = groupsData.results;
+      if (products.length === 0) {
+        console.log('No products found');
+        continue;
+      }
 
-      console.log(`Processing ${allGroups.length} groups`);
-
-      for (const group of allGroups) {
-        const groupId = group.groupId;
-
-        console.log(`Creating group: ${group.name}`);
-        const [{ insertedGroupId }] = await tcgData
-          .insert(dbGroup)
-          .values({
-            tcgpGroupId: group.groupId,
-            tcgpCategoryId: group.categoryId,
-            name: group.name,
-            abbreviation: group.abbreviation ?? '',
-            isSupplemental: group.isSupplemental,
-            publishedOn: new Date(group.publishedOn),
-            modifiedOn: new Date(group.modifiedOn),
-            categoryId: insertedCategoryId,
-          })
-          .returning({ insertedGroupId: dbGroup.id });
-
-        // Fetch products for this group
-        const productsUrl = `https://tcgcsv.com/tcgplayer/${categoryId}/${groupId}/products`;
-        console.log(`Fetching products for group ${group.name}: ${productsUrl}`);
-        const productsResponse = await fetch(productsUrl);
-
-        if (!productsResponse.ok) {
-          console.error(`Failed to fetch products for group ${groupId}: ${productsResponse.status}`);
-          continue;
+      // Verify product names are unique within this group
+      const seenProductNames = new Set<string>();
+      for (const p of products) {
+        if (seenProductNames.has(p.name)) {
+          throw new Error(
+            `Duplicate product name "${p.name}" in group ${group.name} (tcgpProductId=${p.productId}). Cannot upsert by name when names are not unique.`,
+          );
         }
+        seenProductNames.add(p.name);
+      }
 
-        const productsData: ApiResponse<Product> = await productsResponse.json();
-        const products = productsData.results;
-
-        if (products.length === 0) {
-          console.log('No products found');
-          continue;
-        }
-        console.log(`Creating ${products.length} products`);
-        const insertableProducts = products.map<typeof dbProduct.$inferInsert>((p) => {
-          return {
-            tcgpCategoryId: insertedCategoryId,
-            tcgpGroupId: insertedGroupId,
-            tcgpProductId: p.productId,
-            name: p.name,
-            cleanName: p.cleanName,
-            imageUrl: p.imageUrl,
-            categoryId: insertedCategoryId,
-            groupId: insertedGroupId,
-            url: p.url,
-            modifiedOn: new Date(p.modifiedOn),
-            imageCount: p.imageCount,
-            isPresale: p.presaleInfo.isPresale,
-            releasedOn: p.presaleInfo.releasedOn ? new Date(p.presaleInfo.releasedOn) : null,
-            presaleNote: p.presaleInfo.note,
-          };
-        });
-
-        const tcgpProductIdToProductIdMap: Record<number, number> = {};
-        let insertedProductCount = 0;
-        while (insertedProductCount < insertableProducts.length) {
-          const insertableProductBatch = insertableProducts.slice(insertedProductCount, insertedProductCount + 1000);
-          const insertedProductDetails = await tcgData.insert(dbProduct).values(insertableProductBatch).returning({
-            insertedProductId: dbProduct.id,
-            tcgpProductId: dbProduct.tcgpProductId,
+      // Upsert products
+      console.log(`Upserting ${products.length} products`);
+      for (const batch of batchify(products, BATCH_SIZE)) {
+        await tcgData
+          .insert(dbProduct)
+          .values(
+            batch.map((p) => ({
+              tcgpProductId: p.productId,
+              tcgpGroupId: tcgpGroupId,
+              tcgpCategoryId: tcgpCategoryId,
+              name: p.name,
+              cleanName: p.cleanName,
+              imageUrl: p.imageUrl,
+              categoryId: internalCategoryId,
+              groupId: internalGroupId,
+              url: p.url,
+              modifiedOn: new Date(p.modifiedOn),
+              imageCount: p.imageCount,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [dbProduct.groupId, dbProduct.name],
+            set: productUpdateColumns,
           });
-          insertedProductCount += insertedProductDetails.length;
+      }
 
-          insertedProductDetails.forEach((product) => {
-            tcgpProductIdToProductIdMap[product.tcgpProductId] = product.insertedProductId;
-          });
-        }
+      // Build tcgpProductId -> internal product ID map for this group
+      const tcgpProductIdToInternalId = new Map<number, number>();
+      const productRows = await tcgData
+        .select({ id: dbProduct.id, tcgpProductId: dbProduct.tcgpProductId })
+        .from(dbProduct)
+        .where(sql`${dbProduct.groupId} = ${internalGroupId}`);
+      for (const row of productRows) {
+        tcgpProductIdToInternalId.set(row.tcgpProductId, row.id);
+      }
 
-        const insertablePresaleInfo = products.map<typeof productPresaleInfo.$inferInsert>((p) => {
+      // Collect internal IDs for products we just upserted
+      const internalIds = products
+        .map((p) => tcgpProductIdToInternalId.get(p.productId))
+        .filter((id): id is number => id != null);
+
+      // Fetch prices before deleting any child records so a fetch failure
+      // doesn't cause data loss in the incremental upsert case.
+      const pricesUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/${tcgpGroupId}/prices`;
+      console.log(`Fetching prices: ${pricesUrl}`);
+      let groupPrices: Price[];
+      try {
+        const pricesData = await fetchJson<ApiResponse<Price>>(pricesUrl);
+        groupPrices = pricesData.results;
+      } catch (err) {
+        console.error(`Failed to fetch prices for group ${tcgpGroupId}: ${err}`);
+        continue;
+      }
+
+      // Delete existing child records for these products
+      for (const idBatch of batchify(internalIds, BATCH_SIZE)) {
+        await tcgData.delete(price).where(inArray(price.productId, idBatch));
+        await tcgData.delete(productPresaleInfo).where(inArray(productPresaleInfo.productId, idBatch));
+        await tcgData.delete(productExtendedData).where(inArray(productExtendedData.productId, idBatch));
+      }
+
+      // Insert presale info
+      const presaleInfoValues = products
+        .map((p) => {
+          const internalId = tcgpProductIdToInternalId.get(p.productId);
+          if (internalId == null) return null;
           return {
-            productId: tcgpProductIdToProductIdMap[p.productId],
+            productId: internalId,
             isPresale: p.presaleInfo.isPresale,
             releasedOn: p.presaleInfo.releasedOn ? new Date(p.presaleInfo.releasedOn) : null,
             note: p.presaleInfo.note,
           };
-        });
-        await tcgData.insert(productPresaleInfo).values(insertablePresaleInfo);
+        })
+        .filter((v): v is NonNullable<typeof v> => v != null);
 
-        const insertableExtendedData = products.reduce(
-          (array, product) => {
-            const extendedData = (product.extendedData ?? []).map<typeof productExtendedData.$inferInsert>((ed) => {
-              // Map single-letter rarity codes to full names for Magic cards
-              const value = ed.name === 'Rarity' && categoryId === MAGIC_CATEGORY_ID ? mapRarity(ed.value)! : ed.value;
-              return {
-                productId: tcgpProductIdToProductIdMap[product.productId],
-                name: ed.name,
-                displayName: ed.displayName,
-                value,
-              };
-            });
-            array.push(...extendedData);
-            return array;
-          },
-          [] as (typeof productExtendedData.$inferInsert)[],
-        );
+      for (const batch of batchify(presaleInfoValues, BATCH_SIZE)) {
+        await tcgData.insert(productPresaleInfo).values(batch);
+      }
 
-        let insertedExtendedDataCount = 0;
-        while (insertedExtendedDataCount < insertableExtendedData.length) {
-          const insertableExtendedDataBatch = insertableExtendedData.slice(
-            insertedExtendedDataCount,
-            insertedExtendedDataCount + 1000,
-          );
-          await tcgData.insert(productExtendedData).values(insertableExtendedDataBatch);
-          insertedExtendedDataCount += insertableExtendedDataBatch.length;
+      // Insert extended data
+      const extendedDataValues: (typeof productExtendedData.$inferInsert)[] = [];
+      for (const p of products) {
+        const internalId = tcgpProductIdToInternalId.get(p.productId);
+        if (internalId == null) continue;
+        for (const ed of p.extendedData ?? []) {
+          const value = ed.name === 'Rarity' && tcgpCategoryId === MAGIC_CATEGORY_ID ? mapRarity(ed.value)! : ed.value;
+          extendedDataValues.push({
+            productId: internalId,
+            name: ed.name,
+            displayName: ed.displayName,
+            value,
+          });
         }
+      }
+      for (const batch of batchify(extendedDataValues, BATCH_SIZE)) {
+        await tcgData.insert(productExtendedData).values(batch);
+      }
 
-        // Fetch prices for this group
-        const pricesUrl = `https://tcgcsv.com/tcgplayer/${categoryId}/${groupId}/prices`;
-        console.log(`Fetching prices: ${pricesUrl}`);
-        const pricesResponse = await fetch(`https://tcgcsv.com/tcgplayer/${categoryId}/${groupId}/prices`);
-
-        if (!pricesResponse.ok) {
-          console.error(`Failed to fetch prices for group ${groupId}: ${pricesResponse.status}`);
-          continue;
-        }
-
-        const pricesData: ApiResponse<Price> = await pricesResponse.json();
-        const prices = pricesData.results;
-
-        if (prices.length > 0) {
-          console.log(`Creating ${prices.length} prices`);
-          const insertablePrices = prices.map<typeof price.$inferInsert>((p) => {
+      // Insert prices
+      if (groupPrices.length > 0) {
+        console.log(`Inserting ${groupPrices.length} prices`);
+        const priceValues = groupPrices
+          .map((p) => {
+            const internalId = tcgpProductIdToInternalId.get(p.productId);
+            if (internalId == null) return null;
             return {
               tcgpProductId: p.productId,
+              productId: internalId,
               lowPrice: p.lowPrice,
               midPrice: p.midPrice,
               highPrice: p.highPrice,
-              productId: tcgpProductIdToProductIdMap[p.productId],
               marketPrice: p.marketPrice,
               directLowPrice: p.directLowPrice,
               subTypeName: p.subTypeName,
             };
-          });
-          let insertedPricesCount = 0;
-          while (insertedPricesCount < insertablePrices.length) {
-            const insertablePricesBatch = insertablePrices.slice(insertedPricesCount, insertedPricesCount + 1000);
-            await tcgData.insert(price).values(insertablePricesBatch);
-            insertedPricesCount += insertablePricesBatch.length;
-          }
-        } else {
-          console.log(`No prices found`);
+          })
+          .filter((v): v is NonNullable<typeof v> => v != null);
+
+        for (const batch of batchify(priceValues, BATCH_SIZE)) {
+          await tcgData.insert(price).values(batch);
         }
+      } else {
+        console.log('No prices found');
       }
     }
-  } catch (error) {
-    console.error('Error fetching TCG data:', error);
-    process.exit(1);
   }
+
+  console.log('\nDone!');
 }
 
 // Run the script
-fetchTcgData();
+populateTcgData().catch((error) => {
+  console.error('Error populating TCG data:', error);
+  process.exit(1);
+});
