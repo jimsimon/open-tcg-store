@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, foreignKey, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const category = sqliteTable(
   'category',
@@ -19,7 +19,7 @@ export const category = sqliteTable(
     modifiedOn: integer('modified_on', { mode: 'timestamp' }),
   },
   (table) => [
-    index('category_name_idx').on(table.name),
+    uniqueIndex('category_name_unique_idx').on(table.name),
     index('category_display_name_idx').on(table.displayName),
     index('category_seo_category_name_idx').on(table.seoCategoryName),
     index('category_is_scannable_idx').on(table.isScannable),
@@ -38,7 +38,7 @@ export const group = sqliteTable(
     publishedOn: integer('published_on', { mode: 'timestamp' }),
     modifiedOn: integer('modified_on', { mode: 'timestamp' }),
     tcgpCategoryId: integer('tcgp_category_id').notNull(),
-    categoryId: integer('category_id'),
+    categoryId: integer('category_id').notNull(),
   },
   (table) => [
     foreignKey({
@@ -46,7 +46,7 @@ export const group = sqliteTable(
       foreignColumns: [category.id],
       name: 'group_category_id_fkey',
     }),
-    index('group_name_idx').on(table.name),
+    uniqueIndex('group_category_id_name_unique_idx').on(table.categoryId, table.name),
     index('group_abbreviation_idx').on(table.abbreviation),
     index('group_is_supplemental_idx').on(table.isSupplemental),
     index('group_category_id_idx').on(table.categoryId),
@@ -67,8 +67,8 @@ export const product = sqliteTable(
     url: text('url'),
     modifiedOn: integer('modified_on', { mode: 'timestamp' }),
     imageCount: integer('image_count').notNull().default(0),
-    categoryId: integer('category_id'),
-    groupId: integer('group_id'),
+    categoryId: integer('category_id').notNull(),
+    groupId: integer('group_id').notNull(),
   },
   (table) => [
     foreignKey({
@@ -81,7 +81,7 @@ export const product = sqliteTable(
       foreignColumns: [group.id],
       name: 'product_group_id_fkey',
     }),
-    index('product_name_idx').on(table.name),
+    uniqueIndex('product_group_id_name_unique_idx').on(table.groupId, table.name),
     index('product_clean_name_idx').on(table.cleanName),
     index('product_category_group_idx').on(table.categoryId, table.groupId),
     index('product_tcgp_product_id_idx').on(table.tcgpProductId),
