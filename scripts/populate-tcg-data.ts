@@ -173,7 +173,7 @@ const productUpdateColumns = buildConflictUpdateColumns(dbProduct, [
   'tcgpGroupId',
   'tcgpCategoryId',
   'categoryId',
-  'cleanName',
+  'name',
   'imageUrl',
   'url',
   'modifiedOn',
@@ -331,15 +331,15 @@ async function populateTcgData() {
         continue;
       }
 
-      // Verify product names are unique within this group
-      const seenProductNames = new Set<string>();
+      // Verify product cleanNames are unique within this group
+      const seenProductCleanNames = new Set<string>();
       for (const p of products) {
-        if (seenProductNames.has(p.name)) {
+        if (seenProductCleanNames.has(p.cleanName)) {
           throw new Error(
-            `Duplicate product name "${p.name}" in group ${group.name} (tcgpProductId=${p.productId}). Cannot upsert by name when names are not unique.`,
+            `Duplicate product cleanName "${p.cleanName}" in group ${group.name} (tcgpProductId=${p.productId}). Cannot upsert by cleanName when cleanNames are not unique.`,
           );
         }
-        seenProductNames.add(p.name);
+        seenProductCleanNames.add(p.cleanName);
       }
 
       // Upsert products
@@ -363,7 +363,7 @@ async function populateTcgData() {
             })),
           )
           .onConflictDoUpdate({
-            target: [dbProduct.groupId, dbProduct.name],
+            target: [dbProduct.groupId, dbProduct.cleanName],
             set: productUpdateColumns,
           });
       }
