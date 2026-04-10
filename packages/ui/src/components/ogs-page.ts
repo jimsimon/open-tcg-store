@@ -465,6 +465,10 @@ export class OgsPage extends SignalWatcher(LitElement) {
         min-width: 180px;
         max-width: 250px;
       }
+
+      .color-scheme-selector {
+        max-width: 120px;
+      }
     `,
   ];
 
@@ -676,9 +680,25 @@ export class OgsPage extends SignalWatcher(LitElement) {
       <header class="wa-split">
         <h1><span class="logo">${this.renderLogo()}</span>OpenTCGS</h1>
         <div class="wa-cluster">
+          ${this.showStoreSelector && storeList.get().length > 0
+            ? html`
+                <wa-select
+                  class="store-selector"
+                  appearance="filled"
+                  value="${activeStoreId.get() ?? ''}"
+                  placement="bottom"
+                  @change="${this.handleStoreChange}"
+                >
+                  <wa-icon slot="start" name="location-dot" variant="solid"></wa-icon>
+                  <span slot="label" class="wa-visually-hidden">Select Store</span>
+                  ${storeList.get().map((store) => html` <wa-option value="${store.id}">${store.name}</wa-option> `)}
+                </wa-select>
+              `
+            : nothing}
           <wa-select
             class="color-scheme-selector"
             appearance="filled"
+            size="small"
             value="${this.themePreference}"
             title="Press  to toggle"
             placement="bottom"
@@ -714,21 +734,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
               System
             </wa-option>
           </wa-select>
-          ${this.showStoreSelector && storeList.get().length > 0
-            ? html`
-                <wa-select
-                  class="store-selector"
-                  appearance="filled"
-                  value="${activeStoreId.get() ?? ''}"
-                  placement="bottom"
-                  @change="${this.handleStoreChange}"
-                >
-                  <wa-icon slot="start" name="store" variant="regular"></wa-icon>
-                  <span slot="label" class="wa-visually-hidden">Select Store</span>
-                  ${storeList.get().map((store) => html` <wa-option value="${store.id}">${store.name}</wa-option> `)}
-                </wa-select>
-              `
-            : nothing}
           ${this.showCartButton
             ? html`
                 <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
