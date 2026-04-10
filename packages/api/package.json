@@ -11,7 +11,10 @@
     "db:check": "drizzle-kit check --config ./src/db/otcgs/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config ./src/db/otcgs/drizzle.config.ts",
     "db:push:main": "drizzle-kit push --config ./src/db/otcgs/drizzle.config.ts",
-    "db:push:tcg-data": "drizzle-kit push --config ./src/db/tcg-data/drizzle.config.ts"
+    "db:push:tcg-data": "drizzle-kit push --config ./src/db/tcg-data/drizzle.config.ts",
+    "db:generate:tcg-data": "drizzle-kit generate --config ./src/db/tcg-data/drizzle.config.ts",
+    "db:check:tcg-data": "drizzle-kit check --config ./src/db/tcg-data/drizzle.config.ts",
+    "db:migrate:tcg-data": "drizzle-kit migrate --config ./src/db/tcg-data/drizzle.config.ts"
   },
   "dependencies": {},
   "devDependencies": {}
