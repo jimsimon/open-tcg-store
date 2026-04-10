@@ -145,7 +145,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 // ---------------------------------------------------------------------------
 
 const categoryUpdateColumns = buildConflictUpdateColumns(dbCategory, [
-  'tcgpCategoryId',
+  'name',
   'displayName',
   'seoCategoryName',
   'categoryDescription',
@@ -160,20 +160,22 @@ const categoryUpdateColumns = buildConflictUpdateColumns(dbCategory, [
 ]);
 
 const groupUpdateColumns = buildConflictUpdateColumns(dbGroup, [
-  'tcgpGroupId',
   'tcgpCategoryId',
+  'name',
   'abbreviation',
   'isSupplemental',
   'publishedOn',
   'modifiedOn',
+  'categoryId',
 ]);
 
 const productUpdateColumns = buildConflictUpdateColumns(dbProduct, [
-  'tcgpProductId',
   'tcgpGroupId',
   'tcgpCategoryId',
   'categoryId',
+  'groupId',
   'name',
+  'cleanName',
   'imageUrl',
   'url',
   'modifiedOn',
@@ -204,19 +206,7 @@ async function populateTcgData() {
   const categoriesUrl = 'https://tcgcsv.com/tcgplayer/categories';
   console.log(`Fetching categories: ${categoriesUrl}`);
   const categoriesData = await fetchJson<ApiResponse<Category>>(categoriesUrl);
-  const allCategories = categoriesData.results.filter((c) => !categoryIdsToSkip.includes(c.categoryId));
-
-  // Verify category names are unique
-  const seenCategoryNames = new Set<string>();
-  for (const c of allCategories) {
-    if (seenCategoryNames.has(c.name)) {
-      throw new Error(
-        `Duplicate category name "${c.name}" (tcgpCategoryId=${c.categoryId}). Cannot upsert by name when names are not unique.`,
-      );
-    }
-    seenCategoryNames.add(c.name);
-  }
-  const categories = allCategories;
+  const categories = categoriesData.results.filter((c) => !categoryIdsToSkip.includes(c.categoryId));
 
   console.log(`Upserting ${categories.length} categories`);
   for (const batch of batchify(categories, BATCH_SIZE)) {
@@ -240,41 +230,34 @@ async function populateTcgData() {
         })),
       )
       .onConflictDoUpdate({
-        target: dbCategory.name,
+        target: dbCategory.tcgpCategoryId,
         set: categoryUpdateColumns,
       });
   }
 
-  // Build category name -> internal ID map
-  const categoryNameToId = new Map<string, number>();
-  const categoryRows = await tcgData.select({ id: dbCategory.id, name: dbCategory.name }).from(dbCategory);
+  // Build tcgpCategoryId -> internal ID map
+  const categoryIdMap = new Map<number, number>();
+  const categoryRows = await tcgData
+    .select({ id: dbCategory.id, tcgpCategoryId: dbCategory.tcgpCategoryId })
+    .from(dbCategory);
   for (const row of categoryRows) {
-    categoryNameToId.set(row.name, row.id);
+    categoryIdMap.set(row.tcgpCategoryId, row.id);
   }
 
   // --- Process each category's groups and products --------------------------
 
   for (const category of categories) {
     const { categoryId: tcgpCategoryId } = category;
-    const internalCategoryId = categoryNameToId.get(category.name);
+    const internalCategoryId = categoryIdMap.get(tcgpCategoryId);
     if (internalCategoryId == null) {
-      throw new Error(`No internal ID found for category "${category.name}" after upsert. This should not happen.`);
+      throw new Error(
+        `No internal ID found for category "${category.name}" (tcgpCategoryId=${tcgpCategoryId}). This should not happen.`,
+      );
     }
 
     const groupsUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/groups`;
     console.log(`Fetching groups for ${category.name}: ${groupsUrl}`);
     const groupsData = await fetchJson<ApiResponse<Group>>(groupsUrl);
-
-    // Verify group names are unique within this category
-    const seenGroupNames = new Set<string>();
-    for (const g of groupsData.results) {
-      if (seenGroupNames.has(g.name)) {
-        throw new Error(
-          `Duplicate group name "${g.name}" in category ${category.name} (tcgpGroupId=${g.groupId}). Cannot upsert by name when names are not unique.`,
-        );
-      }
-      seenGroupNames.add(g.name);
-    }
     const groups = groupsData.results;
 
     console.log(`Upserting ${groups.length} groups`);
@@ -294,29 +277,29 @@ async function populateTcgData() {
           })),
         )
         .onConflictDoUpdate({
-          target: [dbGroup.categoryId, dbGroup.name],
+          target: dbGroup.tcgpGroupId,
           set: groupUpdateColumns,
         });
     }
 
-    // Build group name -> internal ID map for this category's groups
-    const groupNameToId = new Map<string, number>();
+    // Build tcgpGroupId -> internal ID map for this category's groups
+    const groupIdMap = new Map<number, number>();
     const groupRows = await tcgData
-      .select({ id: dbGroup.id, name: dbGroup.name, tcgpGroupId: dbGroup.tcgpGroupId })
+      .select({ id: dbGroup.id, tcgpGroupId: dbGroup.tcgpGroupId })
       .from(dbGroup)
       .where(sql`${dbGroup.categoryId} = ${internalCategoryId}`);
     for (const row of groupRows) {
-      groupNameToId.set(row.name, row.id);
+      groupIdMap.set(row.tcgpGroupId, row.id);
     }
 
     // --- Process each group's products and prices ---------------------------
 
     for (const group of groups) {
       const tcgpGroupId = group.groupId;
-      const internalGroupId = groupNameToId.get(group.name);
+      const internalGroupId = groupIdMap.get(tcgpGroupId);
       if (internalGroupId == null) {
         throw new Error(
-          `No internal ID found for group "${group.name}" in category "${category.name}" after upsert. This should not happen.`,
+          `No internal ID found for group "${group.name}" (tcgpGroupId=${tcgpGroupId}). This should not happen.`,
         );
       }
 
@@ -329,17 +312,6 @@ async function populateTcgData() {
       if (products.length === 0) {
         console.log('No products found');
         continue;
-      }
-
-      // Verify product cleanNames are unique within this group
-      const seenProductCleanNames = new Set<string>();
-      for (const p of products) {
-        if (seenProductCleanNames.has(p.cleanName)) {
-          throw new Error(
-            `Duplicate product cleanName "${p.cleanName}" in group ${group.name} (tcgpProductId=${p.productId}). Cannot upsert by cleanName when cleanNames are not unique.`,
-          );
-        }
-        seenProductCleanNames.add(p.cleanName);
       }
 
       // Upsert products
@@ -363,7 +335,7 @@ async function populateTcgData() {
             })),
           )
           .onConflictDoUpdate({
-            target: [dbProduct.groupId, dbProduct.cleanName],
+            target: dbProduct.tcgpProductId,
             set: productUpdateColumns,
           });
       }
