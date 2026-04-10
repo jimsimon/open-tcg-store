@@ -7,4 +7,9 @@ if git diff --cached --name-only | grep -qE 'packages/api/src/db/otcgs/(.*-)?sch
   git add packages/api/src/db/otcgs/migrations/
 fi
 
+if git diff --cached --name-only | grep -qE 'packages/api/src/db/tcg-data/(.*-)?schema\.ts'; then
+  pnpm --filter @open-tcgs/api run db:generate:tcg-data
+  git add packages/api/src/db/tcg-data/migrations/
+fi
+
 pnpm exec lint-staged

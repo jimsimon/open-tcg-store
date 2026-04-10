@@ -113,3 +113,16 @@ jobs:
 
       - name: Verify migration metadata integrity
         run: pnpm --filter @open-tcgs/api run db:check
+
+      - name: Generate TCG data migrations
+        run: pnpm --filter @open-tcgs/api run db:generate:tcg-data
+
+      - name: Check for uncommitted TCG data migrations
+        run: |
+          if ! git diff --exit-code packages/api/src/db/tcg-data/migrations/; then
+            echo "::error::TCG data schema changes detected without corresponding migrations. Run 'pnpm --filter @open-tcgs/api run db:generate:tcg-data' and commit the results."
+            exit 1
+          fi
+
+      - name: Verify TCG data migration metadata integrity
+        run: pnpm --filter @open-tcgs/api run db:check:tcg-data
