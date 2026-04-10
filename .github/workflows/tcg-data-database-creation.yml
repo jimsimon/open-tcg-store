@@ -32,7 +32,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download previous release DB
-        id: download-db
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -46,8 +45,8 @@ jobs:
             | jq -r '[.[] | select(.tag_name | startswith("initial-db-"))] | sort_by(.tag_name) | reverse | .[0].tag_name // empty')
 
           if [ -z "$LATEST_TAG" ]; then
-            echo "No previous release found, starting fresh"
-            echo "downloaded=false" >> $GITHUB_OUTPUT
+            echo "No previous release found, creating empty database"
+            touch ./sqlite-data/tcg-data.sqlite
             exit 0
           fi
 
@@ -61,37 +60,29 @@ jobs:
             | jq -r '.assets[] | select(.name == "tcg-data.sqlite") | .id // empty')
 
           if [ -z "$ASSET_ID" ]; then
-            echo "Release $LATEST_TAG has no tcg-data.sqlite asset, starting fresh"
-            echo "downloaded=false" >> $GITHUB_OUTPUT
-            exit 0
+            echo "::error::Release $LATEST_TAG has no tcg-data.sqlite asset"
+            exit 1
           fi
 
-          if curl -sfL \
+          curl -sfL \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/octet-stream" \
             "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
-            -o ./sqlite-data/tcg-data.sqlite; then
-            echo "downloaded=true" >> $GITHUB_OUTPUT
-          else
-            echo "Failed to download asset, starting fresh"
-            rm -f ./sqlite-data/tcg-data.sqlite
-            echo "downloaded=false" >> $GITHUB_OUTPUT
-          fi
+            -o ./sqlite-data/tcg-data.sqlite
 
-      - name: Create empty database file
-        if: steps.download-db.outputs.downloaded != 'true'
-        run: mkdir -p ./sqlite-data && touch ./sqlite-data/tcg-data.sqlite
+      - name: Apply schema migration
+        run: |
+          # Only run migration if the database has existing tables (not an empty file)
+          TABLE_COUNT=$(sqlite3 ./sqlite-data/tcg-data.sqlite "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+          if [ "$TABLE_COUNT" -gt 0 ]; then
+            echo "Existing database detected ($TABLE_COUNT tables), running migration"
+            sqlite3 ./sqlite-data/tcg-data.sqlite < ./scripts/migrate-tcg-data-schema.sql
+          else
+            echo "Empty database, skipping migration"
+          fi
 
       - name: Push database schema
-        id: push-schema
-        run: |
-          if ! pnpm run --filter=api db:push:tcg-data; then
-            echo "Schema push failed on downloaded DB (likely incompatible schema changes)."
-            echo "Falling back to fresh database."
-            rm -f ./sqlite-data/tcg-data.sqlite
-            touch ./sqlite-data/tcg-data.sqlite
-            pnpm run --filter=api db:push:tcg-data
-          fi
+        run: pnpm run --filter=api db:push:tcg-data
 
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts
