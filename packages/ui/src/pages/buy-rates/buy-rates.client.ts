@@ -250,7 +250,7 @@ export class OgsBuyRatesPage extends LitElement {
   private formatRate(rate: number): string {
     return rate.toLocaleString('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 3,
     });
   }
 

@@ -1,0 +1,1 @@
+ALTER TABLE `buy_rate` ADD `hidden` integer DEFAULT false NOT NULL;

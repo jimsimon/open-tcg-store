@@ -1,4 +1,4 @@
-import { eq, asc, inArray } from 'drizzle-orm';
+import { eq, asc, and, inArray } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index';
 import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
 import { buyRate } from '../db/otcgs/buy-rate-schema';
@@ -20,6 +20,7 @@ export interface BuyRateEntryResult {
   rate: number;
   type: string;
   rarity: string | null;
+  hidden: boolean;
   sortOrder: number;
 }
 
@@ -39,6 +40,7 @@ export interface BuyRateEntryInput {
   rate: number;
   type: string;
   rarity?: string | null;
+  hidden?: boolean;
   sortOrder: number;
 }
 
@@ -125,6 +127,7 @@ export async function getBuyRates(categoryId: number): Promise<BuyRateEntryResul
     rate: row.rate,
     type: row.type ?? 'fixed',
     rarity: row.rarity ?? null,
+    hidden: row.hidden ?? false,
     sortOrder: row.sortOrder,
   }));
 }
@@ -144,9 +147,9 @@ export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInpu
     }
   }
 
-  // Validate all rarity-default rows have non-zero rates
-  const rarityEntries = entries.filter((e) => e.rarity);
-  for (const entry of rarityEntries) {
+  // Validate all visible rarity-default rows have non-zero rates
+  const visibleRarityEntries = entries.filter((e) => e.rarity && !e.hidden);
+  for (const entry of visibleRarityEntries) {
     if (entry.rate <= 0) {
       throw new Error(`Buy rate for rarity "${entry.rarity}" must be greater than 0`);
     }
@@ -165,6 +168,7 @@ export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInpu
           rate: entry.rate,
           type: entry.type || 'fixed',
           rarity: entry.rarity || null,
+          hidden: entry.hidden ?? false,
           sortOrder: entry.sortOrder,
         })),
       );
@@ -200,14 +204,17 @@ export async function getPublicBuyRates(): Promise<PublicBuyRatesResult> {
     return { games: [] };
   }
 
-  // Get all buy rates for all supported games in one query
+  // Get all visible buy rates for all supported games in one query
   const allRates = await otcgs
     .select()
     .from(buyRate)
     .where(
-      inArray(
-        buyRate.categoryId,
-        supportedGames.map((g) => g.categoryId),
+      and(
+        inArray(
+          buyRate.categoryId,
+          supportedGames.map((g) => g.categoryId),
+        ),
+        eq(buyRate.hidden, false),
       ),
     )
     .orderBy(asc(buyRate.sortOrder));
@@ -222,6 +229,7 @@ export async function getPublicBuyRates(): Promise<PublicBuyRatesResult> {
       rate: rate.rate,
       type: rate.type ?? 'fixed',
       rarity: rate.rarity ?? null,
+      hidden: false,
       sortOrder: rate.sortOrder,
     });
     ratesByCategory.set(rate.categoryId, existing);
