@@ -67,6 +67,7 @@ vi.mock('../db/otcgs/buy-rate-schema', () => ({
     categoryId: 'buy_rate.category_id',
     description: 'buy_rate.description',
     rate: 'buy_rate.rate',
+    hidden: 'buy_rate.hidden',
     sortOrder: 'buy_rate.sort_order',
   },
 }));
@@ -82,6 +83,7 @@ vi.mock('../db/tcg-data/schema', () => ({
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
   asc: vi.fn((...args: unknown[]) => ({ type: 'asc', args })),
+  and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
   inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
 }));
 
@@ -218,9 +220,9 @@ describe('buy-rate-service', () => {
   describe('getBuyRates', () => {
     it('should return buy rates for a game ordered by sortOrder', async () => {
       const rows = [
-        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, sortOrder: 2 },
+        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, hidden: false, sortOrder: 0 },
+        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, hidden: false, sortOrder: 1 },
+        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, hidden: false, sortOrder: 2 },
       ];
       selectChain = chainable(rows);
       mockOtcgs.select.mockImplementation(() => selectChain);
@@ -228,9 +230,9 @@ describe('buy-rate-service', () => {
       const result = await getBuyRates(1);
 
       expect(result).toEqual([
-        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, sortOrder: 2 },
+        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, hidden: false, sortOrder: 0 },
+        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, hidden: false, sortOrder: 1 },
+        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, hidden: false, sortOrder: 2 },
       ]);
     });
 
@@ -277,6 +279,29 @@ describe('buy-rate-service', () => {
       expect(mockOtcgs.delete).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
+
+    it('should allow hidden rarity entries with zero rate', async () => {
+      const savedRows = [{ id: 10, description: 'Common', rate: 0, hidden: true, sortOrder: 0 }];
+      selectChain = chainable(savedRows);
+      mockOtcgs.select.mockImplementation(() => selectChain);
+
+      // Should not throw — hidden rarity entries can have rate 0
+      const result = await saveBuyRates(1, [
+        { description: 'Common', rate: 0, type: 'fixed', rarity: 'Common', hidden: true, sortOrder: 0 },
+      ]);
+
+      expect(mockOtcgs.delete).toHaveBeenCalled();
+      expect(mockOtcgs.insert).toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+    });
+
+    it('should reject visible rarity entries with zero rate', async () => {
+      await expect(
+        saveBuyRates(1, [
+          { description: 'Common', rate: 0, type: 'fixed', rarity: 'Common', hidden: false, sortOrder: 0 },
+        ]),
+      ).rejects.toThrow('Buy rate for rarity "Common" must be greater than 0');
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -308,9 +333,9 @@ describe('buy-rate-service', () => {
         }
         // Buy rates query
         return chainable([
-          { id: 1, categoryId: 1, description: 'Commons', rate: 0.01, sortOrder: 0 },
-          { id: 2, categoryId: 1, description: 'Rares', rate: 0.05, sortOrder: 1 },
-          { id: 3, categoryId: 3, description: 'Commons', rate: 0.02, sortOrder: 0 },
+          { id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 },
+          { id: 2, categoryId: 1, description: 'Rares', rate: 0.05, hidden: false, sortOrder: 1 },
+          { id: 3, categoryId: 3, description: 'Commons', rate: 0.02, hidden: false, sortOrder: 0 },
         ]);
       });
 
@@ -321,6 +346,28 @@ describe('buy-rate-service', () => {
       expect(result.games[0].entries).toHaveLength(2);
       expect(result.games[1].gameName).toBe('Pokemon');
       expect(result.games[1].entries).toHaveLength(1);
+    });
+
+    it('should exclude hidden entries from public buy rates via DB query', async () => {
+      let callIndex = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        callIndex++;
+        if (callIndex === 1) {
+          return chainable([{ categoryId: 1, name: 'Magic', displayName: 'Magic: The Gathering' }]);
+        }
+        // Simulates DB returning only visible entries (hidden=false WHERE clause applied)
+        return chainable([
+          { id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 },
+          { id: 3, categoryId: 1, description: 'Holos', rate: 0.1, hidden: false, sortOrder: 2 },
+        ]);
+      });
+
+      const result = await getPublicBuyRates();
+
+      expect(result.games).toHaveLength(1);
+      expect(result.games[0].entries).toHaveLength(2);
+      expect(result.games[0].entries[0].description).toBe('Commons');
+      expect(result.games[0].entries[1].description).toBe('Holos');
     });
 
     it('should return empty games array when no supported games', async () => {
@@ -343,7 +390,7 @@ describe('buy-rate-service', () => {
           ]);
         }
         // Only Magic has entries
-        return chainable([{ id: 1, categoryId: 1, description: 'Commons', rate: 0.01, sortOrder: 0 }]);
+        return chainable([{ id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 }]);
       });
 
       const result = await getPublicBuyRates();

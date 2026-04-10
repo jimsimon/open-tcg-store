@@ -10,6 +10,7 @@ type BuyRateEntry {
   rate: Float!
   type: String!
   rarity: String
+  hidden: Boolean!
   sortOrder: Int!
 }
 
@@ -29,6 +30,7 @@ input BuyRateEntryInput {
   rate: Float!
   type: String!
   rarity: String
+  hidden: Boolean
   sortOrder: Int!
 }
 

@@ -86,6 +86,7 @@ export type BulkUpdateStockInput = {
 export type BuyRateEntry = {
   __typename?: 'BuyRateEntry';
   description: Scalars['String']['output'];
+  hidden: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
   rate: Scalars['Float']['output'];
@@ -95,6 +96,7 @@ export type BuyRateEntry = {
 
 export type BuyRateEntryInput = {
   description: Scalars['String']['input'];
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
   rate: Scalars['Float']['input'];
   sortOrder: Scalars['Int']['input'];

@@ -64,6 +64,7 @@ input BulkUpdateStockInput {
 
 type BuyRateEntry {
   description: String!
+  hidden: Boolean!
   id: Int!
   rarity: String
   rate: Float!
@@ -73,6 +74,7 @@ type BuyRateEntry {
 
 input BuyRateEntryInput {
   description: String!
+  hidden: Boolean
   rarity: String
   rate: Float!
   sortOrder: Int!
