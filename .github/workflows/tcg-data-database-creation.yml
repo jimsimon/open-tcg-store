@@ -66,19 +66,32 @@ jobs:
             exit 0
           fi
 
-          curl -sfL \
+          if curl -sfL \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/octet-stream" \
             "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
-            -o ./sqlite-data/tcg-data.sqlite
-          echo "downloaded=true" >> $GITHUB_OUTPUT
+            -o ./sqlite-data/tcg-data.sqlite; then
+            echo "downloaded=true" >> $GITHUB_OUTPUT
+          else
+            echo "Failed to download asset, starting fresh"
+            rm -f ./sqlite-data/tcg-data.sqlite
+            echo "downloaded=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create empty database file
         if: steps.download-db.outputs.downloaded != 'true'
         run: mkdir -p ./sqlite-data && touch ./sqlite-data/tcg-data.sqlite
 
       - name: Push database schema
-        run: pnpm run --filter=api db:push:tcg-data
+        id: push-schema
+        run: |
+          if ! pnpm run --filter=api db:push:tcg-data; then
+            echo "Schema push failed on downloaded DB (likely incompatible schema changes)."
+            echo "Falling back to fresh database."
+            rm -f ./sqlite-data/tcg-data.sqlite
+            touch ./sqlite-data/tcg-data.sqlite
+            pnpm run --filter=api db:push:tcg-data
+          fi
 
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts
