@@ -256,7 +256,10 @@ async function populateTcgData() {
 
   for (const category of categories) {
     const { categoryId: tcgpCategoryId } = category;
-    const internalCategoryId = categoryNameToId.get(category.name)!;
+    const internalCategoryId = categoryNameToId.get(category.name);
+    if (internalCategoryId == null) {
+      throw new Error(`No internal ID found for category "${category.name}" after upsert. This should not happen.`);
+    }
 
     const groupsUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/groups`;
     console.log(`Fetching groups for ${category.name}: ${groupsUrl}`);
@@ -310,19 +313,18 @@ async function populateTcgData() {
 
     for (const group of groups) {
       const tcgpGroupId = group.groupId;
-      const internalGroupId = groupNameToId.get(group.name)!;
+      const internalGroupId = groupNameToId.get(group.name);
+      if (internalGroupId == null) {
+        throw new Error(
+          `No internal ID found for group "${group.name}" in category "${category.name}" after upsert. This should not happen.`,
+        );
+      }
 
       // Fetch products
       const productsUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/${tcgpGroupId}/products`;
       console.log(`Fetching products for group ${group.name}: ${productsUrl}`);
-      let products: Product[];
-      try {
-        const productsData = await fetchJson<ApiResponse<Product>>(productsUrl);
-        products = productsData.results;
-      } catch (err) {
-        console.error(`Failed to fetch products for group ${tcgpGroupId}: ${err}`);
-        continue;
-      }
+      const productsData = await fetchJson<ApiResponse<Product>>(productsUrl);
+      const products = productsData.results;
 
       if (products.length === 0) {
         console.log('No products found');
@@ -385,23 +387,10 @@ async function populateTcgData() {
       // doesn't cause data loss in the incremental upsert case.
       const pricesUrl = `https://tcgcsv.com/tcgplayer/${tcgpCategoryId}/${tcgpGroupId}/prices`;
       console.log(`Fetching prices: ${pricesUrl}`);
-      let groupPrices: Price[];
-      try {
-        const pricesData = await fetchJson<ApiResponse<Price>>(pricesUrl);
-        groupPrices = pricesData.results;
-      } catch (err) {
-        console.error(`Failed to fetch prices for group ${tcgpGroupId}: ${err}`);
-        continue;
-      }
+      const pricesData = await fetchJson<ApiResponse<Price>>(pricesUrl);
+      const groupPrices = pricesData.results;
 
-      // Delete existing child records for these products
-      for (const idBatch of batchify(internalIds, BATCH_SIZE)) {
-        await tcgData.delete(price).where(inArray(price.productId, idBatch));
-        await tcgData.delete(productPresaleInfo).where(inArray(productPresaleInfo.productId, idBatch));
-        await tcgData.delete(productExtendedData).where(inArray(productExtendedData.productId, idBatch));
-      }
-
-      // Insert presale info
+      // Prepare child record values before the transaction
       const presaleInfoValues = products
         .map((p) => {
           const internalId = tcgpProductIdToInternalId.get(p.productId);
@@ -415,11 +404,6 @@ async function populateTcgData() {
         })
         .filter((v): v is NonNullable<typeof v> => v != null);
 
-      for (const batch of batchify(presaleInfoValues, BATCH_SIZE)) {
-        await tcgData.insert(productPresaleInfo).values(batch);
-      }
-
-      // Insert extended data
       const extendedDataValues: (typeof productExtendedData.$inferInsert)[] = [];
       for (const p of products) {
         const internalId = tcgpProductIdToInternalId.get(p.productId);
@@ -434,36 +418,50 @@ async function populateTcgData() {
           });
         }
       }
-      for (const batch of batchify(extendedDataValues, BATCH_SIZE)) {
-        await tcgData.insert(productExtendedData).values(batch);
-      }
 
-      // Insert prices
-      if (groupPrices.length > 0) {
-        console.log(`Inserting ${groupPrices.length} prices`);
-        const priceValues = groupPrices
-          .map((p) => {
-            const internalId = tcgpProductIdToInternalId.get(p.productId);
-            if (internalId == null) return null;
-            return {
-              tcgpProductId: p.productId,
-              productId: internalId,
-              lowPrice: p.lowPrice,
-              midPrice: p.midPrice,
-              highPrice: p.highPrice,
-              marketPrice: p.marketPrice,
-              directLowPrice: p.directLowPrice,
-              subTypeName: p.subTypeName,
-            };
-          })
-          .filter((v): v is NonNullable<typeof v> => v != null);
+      const priceValues = groupPrices
+        .map((p) => {
+          const internalId = tcgpProductIdToInternalId.get(p.productId);
+          if (internalId == null) return null;
+          return {
+            tcgpProductId: p.productId,
+            productId: internalId,
+            lowPrice: p.lowPrice,
+            midPrice: p.midPrice,
+            highPrice: p.highPrice,
+            marketPrice: p.marketPrice,
+            directLowPrice: p.directLowPrice,
+            subTypeName: p.subTypeName,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v != null);
 
-        for (const batch of batchify(priceValues, BATCH_SIZE)) {
-          await tcgData.insert(price).values(batch);
+      // Delete and re-insert child records atomically so a mid-process
+      // crash can't leave products without their child data.
+      await tcgData.transaction(async (tx) => {
+        for (const idBatch of batchify(internalIds, BATCH_SIZE)) {
+          await tx.delete(price).where(inArray(price.productId, idBatch));
+          await tx.delete(productPresaleInfo).where(inArray(productPresaleInfo.productId, idBatch));
+          await tx.delete(productExtendedData).where(inArray(productExtendedData.productId, idBatch));
         }
-      } else {
-        console.log('No prices found');
-      }
+
+        for (const batch of batchify(presaleInfoValues, BATCH_SIZE)) {
+          await tx.insert(productPresaleInfo).values(batch);
+        }
+
+        for (const batch of batchify(extendedDataValues, BATCH_SIZE)) {
+          await tx.insert(productExtendedData).values(batch);
+        }
+
+        if (priceValues.length > 0) {
+          console.log(`Inserting ${groupPrices.length} prices`);
+          for (const batch of batchify(priceValues, BATCH_SIZE)) {
+            await tx.insert(price).values(batch);
+          }
+        } else {
+          console.log('No prices found');
+        }
+      });
     }
   }
 
