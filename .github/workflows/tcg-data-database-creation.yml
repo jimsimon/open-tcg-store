@@ -70,9 +70,10 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
             -o ./sqlite-data/tcg-data.sqlite
 
-      - name: Apply schema migration
+      - name: Apply one-time schema migration
         run: |
-          # Only run migration if the database has existing tables (not an empty file)
+          # Only needed for databases created before tracked migrations were adopted.
+          # Safe to run on any database — skips empty DBs and is idempotent on migrated ones.
           TABLE_COUNT=$(sqlite3 ./sqlite-data/tcg-data.sqlite "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
           if [ "$TABLE_COUNT" -gt 0 ]; then
             echo "Existing database detected ($TABLE_COUNT tables), running migration"
@@ -81,8 +82,8 @@ jobs:
             echo "Empty database, skipping migration"
           fi
 
-      - name: Push database schema
-        run: pnpm run --filter=api db:push:tcg-data
+      - name: Run database migrations
+        run: pnpm run --filter=api db:migrate:tcg-data
 
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts

@@ -1,5 +1,9 @@
 -- One-time migration for tcg-data.sqlite to support name-based upserts.
 --
+-- This script upgrades a database created by the old db:push approach to the
+-- new tracked-migrations schema and seeds the drizzle migration journal so
+-- that db:migrate knows migration 0000 has already been applied.
+--
 -- Changes applied:
 --   - group.category_id: nullable -> NOT NULL
 --   - product.category_id: nullable -> NOT NULL
@@ -12,7 +16,7 @@
 -- in the now-NOT-NULL columns are dropped (these would be orphaned data).
 --
 -- This script is idempotent — safe to run on databases that already have the
--- new schema (every DROP IF EXISTS / CREATE IF NOT EXISTS guards against that).
+-- new schema.
 
 PRAGMA foreign_keys=OFF;
 
@@ -93,7 +97,24 @@ CREATE INDEX `product_image_count_idx` ON `product` (`image_count`);
 -- Migrate category index -----------------------------------------------------
 
 DROP INDEX IF EXISTS category_name_idx;
--- Use CREATE IF NOT EXISTS to be idempotent
 CREATE UNIQUE INDEX IF NOT EXISTS `category_name_unique_idx` ON `category` (`name`);
+
+-- Seed drizzle migration journal ---------------------------------------------
+-- Mark migration 0000 as applied so db:migrate knows the schema is current.
+
+CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+  id SERIAL PRIMARY KEY,
+  hash text NOT NULL,
+  created_at numeric
+);
+
+-- The hash matches what drizzle-kit generates for 0000_perpetual_titanium_man.sql.
+-- Only insert if not already present.
+INSERT OR IGNORE INTO "__drizzle_migrations" (hash, created_at)
+  SELECT '4c12c58c1817c9339f8a21e7acc88e26244b8472b2365a81a7ca4c2bab3fbe48', 1775796931102
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "__drizzle_migrations"
+    WHERE hash = '4c12c58c1817c9339f8a21e7acc88e26244b8472b2365a81a7ca4c2bab3fbe48'
+  );
 
 PRAGMA foreign_keys=ON;

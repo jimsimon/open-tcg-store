@@ -36,9 +36,9 @@ Lit 3 + Web Awesome 3.4 | Koa.js 3 + GraphQL | PostgreSQL / libsql via Drizzle O
 Two separate SQLite databases, each with its own Drizzle config:
 
 - **Main DB** (`packages/api/src/db/otcgs/drizzle.config.ts`): Uses tracked migrations in `packages/api/src/db/otcgs/migrations/`. Schema source: `schema.ts`. DB file: `sqlite-data/otcgs.sqlite`.
-- **TCG Data DB** (`packages/api/src/db/tcg-data/drizzle.config.ts`): Push-only (no tracked migrations). DB file: `sqlite-data/tcg-data.sqlite`.
+- **TCG Data DB** (`packages/api/src/db/tcg-data/drizzle.config.ts`): Uses tracked migrations in `packages/api/src/db/tcg-data/migrations/`. Schema source: `schema.ts`. DB file: `sqlite-data/tcg-data.sqlite`.
 
-**Workflow**: Changing any `*-schema.ts` in `packages/api/src/db/otcgs/` auto-generates and stages a migration via the pre-commit hook. CI verifies committed migrations match the schema — PRs fail if migrations are missing or stale. Use `db:push:main` for local dev (bypasses migrations); use `db:generate` + `db:migrate` for tracked changes.
+**Workflow**: Changing any `*-schema.ts` in `packages/api/src/db/otcgs/` auto-generates and stages a migration via the pre-commit hook. CI verifies committed migrations match the schema — PRs fail if migrations are missing or stale. Use `db:push:main` for local dev (bypasses migrations); use `db:generate` + `db:migrate` for tracked changes. For TCG Data DB schema changes, use `db:generate:tcg-data` + `db:migrate:tcg-data`.
 
 ## Commands
 
@@ -51,6 +51,9 @@ pnpm --filter @open-tcgs/api db:push:tcg-data    # Push TCG data schema
 pnpm --filter @open-tcgs/api db:generate         # Generate migration from schema diff
 pnpm --filter @open-tcgs/api db:migrate          # Apply pending migrations
 pnpm --filter @open-tcgs/api db:check            # Verify migration metadata integrity
+pnpm --filter @open-tcgs/api db:generate:tcg-data # Generate TCG data migration
+pnpm --filter @open-tcgs/api db:migrate:tcg-data  # Apply pending TCG data migrations
+pnpm --filter @open-tcgs/api db:check:tcg-data    # Verify TCG data migration integrity
 pnpm test:run                                    # All tests once
 pnpm vitest run --project API                    # API tests (Node.js)
 pnpm vitest run --project UI                     # UI tests (Playwright)
