@@ -216,8 +216,8 @@ describe('ogs-settings-general-page', () => {
     expect(checkboxes.length).toBe(0);
 
     // Should show the "no game categories" message
-    const formGrid = element.shadowRoot!.querySelectorAll('.form-grid');
-    const lastGrid = formGrid[formGrid.length - 1];
-    expect(lastGrid?.textContent).toContain('No game categories available');
+    const sections = element.shadowRoot!.querySelectorAll('.settings-section');
+    const gamesSection = sections[sections.length - 1];
+    expect(gamesSection?.textContent).toContain('No game categories available');
   });
 });
