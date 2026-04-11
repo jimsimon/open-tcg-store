@@ -17,6 +17,19 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { roles, statement } from '../../../../api/src/lib/permissions';
+import { TypedDocumentString } from '../../graphql/graphql';
+import { execute } from '../../lib/graphql';
+
+// --- GraphQL Queries ---
+
+const GetAllStoresQuery = new TypedDocumentString(`
+  query GetAllStoresForUserEdit {
+    getAllStoreLocations { id name }
+  }
+`) as unknown as TypedDocumentString<
+  { getAllStoreLocations: { id: string; name: string }[] },
+  Record<string, never>
+>;
 
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
@@ -152,6 +165,12 @@ interface MemberRecord {
   userId: string;
   role: string;
   createdAt: string;
+}
+
+interface StoreMembership {
+  organizationId: string;
+  memberId: string;
+  role: string;
 }
 
 // --- Helpers ---
@@ -464,6 +483,64 @@ export class OgsSettingsUserEditPage extends LitElement {
         font-size: var(--wa-font-size-s);
       }
 
+      /* --- Store Assignment Grid --- */
+
+      .store-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.75rem;
+        padding: 1.25rem;
+      }
+
+      .store-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        background: var(--wa-color-surface-raised);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-l);
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease;
+      }
+
+      .store-card.assigned {
+        border-color: var(--wa-color-brand-fill-normal);
+        background: color-mix(in srgb, var(--wa-color-brand-container) 30%, var(--wa-color-surface-raised));
+      }
+
+      .store-card-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-neutral-container);
+        color: var(--wa-color-text-muted);
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      .store-card.assigned .store-card-icon {
+        background: var(--wa-color-brand-container);
+        color: var(--wa-color-brand-text);
+      }
+
+      .store-card-name {
+        flex: 1;
+        font-weight: 500;
+        font-size: var(--wa-font-size-s);
+      }
+
+      .store-section-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 1.25rem 1.25rem;
+      }
+
       /* --- Footer Actions --- */
 
       .footer-actions {
@@ -479,8 +556,12 @@ export class OgsSettingsUserEditPage extends LitElement {
 
   @state() private user: UserRecord | null = null;
   @state() private member: MemberRecord | null = null;
+  @state() private allStores: { id: string; name: string }[] = [];
+  @state() private storeMemberships: StoreMembership[] = [];
+  @state() private selectedStoreIds: Set<string> = new Set();
   @state() private loading = true;
   @state() private saving = false;
+  @state() private savingStores = false;
 
   /** The base role selected in the dropdown */
   @state() private selectedBaseRole = 'member';
@@ -504,8 +585,13 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      // Fetch user details and org members in parallel
-      const [userResult, orgResult] = await Promise.all([this.fetchUser(), this.fetchOrgMembers()]);
+      // Fetch user details, org members, all stores, and user's store memberships in parallel
+      const [userResult, orgResult] = await Promise.all([
+        this.fetchUser(),
+        this.fetchOrgMembers(),
+        this.fetchAllStores(),
+        this.fetchStoreMemberships(),
+      ]);
 
       if (!userResult) {
         this.errorMessage = 'User not found';
@@ -589,6 +675,32 @@ export class OgsSettingsUserEditPage extends LitElement {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  private async fetchAllStores(): Promise<void> {
+    try {
+      const result = await execute(GetAllStoresQuery);
+      if (result.data?.getAllStoreLocations) {
+        this.allStores = result.data.getAllStoreLocations;
+      }
+    } catch {
+      // Non-fatal — store assignment section will be empty
+    }
+  }
+
+  private async fetchStoreMemberships(): Promise<void> {
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(this.userId)}/store-memberships`, {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const rows = (await res.json()) as StoreMembership[];
+        this.storeMemberships = rows;
+        this.selectedStoreIds = new Set(rows.map((r) => r.organizationId));
+      }
+    } catch {
+      // Non-fatal
     }
   }
 
@@ -757,6 +869,64 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.existingCustomRoleName = roleName;
   }
 
+  async handleSaveStoreAssignments() {
+    this.savingStores = true;
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    try {
+      const currentIds = new Set(this.storeMemberships.map((m) => m.organizationId));
+      const desired = this.selectedStoreIds;
+
+      // Stores to add (in desired but not currently a member)
+      const toAdd = [...desired].filter((id) => !currentIds.has(id));
+      // Stores to remove (currently a member but not in desired)
+      const toRemove = this.storeMemberships.filter((m) => !desired.has(m.organizationId));
+
+      // Add new memberships
+      await Promise.all(
+        toAdd.map(async (organizationId) => {
+          const res = await fetch('/api/users/store-membership', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ userId: this.userId, organizationId, role: 'member' }),
+          });
+          if (!res.ok) {
+            const err = (await res.json()) as { error?: string };
+            throw new Error(err.error ?? `Failed to add to store ${organizationId}`);
+          }
+        }),
+      );
+
+      // Remove memberships
+      await Promise.all(
+        toRemove.map(async (membership) => {
+          const res = await fetch('/api/users/store-membership', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ memberId: membership.memberId, organizationId: membership.organizationId }),
+          });
+          if (!res.ok) {
+            const err = (await res.json()) as { error?: string };
+            throw new Error(err.error ?? `Failed to remove from store ${membership.organizationId}`);
+          }
+        }),
+      );
+
+      await this.fetchStoreMemberships();
+      this.successMessage = 'Store assignments updated successfully';
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to update store assignments';
+    } finally {
+      this.savingStores = false;
+    }
+  }
+
   render() {
     return html`
       <ogs-page
@@ -819,6 +989,7 @@ export class OgsSettingsUserEditPage extends LitElement {
           `
         : nothing}
       ${this.renderPageHeader()} ${this.renderUserInfo()}
+      ${this.renderStoreAssignments()}
       ${this.member ? this.renderRoleAndPermissions() : this.renderNotMemberState()}
       ${this.member ? this.renderFooter() : nothing}
     `;
@@ -870,12 +1041,70 @@ export class OgsSettingsUserEditPage extends LitElement {
     `;
   }
 
+  private renderStoreAssignments() {
+    if (this.allStores.length === 0) return nothing;
+    return html`
+      <div class="section">
+        <h3 class="section-title">Store Assignments</h3>
+        <wa-card appearance="outline">
+          <div class="store-grid">
+            ${this.allStores.map((store) => {
+              const assigned = this.selectedStoreIds.has(store.id);
+              return html`
+                <div
+                  class="store-card ${assigned ? 'assigned' : ''}"
+                  @click="${() => {
+                    const updated = new Set(this.selectedStoreIds);
+                    if (assigned) {
+                      updated.delete(store.id);
+                    } else {
+                      updated.add(store.id);
+                    }
+                    this.selectedStoreIds = updated;
+                  }}"
+                >
+                  <div class="store-card-icon">
+                    <wa-icon name="${assigned ? 'store' : 'store'}"></wa-icon>
+                  </div>
+                  <span class="store-card-name">${store.name}</span>
+                  <wa-checkbox
+                    ?checked="${assigned}"
+                    @click="${(e: Event) => e.stopPropagation()}"
+                    @change="${(e: Event) => {
+                      e.stopPropagation();
+                      const updated = new Set(this.selectedStoreIds);
+                      if ((e.target as HTMLInputElement).checked) {
+                        updated.add(store.id);
+                      } else {
+                        updated.delete(store.id);
+                      }
+                      this.selectedStoreIds = updated;
+                    }}"
+                  ></wa-checkbox>
+                </div>
+              `;
+            })}
+          </div>
+          <div class="store-section-footer">
+            <wa-button variant="brand" size="small" ?loading="${this.savingStores}" @click="${this.handleSaveStoreAssignments}">
+              <wa-icon slot="start" name="floppy-disk"></wa-icon>
+              Save Store Assignments
+            </wa-button>
+          </div>
+        </wa-card>
+      </div>
+    `;
+  }
+
   private renderNotMemberState() {
     return html`
       <div class="not-member-state">
         <wa-icon name="user-xmark"></wa-icon>
-        <h3>Not a Store Member</h3>
-        <p>This user is not a member of the current store. Add them to the store first to manage their permissions.</p>
+        <h3>Not a Member of the Active Store</h3>
+        <p>
+          This user is not assigned to the currently active store. Use the Store Assignments section above to add them,
+          then switch to that store to manage their role and permissions.
+        </p>
         <wa-button variant="brand" href="/settings/users">
           <wa-icon slot="start" name="arrow-left"></wa-icon>
           Back to Users

@@ -180,6 +180,32 @@ const router = new Router()
       ctx.body = { databaseUpdating: false };
     }
   })
+  // Proxy /api/users/* to the API server (user management endpoints)
+  .get('/api/users/:userId/store-memberships', async (ctx) => {
+    const res = await fetch(`${API_BASE_URL}/api/users/${ctx.params.userId}/store-memberships`, {
+      headers: { Cookie: ctx.headers.cookie ?? '' },
+    });
+    ctx.status = res.status;
+    ctx.body = await res.json();
+  })
+  .post('/api/users/store-membership', async (ctx) => {
+    const res = await fetch(`${API_BASE_URL}/api/users/store-membership`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
+      body: JSON.stringify(ctx.request.body),
+    });
+    ctx.status = res.status;
+    ctx.body = await res.json();
+  })
+  .delete('/api/users/store-membership', async (ctx) => {
+    const res = await fetch(`${API_BASE_URL}/api/users/store-membership`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
+      body: JSON.stringify(ctx.request.body),
+    });
+    ctx.status = res.status;
+    ctx.body = await res.json();
+  })
   .use(async (ctx: RouterContext, next: Next) => {
     if ((await isSetupPending()) && ctx._matchedRouteName !== 'first-time-setup') {
       const redirectUrlOrError = router.url('first-time-setup');
