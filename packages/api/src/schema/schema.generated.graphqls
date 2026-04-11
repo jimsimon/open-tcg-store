@@ -312,6 +312,13 @@ type LotPage {
   totalPages: Int!
 }
 
+type LotStats {
+  totalInvested: Float!
+  totalLots: Int!
+  totalMarketValue: Float!
+  totalProfitLoss: Float!
+}
+
 type Mutation {
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addStock(input: AddStockInput!): InventoryItemStock!
@@ -547,6 +554,7 @@ type Query {
   getInventoryItem(id: Int!): InventoryItem
   getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
   getLot(id: Int!): Lot
+  getLotStats: LotStats!
   getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getProduct(organizationId: String, productId: String!): ProductDetail!

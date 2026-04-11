@@ -69,9 +69,17 @@ input LotFilters {
   searchTerm: String
 }
 
+type LotStats {
+  totalLots: Int!
+  totalInvested: Float!
+  totalMarketValue: Float!
+  totalProfitLoss: Float!
+}
+
 extend type Query {
   getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
   getLot(id: Int!): Lot
+  getLotStats: LotStats!
   getDistinctRarities(categoryId: Int!): [String!]!
 }
 

@@ -353,6 +353,14 @@ export type LotPage = {
   totalPages: Scalars['Int']['output'];
 };
 
+export type LotStats = {
+  __typename?: 'LotStats';
+  totalInvested: Scalars['Float']['output'];
+  totalLots: Scalars['Int']['output'];
+  totalMarketValue: Scalars['Float']['output'];
+  totalProfitLoss: Scalars['Float']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
@@ -744,6 +752,7 @@ export type Query = {
   getInventoryItem?: Maybe<InventoryItem>;
   getInventoryItemDetails: InventoryStockPage;
   getLot?: Maybe<Lot>;
+  getLotStats: LotStats;
   getLots: LotPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
@@ -1264,6 +1273,7 @@ export type ResolversTypes = {
   LotItem: ResolverTypeWrapper<LotItem>;
   LotItemInput: LotItemInput;
   LotPage: ResolverTypeWrapper<LotPage>;
+  LotStats: ResolverTypeWrapper<LotStats>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   OpenOrder: ResolverTypeWrapper<OpenOrder>;
   Order: ResolverTypeWrapper<Order>;
@@ -1361,6 +1371,7 @@ export type ResolversParentTypes = {
   LotItem: LotItem;
   LotItemInput: LotItemInput;
   LotPage: LotPage;
+  LotStats: LotStats;
   Mutation: Record<PropertyKey, never>;
   OpenOrder: OpenOrder;
   Order: Order;
@@ -1620,6 +1631,13 @@ export type LotPageResolvers<ContextType = any, ParentType extends ResolversPare
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type LotStatsResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotStats'] = ResolversParentTypes['LotStats']> = {
+  totalInvested?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalLots?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalMarketValue?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  totalProfitLoss?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
   addStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationaddStockArgs, 'input'>>;
@@ -1803,6 +1821,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getInventoryItem?: Resolver<Maybe<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<QuerygetInventoryItemArgs, 'id'>>;
   getInventoryItemDetails?: Resolver<ResolversTypes['InventoryStockPage'], ParentType, ContextType, RequireFields<QuerygetInventoryItemDetailsArgs, 'inventoryItemId'>>;
   getLot?: Resolver<Maybe<ResolversTypes['Lot']>, ParentType, ContextType, RequireFields<QuerygetLotArgs, 'id'>>;
+  getLotStats?: Resolver<ResolversTypes['LotStats'], ParentType, ContextType>;
   getLots?: Resolver<ResolversTypes['LotPage'], ParentType, ContextType, Partial<QuerygetLotsArgs>>;
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
@@ -1970,6 +1989,7 @@ export type Resolvers<ContextType = any> = {
   Lot?: LotResolvers<ContextType>;
   LotItem?: LotItemResolvers<ContextType>;
   LotPage?: LotPageResolvers<ContextType>;
+  LotStats?: LotStatsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   OpenOrder?: OpenOrderResolvers<ContextType>;
   Order?: OrderResolvers<ContextType>;

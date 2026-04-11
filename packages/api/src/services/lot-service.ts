@@ -636,6 +636,82 @@ export async function deleteLot(id: number, organizationId: string, userId: stri
 }
 
 // ---------------------------------------------------------------------------
+// getLotStats
+// ---------------------------------------------------------------------------
+
+export interface LotStatsResult {
+  totalLots: number;
+  totalInvested: number;
+  totalMarketValue: number;
+  totalProfitLoss: number;
+}
+
+export async function getLotStats(organizationId: string): Promise<LotStatsResult> {
+  // Total lots and total invested (sum of amountPaid) from the lot table
+  const [lotAgg] = await otcgs
+    .select({
+      totalLots: sql<number>`count(*)`,
+      totalInvested: sql<number>`coalesce(sum(${lot.amountPaid}), 0)`,
+    })
+    .from(lot)
+    .where(eq(lot.organizationId, organizationId));
+
+  const totalLots = Number(lotAgg?.totalLots ?? 0);
+  const totalInvested = Number(lotAgg?.totalInvested ?? 0);
+
+  if (totalLots === 0) {
+    return { totalLots: 0, totalInvested: 0, totalMarketValue: 0, totalProfitLoss: 0 };
+  }
+
+  // Fetch all lot items using a subquery to avoid a separate lot ID round trip
+  const orgLotIds = otcgs.select({ id: lot.id }).from(lot).where(eq(lot.organizationId, organizationId));
+
+  const items = await otcgs
+    .select({
+      productId: lotItem.productId,
+      quantity: lotItem.quantity,
+    })
+    .from(lotItem)
+    .where(inArray(lotItem.lotId, orgLotIds));
+
+  // Fetch market prices for all referenced products
+  const productIds = [...new Set(items.map((i) => i.productId))];
+  const priceRows =
+    productIds.length > 0
+      ? await otcgs
+          .select({
+            productId: price.productId,
+            subTypeName: price.subTypeName,
+            marketPrice: price.marketPrice,
+            midPrice: price.midPrice,
+          })
+          .from(price)
+          .where(inArray(price.productId, productIds))
+      : [];
+
+  // Build market value map (prefer Normal subtype, same logic as buildLotItemResults)
+  const marketValueByProduct = new Map<number, number>();
+  for (const pr of priceRows) {
+    if (pr.productId == null) continue;
+    const existing = marketValueByProduct.get(pr.productId);
+    if (existing == null || pr.subTypeName === 'Normal') {
+      marketValueByProduct.set(pr.productId, pr.marketPrice ?? pr.midPrice ?? 0);
+    }
+  }
+
+  // Sum total market value across all lot items
+  let totalMarketValue = 0;
+  for (const item of items) {
+    const unitPrice = marketValueByProduct.get(item.productId) ?? 0;
+    totalMarketValue += unitPrice * item.quantity;
+  }
+
+  const totalProfitLoss = totalMarketValue - totalInvested;
+
+  return { totalLots, totalInvested, totalMarketValue, totalProfitLoss };
+}
+
+// ---------------------------------------------------------------------------
 // getLots
 // ---------------------------------------------------------------------------
 
