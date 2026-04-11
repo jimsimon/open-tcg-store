@@ -8,9 +8,7 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
-import '@awesome.me/webawesome/dist/components/tab-group/tab-group.js';
-import '@awesome.me/webawesome/dist/components/tab/tab.js';
-import '@awesome.me/webawesome/dist/components/tab-panel/tab-panel.js';
+
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
@@ -261,7 +259,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
   @state() supportedGames: SupportedGame[] = [];
   @state() buyRatesByGame: Map<number, BuyRateRow[]> = new Map();
   @state() raritiesByGame: Map<number, string[]> = new Map();
-  @state() activeTab = '';
+  @state() activeGameId: number | null = null;
   @state() loading = true;
   @state() savingGame: number | null = null;
   @state() successMessage = '';
@@ -334,7 +332,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
         this.raritiesByGame = rarityMap;
 
         if (this.supportedGames.length > 0) {
-          this.activeTab = `game-${this.supportedGames[0].categoryId}`;
+          this.activeGameId = this.supportedGames[0].categoryId;
         }
       }
     } catch (e) {
@@ -544,25 +542,29 @@ export class OgsSettingsBuyRatesPage extends LitElement {
               <a href="/settings/general">General Settings</a> to select which games your store supports.
             </wa-callout>
           `
-        : this.renderGameTabs()}
+        : this.renderGameSelector()}
     `;
   }
 
-  private renderGameTabs() {
+  private renderGameSelector() {
+    const activeGame = this.supportedGames.find((g) => g.categoryId === this.activeGameId) ?? this.supportedGames[0];
+
     return html`
       <wa-card appearance="outline">
-        <wa-tab-group
-          @wa-tab-show="${(e: CustomEvent) => {
-            this.activeTab = (e.target as HTMLElement).querySelector('wa-tab[active]')?.getAttribute('panel') ?? '';
-          }}"
-        >
-          ${this.supportedGames.map(
-            (game) => html`<wa-tab slot="nav" panel="game-${game.categoryId}">${game.displayName}</wa-tab>`,
-          )}
-          ${this.supportedGames.map(
-            (game) => html` <wa-tab-panel name="game-${game.categoryId}">${this.renderGamePanel(game)}</wa-tab-panel> `,
-          )}
-        </wa-tab-group>
+        <div style="padding: 1rem 1rem 0;">
+          <wa-select
+            label="Game"
+            .value="${String(activeGame.categoryId)}"
+            @wa-change="${(e: CustomEvent) => {
+              this.activeGameId = parseInt((e.target as HTMLSelectElement).value, 10);
+            }}"
+          >
+            ${this.supportedGames.map(
+              (game) => html`<wa-option value="${game.categoryId}">${game.displayName}</wa-option>`,
+            )}
+          </wa-select>
+        </div>
+        ${this.renderGamePanel(activeGame)}
       </wa-card>
     `;
   }
