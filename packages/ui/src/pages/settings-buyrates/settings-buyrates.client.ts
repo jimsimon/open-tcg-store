@@ -555,7 +555,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           <wa-select
             label="Game"
             .value="${String(activeGame.categoryId)}"
-            @wa-change="${(e: CustomEvent) => {
+            @change="${(e: Event) => {
               this.activeGameId = parseInt((e.target as HTMLSelectElement).value, 10);
             }}"
           >
@@ -653,7 +653,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           <wa-select
             size="small"
             .value="${row.type}"
-            @wa-change="${(e: CustomEvent) => {
+            @change="${(e: Event) => {
               this.handleRowTypeChange(categoryId, index, (e.target as HTMLSelectElement).value);
             }}"
           >
@@ -680,7 +680,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           <wa-switch
             size="small"
             ?checked="${!row.hidden}"
-            @wa-change="${(e: CustomEvent) => {
+            @change="${(e: Event) => {
               this.handleRowHiddenChange(
                 categoryId,
                 index,
