@@ -4,8 +4,8 @@ vi.mock('../../lib/graphql.ts', () => ({
   execute: vi.fn().mockResolvedValue({
     data: {
       getDataUpdateStatus: {
-        currentVersion: 'initial-db-20260405',
-        latestVersion: 'initial-db-20260405',
+        currentVersion: '2026-04-05T12:00:00.000Z',
+        latestVersion: null,
         updateAvailable: false,
         isUpdating: false,
       },
@@ -23,8 +23,8 @@ function setupDefaultMock(overrides: Record<string, unknown> = {}) {
   mockExecute.mockResolvedValue({
     data: {
       getDataUpdateStatus: {
-        currentVersion: 'initial-db-20260405',
-        latestVersion: 'initial-db-20260405',
+        currentVersion: '2026-04-05T12:00:00.000Z',
+        latestVersion: null,
         updateAvailable: false,
         isUpdating: false,
         ...overrides,
@@ -73,11 +73,12 @@ describe('ogs-settings-data-updates-page', () => {
     expect(sectionTexts).toContain('Database Status');
   });
 
-  test('should display current version', () => {
+  test('should display formatted creation date', () => {
     const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
     const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
-    // The formatted version "2026-04-05" should be present
-    expect(texts).toContain('2026-04-05');
+    // ISO timestamp "2026-04-05T12:00:00.000Z" should be formatted as a locale date
+    // In test environment (likely en-US), this should contain "Apr" and "2026"
+    expect(texts.some((t) => t?.includes('2026'))).toBe(true);
   });
 
   test('should display up-to-date callout when no update available', () => {
@@ -98,9 +99,17 @@ describe('ogs-settings-data-updates-page', () => {
     expect(updateBtn?.hasAttribute('disabled')).toBe(true);
   });
 
+  test('should not show Update Available column when up to date', () => {
+    const statusItems = element.shadowRoot!.querySelectorAll('.status-item');
+    // Only the "Last Updated" item should be present
+    expect(statusItems.length).toBe(1);
+    const label = statusItems[0].querySelector('.status-label');
+    expect(label?.textContent).toContain('Last Updated');
+  });
+
   test('should show update available callout when update exists', async () => {
     setupDefaultMock({
-      latestVersion: 'initial-db-20260406',
+      latestVersion: 'tcg-data-abc123def456abc123def456abc123def456abc123def456abc123def456ab',
       updateAvailable: true,
     });
     element.remove();
@@ -115,9 +124,28 @@ describe('ogs-settings-data-updates-page', () => {
     expect(warningCallout?.textContent).toContain('new card data update is available');
   });
 
+  test('should show Update Available column when update exists', async () => {
+    setupDefaultMock({
+      latestVersion: 'tcg-data-abc123def456abc123def456abc123def456abc123def456abc123def456ab',
+      updateAvailable: true,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const statusItems = element.shadowRoot!.querySelectorAll('.status-item');
+    expect(statusItems.length).toBe(2);
+    const labels = Array.from(statusItems).map((el) => el.querySelector('.status-label')?.textContent?.trim());
+    expect(labels).toContain('Last Updated');
+    expect(labels).toContain('Update Available');
+  });
+
   test('should enable Update Now button when update available', async () => {
     setupDefaultMock({
-      latestVersion: 'initial-db-20260406',
+      latestVersion: 'tcg-data-abc123def456abc123def456abc123def456abc123def456abc123def456ab',
       updateAvailable: true,
     });
     element.remove();
@@ -160,11 +188,49 @@ describe('ogs-settings-data-updates-page', () => {
     expect(errorCallout?.textContent).toContain('Network error');
   });
 
-  test('should format version tag as date', () => {
+  test('should format ISO timestamp as readable date', () => {
     const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
     const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
-    // "initial-db-20260405" should be formatted as "2026-04-05"
-    expect(texts.some((t) => t === '2026-04-05')).toBe(true);
+    // ISO timestamp should be formatted via toLocaleDateString, containing year 2026
+    expect(texts.some((t) => t?.includes('2026'))).toBe(true);
+  });
+
+  test('should format tcg-data hash tag as truncated hash', async () => {
+    setupDefaultMock({
+      latestVersion: 'tcg-data-abc123def456abc123def456abc123def456abc123def456abc123def456ab',
+      updateAvailable: true,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
+    const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
+    // Should show truncated hash (first 12 chars)
+    expect(texts).toContain('abc123def456');
+  });
+
+  test('should still format legacy version tags', async () => {
+    setupDefaultMock({
+      currentVersion: 'initial-db-20260405',
+      latestVersion: 'initial-db-20260406',
+      updateAvailable: true,
+    });
+    element.remove();
+    element = document.createElement('ogs-settings-data-updates-page') as OgsSettingsDataUpdatesPage;
+    document.body.appendChild(element);
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
+
+    const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
+    const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
+    // Legacy tag "initial-db-20260405" should be formatted as "2026-04-05"
+    expect(texts).toContain('2026-04-05');
+    expect(texts).toContain('2026-04-06');
   });
 
   test('should display Unknown for null version', async () => {
@@ -181,6 +247,7 @@ describe('ogs-settings-data-updates-page', () => {
 
     const statusValues = element.shadowRoot!.querySelectorAll('.status-value');
     const texts = Array.from(statusValues).map((el) => el.textContent?.trim());
-    expect(texts.filter((t) => t === 'Unknown').length).toBe(2);
+    // Only "Last Updated" column visible (latestVersion is null and updateAvailable is false)
+    expect(texts.filter((t) => t === 'Unknown').length).toBe(1);
   });
 });

@@ -7,7 +7,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const {
   mockExistsSync,
   mockReadFileSync,
-  mockWriteFileSync,
   mockRenameSync,
   mockUnlinkSync,
   mockCreateWriteStream,
@@ -19,10 +18,10 @@ const {
   mockClientClose,
   mockFetch,
   mockPipeline,
+  mockCreateHash,
 } = vi.hoisted(() => ({
   mockExistsSync: vi.fn(),
   mockReadFileSync: vi.fn(),
-  mockWriteFileSync: vi.fn(),
   mockRenameSync: vi.fn(),
   mockUnlinkSync: vi.fn(),
   mockCreateWriteStream: vi.fn(),
@@ -34,13 +33,13 @@ const {
   mockClientClose: vi.fn(),
   mockFetch: vi.fn(),
   mockPipeline: vi.fn(),
+  mockCreateHash: vi.fn(),
 }));
 
 // Mock node:fs
 vi.mock('node:fs', () => ({
   existsSync: mockExistsSync,
   readFileSync: mockReadFileSync,
-  writeFileSync: mockWriteFileSync,
   renameSync: mockRenameSync,
   unlinkSync: mockUnlinkSync,
   createWriteStream: mockCreateWriteStream,
@@ -56,6 +55,11 @@ vi.mock('node:stream', () => ({
   Readable: {
     fromWeb: vi.fn((body: unknown) => body),
   },
+}));
+
+// Mock node:crypto
+vi.mock('node:crypto', () => ({
+  createHash: mockCreateHash,
 }));
 
 // Mock the db modules
@@ -78,15 +82,18 @@ vi.mock('@libsql/client', () => ({
 // Import the service under test *after* mocks are registered.
 // ---------------------------------------------------------------------------
 import {
-  getCurrentVersion,
+  computeFileHash,
+  fetchReleaseHash,
   checkForUpdate,
   downloadUpdate,
   validateDatabase,
+  verifyDownloadHash,
   applyUpdate,
   performUpdateCheck,
   startUpdateScheduler,
   stopUpdateScheduler,
   getDataUpdateStatus,
+  getCreatedAt,
   refreshUpdateStatus,
   triggerManualUpdate,
 } from './tcg-data-update-service';
@@ -96,19 +103,29 @@ import type { GitHubRelease } from './tcg-data-update-service';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRelease(tag: string, hasAsset = true): GitHubRelease {
+const FAKE_HASH = 'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
+const DIFFERENT_HASH = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+function makeRelease(tag: string, hasAsset = true, hasHashAsset = true): GitHubRelease {
+  const assets: GitHubRelease['assets'] = [];
+  if (hasAsset) {
+    assets.push({
+      name: 'tcg-data.sqlite',
+      browser_download_url: `https://github.com/download/${tag}/tcg-data.sqlite`,
+      size: 1024 * 1024,
+    });
+  }
+  if (hasHashAsset) {
+    assets.push({
+      name: 'tcg-data.sqlite.sha256',
+      browser_download_url: `https://github.com/download/${tag}/tcg-data.sqlite.sha256`,
+      size: 64,
+    });
+  }
   return {
     tag_name: tag,
     name: `Release ${tag}`,
-    assets: hasAsset
-      ? [
-          {
-            name: 'tcg-data.sqlite',
-            browser_download_url: `https://github.com/download/${tag}/tcg-data.sqlite`,
-            size: 1024 * 1024,
-          },
-        ]
-      : [],
+    assets,
   };
 }
 
@@ -118,8 +135,25 @@ function mockFetchResponse(body: unknown, ok = true, status = 200) {
     status,
     statusText: ok ? 'OK' : 'Not Found',
     json: vi.fn().mockResolvedValue(body),
+    text: vi.fn().mockResolvedValue(''),
     arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
   };
+}
+
+/** Return a fetch response mock for a hash asset download. */
+function mockHashFetchResponse(hash: string) {
+  return {
+    ok: true,
+    text: vi.fn().mockResolvedValue(`${hash}  tcg-data.sqlite\n`),
+  };
+}
+
+/** Set up the createHash mock to return a given hex digest. */
+function setupHashMock(digest: string) {
+  mockCreateHash.mockReturnValue({
+    update: vi.fn().mockReturnThis(),
+    digest: vi.fn().mockReturnValue(digest),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +162,7 @@ function mockFetchResponse(body: unknown, ok = true, status = 200) {
 
 describe('tcg-data-update-service', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.useFakeTimers();
 
     // Default: global fetch is our mock
@@ -149,6 +183,9 @@ describe('tcg-data-update-service', () => {
     // Default mocks for streaming download
     mockPipeline.mockResolvedValue(undefined);
     mockCreateWriteStream.mockReturnValue({});
+
+    // Default hash mock
+    setupHashMock(FAKE_HASH);
   });
 
   afterEach(() => {
@@ -158,35 +195,103 @@ describe('tcg-data-update-service', () => {
   });
 
   // -----------------------------------------------------------------------
-  // getCurrentVersion
+  // computeFileHash
   // -----------------------------------------------------------------------
-  describe('getCurrentVersion', () => {
-    it('should return null when version file does not exist', () => {
+  describe('computeFileHash', () => {
+    it('should return null when file does not exist', () => {
       mockExistsSync.mockReturnValue(false);
 
-      const version = getCurrentVersion();
-
-      expect(version).toBeNull();
+      expect(computeFileHash('/some/path.sqlite')).toBeNull();
     });
 
-    it('should return trimmed version string when file exists', () => {
+    it('should return hex hash when file exists', () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405\n');
+      mockReadFileSync.mockReturnValue(Buffer.from('fake'));
+      setupHashMock(FAKE_HASH);
 
-      const version = getCurrentVersion();
-
-      expect(version).toBe('initial-db-20260405');
+      expect(computeFileHash('/some/path.sqlite')).toBe(FAKE_HASH);
+      expect(mockCreateHash).toHaveBeenCalledWith('sha256');
     });
 
-    it('should return null when reading file throws', () => {
+    it('should return null when readFileSync throws', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockImplementation(() => {
         throw new Error('permission denied');
       });
 
-      const version = getCurrentVersion();
+      expect(computeFileHash('/some/path.sqlite')).toBeNull();
+    });
+  });
 
-      expect(version).toBeNull();
+  // -----------------------------------------------------------------------
+  // fetchReleaseHash
+  // -----------------------------------------------------------------------
+  describe('fetchReleaseHash', () => {
+    it('should return null when release has no hash asset', async () => {
+      const release = makeRelease('tcg-data-20260405', true, false);
+
+      const result = await fetchReleaseHash(release);
+
+      expect(result).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should return the hash from the asset', async () => {
+      const release = makeRelease('tcg-data-20260405');
+      mockFetch.mockResolvedValue(mockHashFetchResponse(FAKE_HASH));
+
+      const result = await fetchReleaseHash(release);
+
+      expect(result).toBe(FAKE_HASH);
+    });
+
+    it('should return null when fetch fails', async () => {
+      const release = makeRelease('tcg-data-20260405');
+      mockFetch.mockResolvedValue({ ok: false });
+
+      const result = await fetchReleaseHash(release);
+
+      expect(result).toBeNull();
+    });
+
+    it('should parse sha256sum output format correctly', async () => {
+      const release = makeRelease('tcg-data-20260405');
+      // sha256sum format: "hash  filename\n"
+      mockFetch.mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue(`${FAKE_HASH}  tcg-data.sqlite\n`),
+      });
+
+      const result = await fetchReleaseHash(release);
+
+      expect(result).toBe(FAKE_HASH);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // verifyDownloadHash
+  // -----------------------------------------------------------------------
+  describe('verifyDownloadHash', () => {
+    it('should return true when hash matches', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH);
+
+      expect(verifyDownloadHash('/some/file', FAKE_HASH)).toBe(true);
+    });
+
+    it('should return false when hash does not match', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(DIFFERENT_HASH);
+
+      expect(verifyDownloadHash('/some/file', FAKE_HASH)).toBe(false);
+    });
+
+    it('should return false when file does not exist', () => {
+      mockExistsSync.mockReturnValue(false);
+
+      expect(verifyDownloadHash('/some/file', FAKE_HASH)).toBe(false);
     });
   });
 
@@ -194,45 +299,62 @@ describe('tcg-data-update-service', () => {
   // checkForUpdate
   // -----------------------------------------------------------------------
   describe('checkForUpdate', () => {
-    it('should return the latest release when a new version is available', async () => {
+    it('should return the release and hash when local hash differs', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260404');
-      const releases = [makeRelease('initial-db-20260405'), makeRelease('initial-db-20260404')];
-      mockFetch.mockResolvedValue(mockFetchResponse(releases));
+      mockReadFileSync.mockReturnValue(Buffer.from('old'));
+      setupHashMock(DIFFERENT_HASH); // local hash differs
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases)) // GitHub API
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH)); // hash asset
 
       const result = await checkForUpdate();
 
-      expect(result).toEqual(releases[0]);
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('api.github.com/repos/jimsimon/open-tcg-store/releases'),
-        expect.objectContaining({
-          headers: expect.objectContaining({ 'User-Agent': 'open-tcg-store' }),
-        }),
-      );
+      expect(result).not.toBeNull();
+      expect(result!.release.tag_name).toBe('tcg-data-20260405');
+      expect(result!.expectedHash).toBe(FAKE_HASH);
     });
 
-    it('should return null when already up to date', async () => {
+    it('should return null when hashes match (already up to date)', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH); // local hash matches
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
 
       const result = await checkForUpdate();
 
       expect(result).toBeNull();
     });
 
-    it('should return the latest release when no version file exists', async () => {
-      mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
-      mockFetch.mockResolvedValue(mockFetchResponse(releases));
+    it('should return the release when local file does not exist', async () => {
+      mockExistsSync.mockReturnValue(false); // no local DB file
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
 
       const result = await checkForUpdate();
 
-      expect(result).toEqual(releases[0]);
+      expect(result).not.toBeNull();
+      expect(result!.expectedHash).toBe(FAKE_HASH);
+    });
+
+    it('should return null when release has no hash asset', async () => {
+      const releases = [makeRelease('tcg-data-20260405', true, false)]; // no hash asset
+      mockFetch.mockResolvedValueOnce(mockFetchResponse(releases));
+
+      const result = await checkForUpdate();
+
+      expect(result).toBeNull();
     });
 
     it('should return null when no matching releases exist', async () => {
-      mockExistsSync.mockReturnValue(false);
       const releases = [{ tag_name: 'v1.0.0', name: 'v1.0.0', assets: [] }];
       mockFetch.mockResolvedValue(mockFetchResponse(releases));
 
@@ -242,7 +364,6 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should throw when GitHub API returns non-OK response', async () => {
-      mockExistsSync.mockReturnValue(false);
       mockFetch.mockResolvedValue(mockFetchResponse(null, false, 403));
 
       await expect(checkForUpdate()).rejects.toThrow('GitHub API responded with 403');
@@ -254,7 +375,7 @@ describe('tcg-data-update-service', () => {
   // -----------------------------------------------------------------------
   describe('downloadUpdate', () => {
     it('should download the asset and stream to temp file', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
       const fakeBody = { readable: true };
       mockFetch.mockResolvedValue({
         ok: true,
@@ -275,13 +396,13 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should throw when release has no matching asset', async () => {
-      const release = makeRelease('initial-db-20260405', false);
+      const release = makeRelease('tcg-data-20260405', false);
 
       await expect(downloadUpdate(release)).rejects.toThrow('does not contain a tcg-data.sqlite asset');
     });
 
     it('should throw when download fetch fails', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
@@ -292,7 +413,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should throw when response body is null', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
       mockFetch.mockResolvedValue({
         ok: true,
         body: null,
@@ -353,7 +474,7 @@ describe('tcg-data-update-service', () => {
   // -----------------------------------------------------------------------
   describe('applyUpdate', () => {
     it('should perform the full DETACH/rename/ATTACH swap', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
 
       // Start the async operation and advance the 1000ms drain timer
       const promise = applyUpdate(release);
@@ -376,19 +497,12 @@ describe('tcg-data-update-service', () => {
       // Should reconnect standalone connection
       expect(mockReconnectTcgData).toHaveBeenCalled();
 
-      // Should write version file
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        '/fake/workspace/sqlite-data/tcg-data.version',
-        'initial-db-20260405',
-        'utf-8',
-      );
-
       // Should clear updating flag
       expect(mockSetDatabaseUpdating).toHaveBeenCalledWith(false);
     });
 
     it('should clear updating flag even on error', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
       // Make the otcgs client fail on DETACH
       mockOtcgsExecute.mockRejectedValueOnce(new Error('DETACH failed'));
       // Recovery ATTACH also needs to work
@@ -403,7 +517,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should attempt recovery ATTACH on error after DETACH', async () => {
-      const release = makeRelease('initial-db-20260405');
+      const release = makeRelease('tcg-data-20260405');
       // DETACH succeeds
       mockOtcgsExecute.mockResolvedValueOnce(undefined);
       // renameSync will throw (use mockImplementationOnce to avoid leaking)
@@ -425,64 +539,68 @@ describe('tcg-data-update-service', () => {
   });
 
   // -----------------------------------------------------------------------
+  // getCreatedAt
+  // -----------------------------------------------------------------------
+  describe('getCreatedAt', () => {
+    it('should return the created_at value from the database', async () => {
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [{ value: '2026-04-10T21:30:00.000Z' }] });
+
+      const result = await getCreatedAt();
+
+      expect(result).toBe('2026-04-10T21:30:00.000Z');
+    });
+
+    it('should return null when no metadata row exists', async () => {
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [] });
+
+      const result = await getCreatedAt();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when query throws', async () => {
+      mockOtcgsExecute.mockRejectedValueOnce(new Error('db error'));
+
+      const result = await getCreatedAt();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // performUpdateCheck
   // -----------------------------------------------------------------------
   describe('performUpdateCheck', () => {
-    it('should do nothing when no update is available', async () => {
-      // Already up to date
+    it('should do nothing when no update is available (hashes match)', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH);
+
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse([makeRelease('tcg-data-20260405')])) // releases
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH)); // hash matches
 
       await performUpdateCheck();
 
       // Should not attempt download or apply
-      expect(mockWriteFileSync).not.toHaveBeenCalled();
       expect(mockRenameSync).not.toHaveBeenCalled();
       expect(mockSetDatabaseUpdating).not.toHaveBeenCalled();
     });
 
-    it('should skip update when validation fails', async () => {
-      // New version available
-      mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
-      mockFetch
-        // checkForUpdate fetch
-        .mockResolvedValueOnce(mockFetchResponse(releases))
-        // downloadUpdate fetch
-        .mockResolvedValueOnce({
-          ok: true,
-          body: { readable: true },
-        });
-      mockPipeline.mockResolvedValue(undefined);
-      mockCreateWriteStream.mockReturnValue({});
-
-      // Validation fails (no required tables)
-      mockValidationExecute.mockResolvedValue({ rows: [] });
-
-      await performUpdateCheck();
-
-      // Should not perform the swap
-      expect(mockSetDatabaseUpdating).not.toHaveBeenCalled();
-      expect(mockRenameSync).not.toHaveBeenCalled();
-    });
-
-    it('should complete full update when validation passes', async () => {
-      // New version available
-      mockExistsSync.mockReturnValue(false);
-      mockRenameSync.mockImplementation(() => {}); // Reset from any prior test
-      const releases = [makeRelease('initial-db-20260405')];
+    it('should complete full update when all checks pass', async () => {
+      // computeFileHash is called twice: once for local DB (should not exist) and
+      // once for the downloaded temp file (should exist and match). Use sequential
+      // returns: first call → false (no local DB), subsequent calls → true (temp file).
+      mockExistsSync.mockReturnValueOnce(false).mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH); // hash matches
+      mockRenameSync.mockImplementation(() => {});
+      const releases = [makeRelease('tcg-data-20260405')];
 
       mockFetch
-        // checkForUpdate fetch
-        .mockResolvedValueOnce(mockFetchResponse(releases))
-        // downloadUpdate fetch
-        .mockResolvedValueOnce({
-          ok: true,
-          body: { readable: true },
-        });
-      mockPipeline.mockResolvedValue(undefined);
-      mockCreateWriteStream.mockReturnValue({});
+        .mockResolvedValueOnce(mockFetchResponse(releases)) // releases
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH)) // hash asset
+        .mockResolvedValueOnce({ ok: true, body: { readable: true } }); // download
 
       // Start the update check and advance the 1000ms drain timer
       const promise = performUpdateCheck();
@@ -507,9 +625,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should skip if another check is already running', async () => {
-      // Simulate a slow update that hasn't resolved yet
       mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
 
       // First call: will block on the checkForUpdate fetch (never resolves)
       let resolveFirstFetch!: (value: unknown) => void;
@@ -522,14 +638,14 @@ describe('tcg-data-update-service', () => {
       const firstCheck = performUpdateCheck();
 
       // Second call should short-circuit since first is still running
-      mockFetch.mockResolvedValueOnce(mockFetchResponse(releases));
+      mockFetch.mockResolvedValueOnce(mockFetchResponse([makeRelease('tcg-data-20260405')]));
       await performUpdateCheck();
 
       // Only one fetch should have been made (the first one)
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Clean up: resolve the first fetch so the promise settles
-      resolveFirstFetch(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      resolveFirstFetch(mockFetchResponse([]));
       await firstCheck;
     });
   });
@@ -539,10 +655,8 @@ describe('tcg-data-update-service', () => {
   // -----------------------------------------------------------------------
   describe('startUpdateScheduler / stopUpdateScheduler', () => {
     it('should call performUpdateCheck immediately on start', () => {
-      // Mock fetch to return "already up to date"
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      // Mock to return "no matching releases" so checkForUpdate resolves quickly
+      mockFetch.mockResolvedValue(mockFetchResponse([]));
 
       startUpdateScheduler();
 
@@ -551,9 +665,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should schedule periodic checks', async () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockFetch.mockResolvedValue(mockFetchResponse([]));
 
       startUpdateScheduler();
 
@@ -562,9 +674,7 @@ describe('tcg-data-update-service', () => {
       vi.clearAllMocks();
 
       // Re-mock fetch for the periodic check
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockFetch.mockResolvedValue(mockFetchResponse([]));
 
       // Advance 24 hours
       await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
@@ -573,9 +683,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should stop the scheduler when stopUpdateScheduler is called', () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockFetch.mockResolvedValue(mockFetchResponse([]));
 
       startUpdateScheduler();
       stopUpdateScheduler();
@@ -592,9 +700,7 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should not leak intervals when startUpdateScheduler is called multiple times', () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockFetch.mockResolvedValue(mockFetchResponse([]));
 
       startUpdateScheduler();
       const firstFetchCount = mockFetch.mock.calls.length;
@@ -611,22 +717,21 @@ describe('tcg-data-update-service', () => {
   // getDataUpdateStatus
   // -----------------------------------------------------------------------
   describe('getDataUpdateStatus', () => {
-    it('should return current version and no update available when cache is empty', () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
+    it('should return created_at from database and no update when cache is empty', async () => {
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [{ value: '2026-04-05T12:00:00.000Z' }] });
 
-      const status = getDataUpdateStatus();
+      const status = await getDataUpdateStatus();
 
-      expect(status.currentVersion).toBe('initial-db-20260405');
-      expect(status.latestVersion).toBe('initial-db-20260405');
+      expect(status.currentVersion).toBe('2026-04-05T12:00:00.000Z');
+      expect(status.latestVersion).toBeNull();
       expect(status.updateAvailable).toBe(false);
       expect(status.isUpdating).toBe(false);
     });
 
-    it('should return null versions when no version file exists and no cache', () => {
-      mockExistsSync.mockReturnValue(false);
+    it('should return null versions when no metadata and no cache', async () => {
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [] });
 
-      const status = getDataUpdateStatus();
+      const status = await getDataUpdateStatus();
 
       expect(status.currentVersion).toBeNull();
       expect(status.latestVersion).toBeNull();
@@ -634,12 +739,11 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should reflect cached release info after a scheduler check finds an update', async () => {
-      // Simulate: version file exists with old version, scheduler finds new release
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260404');
-      const releases = [makeRelease('initial-db-20260405'), makeRelease('initial-db-20260404')];
+      mockExistsSync.mockReturnValue(false); // no local file
+      const releases = [makeRelease('tcg-data-20260405')];
       mockFetch
         .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH))
         // downloadUpdate will need a fetch too — make it fail so we don't go through the full pipeline
         .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' });
 
@@ -647,9 +751,10 @@ describe('tcg-data-update-service', () => {
       await performUpdateCheck();
 
       // Now getDataUpdateStatus should reflect the cached release
-      const status = getDataUpdateStatus();
-      expect(status.currentVersion).toBe('initial-db-20260404');
-      expect(status.latestVersion).toBe('initial-db-20260405');
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [{ value: '2026-04-04T12:00:00.000Z' }] });
+      const status = await getDataUpdateStatus();
+      expect(status.currentVersion).toBe('2026-04-04T12:00:00.000Z');
+      expect(status.latestVersion).toBe('tcg-data-20260405');
       expect(status.updateAvailable).toBe(true);
     });
   });
@@ -660,25 +765,31 @@ describe('tcg-data-update-service', () => {
   describe('refreshUpdateStatus', () => {
     it('should query GitHub and update cached release info', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260404');
-      const releases = [makeRelease('initial-db-20260405')];
-      mockFetch.mockResolvedValue(mockFetchResponse(releases));
+      mockReadFileSync.mockReturnValue(Buffer.from('old'));
+      setupHashMock(DIFFERENT_HASH); // local hash differs
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      // getDataUpdateStatus reads from DB
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [{ value: '2026-04-04T12:00:00.000Z' }] });
 
       const status = await refreshUpdateStatus();
 
       expect(status.updateAvailable).toBe(true);
-      expect(status.latestVersion).toBe('initial-db-20260405');
+      expect(status.latestVersion).toBe('tcg-data-20260405');
     });
 
     it('should not throw when GitHub API fails', async () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
       mockFetch.mockRejectedValue(new Error('network error'));
+      mockOtcgsExecute.mockResolvedValueOnce({ rows: [{ value: '2026-04-05T12:00:00.000Z' }] });
 
       const status = await refreshUpdateStatus();
 
       // Should not crash, returns current status
-      expect(status.currentVersion).toBe('initial-db-20260405');
+      expect(status.currentVersion).toBe('2026-04-05T12:00:00.000Z');
     });
   });
 
@@ -687,17 +798,17 @@ describe('tcg-data-update-service', () => {
   // -----------------------------------------------------------------------
   describe('triggerManualUpdate', () => {
     it('should return success after a full update', async () => {
-      mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260404');
+      // First existsSync call → false (no local DB), subsequent → true (temp file)
+      mockExistsSync.mockReturnValueOnce(false).mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH);
       mockRenameSync.mockImplementation(() => {});
-      const releases = [makeRelease('initial-db-20260405')];
+      const releases = [makeRelease('tcg-data-20260405')];
       mockFetch
-        // checkForUpdate
         .mockResolvedValueOnce(mockFetchResponse(releases))
-        // downloadUpdate
-        .mockResolvedValueOnce({ ok: true, body: { readable: true } });
-      mockPipeline.mockResolvedValue(undefined);
-      mockCreateWriteStream.mockReturnValue({});
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH))
+        .mockResolvedValueOnce({ ok: true, body: { readable: true } }); // download
+
       mockValidationExecute.mockResolvedValue({
         rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
       });
@@ -707,14 +818,19 @@ describe('tcg-data-update-service', () => {
       const result = await promise;
 
       expect(result.success).toBe(true);
-      expect(result.newVersion).toBe('initial-db-20260405');
-      expect(result.message).toContain('initial-db-20260405');
+      expect(result.newVersion).toBe('tcg-data-20260405');
+      expect(result.message).toContain('tcg-data-20260405');
     });
 
     it('should return failure when no update is available', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockReadFileSync.mockReturnValue('initial-db-20260405');
-      mockFetch.mockResolvedValue(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH); // local hash matches release hash
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases)) // releases
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH)); // hash matches
 
       const result = await triggerManualUpdate();
 
@@ -722,14 +838,34 @@ describe('tcg-data-update-service', () => {
       expect(result.message).toBe('No update available');
     });
 
-    it('should return failure when validation fails', async () => {
-      mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
+    it('should return failure when hash verification fails', async () => {
+      // First existsSync → false (no local DB), then true (temp file exists for hash check)
+      mockExistsSync.mockReturnValueOnce(false).mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(DIFFERENT_HASH); // hash won't match the expected
+      const releases = [makeRelease('tcg-data-20260405')];
       mockFetch
         .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH))
+        .mockResolvedValueOnce({ ok: true, body: { readable: true } }); // download
+
+      const result = await triggerManualUpdate();
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Downloaded file hash does not match release');
+    });
+
+    it('should return failure when validation fails', async () => {
+      // First existsSync → false (no local DB), then true (temp file)
+      mockExistsSync.mockReturnValueOnce(false).mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(Buffer.from('data'));
+      setupHashMock(FAKE_HASH);
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH))
         .mockResolvedValueOnce({ ok: true, body: { readable: true } });
-      mockPipeline.mockResolvedValue(undefined);
-      mockCreateWriteStream.mockReturnValue({});
+
       mockValidationExecute.mockResolvedValue({ rows: [] });
 
       const result = await triggerManualUpdate();
@@ -739,11 +875,12 @@ describe('tcg-data-update-service', () => {
     });
 
     it('should return failure when download fails', async () => {
-      mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
+      mockExistsSync.mockReturnValue(false); // no local file
+      const releases = [makeRelease('tcg-data-20260405')];
       mockFetch
-        .mockResolvedValueOnce(mockFetchResponse(releases))
-        .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' });
+        .mockResolvedValueOnce(mockFetchResponse(releases)) // releases API
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH)) // hash asset
+        .mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' }); // download fails
 
       const result = await triggerManualUpdate();
 
@@ -754,7 +891,6 @@ describe('tcg-data-update-service', () => {
     it('should return failure when already in progress', async () => {
       // Start a slow update that blocks
       mockExistsSync.mockReturnValue(false);
-      const releases = [makeRelease('initial-db-20260405')];
       let resolveFirstFetch!: (value: unknown) => void;
       mockFetch.mockReturnValueOnce(
         new Promise((resolve) => {
@@ -765,13 +901,12 @@ describe('tcg-data-update-service', () => {
       const firstUpdate = triggerManualUpdate();
 
       // Second call should fail immediately
-      mockFetch.mockResolvedValueOnce(mockFetchResponse(releases));
       const secondResult = await triggerManualUpdate();
       expect(secondResult.success).toBe(false);
       expect(secondResult.message).toBe('An update is already in progress');
 
       // Clean up: resolve the first fetch
-      resolveFirstFetch(mockFetchResponse([makeRelease('initial-db-20260405')]));
+      resolveFirstFetch(mockFetchResponse([]));
       await firstUpdate;
     });
   });

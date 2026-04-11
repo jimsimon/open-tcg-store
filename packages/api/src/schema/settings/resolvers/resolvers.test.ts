@@ -386,12 +386,12 @@ describe('settings resolvers', () => {
   describe('getDataUpdateStatus resolver', () => {
     it('should return data update status for admin', async () => {
       const mockResult = {
-        currentVersion: 'initial-db-20260405',
-        latestVersion: 'initial-db-20260406',
+        currentVersion: '2026-04-05T12:00:00.000Z',
+        latestVersion: 'tcg-data-abc123',
         updateAvailable: true,
         isUpdating: false,
       };
-      mockGetDataUpdateStatus.mockReturnValue(mockResult);
+      mockGetDataUpdateStatus.mockResolvedValue(mockResult);
 
       const result = await getDataUpdateStatus({}, {}, adminContext(), {});
 
@@ -401,12 +401,12 @@ describe('settings resolvers', () => {
 
     it('should return up-to-date status when no update available', async () => {
       const mockResult = {
-        currentVersion: 'initial-db-20260405',
-        latestVersion: 'initial-db-20260405',
+        currentVersion: '2026-04-05T12:00:00.000Z',
+        latestVersion: null,
         updateAvailable: false,
         isUpdating: false,
       };
-      mockGetDataUpdateStatus.mockReturnValue(mockResult);
+      mockGetDataUpdateStatus.mockResolvedValue(mockResult);
 
       const result = await getDataUpdateStatus({}, {}, adminContext(), {});
 
@@ -418,8 +418,8 @@ describe('settings resolvers', () => {
     it('should trigger data update for admin', async () => {
       const mockResult = {
         success: true,
-        message: 'Successfully updated to initial-db-20260406',
-        newVersion: 'initial-db-20260406',
+        message: 'Successfully updated to tcg-data-abc123',
+        newVersion: 'tcg-data-abc123',
       };
       mockTriggerManualUpdate.mockResolvedValue(mockResult);
 

@@ -266,10 +266,20 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
 
   private formatVersion(version: string | null): string {
     if (!version) return 'Unknown';
-    // Extract date from tag like "initial-db-20260405" -> "2026-04-05"
-    const match = version.match(/initial-db-(\d{4})(\d{2})(\d{2})/);
-    if (match) {
-      return `${match[1]}-${match[2]}-${match[3]}`;
+    // Try parsing as an ISO timestamp first (e.g. "2026-04-10T21:30:00.000Z")
+    const date = new Date(version);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    // Release tag like "tcg-data-<sha256>" — show truncated hash
+    const hashMatch = version.match(/^tcg-data-([0-9a-f]+)$/i);
+    if (hashMatch) {
+      return hashMatch[1].substring(0, 12);
+    }
+    // Legacy tag like "initial-db-20260405" -> "2026-04-05"
+    const legacyMatch = version.match(/initial-db-(\d{4})(\d{2})(\d{2})/);
+    if (legacyMatch) {
+      return `${legacyMatch[1]}-${legacyMatch[2]}-${legacyMatch[3]}`;
     }
     return version;
   }
@@ -350,13 +360,17 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
 
           <div class="status-grid">
             <div class="status-item">
-              <span class="status-label">Current Version</span>
+              <span class="status-label">Last Updated</span>
               <span class="status-value">${this.formatVersion(this.currentVersion)}</span>
             </div>
-            <div class="status-item">
-              <span class="status-label">Latest Available</span>
-              <span class="status-value">${this.formatVersion(this.latestVersion)}</span>
-            </div>
+            ${this.updateAvailable
+              ? html`
+                  <div class="status-item">
+                    <span class="status-label">Update Available</span>
+                    <span class="status-value">${this.formatVersion(this.latestVersion)}</span>
+                  </div>
+                `
+              : nothing}
           </div>
 
           ${this.updateAvailable
