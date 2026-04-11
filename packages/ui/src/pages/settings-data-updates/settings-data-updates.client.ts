@@ -243,20 +243,16 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
     this.successMessage = '';
     this.errorMessage = '';
 
-    try {
-      await this.loadStatus();
-      if (!this.errorMessage) {
-        if (this.updateAvailable) {
-          this.successMessage = 'A new update is available!';
-        } else {
-          this.successMessage = 'Your card data is already up to date.';
-        }
+    await this.loadStatus();
+    if (!this.errorMessage) {
+      if (this.updateAvailable) {
+        this.successMessage = 'A new update is available!';
+      } else {
+        this.successMessage = 'Your card data is already up to date.';
       }
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to check for updates';
-    } finally {
-      this.checking = false;
     }
+
+    this.checking = false;
   }
 
   async handleUpdate() {
