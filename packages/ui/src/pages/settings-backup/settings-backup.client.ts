@@ -96,6 +96,21 @@ const TriggerRestoreMutation = new TypedDocumentString(`
   { provider: string }
 >;
 
+interface ProviderConfig {
+  name: string;
+  icon: string;
+  connectedKey: 'googleDriveConnected' | 'dropboxConnected' | 'onedriveConnected';
+}
+
+const PROVIDER_KEYS = ['google_drive', 'dropbox', 'onedrive'] as const;
+type ProviderKey = (typeof PROVIDER_KEYS)[number];
+
+const PROVIDERS: Record<ProviderKey, ProviderConfig> = {
+  google_drive: { name: 'Google Drive', icon: 'database', connectedKey: 'googleDriveConnected' },
+  dropbox: { name: 'Dropbox', icon: 'box-open', connectedKey: 'dropboxConnected' },
+  onedrive: { name: 'OneDrive', icon: 'cloud', connectedKey: 'onedriveConnected' },
+};
+
 @customElement('ogs-settings-backup-page')
 export class OgsSettingsBackupPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
@@ -201,11 +216,6 @@ export class OgsSettingsBackupPage extends LitElement {
       }
 
       /* --- Provider Cards --- */
-
-      .provider-grid {
-        display: grid;
-        gap: 0.75rem;
-      }
 
       .provider-card {
         display: flex;
@@ -409,12 +419,17 @@ export class OgsSettingsBackupPage extends LitElement {
   @state() provider = '';
   @state() frequency = '';
   @state() lastBackupAt: string | null = null;
-  @state() googleDriveConnected = false;
-  @state() dropboxConnected = false;
-  @state() onedriveConnected = false;
-  @state() googleDriveClientId = '';
-  @state() dropboxClientId = '';
-  @state() onedriveClientId = '';
+  @state() connectedProviders: Record<ProviderKey, boolean> = {
+    google_drive: false,
+    dropbox: false,
+    onedrive: false,
+  };
+  @state() selectedConfigProvider: ProviderKey = 'google_drive';
+  @state() clientIds: Record<ProviderKey, string> = {
+    google_drive: '',
+    dropbox: '',
+    onedrive: '',
+  };
   @state() loading = true;
   @state() saving = false;
   @state() backingUp = false;
@@ -424,7 +439,7 @@ export class OgsSettingsBackupPage extends LitElement {
   @state() errorMessage = '';
 
   get hasConnectedProvider(): boolean {
-    return this.googleDriveConnected || this.dropboxConnected || this.onedriveConnected;
+    return PROVIDER_KEYS.some((key) => this.connectedProviders[key]);
   }
 
   connectedCallback(): void {
@@ -451,9 +466,10 @@ export class OgsSettingsBackupPage extends LitElement {
         this.provider = s.provider ?? '';
         this.frequency = s.frequency ?? '';
         this.lastBackupAt = s.lastBackupAt;
-        this.googleDriveConnected = s.googleDriveConnected;
-        this.dropboxConnected = s.dropboxConnected;
-        this.onedriveConnected = s.onedriveConnected;
+        this.connectedProviders = {
+          ...this.connectedProviders,
+          ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
+        };
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load settings';
@@ -524,33 +540,6 @@ export class OgsSettingsBackupPage extends LitElement {
     }
   }
 
-  private getClientIdForProvider(providerKey: string): string {
-    switch (providerKey) {
-      case 'google_drive':
-        return this.googleDriveClientId;
-      case 'dropbox':
-        return this.dropboxClientId;
-      case 'onedrive':
-        return this.onedriveClientId;
-      default:
-        return '';
-    }
-  }
-
-  private setClientIdForProvider(providerKey: string, value: string) {
-    switch (providerKey) {
-      case 'google_drive':
-        this.googleDriveClientId = value;
-        break;
-      case 'dropbox':
-        this.dropboxClientId = value;
-        break;
-      case 'onedrive':
-        this.onedriveClientId = value;
-        break;
-    }
-  }
-
   private getOAuthInstructions(providerKey: string): { steps: TemplateResult[] } {
     switch (providerKey) {
       case 'google_drive':
@@ -618,9 +607,8 @@ export class OgsSettingsBackupPage extends LitElement {
     }
   }
 
-  connectProvider(providerKey: string) {
-    const clientId = this.getClientIdForProvider(providerKey);
-    const params = new URLSearchParams({ client_id: clientId });
+  connectProvider(providerKey: ProviderKey) {
+    const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
     window.location.href = `http://localhost:5174/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
   }
 
@@ -690,20 +678,26 @@ export class OgsSettingsBackupPage extends LitElement {
         : nothing}
 
       <wa-card appearance="outline">
-        <!-- Cloud Providers -->
+        <!-- Cloud Provider -->
         <div class="settings-section">
           <div class="section-header">
             <wa-icon name="cloud"></wa-icon>
             <div>
-              <h3>Cloud Providers</h3>
-              <p>Connect your cloud storage accounts for backup</p>
+              <h3>Cloud Provider</h3>
+              <p>Select and configure a cloud storage provider for backup</p>
             </div>
           </div>
-          <div class="provider-grid">
-            ${this.renderProviderCard('Google Drive', 'database', 'solid', this.googleDriveConnected, 'google_drive')}
-            ${this.renderProviderCard('Dropbox', 'box-open', 'solid', this.dropboxConnected, 'dropbox')}
-            ${this.renderProviderCard('OneDrive', 'cloud', 'solid', this.onedriveConnected, 'onedrive')}
-          </div>
+          <wa-select
+            label="Provider"
+            .value="${this.selectedConfigProvider}"
+            @change="${(e: Event) => {
+              this.selectedConfigProvider = (e.target as HTMLSelectElement).value as ProviderKey;
+            }}"
+            style="margin-bottom: 0.75rem;"
+          >
+            ${PROVIDER_KEYS.map((key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`)}
+          </wa-select>
+          ${this.renderSelectedProviderCard()}
         </div>
 
         <!-- Backup Configuration -->
@@ -726,9 +720,9 @@ export class OgsSettingsBackupPage extends LitElement {
                 }}"
               >
                 <wa-option value="">Select provider</wa-option>
-                ${this.googleDriveConnected ? html`<wa-option value="google_drive">Google Drive</wa-option>` : nothing}
-                ${this.dropboxConnected ? html`<wa-option value="dropbox">Dropbox</wa-option>` : nothing}
-                ${this.onedriveConnected ? html`<wa-option value="onedrive">OneDrive</wa-option>` : nothing}
+                ${PROVIDER_KEYS.filter((key) => this.connectedProviders[key]).map(
+                  (key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`,
+                )}
               </wa-select>
 
               <wa-select
@@ -795,8 +789,11 @@ export class OgsSettingsBackupPage extends LitElement {
     `;
   }
 
-  private renderProviderCard(name: string, icon: string, iconVariant: string, connected: boolean, providerKey: string) {
-    const clientId = this.getClientIdForProvider(providerKey);
+  private renderSelectedProviderCard() {
+    const providerKey = this.selectedConfigProvider;
+    const { name, icon } = PROVIDERS[providerKey];
+    const connected = this.connectedProviders[providerKey];
+    const clientId = this.clientIds[providerKey];
     const instructions = this.getOAuthInstructions(providerKey);
 
     return html`
@@ -804,7 +801,7 @@ export class OgsSettingsBackupPage extends LitElement {
         <div class="provider-card">
           <div class="provider-info">
             <div class="provider-icon">
-              <wa-icon name="${icon}" variant="${iconVariant}"></wa-icon>
+              <wa-icon name="${icon}" variant="solid"></wa-icon>
             </div>
             <div class="provider-details">
               <span class="provider-name">${name}</span>
@@ -835,7 +832,9 @@ export class OgsSettingsBackupPage extends LitElement {
             placeholder="Paste your ${name} OAuth Client ID"
             size="small"
             .value="${clientId}"
-            @input="${(e: Event) => this.setClientIdForProvider(providerKey, (e.target as HTMLInputElement).value)}"
+            @input="${(e: Event) => {
+              this.clientIds = { ...this.clientIds, [providerKey]: (e.target as HTMLInputElement).value };
+            }}"
           >
             <wa-icon slot="prefix" name="key"></wa-icon>
           </wa-input>

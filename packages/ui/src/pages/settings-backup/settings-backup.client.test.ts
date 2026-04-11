@@ -64,10 +64,10 @@ describe('ogs-settings-backup-page', () => {
     expect(header?.textContent).toContain('Backup & Restore');
   });
 
-  test('should display Cloud Providers section', () => {
+  test('should display Cloud Provider section', () => {
     const sections = element.shadowRoot!.querySelectorAll('.section-header h3');
     const sectionTexts = Array.from(sections).map((s) => s.textContent?.trim());
-    expect(sectionTexts).toContain('Cloud Providers');
+    expect(sectionTexts).toContain('Cloud Provider');
   });
 
   test('should display Backup Configuration section', () => {
@@ -76,9 +76,9 @@ describe('ogs-settings-backup-page', () => {
     expect(sectionTexts).toContain('Backup Configuration');
   });
 
-  test('should display three provider cards', () => {
+  test('should display one provider card for the selected provider', () => {
     const providerCards = element.shadowRoot!.querySelectorAll('.provider-card');
-    expect(providerCards.length).toBe(3);
+    expect(providerCards.length).toBe(1);
   });
 
   test('should show Google Drive as connected', () => {
@@ -89,9 +89,11 @@ describe('ogs-settings-backup-page', () => {
     expect(badge?.textContent).toContain('Connected');
   });
 
-  test('should show Dropbox as not connected', () => {
+  test('should show Dropbox as not connected when selected', async () => {
+    element.selectedConfigProvider = 'dropbox';
+    await element.updateComplete;
     const providerCards = element.shadowRoot!.querySelectorAll('.provider-card');
-    const dropboxCard = providerCards[1];
+    const dropboxCard = providerCards[0];
     const badge = dropboxCard.querySelector('wa-badge[variant="neutral"]');
     expect(badge).toBeTruthy();
     expect(badge?.textContent).toContain('Not connected');
