@@ -216,21 +216,16 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
   @state() successMessage = '';
   @state() errorMessage = '';
 
+  private initialLoad: Promise<void> | null = null;
+
   connectedCallback(): void {
     super.connectedCallback();
-    this.loadStatus();
+    this.initialLoad = this.loadStatus();
   }
 
   async loadStatus() {
     try {
-      const result = await execute(GetDataUpdateStatusQuery);
-      if (result?.data?.getDataUpdateStatus) {
-        const s = result.data.getDataUpdateStatus;
-        this.currentVersion = s.currentVersion;
-        this.latestVersion = s.latestVersion;
-        this.updateAvailable = s.updateAvailable;
-        this.isUpdating = s.isUpdating;
-      }
+      await this.fetchStatus();
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load update status';
     } finally {
@@ -238,21 +233,40 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
     }
   }
 
+  private async fetchStatus() {
+    const result = await execute(GetDataUpdateStatusQuery);
+    if (result?.data?.getDataUpdateStatus) {
+      const s = result.data.getDataUpdateStatus;
+      this.currentVersion = s.currentVersion;
+      this.latestVersion = s.latestVersion;
+      this.updateAvailable = s.updateAvailable;
+      this.isUpdating = s.isUpdating;
+    }
+  }
+
   async handleCheckForUpdates() {
+    // Wait for the initial load to finish before checking again to avoid interleaved state updates
+    if (this.initialLoad) {
+      await this.initialLoad;
+      this.initialLoad = null;
+    }
+
     this.checking = true;
     this.successMessage = '';
     this.errorMessage = '';
 
-    await this.loadStatus();
-    if (!this.errorMessage) {
+    try {
+      await this.fetchStatus();
       if (this.updateAvailable) {
         this.successMessage = 'A new update is available!';
       } else {
         this.successMessage = 'Your card data is already up to date.';
       }
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to check for updates';
+    } finally {
+      this.checking = false;
     }
-
-    this.checking = false;
   }
 
   async handleUpdate() {
