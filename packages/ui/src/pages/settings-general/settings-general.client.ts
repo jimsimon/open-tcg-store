@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { LitElement, type PropertyValues, css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '../../components/ogs-page.ts';
@@ -211,6 +211,59 @@ export class OgsSettingsGeneralPage extends LitElement {
         border-top: 1px solid var(--wa-color-surface-border);
       }
 
+      /* --- Games Picker --- */
+
+      .games-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-s);
+        margin-bottom: var(--wa-space-s);
+        flex-wrap: wrap;
+      }
+
+      .games-toolbar wa-input {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .games-toolbar .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--wa-space-2xs);
+        flex-shrink: 0;
+      }
+
+      .games-count {
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-muted);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: var(--wa-space-2xs) var(--wa-space-m);
+        max-height: 320px;
+        overflow-y: auto;
+        padding: var(--wa-space-s);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-surface-raised);
+      }
+
+      .games-grid wa-checkbox {
+        padding: var(--wa-space-2xs) 0;
+      }
+
+      .games-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: var(--wa-space-l);
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+      }
+
       /* --- Loading & Messages --- */
 
       .loading-container {
@@ -233,10 +286,45 @@ export class OgsSettingsGeneralPage extends LitElement {
   @state() ein = '';
   @state() availableGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
   @state() selectedGameCategoryIds: number[] = [];
+  @state() gameSearchTerm = '';
   @state() loading = true;
   @state() saving = false;
   @state() successMessage = '';
   @state() errorMessage = '';
+
+  private cachedFilteredGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
+  private cachedSelectedSet = new Set<number>();
+  private cachedAllFilteredSelected = false;
+  private cachedAnyFilteredSelected = false;
+
+  private get filteredGames() {
+    return this.cachedFilteredGames;
+  }
+
+  private get allFilteredSelected() {
+    return this.cachedAllFilteredSelected;
+  }
+
+  private get anyFilteredSelected() {
+    return this.cachedAnyFilteredSelected;
+  }
+
+  protected override willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+
+    const filtered = this.gameSearchTerm
+      ? this.availableGames.filter((g) => g.displayName.toLowerCase().includes(this.gameSearchTerm.toLowerCase()))
+      : this.availableGames;
+
+    const selectedSet = new Set(this.selectedGameCategoryIds);
+    const allSelected = filtered.length > 0 && filtered.every((g) => selectedSet.has(g.categoryId));
+    const anySelected = filtered.some((g) => selectedSet.has(g.categoryId));
+
+    this.cachedFilteredGames = filtered;
+    this.cachedSelectedSet = selectedSet;
+    this.cachedAllFilteredSelected = allSelected;
+    this.cachedAnyFilteredSelected = anySelected;
+  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -277,6 +365,17 @@ export class OgsSettingsGeneralPage extends LitElement {
     } else {
       this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => id !== categoryId);
     }
+  }
+
+  private handleSelectAllGames() {
+    const filteredIds = this.filteredGames.map((g) => g.categoryId);
+    const merged = new Set([...this.selectedGameCategoryIds, ...filteredIds]);
+    this.selectedGameCategoryIds = [...merged];
+  }
+
+  private handleDeselectAllGames() {
+    const filteredIds = new Set(this.filteredGames.map((g) => g.categoryId));
+    this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => !filteredIds.has(id));
   }
 
   async handleSave() {
@@ -422,28 +521,61 @@ export class OgsSettingsGeneralPage extends LitElement {
               <p>Select the trading card games your store buys and sells</p>
             </div>
           </div>
-          <div class="form-grid">
-            ${this.availableGames.length === 0
-              ? html`<p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
-                  No game categories available. Please populate your TCG data catalog first.
-                </p>`
-              : html`
-                  <div style="display: flex; flex-direction: column; gap: var(--wa-space-s);">
-                    ${this.availableGames.map(
-                      (game) => html`
-                        <wa-checkbox
-                          ?checked="${this.selectedGameCategoryIds.includes(game.categoryId)}"
-                          @change="${(e: Event) => {
-                            this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
-                          }}"
-                        >
-                          ${game.displayName}
-                        </wa-checkbox>
-                      `,
-                    )}
+          ${this.availableGames.length === 0
+            ? html`<p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
+                No game categories available. Please populate your TCG data catalog first.
+              </p>`
+            : html`
+                <div class="games-toolbar">
+                  <wa-input
+                    placeholder="Search games..."
+                    .value="${this.gameSearchTerm}"
+                    @input="${(e: Event) => {
+                      this.gameSearchTerm = (e.target as HTMLInputElement).value;
+                    }}"
+                    clearable
+                  >
+                    <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
+                  </wa-input>
+                  <div class="toolbar-actions">
+                    <wa-button
+                      size="small"
+                      variant="default"
+                      @click="${this.handleSelectAllGames}"
+                      ?disabled="${this.allFilteredSelected}"
+                    >
+                      Select all
+                    </wa-button>
+                    <wa-button
+                      size="small"
+                      variant="default"
+                      @click="${this.handleDeselectAllGames}"
+                      ?disabled="${!this.anyFilteredSelected}"
+                    >
+                      Deselect all
+                    </wa-button>
                   </div>
-                `}
-          </div>
+                  <span class="games-count"
+                    >${this.selectedGameCategoryIds.length} of ${this.availableGames.length} selected</span
+                  >
+                </div>
+                <div class="games-grid">
+                  ${this.filteredGames.length === 0
+                    ? html`<div class="games-empty">No games match your search</div>`
+                    : this.filteredGames.map(
+                        (game) => html`
+                          <wa-checkbox
+                            ?checked="${this.cachedSelectedSet.has(game.categoryId)}"
+                            @change="${(e: Event) => {
+                              this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
+                            }}"
+                          >
+                            ${game.displayName}
+                          </wa-checkbox>
+                        `,
+                      )}
+                </div>
+              `}
         </div>
 
         <!-- Save -->
