@@ -116,8 +116,10 @@ interface LotSummary {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
 function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
+  return currencyFormatter.format(value);
 }
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {

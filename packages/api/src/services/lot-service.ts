@@ -663,19 +663,16 @@ export async function getLotStats(organizationId: string): Promise<LotStatsResul
     return { totalLots: 0, totalInvested: 0, totalMarketValue: 0, totalProfitLoss: 0 };
   }
 
-  // Get all lot IDs for this org
-  const lotRows = await otcgs.select({ id: lot.id }).from(lot).where(eq(lot.organizationId, organizationId));
+  // Fetch all lot items using a subquery to avoid a separate lot ID round trip
+  const orgLotIds = otcgs.select({ id: lot.id }).from(lot).where(eq(lot.organizationId, organizationId));
 
-  const lotIds = lotRows.map((r) => r.id);
-
-  // Fetch all lot items for these lots
   const items = await otcgs
     .select({
       productId: lotItem.productId,
       quantity: lotItem.quantity,
     })
     .from(lotItem)
-    .where(inArray(lotItem.lotId, lotIds));
+    .where(inArray(lotItem.lotId, orgLotIds));
 
   // Fetch market prices for all referenced products
   const productIds = [...new Set(items.map((i) => i.productId))];
