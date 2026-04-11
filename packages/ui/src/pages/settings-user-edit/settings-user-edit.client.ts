@@ -16,7 +16,7 @@ import '@awesome.me/webawesome/dist/components/switch/switch.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import { roles } from '../../../../api/src/lib/permissions';
+import { roles, statement } from '../../../../api/src/lib/permissions';
 
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
@@ -50,57 +50,46 @@ const APP_RESOURCES = new Set([
   'userManagement',
 ]);
 
-const PERMISSION_AREAS: PermissionArea[] = [
+/** UI metadata for each app-level permission area. Actions are derived from the shared statement. */
+const PERMISSION_AREA_META: Omit<PermissionArea, 'actions'>[] = [
   {
     label: 'Inventory Management',
     resource: 'inventory',
-    actions: ['create', 'read', 'update', 'delete'],
     description: 'View and manage product inventory',
     icon: 'boxes-stacked',
   },
-  {
-    label: 'Lot Management',
-    resource: 'lot',
-    actions: ['create', 'read', 'update', 'delete'],
-    description: 'Create and manage purchase lots',
-    icon: 'box-open',
-  },
-  {
-    label: 'Order Management',
-    resource: 'order',
-    actions: ['create', 'read', 'update', 'cancel'],
-    description: 'View and manage customer orders',
-    icon: 'receipt',
-  },
+  { label: 'Lot Management', resource: 'lot', description: 'Create and manage purchase lots', icon: 'box-open' },
+  { label: 'Order Management', resource: 'order', description: 'View and manage customer orders', icon: 'receipt' },
   {
     label: 'Dashboard & Transaction Log',
     resource: 'transactionLog',
-    actions: ['read'],
     description: 'View dashboard analytics and transaction history',
     icon: 'chart-line',
   },
   {
     label: 'Company Settings',
     resource: 'companySettings',
-    actions: ['read', 'update'],
     description: 'Access and modify company-wide settings',
     icon: 'gear',
   },
   {
     label: 'Store Location Management',
     resource: 'storeLocations',
-    actions: ['create', 'read', 'update', 'delete'],
     description: 'Create and manage store locations',
     icon: 'location-dot',
   },
   {
     label: 'User Management',
     resource: 'userManagement',
-    actions: ['create', 'read', 'update', 'delete'],
     description: 'Manage user accounts, roles, and permissions',
     icon: 'users-gear',
   },
 ];
+
+const PERMISSION_AREAS: PermissionArea[] = PERMISSION_AREA_META.map((meta) => ({
+  ...meta,
+  actions: [...statement[meta.resource as keyof typeof statement]],
+}));
 
 /**
  * Derive app-level and fixed permission maps from the shared role definitions.
@@ -694,10 +683,13 @@ export class OgsSettingsUserEditPage extends LitElement {
     const authClient = await getAuthClient();
 
     // Update the member's role to a standard role
-    await authClient.organization.updateMemberRole({
+    const roleResult = await authClient.organization.updateMemberRole({
       memberId: this.member!.id,
       role: roleName,
     });
+    if (roleResult.error) {
+      throw new Error((roleResult.error as { message?: string }).message ?? 'Failed to update member role');
+    }
 
     // Clean up any existing custom role
     if (this.existingCustomRoleName && !STANDARD_ROLES.includes(this.existingCustomRoleName)) {
@@ -724,10 +716,13 @@ export class OgsSettingsUserEditPage extends LitElement {
 
     if (this.existingCustomRoleName === roleName) {
       // Update the existing custom role
-      await authClient.organization.updateRole({
+      const updateResult = await authClient.organization.updateRole({
         roleName,
         data: { permission: fullPermissions },
       });
+      if (updateResult.error) {
+        throw new Error((updateResult.error as { message?: string }).message ?? 'Failed to update custom role');
+      }
     } else {
       // Delete old custom role if exists
       if (this.existingCustomRoleName && !STANDARD_ROLES.includes(this.existingCustomRoleName)) {
@@ -741,17 +736,23 @@ export class OgsSettingsUserEditPage extends LitElement {
       }
 
       // Create a new custom role
-      await authClient.organization.createRole({
+      const createResult = await authClient.organization.createRole({
         role: roleName,
         permission: fullPermissions,
       });
+      if (createResult.error) {
+        throw new Error((createResult.error as { message?: string }).message ?? 'Failed to create custom role');
+      }
     }
 
     // Assign the custom role to the member
-    await authClient.organization.updateMemberRole({
+    const assignResult = await authClient.organization.updateMemberRole({
       memberId: this.member!.id,
       role: roleName,
     });
+    if (assignResult.error) {
+      throw new Error((assignResult.error as { message?: string }).message ?? 'Failed to assign custom role');
+    }
 
     this.existingCustomRoleName = roleName;
   }

@@ -417,7 +417,7 @@ describe('ogs-settings-user-edit-page', () => {
     );
   });
 
-  test('should show error on save failure', async () => {
+  test('should show error on save rejection', async () => {
     mockUpdateMemberRole.mockRejectedValue(new Error('Permission denied'));
 
     await (element as unknown as { handleSave: () => Promise<void> }).handleSave();
@@ -426,6 +426,43 @@ describe('ogs-settings-user-edit-page', () => {
     const callout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(callout).toBeTruthy();
     expect(callout?.textContent).toContain('Permission denied');
+  });
+
+  test('should show error when updateMemberRole returns error response', async () => {
+    mockUpdateMemberRole.mockResolvedValue({
+      error: { message: 'You are not allowed to update this member' },
+      data: null,
+    });
+
+    await (element as unknown as { handleSave: () => Promise<void> }).handleSave();
+    await element.updateComplete;
+
+    const callout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
+    expect(callout).toBeTruthy();
+    expect(callout?.textContent).toContain('You are not allowed to update this member');
+  });
+
+  test('should show error when createRole returns error response', async () => {
+    mockCreateRole.mockResolvedValue({
+      error: { message: 'Role name is already taken' },
+      data: null,
+    });
+
+    const el = element as unknown as {
+      overridePermissions: boolean;
+      permissions: Record<string, string[]>;
+      handleSave: () => Promise<void>;
+    };
+    el.overridePermissions = true;
+    el.permissions = { inventory: ['read'] };
+    await element.updateComplete;
+
+    await el.handleSave();
+    await element.updateComplete;
+
+    const callout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
+    expect(callout).toBeTruthy();
+    expect(callout?.textContent).toContain('Role name is already taken');
   });
 
   // --- Permission switch disabled state ---
