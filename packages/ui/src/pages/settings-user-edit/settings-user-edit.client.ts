@@ -586,14 +586,11 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      // Fetch user details, org members, all stores, user's store memberships, and current
-      // session in parallel. Current session is needed to detect self-edits for lockout guards.
-      const [userResult, orgResult] = await Promise.all([
-        this.fetchUser(),
-        this.fetchOrgMembers(),
-        this.fetchAllStores(),
-        this.fetchStoreMemberships(),
-      ]);
+      // Fetch critical data first; non-fatal supplementary fetches run in parallel but are
+      // not included in Promise.all so they cannot cause the entire load to fail.
+      this.fetchAllStores();
+      this.fetchStoreMemberships();
+      const [userResult, orgResult] = await Promise.all([this.fetchUser(), this.fetchOrgMembers()]);
 
       if (!userResult) {
         this.errorMessage = 'User not found';

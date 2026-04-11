@@ -244,6 +244,11 @@ const router = new Router()
       ctx.body = { error: 'userId, organizationId, and role are required' };
       return;
     }
+    if (role === 'owner') {
+      ctx.status = 400;
+      ctx.body = { error: 'Cannot assign owner role through this interface.' };
+      return;
+    }
     try {
       const result = await auth.api.addMember({
         body: { userId, organizationId, role },
@@ -274,9 +279,9 @@ const router = new Router()
       const rows = await otcgs.all<{ userId: string; role: string; totalMemberships: number }>(
         sql`
           SELECT
-            m.user_id        AS "userId",
-            m.role           AS "role",
-            COUNT(*) OVER () AS "totalMemberships"
+            m.user_id AS "userId",
+            m.role    AS "role",
+            (SELECT COUNT(*) FROM member WHERE user_id = m.user_id) AS "totalMemberships"
           FROM member m
           WHERE m.id = ${memberId}
           LIMIT 1
