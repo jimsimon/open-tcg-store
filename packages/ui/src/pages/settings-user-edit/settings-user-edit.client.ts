@@ -563,8 +563,6 @@ export class OgsSettingsUserEditPage extends LitElement {
   @state() private saving = false;
   @state() private savingStores = false;
 
-  /** The ID of the currently logged-in user (to detect self-edits). */
-  private currentUserId: string | null = null;
 
   /** The base role selected in the dropdown */
   @state() private selectedBaseRole = 'member';
@@ -595,7 +593,6 @@ export class OgsSettingsUserEditPage extends LitElement {
         this.fetchOrgMembers(),
         this.fetchAllStores(),
         this.fetchStoreMemberships(),
-        this.fetchCurrentUserId(),
       ]);
 
       if (!userResult) {
@@ -680,18 +677,6 @@ export class OgsSettingsUserEditPage extends LitElement {
       return null;
     } catch {
       return null;
-    }
-  }
-
-  private async fetchCurrentUserId(): Promise<void> {
-    try {
-      const authClient = await getAuthClient();
-      const result = await authClient.getSession();
-      if (result.data?.user?.id) {
-        this.currentUserId = result.data.user.id;
-      }
-    } catch {
-      // Non-fatal — lockout guard will simply not apply
     }
   }
 
@@ -781,17 +766,11 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      // Self-lockout guard: if editing their own account, ensure the new role/permissions
-      // still include userManagement:update so they can't lock themselves out.
-      if (this.currentUserId && this.currentUserId === this.userId) {
-        const wouldHaveUserManagement = this.overridePermissions
-          ? (this.permissions['userManagement']?.includes('update') ?? false)
-          : this.selectedBaseRole === 'owner';
-        if (!wouldHaveUserManagement) {
-          this.errorMessage =
-            'You cannot remove your own user management permissions. Assign another owner first.';
-          return;
-        }
+      // Owner-protection guard: owner roles cannot be changed through this interface.
+      // This applies to anyone editing an owner, including self-edits.
+      if (this.member.role === 'owner') {
+        this.errorMessage = 'Owner permissions cannot be changed through this interface.';
+        return;
       }
 
       if (!this.overridePermissions) {
@@ -905,11 +884,14 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      // Self-lockout guard: an owner cannot remove themselves from all stores,
-      // as that would leave them with no active organization and no access.
-      if (this.currentUserId && this.currentUserId === this.userId && this.selectedStoreIds.size === 0) {
-        this.errorMessage = 'You cannot remove yourself from all stores. You must remain assigned to at least one store.';
-        return;
+      // Owner-protection guard: owners cannot be removed from any store through this interface.
+      const userIsOwner = this.storeMemberships.some((m) => m.role === 'owner');
+      if (userIsOwner) {
+        const removingAny = this.storeMemberships.some((m) => !this.selectedStoreIds.has(m.organizationId));
+        if (removingAny) {
+          this.errorMessage = 'Owner store assignments cannot be changed through this interface.';
+          return;
+        }
       }
 
       const currentIds = new Set(this.storeMemberships.map((m) => m.organizationId));
@@ -1027,8 +1009,12 @@ export class OgsSettingsUserEditPage extends LitElement {
         : nothing}
       ${this.renderPageHeader()} ${this.renderUserInfo()}
       ${this.renderStoreAssignments()}
-      ${this.member ? this.renderRoleAndPermissions() : this.renderNotMemberState()}
-      ${this.member ? this.renderFooter() : nothing}
+      ${this.member
+        ? this.member.role === 'owner'
+          ? this.renderOwnerReadOnlyState()
+          : this.renderRoleAndPermissions()
+        : this.renderNotMemberState()}
+      ${this.member && this.member.role !== 'owner' ? this.renderFooter() : nothing}
     `;
   }
 
@@ -1080,9 +1066,18 @@ export class OgsSettingsUserEditPage extends LitElement {
 
   private renderStoreAssignments() {
     if (this.allStores.length === 0) return nothing;
+    const userIsOwner = this.storeMemberships.some((m) => m.role === 'owner');
     return html`
       <div class="section">
         <h3 class="section-title">Store Assignments</h3>
+        ${userIsOwner
+          ? html`
+              <wa-callout variant="warning" style="margin-bottom: 0.75rem;">
+                <wa-icon slot="icon" name="shield-halved"></wa-icon>
+                Owner store assignments cannot be changed through this interface.
+              </wa-callout>
+            `
+          : nothing}
         <wa-card appearance="outline">
           <div class="store-grid">
             ${this.allStores.map((store) => {
@@ -1091,6 +1086,7 @@ export class OgsSettingsUserEditPage extends LitElement {
                 <div
                   class="store-card ${assigned ? 'assigned' : ''}"
                   @click="${() => {
+                    if (userIsOwner) return;
                     const updated = new Set(this.selectedStoreIds);
                     if (assigned) {
                       updated.delete(store.id);
@@ -1099,16 +1095,19 @@ export class OgsSettingsUserEditPage extends LitElement {
                     }
                     this.selectedStoreIds = updated;
                   }}"
+                  style="${userIsOwner ? 'cursor: default; opacity: 0.6;' : ''}"
                 >
                   <div class="store-card-icon">
-                    <wa-icon name="${assigned ? 'store' : 'store'}"></wa-icon>
+                    <wa-icon name="store"></wa-icon>
                   </div>
                   <span class="store-card-name">${store.name}</span>
                   <wa-checkbox
                     ?checked="${assigned}"
+                    ?disabled="${userIsOwner}"
                     @click="${(e: Event) => e.stopPropagation()}"
                     @change="${(e: Event) => {
                       e.stopPropagation();
+                      if (userIsOwner) return;
                       const updated = new Set(this.selectedStoreIds);
                       if ((e.target as HTMLInputElement).checked) {
                         updated.add(store.id);
@@ -1122,13 +1121,35 @@ export class OgsSettingsUserEditPage extends LitElement {
               `;
             })}
           </div>
-          <div class="store-section-footer">
-            <wa-button variant="brand" size="small" ?loading="${this.savingStores}" @click="${this.handleSaveStoreAssignments}">
-              <wa-icon slot="start" name="floppy-disk"></wa-icon>
-              Save Store Assignments
-            </wa-button>
-          </div>
+          ${userIsOwner
+            ? nothing
+            : html`
+                <div class="store-section-footer">
+                  <wa-button
+                    variant="brand"
+                    size="small"
+                    ?loading="${this.savingStores}"
+                    @click="${this.handleSaveStoreAssignments}"
+                  >
+                    <wa-icon slot="start" name="floppy-disk"></wa-icon>
+                    Save Store Assignments
+                  </wa-button>
+                </div>
+              `}
         </wa-card>
+      </div>
+    `;
+  }
+
+  private renderOwnerReadOnlyState() {
+    return html`
+      <div class="section">
+        <h3 class="section-title">Role & Permissions</h3>
+        <wa-callout variant="warning">
+          <wa-icon slot="icon" name="shield-halved"></wa-icon>
+          Owner permissions cannot be changed through this interface. To transfer or revoke ownership, use direct
+          database administration or a dedicated ownership-transfer process.
+        </wa-callout>
       </div>
     `;
   }

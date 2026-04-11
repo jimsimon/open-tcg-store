@@ -270,6 +270,27 @@ const router = new Router()
       return;
     }
     try {
+      // Look up the member being removed to check their role and total store count.
+      const rows = await otcgs.all<{ userId: string; role: string; totalMemberships: number }>(
+        sql`
+          SELECT
+            m.user_id        AS "userId",
+            m.role           AS "role",
+            COUNT(*) OVER () AS "totalMemberships"
+          FROM member m
+          WHERE m.id = ${memberId}
+          LIMIT 1
+        `,
+      );
+      if (rows.length > 0) {
+        const { role, totalMemberships } = rows[0];
+        if (role === 'owner' && totalMemberships <= 1) {
+          ctx.status = 400;
+          ctx.body = { error: 'Cannot remove an owner from their last store assignment.' };
+          return;
+        }
+      }
+      // The beforeRemoveMember hook in auth.ts will additionally block any owner removal.
       await auth.api.removeMember({
         headers: fromNodeHeaders(ctx.req.headers) as unknown as Record<string, string>,
         body: { memberIdOrEmail: memberId, organizationId },
