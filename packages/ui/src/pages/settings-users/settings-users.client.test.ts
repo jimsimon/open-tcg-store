@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 // Mock the auth client
 const mockListUsers = vi.fn();
 const mockCreateUser = vi.fn();
-const mockSetRole = vi.fn();
 const mockBanUser = vi.fn();
 const mockUnbanUser = vi.fn();
 
@@ -12,7 +11,6 @@ vi.mock('../../auth-client', () => ({
     admin: {
       listUsers: mockListUsers,
       createUser: mockCreateUser,
-      setRole: mockSetRole,
       banUser: mockBanUser,
       unbanUser: mockUnbanUser,
     },
@@ -218,15 +216,12 @@ describe('ogs-settings-users-page', () => {
     expect(emptyState?.textContent).toContain('No Users Found');
   });
 
-  test('edit dialog footer buttons are present when dialog opens', async () => {
-    const user = fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'manager' });
-    element.openEditDialog(user);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+  test('edit button links to user edit page', () => {
+    const editButtons = element.shadowRoot!.querySelectorAll('.actions-cell wa-button[href]');
+    expect(editButtons.length).toBe(2); // 2 active users (deactivated hidden by default)
 
-    const footerButtons = element.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
-    expect(footerButtons.length).toBeGreaterThanOrEqual(2);
+    const firstEditHref = editButtons[0].getAttribute('href');
+    expect(firstEditHref).toBe('/settings/users/user-1');
   });
 
   test('should filter out anonymous users', async () => {

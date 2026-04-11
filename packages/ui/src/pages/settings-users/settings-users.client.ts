@@ -378,16 +378,11 @@ export class OgsSettingsUsersPage extends LitElement {
   @state() loading = true;
   @state() hideDeactivated = true;
   @state() showAddDialog = false;
-  @state() showEditDialog = false;
-  @state() editingUser: UserRecord | null = null;
   @state() addName = '';
   @state() addEmail = '';
   @state() addPassword = '';
   @state() addRole = 'member';
   @state() addStoreIds: string[] = [];
-  @state() editName = '';
-  @state() editRole = '';
-  @state() editStoreIds: string[] = [];
   @state() saving = false;
   @state() successMessage = '';
   @state() errorMessage = '';
@@ -498,47 +493,6 @@ export class OgsSettingsUsersPage extends LitElement {
     }
   }
 
-  openEditDialog(user: UserRecord) {
-    this.editingUser = user;
-    this.editName = user.name;
-    this.editRole = user.role ?? 'member';
-    this.editStoreIds = [];
-    this.showEditDialog = true;
-  }
-
-  async handleEditUser() {
-    if (!this.editingUser) return;
-    this.saving = true;
-    this.successMessage = '';
-    this.errorMessage = '';
-    try {
-      const authClient = await getAuthClient();
-
-      // Set global role (admin plugin compat)
-      const roleResult = await authClient.admin.setRole({
-        userId: this.editingUser.id,
-        role: this.editRole as 'owner' | 'manager' | 'member',
-      });
-
-      if (roleResult.error) {
-        this.errorMessage = roleResult.error.message ?? 'Failed to update role';
-        return;
-      }
-
-      this.successMessage = `User ${this.editName} updated successfully`;
-      this.showEditDialog = false;
-      this.editingUser = null;
-      await this.loadUsers();
-      setTimeout(() => {
-        this.successMessage = '';
-      }, 3000);
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to update user';
-    } finally {
-      this.saving = false;
-    }
-  }
-
   async toggleUserStatus(user: UserRecord) {
     this.successMessage = '';
     this.errorMessage = '';
@@ -600,7 +554,7 @@ export class OgsSettingsUsersPage extends LitElement {
           `,
           () => this.renderContent(),
         )}
-        ${this.renderAddDialog()} ${this.renderEditDialog()}
+        ${this.renderAddDialog()}
       </ogs-page>
     `;
   }
@@ -772,7 +726,7 @@ export class OgsSettingsUsersPage extends LitElement {
                           size="small"
                           variant="neutral"
                           appearance="outlined"
-                          @click="${() => this.openEditDialog(user)}"
+                          href="/settings/users/${encodeURIComponent(user.id)}"
                         >
                           <wa-icon slot="start" name="pen-to-square"></wa-icon>
                           Edit
@@ -878,72 +832,6 @@ export class OgsSettingsUsersPage extends LitElement {
           Create User
         </wa-button>
       </wa-dialog>
-    `;
-  }
-
-  private renderEditDialog() {
-    return html`
-      ${when(
-        this.editingUser,
-        () => html`
-          <wa-dialog
-            with-footer
-            label="Edit User"
-            ?open="${this.showEditDialog}"
-            @wa-after-hide="${(e: Event) => {
-              if (e.target === e.currentTarget) {
-                this.showEditDialog = false;
-                this.editingUser = null;
-              }
-            }}"
-          >
-            <div class="dialog-form">
-              <wa-input label="Name" readonly .value="${this.editName}">
-                <wa-icon slot="prefix" name="user"></wa-icon>
-              </wa-input>
-              <wa-input label="Email" readonly .value="${this.editingUser!.email}">
-                <wa-icon slot="prefix" name="envelope"></wa-icon>
-              </wa-input>
-              <wa-select
-                label="Role"
-                .value="${this.editRole}"
-                @change="${(e: Event) => {
-                  this.editRole = (e.target as HTMLSelectElement).value;
-                }}"
-              >
-                <wa-option value="owner">Owner</wa-option>
-                <wa-option value="manager">Store Manager</wa-option>
-                <wa-option value="member">Employee</wa-option>
-              </wa-select>
-              <wa-select
-                label="Store Assignment"
-                multiple
-                .value="${this.editStoreIds}"
-                @change="${(e: Event) => {
-                  const select = e.target as HTMLSelectElement;
-                  this.editStoreIds = Array.from((select as unknown as { value: string[] }).value);
-                }}"
-              >
-                ${this.stores.map((s) => html`<wa-option value="${s.id}">${s.name}</wa-option>`)}
-              </wa-select>
-            </div>
-            <wa-button
-              autofocus
-              slot="footer"
-              variant="neutral"
-              @click="${() => {
-                this.showEditDialog = false;
-                this.editingUser = null;
-              }}"
-              >Cancel</wa-button
-            >
-            <wa-button slot="footer" variant="brand" ?loading="${this.saving}" @click="${this.handleEditUser}">
-              <wa-icon slot="start" name="floppy-disk"></wa-icon>
-              Save Changes
-            </wa-button>
-          </wa-dialog>
-        `,
-      )}
     `;
   }
 }
