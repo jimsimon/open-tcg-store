@@ -1,6 +1,6 @@
 import { createClient } from '@libsql/client';
 import { createHash } from 'node:crypto';
-import { renameSync, readFileSync, existsSync, unlinkSync, createWriteStream } from 'node:fs';
+import { renameSync, existsSync, unlinkSync, createWriteStream, createReadStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { client, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
@@ -40,17 +40,19 @@ export interface UpdateCheckResult {
 }
 
 /**
- * Compute the SHA-256 hash of a file on disk.
+ * Compute the SHA-256 hash of a file on disk using streaming to avoid
+ * buffering the entire file into memory (the database can be hundreds of MB).
  * Returns null if the file does not exist or cannot be read.
  */
-export function computeFileHash(filePath: string): string | null {
-  try {
-    if (!existsSync(filePath)) return null;
-    const content = readFileSync(filePath);
-    return createHash('sha256').update(content).digest('hex');
-  } catch {
-    return null;
-  }
+export function computeFileHash(filePath: string): Promise<string | null> {
+  if (!existsSync(filePath)) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const hash = createHash('sha256');
+    createReadStream(filePath)
+      .on('data', (chunk) => hash.update(chunk))
+      .on('end', () => resolve(hash.digest('hex')))
+      .on('error', () => resolve(null));
+  });
 }
 
 /**
@@ -68,7 +70,9 @@ export async function fetchReleaseHash(release: GitHubRelease): Promise<string |
 
   const text = await response.text();
   // sha256sum output format: "<hash>  <filename>" — extract just the hash
-  return text.trim().split(/\s+/)[0] ?? null;
+  const hash = text.trim().split(/\s+/)[0] ?? null;
+  if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) return null;
+  return hash;
 }
 
 /**
@@ -106,7 +110,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult | null> {
   }
 
   // Compare with local database file hash
-  const localHash = computeFileHash(databaseFilePath);
+  const localHash = await computeFileHash(databaseFilePath);
   console.log(`[tcg-data-update] Local DB hash: ${localHash ?? '(no file)'}, release hash: ${expectedHash}`);
 
   if (localHash === expectedHash) {
@@ -152,8 +156,8 @@ export async function downloadUpdate(release: GitHubRelease): Promise<string> {
  * Verify that the downloaded file's SHA-256 hash matches the expected hash
  * published with the release.
  */
-export function verifyDownloadHash(filePath: string, expectedHash: string): boolean {
-  const actualHash = computeFileHash(filePath);
+export async function verifyDownloadHash(filePath: string, expectedHash: string): Promise<boolean> {
+  const actualHash = await computeFileHash(filePath);
   if (actualHash !== expectedHash) {
     console.error(`[tcg-data-update] Hash mismatch: expected ${expectedHash}, got ${actualHash ?? '(no file)'}`);
     return false;
@@ -354,7 +358,7 @@ export async function triggerManualUpdate(): Promise<{
     const { release, expectedHash } = result;
     const tempPath = await downloadUpdate(release);
 
-    if (!verifyDownloadHash(tempPath, expectedHash)) {
+    if (!(await verifyDownloadHash(tempPath, expectedHash))) {
       cleanupTempFile();
       return { success: false, message: 'Downloaded file hash does not match release', newVersion: null };
     }
@@ -399,7 +403,7 @@ export async function performUpdateCheck(): Promise<void> {
     const { release, expectedHash } = result;
     const tempPath = await downloadUpdate(release);
 
-    if (!verifyDownloadHash(tempPath, expectedHash)) {
+    if (!(await verifyDownloadHash(tempPath, expectedHash))) {
       console.error('[tcg-data-update] Downloaded file hash does not match release, skipping update');
       cleanupTempFile();
       return;

@@ -82,7 +82,20 @@ jobs:
           sha256sum ./sqlite-data/tcg-data.sqlite > ./sqlite-data/tcg-data.sqlite.sha256
           echo "sha256=$(cut -d' ' -f1 ./sqlite-data/tcg-data.sqlite.sha256)" >> $GITHUB_OUTPUT
 
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          if gh release view "tcg-data-${{ steps.hash.outputs.sha256 }}" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release tcg-data-${{ steps.hash.outputs.sha256 }} already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: tcg-data-${{ steps.hash.outputs.sha256 }}
