@@ -96,6 +96,12 @@ const TriggerRestoreMutation = new TypedDocumentString(`
   { provider: string }
 >;
 
+const PROVIDER_INFO: Record<string, { name: string; icon: string }> = {
+  google_drive: { name: 'Google Drive', icon: 'database' },
+  dropbox: { name: 'Dropbox', icon: 'box-open' },
+  onedrive: { name: 'OneDrive', icon: 'cloud' },
+};
+
 @customElement('ogs-settings-backup-page')
 export class OgsSettingsBackupPage extends LitElement {
   @property({ type: Boolean }) isAnonymous = false;
@@ -201,11 +207,6 @@ export class OgsSettingsBackupPage extends LitElement {
       }
 
       /* --- Provider Cards --- */
-
-      .provider-grid {
-        display: grid;
-        gap: 0.75rem;
-      }
 
       .provider-card {
         display: flex;
@@ -412,6 +413,7 @@ export class OgsSettingsBackupPage extends LitElement {
   @state() googleDriveConnected = false;
   @state() dropboxConnected = false;
   @state() onedriveConnected = false;
+  @state() selectedConfigProvider = 'google_drive';
   @state() googleDriveClientId = '';
   @state() dropboxClientId = '';
   @state() onedriveClientId = '';
@@ -690,20 +692,28 @@ export class OgsSettingsBackupPage extends LitElement {
         : nothing}
 
       <wa-card appearance="outline">
-        <!-- Cloud Providers -->
+        <!-- Cloud Provider -->
         <div class="settings-section">
           <div class="section-header">
             <wa-icon name="cloud"></wa-icon>
             <div>
-              <h3>Cloud Providers</h3>
-              <p>Connect your cloud storage accounts for backup</p>
+              <h3>Cloud Provider</h3>
+              <p>Select and configure a cloud storage provider for backup</p>
             </div>
           </div>
-          <div class="provider-grid">
-            ${this.renderProviderCard('Google Drive', 'database', 'solid', this.googleDriveConnected, 'google_drive')}
-            ${this.renderProviderCard('Dropbox', 'box-open', 'solid', this.dropboxConnected, 'dropbox')}
-            ${this.renderProviderCard('OneDrive', 'cloud', 'solid', this.onedriveConnected, 'onedrive')}
-          </div>
+          <wa-select
+            label="Provider"
+            .value="${this.selectedConfigProvider}"
+            @change="${(e: Event) => {
+              this.selectedConfigProvider = (e.target as HTMLSelectElement).value;
+            }}"
+            style="margin-bottom: 0.75rem;"
+          >
+            <wa-option value="google_drive">Google Drive</wa-option>
+            <wa-option value="dropbox">Dropbox</wa-option>
+            <wa-option value="onedrive">OneDrive</wa-option>
+          </wa-select>
+          ${this.renderSelectedProviderCard()}
         </div>
 
         <!-- Backup Configuration -->
@@ -795,7 +805,17 @@ export class OgsSettingsBackupPage extends LitElement {
     `;
   }
 
-  private renderProviderCard(name: string, icon: string, iconVariant: string, connected: boolean, providerKey: string) {
+  private renderSelectedProviderCard() {
+    const providerKey = this.selectedConfigProvider;
+    const info = PROVIDER_INFO[providerKey];
+    if (!info) return nothing;
+    const { name, icon } = info;
+    const connected =
+      providerKey === 'google_drive'
+        ? this.googleDriveConnected
+        : providerKey === 'dropbox'
+          ? this.dropboxConnected
+          : this.onedriveConnected;
     const clientId = this.getClientIdForProvider(providerKey);
     const instructions = this.getOAuthInstructions(providerKey);
 
@@ -804,7 +824,7 @@ export class OgsSettingsBackupPage extends LitElement {
         <div class="provider-card">
           <div class="provider-info">
             <div class="provider-icon">
-              <wa-icon name="${icon}" variant="${iconVariant}"></wa-icon>
+              <wa-icon name="${icon}" variant="solid"></wa-icon>
             </div>
             <div class="provider-details">
               <span class="provider-name">${name}</span>
