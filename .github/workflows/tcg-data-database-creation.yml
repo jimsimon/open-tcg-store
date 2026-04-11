@@ -37,12 +37,12 @@ jobs:
         run: |
           mkdir -p ./sqlite-data
 
-          # Find the latest release with our tag prefix
+          # Find the latest release with our tag prefix (check both new and legacy prefixes)
           LATEST_TAG=$(curl -sf \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/releases?per_page=20" \
-            | jq -r '[.[] | select(.tag_name | startswith("initial-db-"))] | sort_by(.tag_name) | reverse | .[0].tag_name // empty')
+            | jq -r '[.[] | select(.tag_name | (startswith("tcg-data-") or startswith("initial-db-")))] | sort_by(.created_at) | reverse | .[0].tag_name // empty')
 
           if [ -z "$LATEST_TAG" ]; then
             echo "No previous release found, creating empty database"
@@ -76,22 +76,39 @@ jobs:
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts
 
-      - name: Generate Date
-        id: date
-        run: echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+      - name: Compute database hash
+        id: hash
+        run: |
+          sha256sum ./sqlite-data/tcg-data.sqlite > ./sqlite-data/tcg-data.sqlite.sha256
+          echo "sha256=$(cut -d' ' -f1 ./sqlite-data/tcg-data.sqlite.sha256)" >> $GITHUB_OUTPUT
+
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          if gh release view "tcg-data-${{ steps.hash.outputs.sha256 }}" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release tcg-data-${{ steps.hash.outputs.sha256 }} already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: initial-db-${{ steps.date.outputs.date }}
-          name: Initial Database ${{ steps.date.outputs.date }}
+          tag_name: tcg-data-${{ steps.hash.outputs.sha256 }}
+          name: TCG Data ${{ steps.hash.outputs.sha256 }}
           body: |
-            Daily initial database update
-            - Generated on: ${{ steps.date.outputs.date }}
+            Daily TCG data database update
+            - SHA-256: ${{ steps.hash.outputs.sha256 }}
             - Run number: ${{ github.run_number }}
 
-            This release contains the latest database schema preloaded with all TCG data in SQLite format.
-          files: ./sqlite-data/tcg-data.sqlite
+            This release contains the latest database preloaded with all TCG data in SQLite format.
+          files: |
+            ./sqlite-data/tcg-data.sqlite
+            ./sqlite-data/tcg-data.sqlite.sha256
           draft: false
           prerelease: false
           generate_release_notes: false

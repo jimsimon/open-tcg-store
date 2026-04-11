@@ -10,6 +10,7 @@ import {
   productPresaleInfo,
   productExtendedData,
   price,
+  metadata,
 } from '../packages/api/src/db/tcg-data/schema';
 import { mapRarity } from './lib/rarity';
 
@@ -436,6 +437,15 @@ async function populateTcgData() {
       });
     }
   }
+
+  // Record the creation timestamp in the database itself so the UI can display
+  // when this data snapshot was built, independent of the update mechanism.
+  const createdAt = new Date().toISOString();
+  await tcgData
+    .insert(metadata)
+    .values({ key: 'created_at', value: createdAt })
+    .onConflictDoUpdate({ target: metadata.key, set: { value: createdAt } });
+  console.log(`Recorded created_at: ${createdAt}`);
 
   console.log('\nDone!');
 }

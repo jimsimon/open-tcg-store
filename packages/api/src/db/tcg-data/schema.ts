@@ -138,6 +138,11 @@ export const productPresaleInfo = sqliteTable(
   ],
 );
 
+export const metadata = sqliteTable('metadata', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
 export const productExtendedData = sqliteTable(
   'product_extended_data',
   {

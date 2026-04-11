@@ -9,5 +9,5 @@ export const getDataUpdateStatus: NonNullable<QueryResolvers['getDataUpdateStatu
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { companySettings: ['read'] });
-  return getDataUpdateStatusService();
+  return await getDataUpdateStatusService();
 };
