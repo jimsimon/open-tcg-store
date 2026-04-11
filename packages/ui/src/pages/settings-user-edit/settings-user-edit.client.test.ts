@@ -219,7 +219,7 @@ describe('ogs-settings-user-edit-page', () => {
 
     const notMember = element.shadowRoot!.querySelector('.not-member-state');
     expect(notMember).toBeTruthy();
-    expect(notMember?.textContent).toContain('Not a Store Member');
+    expect(notMember?.textContent).toContain('Not a Member of the Active Store');
   });
 
   test('should not show permission grid when user is not a member', async () => {
@@ -294,7 +294,7 @@ describe('ogs-settings-user-edit-page', () => {
     expect(enabledLabels).toContain('Dashboard & Transaction Log');
   });
 
-  test('should enable all permissions for an owner member', async () => {
+  test('should show owner read-only state for an owner member', async () => {
     mockGetUser.mockResolvedValue({ data: fakeUser({ role: 'owner' }) });
     mockGetFullOrganization.mockResolvedValue({
       data: fakeOrg([fakeMember({ role: 'owner' })]),
@@ -305,8 +305,13 @@ describe('ogs-settings-user-edit-page', () => {
     document.body.appendChild(element);
     await waitForLoaded(element);
 
-    const enabledCards = element.shadowRoot!.querySelectorAll('.permission-card.enabled');
-    expect(enabledCards.length).toBe(7);
+    // Owners get a read-only callout instead of the editable permission grid
+    const permGrid = element.shadowRoot!.querySelector('.permissions-grid');
+    expect(permGrid).toBeFalsy();
+
+    const callout = element.shadowRoot!.querySelector('wa-callout[variant="warning"]');
+    expect(callout).toBeTruthy();
+    expect(callout?.textContent).toContain('Owner permissions cannot be changed');
   });
 
   test('should enable member-default permissions for a member', async () => {

@@ -183,10 +183,9 @@ const router = new Router()
   // Proxy /api/users/* to the API server (user management endpoints)
   .get('/api/users/:userId/store-memberships', async (ctx) => {
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}/store-memberships`,
-        { headers: { Cookie: ctx.headers.cookie ?? '' } },
-      );
+      const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}/store-memberships`, {
+        headers: { Cookie: ctx.headers.cookie ?? '' },
+      });
       ctx.status = res.status;
       ctx.body = await res.json();
     } catch {

@@ -26,10 +26,7 @@ const GetAllStoresQuery = new TypedDocumentString(`
   query GetAllStoresForUserEdit {
     getAllStoreLocations { id name }
   }
-`) as unknown as TypedDocumentString<
-  { getAllStoreLocations: { id: string; name: string }[] },
-  Record<string, never>
->;
+`) as unknown as TypedDocumentString<{ getAllStoreLocations: { id: string; name: string }[] }, Record<string, never>>;
 
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
@@ -563,7 +560,6 @@ export class OgsSettingsUserEditPage extends LitElement {
   @state() private saving = false;
   @state() private savingStores = false;
 
-
   /** The base role selected in the dropdown */
   @state() private selectedBaseRole = 'member';
   /** Whether per-permission overrides are active */
@@ -1004,8 +1000,7 @@ export class OgsSettingsUserEditPage extends LitElement {
             </wa-callout>
           `
         : nothing}
-      ${this.renderPageHeader()} ${this.renderUserInfo()}
-      ${this.renderStoreAssignments()}
+      ${this.renderPageHeader()} ${this.renderUserInfo()} ${this.renderStoreAssignments()}
       ${this.member
         ? this.member.role === 'owner'
           ? this.renderOwnerReadOnlyState()
