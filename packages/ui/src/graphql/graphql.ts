@@ -353,6 +353,14 @@ export type LotPage = {
   totalPages: Scalars['Int']['output'];
 };
 
+export type LotStats = {
+  __typename?: 'LotStats';
+  totalInvested: Scalars['Float']['output'];
+  totalLots: Scalars['Int']['output'];
+  totalMarketValue: Scalars['Float']['output'];
+  totalProfitLoss: Scalars['Float']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addInventoryItem: InventoryItem;
@@ -744,6 +752,7 @@ export type Query = {
   getInventoryItem?: Maybe<InventoryItem>;
   getInventoryItemDetails: InventoryStockPage;
   getLot?: Maybe<Lot>;
+  getLotStats: LotStats;
   getLots: LotPage;
   getOrders: OrderPage;
   getProduct: ProductDetail;
