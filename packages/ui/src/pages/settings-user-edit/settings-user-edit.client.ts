@@ -16,6 +16,7 @@ import '@awesome.me/webawesome/dist/components/switch/switch.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
+import { roles } from '../../../../api/src/lib/permissions';
 
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
@@ -37,6 +38,17 @@ interface PermissionArea {
   description: string;
   icon: string;
 }
+
+/** Resources that are app-specific (editable per-user in the UI). */
+const APP_RESOURCES = new Set([
+  'inventory',
+  'lot',
+  'order',
+  'transactionLog',
+  'companySettings',
+  'storeLocations',
+  'userManagement',
+]);
 
 const PERMISSION_AREAS: PermissionArea[] = [
   {
@@ -91,50 +103,45 @@ const PERMISSION_AREAS: PermissionArea[] = [
 ];
 
 /**
- * Default app-level permissions for each standard role.
- * These only include the custom app resources — org-management and admin-plugin
- * permissions are handled separately based on the base role.
+ * Derive app-level and fixed permission maps from the shared role definitions.
+ * This ensures the UI always stays in sync with the server-side role config
+ * in packages/api/src/lib/permissions.ts.
  */
+function splitRolePermissions(roleStatements: Record<string, readonly string[]>): {
+  app: Record<string, string[]>;
+  fixed: Record<string, string[]>;
+} {
+  const app: Record<string, string[]> = {};
+  const fixed: Record<string, string[]> = {};
+  for (const [resource, actions] of Object.entries(roleStatements)) {
+    if (APP_RESOURCES.has(resource)) {
+      app[resource] = [...actions];
+    } else if (actions.length > 0) {
+      fixed[resource] = [...actions];
+    }
+  }
+  return { app, fixed };
+}
+
+const ownerSplit = splitRolePermissions(roles.owner.statements);
+const managerSplit = splitRolePermissions(roles.manager.statements);
+const memberSplit = splitRolePermissions(roles.member.statements);
+
+/** Default app-level permissions for each standard role (derived from shared permissions.ts). */
 const ROLE_APP_DEFAULTS: Record<string, Record<string, string[]>> = {
-  owner: {
-    inventory: ['create', 'read', 'update', 'delete'],
-    lot: ['create', 'read', 'update', 'delete'],
-    order: ['create', 'read', 'update', 'cancel'],
-    transactionLog: ['read'],
-    companySettings: ['read', 'update'],
-    storeLocations: ['create', 'read', 'update', 'delete'],
-    userManagement: ['create', 'read', 'update', 'delete'],
-  },
-  manager: {
-    inventory: ['create', 'read', 'update', 'delete'],
-    lot: ['create', 'read', 'update', 'delete'],
-    order: ['create', 'read', 'update', 'cancel'],
-    transactionLog: ['read'],
-  },
-  member: {
-    inventory: ['create', 'read', 'update', 'delete'],
-    lot: ['create', 'read', 'update', 'delete'],
-    order: ['create', 'read', 'update', 'cancel'],
-  },
+  owner: ownerSplit.app,
+  manager: managerSplit.app,
+  member: memberSplit.app,
 };
 
 /**
- * Non-overridable permissions that come from the base role.
+ * Non-overridable permissions that come from the base role (derived from shared permissions.ts).
  * These include org-management and admin-plugin permissions.
  */
 const BASE_ROLE_FIXED_PERMISSIONS: Record<string, Record<string, string[]>> = {
-  owner: {
-    // Admin plugin permissions
-    user: ['create', 'list', 'set-role', 'ban', 'impersonate', 'delete', 'set-password', 'get', 'update'],
-    session: ['list', 'revoke', 'delete'],
-    // Org management permissions
-    organization: ['update', 'delete'],
-    member: ['create', 'update', 'delete'],
-    invitation: ['create', 'cancel'],
-    ac: ['create', 'read', 'update', 'delete'],
-  },
-  manager: {},
-  member: {},
+  owner: ownerSplit.fixed,
+  manager: managerSplit.fixed,
+  member: memberSplit.fixed,
 };
 
 const STANDARD_ROLES = ['owner', 'manager', 'member'];
@@ -158,32 +165,7 @@ interface MemberRecord {
   createdAt: string;
 }
 
-interface OrgRole {
-  id: string;
-  role: string;
-  permission: Record<string, string[]>;
-  organizationId: string;
-}
-
 // --- Helpers ---
-
-const AUTH_BASE = 'http://localhost:5174';
-
-async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${AUTH_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Auth API error: ${res.status} ${body}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 function customRoleName(memberId: string): string {
   return `custom-${memberId}`;
@@ -578,26 +560,27 @@ export class OgsSettingsUserEditPage extends LitElement {
 
   private async fetchUser(): Promise<UserRecord | null> {
     const authClient = await getAuthClient();
-    const result = await authClient.admin.listUsers({
-      query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' },
+    const result = await authClient.admin.getUser({
+      query: { id: this.userId },
     });
     if (result.data) {
-      const users = result.data.users as unknown as UserRecord[];
-      return users.find((u) => u.id === this.userId) ?? null;
+      return result.data as unknown as UserRecord;
     }
     return null;
   }
 
   private async fetchOrgMembers(): Promise<{ member: MemberRecord } | null> {
     try {
-      const result = await authFetch<{
-        members: Array<{ id: string; userId: string; role: string; createdAt: string }>;
-      }>('/api/auth/organization/get-full-organization', {
-        method: 'GET',
-      });
-      const member = result.members?.find((m) => m.userId === this.userId);
-      if (member) {
-        return { member };
+      const authClient = await getAuthClient();
+      const result = await authClient.organization.getFullOrganization();
+      if (result.data) {
+        const org = result.data as unknown as {
+          members: Array<{ id: string; userId: string; role: string; createdAt: string }>;
+        };
+        const member = org.members?.find((m: { userId: string }) => m.userId === this.userId);
+        if (member) {
+          return { member };
+        }
       }
     } catch {
       // User might not be a member of the current org
@@ -605,11 +588,16 @@ export class OgsSettingsUserEditPage extends LitElement {
     return null;
   }
 
-  private async fetchOrgRole(roleName: string): Promise<OrgRole | null> {
+  private async fetchOrgRole(roleName: string): Promise<{ permission: Record<string, string[]> } | null> {
     try {
-      return await authFetch<OrgRole>(`/api/auth/organization/get-role?roleName=${encodeURIComponent(roleName)}`, {
-        method: 'GET',
+      const authClient = await getAuthClient();
+      const result = await authClient.organization.getRole({
+        query: { roleName },
       });
+      if (result.data) {
+        return result.data as unknown as { permission: Record<string, string[]> };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -688,9 +676,10 @@ export class OgsSettingsUserEditPage extends LitElement {
         }
       }
 
-      this.successMessage = 'Permissions updated successfully';
-      // Refresh data to reflect changes
+      // Refresh data to reflect changes, then show success message
+      // (loadData sets loading=true which hides content, so set the message after it completes)
       await this.loadData();
+      this.successMessage = 'Permissions updated successfully';
       setTimeout(() => {
         this.successMessage = '';
       }, 3000);
@@ -702,21 +691,19 @@ export class OgsSettingsUserEditPage extends LitElement {
   }
 
   private async assignStandardRole(roleName: string) {
+    const authClient = await getAuthClient();
+
     // Update the member's role to a standard role
-    await authFetch('/api/auth/organization/update-member-role', {
-      method: 'POST',
-      body: JSON.stringify({
-        memberId: this.member!.id,
-        role: roleName,
-      }),
+    await authClient.organization.updateMemberRole({
+      memberId: this.member!.id,
+      role: roleName,
     });
 
     // Clean up any existing custom role
     if (this.existingCustomRoleName && !STANDARD_ROLES.includes(this.existingCustomRoleName)) {
       try {
-        await authFetch('/api/auth/organization/delete-role', {
-          method: 'POST',
-          body: JSON.stringify({ roleName: this.existingCustomRoleName }),
+        await authClient.organization.deleteRole({
+          roleName: this.existingCustomRoleName,
         });
       } catch {
         // Role might already be deleted or assigned to others — ignore
@@ -726,6 +713,7 @@ export class OgsSettingsUserEditPage extends LitElement {
   }
 
   private async assignCustomPermissions() {
+    const authClient = await getAuthClient();
     const roleName = customRoleName(this.member!.id);
 
     // Build the full permission set: fixed base-role permissions + checked app permissions
@@ -736,20 +724,16 @@ export class OgsSettingsUserEditPage extends LitElement {
 
     if (this.existingCustomRoleName === roleName) {
       // Update the existing custom role
-      await authFetch('/api/auth/organization/update-role', {
-        method: 'POST',
-        body: JSON.stringify({
-          roleName,
-          data: { permission: fullPermissions },
-        }),
+      await authClient.organization.updateRole({
+        roleName,
+        data: { permission: fullPermissions },
       });
     } else {
       // Delete old custom role if exists
       if (this.existingCustomRoleName && !STANDARD_ROLES.includes(this.existingCustomRoleName)) {
         try {
-          await authFetch('/api/auth/organization/delete-role', {
-            method: 'POST',
-            body: JSON.stringify({ roleName: this.existingCustomRoleName }),
+          await authClient.organization.deleteRole({
+            roleName: this.existingCustomRoleName,
           });
         } catch {
           // Ignore
@@ -757,22 +741,16 @@ export class OgsSettingsUserEditPage extends LitElement {
       }
 
       // Create a new custom role
-      await authFetch('/api/auth/organization/create-role', {
-        method: 'POST',
-        body: JSON.stringify({
-          role: roleName,
-          permission: fullPermissions,
-        }),
+      await authClient.organization.createRole({
+        role: roleName,
+        permission: fullPermissions,
       });
     }
 
     // Assign the custom role to the member
-    await authFetch('/api/auth/organization/update-member-role', {
-      method: 'POST',
-      body: JSON.stringify({
-        memberId: this.member!.id,
-        role: roleName,
-      }),
+    await authClient.organization.updateMemberRole({
+      memberId: this.member!.id,
+      role: roleName,
     });
 
     this.existingCustomRoleName = roleName;

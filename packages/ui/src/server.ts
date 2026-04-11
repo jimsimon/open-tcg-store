@@ -320,6 +320,8 @@ const router = new Router()
     return renderPage(ctx, 'settings-users');
   })
   .get('settings-user-edit', '/settings/users/:userId', async (ctx) => {
+    await requirePermission('userManagement', 'update')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'settings-user-edit');
   });
 
