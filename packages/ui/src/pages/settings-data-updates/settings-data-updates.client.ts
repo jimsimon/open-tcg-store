@@ -212,28 +212,60 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
   @state() isUpdating = false;
   @state() loading = true;
   @state() updating = false;
+  @state() checking = false;
   @state() successMessage = '';
   @state() errorMessage = '';
 
+  private initialLoad: Promise<void> | null = null;
+
   connectedCallback(): void {
     super.connectedCallback();
-    this.loadStatus();
+    this.initialLoad = this.loadStatus();
   }
 
   async loadStatus() {
     try {
-      const result = await execute(GetDataUpdateStatusQuery);
-      if (result?.data?.getDataUpdateStatus) {
-        const s = result.data.getDataUpdateStatus;
-        this.currentVersion = s.currentVersion;
-        this.latestVersion = s.latestVersion;
-        this.updateAvailable = s.updateAvailable;
-        this.isUpdating = s.isUpdating;
-      }
+      await this.fetchStatus();
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load update status';
     } finally {
       this.loading = false;
+    }
+  }
+
+  private async fetchStatus() {
+    const result = await execute(GetDataUpdateStatusQuery);
+    if (result?.data?.getDataUpdateStatus) {
+      const s = result.data.getDataUpdateStatus;
+      this.currentVersion = s.currentVersion;
+      this.latestVersion = s.latestVersion;
+      this.updateAvailable = s.updateAvailable;
+      this.isUpdating = s.isUpdating;
+    }
+  }
+
+  async handleCheckForUpdates() {
+    // Wait for the initial load to finish before checking again to avoid interleaved state updates
+    if (this.initialLoad) {
+      await this.initialLoad;
+      this.initialLoad = null;
+    }
+
+    this.checking = true;
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    try {
+      await this.fetchStatus();
+      if (this.updateAvailable) {
+        this.successMessage = 'A new update is available!';
+      } else {
+        this.successMessage = 'Your card data is already up to date.';
+      }
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to check for updates';
+    } finally {
+      this.checking = false;
     }
   }
 
@@ -397,6 +429,16 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
           >
             <wa-icon slot="start" name="arrows-rotate"></wa-icon>
             ${this.updating ? 'Updating...' : 'Update Now'}
+          </wa-button>
+          <wa-button
+            variant="neutral"
+            appearance="outlined"
+            ?loading="${this.checking}"
+            ?disabled="${this.updating || this.checking}"
+            @click="${this.handleCheckForUpdates}"
+          >
+            <wa-icon slot="start" name="magnifying-glass"></wa-icon>
+            ${this.checking ? 'Checking...' : 'Check for Updates'}
           </wa-button>
           ${this.isUpdating && !this.updating
             ? html`<span style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
