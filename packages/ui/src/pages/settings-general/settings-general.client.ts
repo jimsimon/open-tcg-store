@@ -534,14 +534,26 @@ export class OgsSettingsGeneralPage extends LitElement {
                     <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
                   </wa-input>
                   <div class="toolbar-actions">
-                    <wa-button size="small" variant="default" @click="${this.handleSelectAllGames}" ?disabled="${this.allFilteredSelected}">
+                    <wa-button
+                      size="small"
+                      variant="default"
+                      @click="${this.handleSelectAllGames}"
+                      ?disabled="${this.allFilteredSelected}"
+                    >
                       Select all
                     </wa-button>
-                    <wa-button size="small" variant="default" @click="${this.handleDeselectAllGames}" ?disabled="${!this.anyFilteredSelected}">
+                    <wa-button
+                      size="small"
+                      variant="default"
+                      @click="${this.handleDeselectAllGames}"
+                      ?disabled="${!this.anyFilteredSelected}"
+                    >
                       Deselect all
                     </wa-button>
                   </div>
-                  <span class="games-count">${this.selectedGameCategoryIds.length} of ${this.availableGames.length} selected</span>
+                  <span class="games-count"
+                    >${this.selectedGameCategoryIds.length} of ${this.availableGames.length} selected</span
+                  >
                 </div>
                 <div class="games-grid">
                   ${this.filteredGames.length === 0
