@@ -212,6 +212,7 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
   @state() isUpdating = false;
   @state() loading = true;
   @state() updating = false;
+  @state() checking = false;
   @state() successMessage = '';
   @state() errorMessage = '';
 
@@ -234,6 +235,27 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load update status';
     } finally {
       this.loading = false;
+    }
+  }
+
+  async handleCheckForUpdates() {
+    this.checking = true;
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    try {
+      await this.loadStatus();
+      if (!this.errorMessage) {
+        if (this.updateAvailable) {
+          this.successMessage = 'A new update is available!';
+        } else {
+          this.successMessage = 'Your card data is already up to date.';
+        }
+      }
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to check for updates';
+    } finally {
+      this.checking = false;
     }
   }
 
@@ -397,6 +419,16 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
           >
             <wa-icon slot="start" name="arrows-rotate"></wa-icon>
             ${this.updating ? 'Updating...' : 'Update Now'}
+          </wa-button>
+          <wa-button
+            variant="neutral"
+            appearance="outlined"
+            ?loading="${this.checking}"
+            ?disabled="${this.updating || this.checking}"
+            @click="${this.handleCheckForUpdates}"
+          >
+            <wa-icon slot="start" name="magnifying-glass"></wa-icon>
+            ${this.checking ? 'Checking...' : 'Check for Updates'}
           </wa-button>
           ${this.isUpdating && !this.updating
             ? html`<span style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
