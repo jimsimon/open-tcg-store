@@ -563,6 +563,9 @@ export class OgsSettingsUserEditPage extends LitElement {
   @state() private saving = false;
   @state() private savingStores = false;
 
+  /** The ID of the currently logged-in user (to detect self-edits). */
+  private currentUserId: string | null = null;
+
   /** The base role selected in the dropdown */
   @state() private selectedBaseRole = 'member';
   /** Whether per-permission overrides are active */
@@ -585,12 +588,14 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
-      // Fetch user details, org members, all stores, and user's store memberships in parallel
+      // Fetch user details, org members, all stores, user's store memberships, and current
+      // session in parallel. Current session is needed to detect self-edits for lockout guards.
       const [userResult, orgResult] = await Promise.all([
         this.fetchUser(),
         this.fetchOrgMembers(),
         this.fetchAllStores(),
         this.fetchStoreMemberships(),
+        this.fetchCurrentUserId(),
       ]);
 
       if (!userResult) {
@@ -675,6 +680,18 @@ export class OgsSettingsUserEditPage extends LitElement {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  private async fetchCurrentUserId(): Promise<void> {
+    try {
+      const authClient = await getAuthClient();
+      const result = await authClient.getSession();
+      if (result.data?.user?.id) {
+        this.currentUserId = result.data.user.id;
+      }
+    } catch {
+      // Non-fatal — lockout guard will simply not apply
     }
   }
 
@@ -764,6 +781,19 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
+      // Self-lockout guard: if editing their own account, ensure the new role/permissions
+      // still include userManagement:update so they can't lock themselves out.
+      if (this.currentUserId && this.currentUserId === this.userId) {
+        const wouldHaveUserManagement = this.overridePermissions
+          ? (this.permissions['userManagement']?.includes('update') ?? false)
+          : this.selectedBaseRole === 'owner';
+        if (!wouldHaveUserManagement) {
+          this.errorMessage =
+            'You cannot remove your own user management permissions. Assign another owner first.';
+          return;
+        }
+      }
+
       if (!this.overridePermissions) {
         // Using a standard role — assign it directly
         await this.assignStandardRole(this.selectedBaseRole);
@@ -875,6 +905,13 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.errorMessage = '';
 
     try {
+      // Self-lockout guard: an owner cannot remove themselves from all stores,
+      // as that would leave them with no active organization and no access.
+      if (this.currentUserId && this.currentUserId === this.userId && this.selectedStoreIds.size === 0) {
+        this.errorMessage = 'You cannot remove yourself from all stores. You must remain assigned to at least one store.';
+        return;
+      }
+
       const currentIds = new Set(this.storeMemberships.map((m) => m.organizationId));
       const desired = this.selectedStoreIds;
 
