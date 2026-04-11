@@ -318,6 +318,9 @@ const router = new Router()
   })
   .get('settings-users', '/settings/users', async (ctx) => {
     return renderPage(ctx, 'settings-users');
+  })
+  .get('settings-user-edit', '/settings/users/:userId', async (ctx) => {
+    return renderPage(ctx, 'settings-user-edit');
   });
 
 const port = 5173;
