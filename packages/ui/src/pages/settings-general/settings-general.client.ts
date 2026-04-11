@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { LitElement, type PropertyValues, css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '../../components/ogs-page.ts';
@@ -293,6 +293,7 @@ export class OgsSettingsGeneralPage extends LitElement {
   @state() errorMessage = '';
 
   private cachedFilteredGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
+  private cachedSelectedSet = new Set<number>();
   private cachedAllFilteredSelected = false;
   private cachedAnyFilteredSelected = false;
 
@@ -308,7 +309,9 @@ export class OgsSettingsGeneralPage extends LitElement {
     return this.cachedAnyFilteredSelected;
   }
 
-  protected override willUpdate(): void {
+  protected override willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+
     const filtered = this.gameSearchTerm
       ? this.availableGames.filter((g) => g.displayName.toLowerCase().includes(this.gameSearchTerm.toLowerCase()))
       : this.availableGames;
@@ -318,6 +321,7 @@ export class OgsSettingsGeneralPage extends LitElement {
     const anySelected = filtered.some((g) => selectedSet.has(g.categoryId));
 
     this.cachedFilteredGames = filtered;
+    this.cachedSelectedSet = selectedSet;
     this.cachedAllFilteredSelected = allSelected;
     this.cachedAnyFilteredSelected = anySelected;
   }
@@ -561,7 +565,7 @@ export class OgsSettingsGeneralPage extends LitElement {
                     : this.filteredGames.map(
                         (game) => html`
                           <wa-checkbox
-                            ?checked="${this.selectedGameCategoryIds.includes(game.categoryId)}"
+                            ?checked="${this.cachedSelectedSet.has(game.categoryId)}"
                             @change="${(e: Event) => {
                               this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
                             }}"
