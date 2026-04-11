@@ -88,11 +88,13 @@ describe('ogs-settings-buyrates-page', () => {
     expect(desc?.textContent).toContain('Configure buy rate tables');
   });
 
-  test('should display tabs for each supported game', () => {
-    const tabs = element.shadowRoot!.querySelectorAll('wa-tab[slot="nav"]');
-    expect(tabs.length).toBe(2);
-    expect(tabs[0].textContent).toContain('Magic: The Gathering');
-    expect(tabs[1].textContent).toContain('Pokemon');
+  test('should display game selector dropdown with all supported games', () => {
+    const select = element.shadowRoot!.querySelector('wa-select[label="Game"]');
+    expect(select).toBeTruthy();
+    const options = select!.querySelectorAll('wa-option');
+    expect(options.length).toBe(2);
+    expect(options[0].textContent).toContain('Magic: The Gathering');
+    expect(options[1].textContent).toContain('Pokemon');
   });
 
   test('should display buy rate entries in the table', () => {
