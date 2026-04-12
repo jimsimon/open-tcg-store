@@ -425,7 +425,10 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   }
 
   async loadData() {
-    const storeId = activeStoreId.get();
+    // Use the signal if set, otherwise fall back to the server-provided prop.
+    // On initial page load the signal may not be populated yet (ogs-page
+    // sets it asynchronously), but the session already has the active org.
+    const storeId = activeStoreId.get() || this.activeOrganizationId;
     if (!storeId) {
       this.loading = false;
       return;
