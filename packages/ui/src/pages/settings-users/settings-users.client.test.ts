@@ -1,19 +1,23 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-// Mock the active store signal
-const mockActiveStoreId = { get: vi.fn().mockReturnValue('store-1'), set: vi.fn() };
+// Declare mock variables via vi.hoisted() so they are available inside vi.mock() factories
+// (vi.mock is hoisted to the top of the file and cannot reference module-scoped variables).
+const { mockActiveStoreId, mockGetFullOrganization, mockGetSession, mockBanUser, mockUnbanUser, mockFetch } =
+  vi.hoisted(() => ({
+    mockActiveStoreId: { get: vi.fn().mockReturnValue('store-1'), set: vi.fn() },
+    mockGetFullOrganization: vi.fn(),
+    mockGetSession: vi.fn(),
+    mockBanUser: vi.fn(),
+    mockUnbanUser: vi.fn(),
+    mockFetch: vi.fn(),
+  }));
+
 vi.mock('../../lib/store-context', () => ({
   activeStoreId: mockActiveStoreId,
   storeList: { get: vi.fn().mockReturnValue([]) },
   initActiveStoreFromCookie: vi.fn(),
   setActiveStoreCookie: vi.fn(),
 }));
-
-// Mock the auth client
-const mockGetFullOrganization = vi.fn();
-const mockGetSession = vi.fn();
-const mockBanUser = vi.fn();
-const mockUnbanUser = vi.fn();
 
 vi.mock('../../auth-client', () => ({
   authClient: {
@@ -30,8 +34,6 @@ vi.mock('../../auth-client', () => ({
   },
 }));
 
-// Mock fetch for the /api/users endpoint
-const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
 import './settings-users.client.ts';

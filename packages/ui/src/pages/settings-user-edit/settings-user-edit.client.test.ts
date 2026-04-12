@@ -1,19 +1,29 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-// Mock the auth client
-const mockGetUser = vi.fn();
-const mockGetFullOrganization = vi.fn();
-const mockGetRole = vi.fn();
-const mockUpdateMemberRole = vi.fn();
-const mockCreateRole = vi.fn();
-const mockDeleteRole = vi.fn();
-const mockUpdateRole = vi.fn();
+// Declare mock variables via vi.hoisted() so they are available inside vi.mock() factories
+// (vi.mock is hoisted to the top of the file and cannot reference module-scoped variables).
+const {
+  mockGetFullOrganization,
+  mockGetSession,
+  mockGetRole,
+  mockUpdateMemberRole,
+  mockCreateRole,
+  mockDeleteRole,
+  mockUpdateRole,
+  mockFetch,
+} = vi.hoisted(() => ({
+  mockGetFullOrganization: vi.fn(),
+  mockGetSession: vi.fn(),
+  mockGetRole: vi.fn(),
+  mockUpdateMemberRole: vi.fn(),
+  mockCreateRole: vi.fn(),
+  mockDeleteRole: vi.fn(),
+  mockUpdateRole: vi.fn(),
+  mockFetch: vi.fn(),
+}));
 
 vi.mock('../../auth-client', () => ({
   authClient: {
-    admin: {
-      getUser: mockGetUser,
-    },
     organization: {
       getFullOrganization: mockGetFullOrganization,
       getRole: mockGetRole,
@@ -22,8 +32,11 @@ vi.mock('../../auth-client', () => ({
       deleteRole: mockDeleteRole,
       updateRole: mockUpdateRole,
     },
+    getSession: mockGetSession,
   },
 }));
+
+vi.stubGlobal('fetch', mockFetch);
 
 import './settings-user-edit.client.ts';
 import { OgsSettingsUserEditPage } from './settings-user-edit.client.ts';
@@ -65,14 +78,13 @@ function fakeMember(overrides: Record<string, unknown> = {}) {
 /** Poll until the element has finished loading (async data + Lit render). */
 async function waitForLoaded(el: OgsSettingsUserEditPage, timeout = 2000): Promise<void> {
   const deadline = Date.now() + timeout;
-  // Access the private loading state via the element
-  while ((el as unknown as { loading: boolean }).loading && Date.now() < deadline) {
+  while (Date.now() < deadline) {
+    await el.updateComplete;
+    const spinner = el.shadowRoot!.querySelector('.loading-container');
+    if (!spinner) return;
     await new Promise((r) => setTimeout(r, 10));
   }
-  if ((el as unknown as { loading: boolean }).loading) {
-    throw new Error('waitForLoaded timed out — element still loading');
-  }
-  await el.updateComplete;
+  throw new Error('waitForLoaded timed out — element still loading');
 }
 
 function createElement(userId = 'user-1'): OgsSettingsUserEditPage {
@@ -81,21 +93,53 @@ function createElement(userId = 'user-1'): OgsSettingsUserEditPage {
   return el;
 }
 
+/**
+ * Set up mockFetch to return user data for GET /api/users/:userId
+ * and a 502 for anything else (store-memberships etc. are no longer used).
+ */
+function setupMockFetch(userData: Record<string, unknown> | null = fakeUser()) {
+  mockFetch.mockImplementation(async (url: string) => {
+    if (typeof url === 'string' && url.startsWith('/api/users/')) {
+      if (userData) {
+        return { ok: true, json: async () => userData };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: 'User not found' }) };
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  });
+}
+
+/**
+ * Default beforeEach setup: the current user is an owner viewing a manager member.
+ * This ensures the page renders the full permission editor UI.
+ */
+function setupDefaultMocks() {
+  mockGetSession.mockResolvedValue({ data: { user: { id: 'current-user' } } });
+
+  setupMockFetch(fakeUser());
+
+  mockGetFullOrganization.mockResolvedValue({
+    data: fakeOrg([
+      fakeMember(),
+      // Current user is an owner so they can edit the manager
+      fakeMember({ id: 'member-current', userId: 'current-user', role: 'owner' }),
+    ]),
+  });
+
+  mockGetRole.mockResolvedValue({ data: null });
+  mockUpdateMemberRole.mockResolvedValue({ data: {} });
+  mockCreateRole.mockResolvedValue({ data: {} });
+  mockDeleteRole.mockResolvedValue({ data: {} });
+  mockUpdateRole.mockResolvedValue({ data: {} });
+}
+
 // --- Tests ---
 
 describe('ogs-settings-user-edit-page', () => {
   let element: OgsSettingsUserEditPage;
 
   beforeEach(async () => {
-    mockGetUser.mockResolvedValue({ data: fakeUser() });
-    mockGetFullOrganization.mockResolvedValue({
-      data: fakeOrg([fakeMember()]),
-    });
-    mockGetRole.mockResolvedValue({ data: null });
-    mockUpdateMemberRole.mockResolvedValue({ data: {} });
-    mockCreateRole.mockResolvedValue({ data: {} });
-    mockDeleteRole.mockResolvedValue({ data: {} });
-    mockUpdateRole.mockResolvedValue({ data: {} });
+    setupDefaultMocks();
 
     element = createElement();
     document.body.appendChild(element);
@@ -124,7 +168,7 @@ describe('ogs-settings-user-edit-page', () => {
   test('should display the back link', () => {
     const backLink = element.shadowRoot!.querySelector('.back-link');
     expect(backLink).toBeTruthy();
-    expect(backLink?.getAttribute('href')).toBe('/settings/users');
+    expect(backLink?.getAttribute('href')).toBe('/users');
   });
 
   test('should display user info card', () => {
@@ -151,7 +195,7 @@ describe('ogs-settings-user-edit-page', () => {
   });
 
   test('should display Deactivated badge for banned user', async () => {
-    mockGetUser.mockResolvedValue({ data: fakeUser({ banned: true }) });
+    setupMockFetch(fakeUser({ banned: true }));
 
     element.remove();
     element = createElement();
@@ -199,7 +243,7 @@ describe('ogs-settings-user-edit-page', () => {
     expect(buttons.length).toBe(2);
 
     const cancelBtn = footer!.querySelector('wa-button[variant="neutral"]');
-    expect(cancelBtn?.getAttribute('href')).toBe('/settings/users');
+    expect(cancelBtn?.getAttribute('href')).toBe('/users');
 
     const saveBtn = footer!.querySelector('wa-button[variant="brand"]');
     expect(saveBtn?.textContent).toContain('Save Changes');
@@ -219,7 +263,7 @@ describe('ogs-settings-user-edit-page', () => {
 
     const notMember = element.shadowRoot!.querySelector('.not-member-state');
     expect(notMember).toBeTruthy();
-    expect(notMember?.textContent).toContain('Not a Member of the Active Store');
+    expect(notMember?.textContent).toContain('Not a Member of This Store');
   });
 
   test('should not show permission grid when user is not a member', async () => {
@@ -239,7 +283,7 @@ describe('ogs-settings-user-edit-page', () => {
   // --- Loading & Error states ---
 
   test('should show loading spinner initially', async () => {
-    mockGetUser.mockReturnValue(new Promise(() => {}));
+    mockFetch.mockReturnValue(new Promise(() => {}));
 
     element.remove();
     element = createElement();
@@ -251,7 +295,7 @@ describe('ogs-settings-user-edit-page', () => {
   });
 
   test('should show error when user not found', async () => {
-    mockGetUser.mockResolvedValue({ data: null });
+    setupMockFetch(null);
 
     element.remove();
     element = createElement();
@@ -263,9 +307,8 @@ describe('ogs-settings-user-edit-page', () => {
     expect(callout?.textContent).toContain('User not found');
   });
 
-  test('should show error on getUser rejection', async () => {
-    // When getUser rejects, the error should propagate through loadData's catch
-    mockGetUser.mockRejectedValueOnce(new Error('Network error'));
+  test('should show error on fetch rejection', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
     mockGetFullOrganization.mockRejectedValueOnce(new Error('Network error'));
 
     element.remove();
@@ -273,7 +316,6 @@ describe('ogs-settings-user-edit-page', () => {
     document.body.appendChild(element);
     await waitForLoaded(element);
 
-    // Verify the error message was set (either from fetch failure or "User not found")
     const callout = element.shadowRoot!.querySelector('wa-callout[variant="danger"]');
     expect(callout).toBeTruthy();
   });
@@ -281,9 +323,9 @@ describe('ogs-settings-user-edit-page', () => {
   // --- Permission defaults by role ---
 
   test('should enable manager-default permissions for a manager member', () => {
-    // Manager has: inventory, lot, order, transactionLog
+    // Manager has: inventory, lot, order, transactionLog, userManagement
     const enabledCards = element.shadowRoot!.querySelectorAll('.permission-card.enabled');
-    expect(enabledCards.length).toBe(4);
+    expect(enabledCards.length).toBe(5);
 
     const enabledLabels = Array.from(enabledCards).map((card) =>
       card.querySelector('.permission-card-label')?.textContent?.trim(),
@@ -292,12 +334,16 @@ describe('ogs-settings-user-edit-page', () => {
     expect(enabledLabels).toContain('Lot Management');
     expect(enabledLabels).toContain('Order Management');
     expect(enabledLabels).toContain('Dashboard & Transaction Log');
+    expect(enabledLabels).toContain('User Management');
   });
 
   test('should show owner read-only state for an owner member', async () => {
-    mockGetUser.mockResolvedValue({ data: fakeUser({ role: 'owner' }) });
+    setupMockFetch(fakeUser({ role: 'owner' }));
     mockGetFullOrganization.mockResolvedValue({
-      data: fakeOrg([fakeMember({ role: 'owner' })]),
+      data: fakeOrg([
+        fakeMember({ role: 'owner' }),
+        fakeMember({ id: 'member-current', userId: 'current-user', role: 'owner' }),
+      ]),
     });
 
     element.remove();
@@ -315,9 +361,12 @@ describe('ogs-settings-user-edit-page', () => {
   });
 
   test('should enable member-default permissions for a member', async () => {
-    mockGetUser.mockResolvedValue({ data: fakeUser({ role: 'member' }) });
+    setupMockFetch(fakeUser({ role: 'member' }));
     mockGetFullOrganization.mockResolvedValue({
-      data: fakeOrg([fakeMember({ role: 'member' })]),
+      data: fakeOrg([
+        fakeMember({ role: 'member' }),
+        fakeMember({ id: 'member-current', userId: 'current-user', role: 'owner' }),
+      ]),
     });
 
     element.remove();
@@ -340,7 +389,10 @@ describe('ogs-settings-user-edit-page', () => {
 
   test('should enable override mode for custom roles', async () => {
     mockGetFullOrganization.mockResolvedValue({
-      data: fakeOrg([fakeMember({ role: 'custom-member-1' })]),
+      data: fakeOrg([
+        fakeMember({ role: 'custom-member-1' }),
+        fakeMember({ id: 'member-current', userId: 'current-user', role: 'owner' }),
+      ]),
     });
     mockGetRole.mockResolvedValue({
       data: {
@@ -483,11 +535,37 @@ describe('ogs-settings-user-edit-page', () => {
 
   // --- Data fetching ---
 
-  test('should call admin.getUser with the userId prop', () => {
-    expect(mockGetUser).toHaveBeenCalledWith(expect.objectContaining({ query: { id: 'user-1' } }));
+  test('should fetch user via /api/users/:userId endpoint', () => {
+    expect(mockFetch).toHaveBeenCalledWith('/api/users/user-1', expect.objectContaining({ credentials: 'include' }));
   });
 
   test('should call organization.getFullOrganization', () => {
     expect(mockGetFullOrganization).toHaveBeenCalled();
+  });
+
+  // --- Manager guard ---
+
+  test('should show manager-protected state when manager views another manager', async () => {
+    // Current user is a manager, target user is also a manager
+    mockGetSession.mockResolvedValue({ data: { user: { id: 'current-user' } } });
+    mockGetFullOrganization.mockResolvedValue({
+      data: fakeOrg([
+        fakeMember({ role: 'manager' }),
+        fakeMember({ id: 'member-current', userId: 'current-user', role: 'manager' }),
+      ]),
+    });
+
+    element.remove();
+    element = createElement();
+    document.body.appendChild(element);
+    await waitForLoaded(element);
+
+    const callout = element.shadowRoot!.querySelector('wa-callout[variant="warning"]');
+    expect(callout).toBeTruthy();
+    expect(callout?.textContent).toContain('You do not have permission to edit');
+
+    // Should not show the permission grid
+    const permGrid = element.shadowRoot!.querySelector('.permissions-grid');
+    expect(permGrid).toBeFalsy();
   });
 });
