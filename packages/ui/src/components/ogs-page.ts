@@ -771,6 +771,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${when(this.canViewTransactionLog, () =>
                     this.renderNavLink('/transaction-log', 'clock-rotate-left', 'Transaction Log', 'Transaction Log'),
                   )}
+                  ${when(this.canManageUsers, () =>
+                    this.renderNavLink('/users', 'users-gear', 'User Accounts', 'users'),
+                  )}
                 `,
               )}
               ${when(
@@ -789,9 +792,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavSubLink('/settings/buyrates', 'Buy Rates', 'settings/buyrates')}
                   ${this.renderNavSubLink('/settings/data-updates', 'Card Data', 'settings/data-updates')}
                   ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
-                  ${when(this.canManageUsers, () =>
-                    this.renderNavSubLink('/settings/users', 'User Accounts', 'settings/users'),
-                  )}
                 `,
               )}
             </nav>

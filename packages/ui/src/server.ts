@@ -181,9 +181,33 @@ const router = new Router()
     }
   })
   // Proxy /api/users/* to the API server (user management endpoints)
+  .get('/api/users', async (ctx) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users`, {
+        headers: { Cookie: ctx.headers.cookie ?? '' },
+      });
+      ctx.status = res.status;
+      ctx.body = await res.json();
+    } catch {
+      ctx.status = 502;
+      ctx.body = { error: 'API server unavailable' };
+    }
+  })
   .get('/api/users/:userId/store-memberships', async (ctx) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}/store-memberships`, {
+        headers: { Cookie: ctx.headers.cookie ?? '' },
+      });
+      ctx.status = res.status;
+      ctx.body = await res.json();
+    } catch {
+      ctx.status = 502;
+      ctx.body = { error: 'API server unavailable' };
+    }
+  })
+  .get('/api/users/:userId', async (ctx) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}`, {
         headers: { Cookie: ctx.headers.cookie ?? '' },
       });
       ctx.status = res.status;
@@ -331,6 +355,17 @@ const router = new Router()
     if (ctx.status === 403) return;
     return renderPage(ctx, 'lot');
   })
+  // User management routes - require userManagement permission
+  .get('users', '/users', async (ctx) => {
+    await requirePermission('userManagement', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'settings-users');
+  })
+  .get('user-edit', '/users/:userId', async (ctx) => {
+    await requirePermission('userManagement', 'update')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'settings-user-edit');
+  })
   // Settings routes - require companySettings:read permission
   .use('/settings', requirePermission('companySettings', 'read'))
   .get('settings-redirect', '/settings', async (ctx) => {
@@ -356,14 +391,6 @@ const router = new Router()
   })
   .get('settings-locations', '/settings/locations', async (ctx) => {
     return renderPage(ctx, 'settings-locations');
-  })
-  .get('settings-users', '/settings/users', async (ctx) => {
-    return renderPage(ctx, 'settings-users');
-  })
-  .get('settings-user-edit', '/settings/users/:userId', async (ctx) => {
-    await requirePermission('userManagement', 'update')(ctx, async () => {});
-    if (ctx.status === 403) return;
-    return renderPage(ctx, 'settings-user-edit');
   });
 
 const port = 5173;

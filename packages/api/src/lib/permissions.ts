@@ -60,6 +60,7 @@ export const managerRole = ac.newRole({
   lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
   transactionLog: ['read'],
+  userManagement: ['create', 'read', 'update', 'delete'],
 });
 
 /**
