@@ -17,6 +17,10 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { activeStoreId } from '../../lib/store-context';
 
+if (typeof globalThis.document !== 'undefined') {
+  import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
+}
+
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
 async function getAuthClient() {
@@ -404,6 +408,9 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   @state() private assigning = false;
   @state() private assignError = '';
 
+  /** Remove-member confirmation dialog state */
+  @state() private memberToRemove: OrgMember | null = null;
+
   private boundHandleStoreChanged = () => this.loadData();
 
   connectedCallback(): void {
@@ -442,7 +449,10 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
       const org = result.data as unknown as { members: OrgMember[] };
       this.assignedMembers = org.members ?? [];
 
-      // Determine the current user's role in this store
+      // Determine the current user's role in this store.
+      // NOTE: getSession() is also called in settings-user-edit. Ideally the session
+      // would be passed from a higher level, but each page loads independently so the
+      // extra round-trip is an acceptable trade-off for now.
       const currentUserId = (await authClient.getSession())?.data?.user?.id;
       if (currentUserId) {
         const myMember = this.assignedMembers.find((m) => m.userId === currentUserId);
@@ -533,10 +543,20 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     }
   }
 
-  async handleRemoveMember(member: OrgMember) {
+  /** Opens the confirmation dialog for removing a member. */
+  private confirmRemoveMember(member: OrgMember) {
+    this.memberToRemove = member;
+  }
+
+  /** Executes the removal after the user confirms via the dialog. */
+  async handleRemoveMember() {
+    const member = this.memberToRemove;
+    if (!member) return;
+
     const storeId = activeStoreId.get();
     if (!storeId) return;
 
+    this.memberToRemove = null;
     this.successMessage = '';
     this.errorMessage = '';
     try {
@@ -561,6 +581,9 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     }
   }
 
+  // NOTE: ban/unban uses authClient.admin which requires adminRoles: ['owner'].
+  // The UI only shows the deactivate/activate button when this.isOwner is true,
+  // but if that guard is ever relaxed, managers would get a 403 from the admin plugin.
   async toggleUserStatus(member: OrgMember) {
     this.successMessage = '';
     this.errorMessage = '';
@@ -628,7 +651,38 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
               () => this.renderContent(),
             ),
         )}
+        ${this.renderRemoveConfirmDialog()}
       </ogs-page>
+    `;
+  }
+
+  private renderRemoveConfirmDialog() {
+    const member = this.memberToRemove;
+    return html`
+      <wa-dialog
+        label="Remove User"
+        ?open="${!!member}"
+        @wa-after-hide="${(e: Event) => {
+          if (e.target === e.currentTarget) this.memberToRemove = null;
+        }}"
+      >
+        <p>
+          Are you sure you want to remove <strong>${member?.user.name}</strong> from this store? They will lose access
+          until reassigned.
+        </p>
+        <wa-button
+          slot="footer"
+          variant="neutral"
+          @click="${() => {
+            this.memberToRemove = null;
+          }}"
+          >Cancel</wa-button
+        >
+        <wa-button slot="footer" variant="danger" @click="${this.handleRemoveMember}">
+          <wa-icon slot="start" name="xmark"></wa-icon>
+          Remove
+        </wa-button>
+      </wa-dialog>
     `;
   }
 
@@ -810,7 +864,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
                     size="small"
                     variant="danger"
                     appearance="outlined"
-                    @click="${() => this.handleRemoveMember(member)}"
+                    @click="${() => this.confirmRemoveMember(member)}"
                   >
                     <wa-icon slot="start" name="xmark"></wa-icon>
                     Remove

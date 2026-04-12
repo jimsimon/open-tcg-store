@@ -53,14 +53,16 @@ export const ownerRole = ac.newRole({
 
 /**
  * Manager role (Store Manager) — can manage inventory, orders, and view transaction log
- * at assigned stores. No access to settings, user management, or admin-plugin endpoints.
+ * at assigned stores. Can view and manage user assignments for their stores (read + update)
+ * but cannot use admin-plugin endpoints (ban/unban — those require the owner role).
+ * No access to company settings.
  */
 export const managerRole = ac.newRole({
   inventory: ['create', 'read', 'update', 'delete'],
   lot: ['create', 'read', 'update', 'delete'],
   order: ['create', 'read', 'update', 'cancel'],
   transactionLog: ['read'],
-  userManagement: ['create', 'read', 'update', 'delete'],
+  userManagement: ['read', 'update'],
 });
 
 /**
