@@ -121,13 +121,17 @@ async function requireCompanySettingsUpdate(ctx: RouterContext): Promise<boolean
   return true;
 }
 
+type AuthSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+
 /**
- * Verify the current request has an authenticated session with userManagement:update
- * permission. Returns the session if authorized, null otherwise (also sets ctx.status = 403).
+ * Verify the current request has an authenticated session with a specific
+ * userManagement permission action. Returns the session if authorized, null
+ * otherwise (also sets ctx.status = 403).
  */
-async function requireUserManagementUpdate(
+async function requireUserManagementPermission(
   ctx: RouterContext,
-): Promise<NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>> | null> {
+  action: 'create' | 'read' | 'update' | 'delete',
+): Promise<AuthSession | null> {
   const session = await auth.api.getSession({
     headers: fromNodeHeaders(ctx.req.headers),
   });
@@ -139,7 +143,7 @@ async function requireUserManagementUpdate(
   try {
     const result = await auth.api.hasPermission({
       headers: fromNodeHeaders(ctx.req.headers) as unknown as Record<string, string>,
-      body: { permissions: { userManagement: ['update'] } },
+      body: { permissions: { userManagement: [action] } },
     });
     if (!result.success) {
       ctx.status = 403;
@@ -152,6 +156,22 @@ async function requireUserManagementUpdate(
     return null;
   }
   return session;
+}
+
+/** Shorthand for requiring userManagement:update (used by existing endpoints). */
+async function requireUserManagementUpdate(ctx: RouterContext): Promise<AuthSession | null> {
+  return requireUserManagementPermission(ctx, 'update');
+}
+
+/**
+ * Look up the requesting user's role in a specific organization.
+ * Returns the role string or null if the user is not a member of that org.
+ */
+async function getRequestingUserRole(userId: string, organizationId: string): Promise<string | null> {
+  const rows = await otcgs.all<{ role: string }>(
+    sql`SELECT role FROM member WHERE user_id = ${userId} AND organization_id = ${organizationId} LIMIT 1`,
+  );
+  return rows[0]?.role ?? null;
 }
 
 const router = new Router()
@@ -236,7 +256,8 @@ const router = new Router()
    * Requires userManagement:update permission.
    */
   .post('/api/users/store-membership', async (ctx: RouterContext) => {
-    if (!(await requireUserManagementUpdate(ctx))) return;
+    const session = await requireUserManagementUpdate(ctx);
+    if (!session) return;
     const body = ctx.request.body as { userId?: string; organizationId?: string; role?: string };
     const { userId, organizationId, role } = body;
     if (!userId || !organizationId || !role) {
@@ -247,6 +268,19 @@ const router = new Router()
     if (role === 'owner') {
       ctx.status = 400;
       ctx.body = { error: 'Cannot assign owner role through this interface.' };
+      return;
+    }
+    // Manager guard: verify the requesting user is a member of the target org
+    // and restrict managers to only assign the member role.
+    const requestingUserRole = await getRequestingUserRole(session.user.id, organizationId);
+    if (!requestingUserRole) {
+      ctx.status = 403;
+      ctx.body = { error: 'You are not a member of this store.' };
+      return;
+    }
+    if (requestingUserRole === 'manager' && role !== 'member') {
+      ctx.status = 403;
+      ctx.body = { error: 'Managers can only assign the member role.' };
       return;
     }
     try {
@@ -266,7 +300,8 @@ const router = new Router()
    * Requires userManagement:update permission.
    */
   .delete('/api/users/store-membership', async (ctx: RouterContext) => {
-    if (!(await requireUserManagementUpdate(ctx))) return;
+    const session = await requireUserManagementUpdate(ctx);
+    if (!session) return;
     const body = ctx.request.body as { memberId?: string; organizationId?: string };
     const { memberId, organizationId } = body;
     if (!memberId || !organizationId) {
@@ -294,6 +329,20 @@ const router = new Router()
           ctx.body = { error: 'Cannot remove an owner from their last store assignment.' };
           return;
         }
+        // Manager guard: verify the requesting user is a member of the target org
+        // and restrict managers to only removing standard members. Custom roles may
+        // carry elevated permissions set by an owner, so managers cannot touch them.
+        const requestingUserRole = await getRequestingUserRole(session.user.id, organizationId);
+        if (!requestingUserRole) {
+          ctx.status = 403;
+          ctx.body = { error: 'You are not a member of this store.' };
+          return;
+        }
+        if (requestingUserRole === 'manager' && role !== 'member') {
+          ctx.status = 403;
+          ctx.body = { error: 'Managers can only remove standard members from a store.' };
+          return;
+        }
       }
       // The beforeRemoveMember hook in auth.ts will additionally block any owner removal.
       await auth.api.removeMember({
@@ -304,6 +353,68 @@ const router = new Router()
     } catch (error) {
       ctx.status = 500;
       ctx.body = { error: error instanceof Error ? error.message : 'Failed to remove member' };
+    }
+  })
+  /**
+   * POST /api/users/lookup
+   * Looks up a single non-anonymous user by email address. Returns minimal
+   * user info (id, name, email) for the assign-to-store workflow.
+   * Requires userManagement:read permission.
+   */
+  .post('/api/users/lookup', async (ctx: RouterContext) => {
+    if (!(await requireUserManagementPermission(ctx, 'read'))) return;
+    const body = ctx.request.body as { email?: string };
+    const email = body.email?.trim().toLowerCase();
+    if (!email) {
+      ctx.status = 400;
+      ctx.body = { error: 'Email is required' };
+      return;
+    }
+    try {
+      const rows = await otcgs.all<{ id: string; name: string; email: string }>(
+        sql`SELECT id, name, email FROM "user" WHERE LOWER(email) = ${email} AND is_anonymous = false LIMIT 1`,
+      );
+      if (rows.length === 0) {
+        ctx.status = 404;
+        ctx.body = { error: 'No user found with that email address. They may need to sign up first.' };
+        return;
+      }
+      ctx.body = rows[0];
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = { error: error instanceof Error ? error.message : 'Failed to look up user' };
+    }
+  })
+  /**
+   * GET /api/users/:userId
+   * Returns a single non-anonymous user by ID. Used by the user-edit page
+   * to load user details without requiring admin plugin access.
+   * Requires userManagement:read permission.
+   */
+  .get('/api/users/:userId', async (ctx: RouterContext) => {
+    if (!(await requireUserManagementPermission(ctx, 'read'))) return;
+    const { userId } = ctx.params;
+    try {
+      const rows = await otcgs.all<{
+        id: string;
+        name: string;
+        email: string;
+        role: string | null;
+        banned: number;
+        banReason: string | null;
+        createdAt: string;
+      }>(
+        sql`SELECT id, name, email, role, banned, ban_reason AS "banReason", created_at AS "createdAt" FROM "user" WHERE id = ${userId} AND is_anonymous = false LIMIT 1`,
+      );
+      if (rows.length === 0) {
+        ctx.status = 404;
+        ctx.body = { error: 'User not found' };
+        return;
+      }
+      ctx.body = { ...rows[0], banned: Boolean(rows[0].banned) };
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = { error: error instanceof Error ? error.message : 'Failed to fetch user' };
     }
   });
 

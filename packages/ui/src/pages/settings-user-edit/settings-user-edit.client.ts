@@ -17,16 +17,6 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { roles, statement } from '../../../../api/src/lib/permissions';
-import { TypedDocumentString } from '../../graphql/graphql';
-import { execute } from '../../lib/graphql';
-
-// --- GraphQL Queries ---
-
-const GetAllStoresQuery = new TypedDocumentString(`
-  query GetAllStoresForUserEdit {
-    getAllStoreLocations { id name }
-  }
-`) as unknown as TypedDocumentString<{ getAllStoreLocations: { id: string; name: string }[] }, Record<string, never>>;
 
 // Lazy-load authClient to avoid SSR issues
 let _authClient: typeof import('../../auth-client').authClient | undefined;
@@ -164,12 +154,6 @@ interface MemberRecord {
   createdAt: string;
 }
 
-interface StoreMembership {
-  organizationId: string;
-  memberId: string;
-  role: string;
-}
-
 // --- Helpers ---
 
 function customRoleName(memberId: string): string {
@@ -227,6 +211,7 @@ export class OgsSettingsUserEditPage extends LitElement {
   @property({ type: Boolean }) canManageUsers = false;
   @property({ type: Boolean }) canViewTransactionLog = false;
   @property({ type: String }) activeOrganizationId = '';
+  @property({ type: Boolean }) showStoreSelector = false;
   @property({ type: String }) userId = '';
 
   static styles = [
@@ -480,64 +465,6 @@ export class OgsSettingsUserEditPage extends LitElement {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Store Assignment Grid --- */
-
-      .store-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 0.75rem;
-        padding: 1.25rem;
-      }
-
-      .store-card {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.875rem 1rem;
-        background: var(--wa-color-surface-raised);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-l);
-        cursor: pointer;
-        transition:
-          border-color 0.15s ease,
-          background 0.15s ease;
-      }
-
-      .store-card.assigned {
-        border-color: var(--wa-color-brand-fill-normal);
-        background: color-mix(in srgb, var(--wa-color-brand-container) 30%, var(--wa-color-surface-raised));
-      }
-
-      .store-card-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2rem;
-        height: 2rem;
-        border-radius: var(--wa-border-radius-m);
-        background: var(--wa-color-neutral-container);
-        color: var(--wa-color-text-muted);
-        font-size: 1rem;
-        flex-shrink: 0;
-      }
-
-      .store-card.assigned .store-card-icon {
-        background: var(--wa-color-brand-container);
-        color: var(--wa-color-brand-text);
-      }
-
-      .store-card-name {
-        flex: 1;
-        font-weight: 500;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .store-section-footer {
-        display: flex;
-        justify-content: flex-end;
-        padding: 0 1.25rem 1.25rem;
-      }
-
       /* --- Footer Actions --- */
 
       .footer-actions {
@@ -553,12 +480,8 @@ export class OgsSettingsUserEditPage extends LitElement {
 
   @state() private user: UserRecord | null = null;
   @state() private member: MemberRecord | null = null;
-  @state() private allStores: { id: string; name: string }[] = [];
-  @state() private storeMemberships: StoreMembership[] = [];
-  @state() private selectedStoreIds: Set<string> = new Set();
   @state() private loading = true;
   @state() private saving = false;
-  @state() private savingStores = false;
 
   /** The base role selected in the dropdown */
   @state() private selectedBaseRole = 'member';
@@ -569,6 +492,9 @@ export class OgsSettingsUserEditPage extends LitElement {
   /** Name of an existing custom role for this member (if any) */
   @state() private existingCustomRoleName: string | null = null;
 
+  /** The current user's role in this store (for manager guards) */
+  @state() private currentUserRole: string | null = null;
+
   @state() private successMessage = '';
   @state() private errorMessage = '';
 
@@ -577,15 +503,27 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.loadData();
   }
 
+  /** Whether the current user is an owner */
+  private get isOwner(): boolean {
+    return this.currentUserRole === 'owner';
+  }
+
+  /** Whether the current user can edit this target user's role/permissions */
+  private get canEditTarget(): boolean {
+    if (!this.member) return false;
+    // Owners are always protected
+    if (this.member.role === 'owner') return false;
+    // Managers can only edit standard members. Custom roles may carry elevated
+    // permissions set by an owner, so managers cannot modify those users.
+    if (!this.isOwner && this.member.role !== 'member') return false;
+    return true;
+  }
+
   async loadData() {
     this.loading = true;
     this.errorMessage = '';
 
     try {
-      // Fetch critical data first; non-fatal supplementary fetches run in parallel but are
-      // not included in Promise.all so they cannot cause the entire load to fail.
-      this.fetchAllStores();
-      this.fetchStoreMemberships();
       const [userResult, orgResult] = await Promise.all([this.fetchUser(), this.fetchOrgMembers()]);
 
       if (!userResult) {
@@ -596,6 +534,7 @@ export class OgsSettingsUserEditPage extends LitElement {
 
       if (orgResult) {
         this.member = orgResult.member;
+        this.currentUserRole = orgResult.currentUserRole;
 
         // Determine current role and permissions
         const memberRole = this.member.role;
@@ -629,17 +568,21 @@ export class OgsSettingsUserEditPage extends LitElement {
   }
 
   private async fetchUser(): Promise<UserRecord | null> {
-    const authClient = await getAuthClient();
-    const result = await authClient.admin.getUser({
-      query: { id: this.userId },
-    });
-    if (result.data) {
-      return result.data as unknown as UserRecord;
+    // Use the GET /api/users/:userId endpoint instead of authClient.admin.getUser()
+    // because the admin plugin is restricted to owners (adminRoles: ['owner']),
+    // but managers also need to load user details on this page.
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(this.userId)}`, { credentials: 'include' });
+      if (res.ok) {
+        return (await res.json()) as UserRecord;
+      }
+    } catch {
+      // Fall through to return null
     }
     return null;
   }
 
-  private async fetchOrgMembers(): Promise<{ member: MemberRecord } | null> {
+  private async fetchOrgMembers(): Promise<{ member: MemberRecord; currentUserRole: string | null } | null> {
     try {
       const authClient = await getAuthClient();
       const result = await authClient.organization.getFullOrganization();
@@ -648,8 +591,15 @@ export class OgsSettingsUserEditPage extends LitElement {
           members: Array<{ id: string; userId: string; role: string; createdAt: string }>;
         };
         const member = org.members?.find((m: { userId: string }) => m.userId === this.userId);
+
+        // Determine the current user's role in this org
+        const currentUserId = (await authClient.getSession())?.data?.user?.id;
+        const currentMember = currentUserId
+          ? org.members?.find((m: { userId: string }) => m.userId === currentUserId)
+          : null;
+
         if (member) {
-          return { member };
+          return { member, currentUserRole: currentMember?.role ?? null };
         }
       }
     } catch {
@@ -670,32 +620,6 @@ export class OgsSettingsUserEditPage extends LitElement {
       return null;
     } catch {
       return null;
-    }
-  }
-
-  private async fetchAllStores(): Promise<void> {
-    try {
-      const result = await execute(GetAllStoresQuery);
-      if (result.data?.getAllStoreLocations) {
-        this.allStores = result.data.getAllStoreLocations;
-      }
-    } catch {
-      // Non-fatal — store assignment section will be empty
-    }
-  }
-
-  private async fetchStoreMemberships(): Promise<void> {
-    try {
-      const res = await fetch(`/api/users/${encodeURIComponent(this.userId)}/store-memberships`, {
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const rows = (await res.json()) as StoreMembership[];
-        this.storeMemberships = rows;
-        this.selectedStoreIds = new Set(rows.map((r) => r.organizationId));
-      }
-    } catch {
-      // Non-fatal
     }
   }
 
@@ -760,9 +684,14 @@ export class OgsSettingsUserEditPage extends LitElement {
 
     try {
       // Owner-protection guard: owner roles cannot be changed through this interface.
-      // This applies to anyone editing an owner, including self-edits.
       if (this.member.role === 'owner') {
         this.errorMessage = 'Owner permissions cannot be changed through this interface.';
+        return;
+      }
+
+      // Manager guard: managers can only edit standard members
+      if (!this.canEditTarget) {
+        this.errorMessage = 'You do not have permission to edit this user.';
         return;
       }
 
@@ -779,8 +708,7 @@ export class OgsSettingsUserEditPage extends LitElement {
         }
       }
 
-      // Refresh data to reflect changes, then show success message
-      // (loadData sets loading=true which hides content, so set the message after it completes)
+      // Refresh data to reflect changes
       await this.loadData();
       this.successMessage = 'Permissions updated successfully';
       setTimeout(() => {
@@ -871,78 +799,10 @@ export class OgsSettingsUserEditPage extends LitElement {
     this.existingCustomRoleName = roleName;
   }
 
-  async handleSaveStoreAssignments() {
-    this.savingStores = true;
-    this.successMessage = '';
-    this.errorMessage = '';
-
-    try {
-      // Owner-protection guard: owners cannot be removed from any store through this interface.
-      const userIsOwner = this.storeMemberships.some((m) => m.role === 'owner');
-      if (userIsOwner) {
-        const removingAny = this.storeMemberships.some((m) => !this.selectedStoreIds.has(m.organizationId));
-        if (removingAny) {
-          this.errorMessage = 'Owner store assignments cannot be changed through this interface.';
-          return;
-        }
-      }
-
-      const currentIds = new Set(this.storeMemberships.map((m) => m.organizationId));
-      const desired = this.selectedStoreIds;
-
-      // Stores to add (in desired but not currently a member)
-      const toAdd = [...desired].filter((id) => !currentIds.has(id));
-      // Stores to remove (currently a member but not in desired)
-      const toRemove = this.storeMemberships.filter((m) => !desired.has(m.organizationId));
-
-      // Add new memberships
-      await Promise.all(
-        toAdd.map(async (organizationId) => {
-          const res = await fetch('/api/users/store-membership', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ userId: this.userId, organizationId, role: 'member' }),
-          });
-          if (!res.ok) {
-            const err = (await res.json()) as { error?: string };
-            throw new Error(err.error ?? `Failed to add to store ${organizationId}`);
-          }
-        }),
-      );
-
-      // Remove memberships
-      await Promise.all(
-        toRemove.map(async (membership) => {
-          const res = await fetch('/api/users/store-membership', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ memberId: membership.memberId, organizationId: membership.organizationId }),
-          });
-          if (!res.ok) {
-            const err = (await res.json()) as { error?: string };
-            throw new Error(err.error ?? `Failed to remove from store ${membership.organizationId}`);
-          }
-        }),
-      );
-
-      await this.fetchStoreMemberships();
-      this.successMessage = 'Store assignments updated successfully';
-      setTimeout(() => {
-        this.successMessage = '';
-      }, 3000);
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to update store assignments';
-    } finally {
-      this.savingStores = false;
-    }
-  }
-
   render() {
     return html`
       <ogs-page
-        activePage="settings/users"
+        activePage="users"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
@@ -953,9 +813,10 @@ export class OgsSettingsUserEditPage extends LitElement {
         ?canManageUsers="${this.canManageUsers}"
         ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
+        ?showStoreSelector="${this.showStoreSelector}"
         showUserMenu
       >
-        <a class="back-link" href="/settings/users">
+        <a class="back-link" href="/users">
           <wa-icon name="arrow-left"></wa-icon>
           Back to Users
         </a>
@@ -1000,13 +861,15 @@ export class OgsSettingsUserEditPage extends LitElement {
             </wa-callout>
           `
         : nothing}
-      ${this.renderPageHeader()} ${this.renderUserInfo()} ${this.renderStoreAssignments()}
+      ${this.renderPageHeader()} ${this.renderUserInfo()}
       ${this.member
         ? this.member.role === 'owner'
           ? this.renderOwnerReadOnlyState()
-          : this.renderRoleAndPermissions()
+          : !this.canEditTarget
+            ? this.renderManagerProtectedState()
+            : this.renderRoleAndPermissions()
         : this.renderNotMemberState()}
-      ${this.member && this.member.role !== 'owner' ? this.renderFooter() : nothing}
+      ${this.member && this.canEditTarget ? this.renderFooter() : nothing}
     `;
   }
 
@@ -1018,7 +881,7 @@ export class OgsSettingsUserEditPage extends LitElement {
         </div>
         <div class="page-header-content">
           <h2>Edit User${this.user ? html` — ${this.user.name}` : nothing}</h2>
-          <p>Manage role and permission overrides for this user</p>
+          <p>Manage role and permission overrides for this user at this store</p>
         </div>
       </div>
     `;
@@ -1056,83 +919,6 @@ export class OgsSettingsUserEditPage extends LitElement {
     `;
   }
 
-  private renderStoreAssignments() {
-    if (this.allStores.length === 0) return nothing;
-    const userIsOwner = this.storeMemberships.some((m) => m.role === 'owner');
-    return html`
-      <div class="section">
-        <h3 class="section-title">Store Assignments</h3>
-        ${userIsOwner
-          ? html`
-              <wa-callout variant="warning" style="margin-bottom: 0.75rem;">
-                <wa-icon slot="icon" name="shield-halved"></wa-icon>
-                Owner store assignments cannot be changed through this interface.
-              </wa-callout>
-            `
-          : nothing}
-        <wa-card appearance="outline">
-          <div class="store-grid">
-            ${this.allStores.map((store) => {
-              const assigned = this.selectedStoreIds.has(store.id);
-              return html`
-                <div
-                  class="store-card ${assigned ? 'assigned' : ''}"
-                  @click="${() => {
-                    if (userIsOwner) return;
-                    const updated = new Set(this.selectedStoreIds);
-                    if (assigned) {
-                      updated.delete(store.id);
-                    } else {
-                      updated.add(store.id);
-                    }
-                    this.selectedStoreIds = updated;
-                  }}"
-                  style="${userIsOwner ? 'cursor: default; opacity: 0.6;' : ''}"
-                >
-                  <div class="store-card-icon">
-                    <wa-icon name="store"></wa-icon>
-                  </div>
-                  <span class="store-card-name">${store.name}</span>
-                  <wa-checkbox
-                    ?checked="${assigned}"
-                    ?disabled="${userIsOwner}"
-                    @click="${(e: Event) => e.stopPropagation()}"
-                    @change="${(e: Event) => {
-                      e.stopPropagation();
-                      if (userIsOwner) return;
-                      const updated = new Set(this.selectedStoreIds);
-                      if ((e.target as HTMLInputElement).checked) {
-                        updated.add(store.id);
-                      } else {
-                        updated.delete(store.id);
-                      }
-                      this.selectedStoreIds = updated;
-                    }}"
-                  ></wa-checkbox>
-                </div>
-              `;
-            })}
-          </div>
-          ${userIsOwner
-            ? nothing
-            : html`
-                <div class="store-section-footer">
-                  <wa-button
-                    variant="brand"
-                    size="small"
-                    ?loading="${this.savingStores}"
-                    @click="${this.handleSaveStoreAssignments}"
-                  >
-                    <wa-icon slot="start" name="floppy-disk"></wa-icon>
-                    Save Store Assignments
-                  </wa-button>
-                </div>
-              `}
-        </wa-card>
-      </div>
-    `;
-  }
-
   private renderOwnerReadOnlyState() {
     return html`
       <div class="section">
@@ -1146,16 +932,28 @@ export class OgsSettingsUserEditPage extends LitElement {
     `;
   }
 
+  private renderManagerProtectedState() {
+    return html`
+      <div class="section">
+        <h3 class="section-title">Role & Permissions</h3>
+        <wa-callout variant="warning">
+          <wa-icon slot="icon" name="shield-halved"></wa-icon>
+          You do not have permission to edit this user's role or permissions. Only owners can modify managers and other
+          privileged roles.
+        </wa-callout>
+      </div>
+    `;
+  }
+
   private renderNotMemberState() {
     return html`
       <div class="not-member-state">
         <wa-icon name="user-xmark"></wa-icon>
-        <h3>Not a Member of the Active Store</h3>
+        <h3>Not a Member of This Store</h3>
         <p>
-          This user is not assigned to the currently active store. Use the Store Assignments section above to add them,
-          then switch to that store to manage their role and permissions.
+          This user is not assigned to the currently selected store. Go back to the users list and assign them first.
         </p>
-        <wa-button variant="brand" href="/settings/users">
+        <wa-button variant="brand" href="/users">
           <wa-icon slot="start" name="arrow-left"></wa-icon>
           Back to Users
         </wa-button>
@@ -1170,8 +968,8 @@ export class OgsSettingsUserEditPage extends LitElement {
         <wa-card appearance="outline">
           <div class="role-selector">
             <wa-select label="Base Role" .value="${this.selectedBaseRole}" @change="${this.handleBaseRoleChange}">
-              <wa-option value="owner">Owner</wa-option>
-              <wa-option value="manager">Store Manager</wa-option>
+              ${when(this.isOwner, () => html`<wa-option value="owner">Owner</wa-option>`)}
+              ${when(this.isOwner, () => html`<wa-option value="manager">Store Manager</wa-option>`)}
               <wa-option value="member">Employee</wa-option>
             </wa-select>
             <div class="override-toggle">
@@ -1224,7 +1022,7 @@ export class OgsSettingsUserEditPage extends LitElement {
   private renderFooter() {
     return html`
       <div class="footer-actions">
-        <wa-button variant="neutral" href="/settings/users">Cancel</wa-button>
+        <wa-button variant="neutral" href="/users">Cancel</wa-button>
         <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
           <wa-icon slot="start" name="floppy-disk"></wa-icon>
           Save Changes

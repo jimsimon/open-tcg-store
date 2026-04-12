@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { SignalWatcher } from '@lit-labs/signals';
 import { when } from 'lit/directives/when.js';
 import '../../components/ogs-page.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
@@ -14,8 +15,7 @@ import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import { TypedDocumentString } from '../../graphql/graphql';
-import { execute } from '../../lib/graphql';
+import { activeStoreId } from '../../lib/store-context';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -31,28 +31,21 @@ async function getAuthClient() {
   return _authClient;
 }
 
-// --- GraphQL Queries ---
-
-const GetStoresQuery = new TypedDocumentString(`
-  query GetStoresForUserMgmt {
-    getEmployeeStoreLocations { id name }
-  }
-`) as unknown as TypedDocumentString<
-  { getEmployeeStoreLocations: { id: string; name: string }[] },
-  Record<string, never>
->;
-
 // --- Types ---
 
-interface UserRecord {
+interface OrgMember {
   id: string;
-  name: string;
-  email: string;
-  role: string | null;
-  banned: boolean;
-  banReason: string | null;
+  userId: string;
+  role: string;
   createdAt: string;
-  isAnonymous: boolean;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+    banned: boolean;
+    banReason: string | null;
+  };
 }
 
 // --- Helpers ---
@@ -86,18 +79,18 @@ function roleBadgeVariant(role: string | null): string {
 }
 
 @customElement('ogs-settings-users-page')
-export class OgsSettingsUsersPage extends LitElement {
+export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
   @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
+  @property({ type: Boolean }) canManageLots = false;
   @property({ type: Boolean }) canViewDashboard = false;
   @property({ type: Boolean }) canAccessSettings = false;
   @property({ type: Boolean }) canManageStoreLocations = false;
   @property({ type: Boolean }) canManageUsers = false;
   @property({ type: Boolean }) canViewTransactionLog = false;
   @property({ type: String }) activeOrganizationId = '';
+  @property({ type: Boolean }) showStoreSelector = false;
 
   static styles = [
     css`
@@ -229,25 +222,24 @@ export class OgsSettingsUsersPage extends LitElement {
         line-height: 1;
       }
 
-      /* --- Filter Bar --- */
+      /* --- Section Header --- */
 
-      .filter-bar {
+      .section-header {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
         align-items: center;
         justify-content: space-between;
-        padding: 1rem;
-        background: var(--wa-color-surface-raised);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-l);
+        margin-bottom: 0.75rem;
+        margin-top: 1.5rem;
       }
 
-      .filter-bar-left {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
+      .section-header:first-of-type {
+        margin-top: 0;
+      }
+
+      .section-title {
+        font-size: var(--wa-font-size-l);
+        font-weight: 700;
+        margin: 0;
       }
 
       /* --- Table --- */
@@ -312,28 +304,24 @@ export class OgsSettingsUsersPage extends LitElement {
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 4rem 2rem;
+        padding: 3rem 2rem;
         color: var(--wa-color-text-muted);
-        background: var(--wa-color-surface-raised);
-        border: 2px dashed var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-l);
-        margin: 0.5rem 0;
       }
 
       .empty-state > wa-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
+        font-size: 3rem;
+        margin-bottom: 0.75rem;
         opacity: 0.5;
       }
 
       .empty-state h3 {
-        margin: 0 0 0.5rem 0;
-        font-size: var(--wa-font-size-xl);
+        margin: 0 0 0.25rem 0;
+        font-size: var(--wa-font-size-l);
         color: var(--wa-color-text-normal);
       }
 
       .empty-state p {
-        margin: 0 0 1.5rem 0;
+        margin: 0;
         max-width: 400px;
         margin-inline: auto;
       }
@@ -354,171 +342,274 @@ export class OgsSettingsUsersPage extends LitElement {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Dialog --- */
+      /* --- No Store State --- */
 
-      .dialog-form {
-        display: grid;
-        gap: 0.75rem;
+      .no-store-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--wa-color-text-muted);
+        background: var(--wa-color-surface-raised);
+        border: 2px dashed var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-l);
       }
 
-      wa-dialog::part(body) {
-        max-height: 70vh;
-        overflow-y: auto;
+      .no-store-state > wa-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
       }
 
-      wa-dialog::part(title) {
+      .no-store-state h3 {
+        margin: 0 0 0.5rem 0;
         font-size: var(--wa-font-size-xl);
-        font-weight: 700;
+        color: var(--wa-color-text-normal);
+      }
+
+      .no-store-state p {
+        margin: 0;
+        max-width: 400px;
+        margin-inline: auto;
+      }
+
+      /* --- Assign User Form --- */
+
+      .assign-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.75rem;
+        padding: 1.25rem;
+      }
+
+      .assign-form wa-input {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .assign-form-error {
+        padding: 0 1.25rem 1.25rem;
       }
     `,
   ];
 
-  @state() users: UserRecord[] = [];
-  @state() stores: { id: string; name: string }[] = [];
-  @state() loading = true;
-  @state() hideDeactivated = true;
-  @state() showAddDialog = false;
-  @state() addName = '';
-  @state() addEmail = '';
-  @state() addPassword = '';
-  @state() addRole = 'member';
-  @state() addStoreIds: string[] = [];
-  @state() saving = false;
-  @state() successMessage = '';
-  @state() errorMessage = '';
+  @state() private assignedMembers: OrgMember[] = [];
+  @state() private loading = true;
+  @state() private hideDeactivated = true;
+  @state() private successMessage = '';
+  @state() private errorMessage = '';
+  /** The current user's role in the active store (to enable manager guards) */
+  @state() private currentUserRole: string | null = null;
+
+  /** Assign-by-email form state */
+  @state() private assignEmail = '';
+  @state() private assigning = false;
+  @state() private assignError = '';
+
+  /** Remove-member confirmation dialog state */
+  @state() private memberToRemove: OrgMember | null = null;
+
+  private boundHandleStoreChanged = () => this.loadData();
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.loadUsers();
-    this.loadStores();
+    this.addEventListener('store-changed', this.boundHandleStoreChanged);
+    this.loadData();
   }
 
-  async loadUsers() {
-    this.loading = true;
-    try {
-      const authClient = await getAuthClient();
-      const result = await authClient.admin.listUsers({
-        query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' },
-      });
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('store-changed', this.boundHandleStoreChanged);
+  }
 
-      if (result.data) {
-        this.users = (result.data.users as unknown as UserRecord[]).filter((u) => !u.isAnonymous);
-      }
+  async loadData() {
+    const storeId = activeStoreId.get();
+    if (!storeId) {
+      this.loading = false;
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+    try {
+      await this.loadAssignedMembers();
     } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to load users';
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to load data';
     } finally {
       this.loading = false;
     }
   }
 
-  async loadStores() {
-    try {
-      const result = await execute(GetStoresQuery);
-      if (result.data?.getEmployeeStoreLocations) {
-        this.stores = result.data.getEmployeeStoreLocations;
+  private async loadAssignedMembers() {
+    const authClient = await getAuthClient();
+    const result = await authClient.organization.getFullOrganization();
+    if (result.data) {
+      const org = result.data as unknown as { members: OrgMember[] };
+      this.assignedMembers = org.members ?? [];
+
+      // Determine the current user's role in this store.
+      // NOTE: getSession() is also called in settings-user-edit. Ideally the session
+      // would be passed from a higher level, but each page loads independently so the
+      // extra round-trip is an acceptable trade-off for now.
+      const currentUserId = (await authClient.getSession())?.data?.user?.id;
+      if (currentUserId) {
+        const myMember = this.assignedMembers.find((m) => m.userId === currentUserId);
+        this.currentUserRole = myMember?.role ?? null;
       }
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to load stores';
     }
   }
 
-  get filteredUsers(): UserRecord[] {
+  /** Whether the current user is an owner (can deactivate users, edit managers, etc.) */
+  private get isOwner(): boolean {
+    return this.currentUserRole === 'owner';
+  }
+
+  private get filteredAssigned(): OrgMember[] {
     if (this.hideDeactivated) {
-      return this.users.filter((u) => !u.banned);
+      return this.assignedMembers.filter((m) => !m.user.banned);
     }
-    return this.users;
+    return this.assignedMembers;
   }
 
-  private computeUserStats() {
-    const total = this.users.length;
-    const active = this.users.filter((u) => !u.banned).length;
-    const deactivated = this.users.filter((u) => u.banned).length;
-    const owners = this.users.filter((u) => u.role === 'owner').length;
-    return { total, active, deactivated, owners };
+  /** Check whether the current user can manage (edit/deactivate/remove) a given member. */
+  private canManageMember(member: OrgMember): boolean {
+    // Owners can manage anyone except other owners
+    if (this.isOwner) return member.role !== 'owner';
+    // Managers can only manage standard members. Custom roles may carry elevated
+    // permissions set by an owner, so managers cannot modify those users.
+    return member.role === 'member';
   }
 
-  async handleAddUser() {
-    this.saving = true;
+  async handleAssignByEmail() {
+    const storeId = activeStoreId.get();
+    const email = this.assignEmail.trim();
+    if (!storeId || !email) return;
+
+    this.assigning = true;
+    this.assignError = '';
     this.successMessage = '';
     this.errorMessage = '';
+
     try {
-      const authClient = await getAuthClient();
-      const result = await authClient.admin.createUser({
-        email: this.addEmail,
-        password: this.addPassword,
-        name: this.addName,
-        role: this.addRole as 'owner' | 'manager' | 'member',
+      // Look up user by email
+      const lookupRes = await fetch('/api/users/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
       });
 
-      if (result.error) {
-        this.errorMessage = result.error.message ?? 'Failed to create user';
-      } else {
-        // Add user to selected store organizations
-        const newUserId = (result.data as unknown as { user: { id: string } })?.user?.id;
-        if (newUserId && this.addStoreIds.length > 0) {
-          for (const storeId of this.addStoreIds) {
-            try {
-              await fetch('/api/users/store-membership', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                  userId: newUserId,
-                  role: this.addRole as 'owner' | 'manager' | 'member',
-                  organizationId: storeId,
-                }),
-              });
-            } catch (memberErr) {
-              console.error(`Failed to add user to store ${storeId}`, memberErr);
-            }
-          }
-        }
-
-        this.successMessage = `User ${this.addName} created successfully`;
-        this.showAddDialog = false;
-        this.addName = '';
-        this.addEmail = '';
-        this.addPassword = '';
-        this.addRole = 'member';
-        this.addStoreIds = [];
-        await this.loadUsers();
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+      if (!lookupRes.ok) {
+        const err = (await lookupRes.json()) as { error?: string };
+        this.assignError = err.error ?? 'User not found';
+        return;
       }
+
+      const user = (await lookupRes.json()) as { id: string; name: string; email: string };
+
+      // Check if the user is already assigned to this store
+      if (this.assignedMembers.some((m) => m.userId === user.id)) {
+        this.assignError = `${user.name} is already assigned to this store.`;
+        return;
+      }
+
+      // Assign the user to the store
+      const assignRes = await fetch('/api/users/store-membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, organizationId: storeId, role: 'member' }),
+      });
+
+      if (!assignRes.ok) {
+        const err = (await assignRes.json()) as { error?: string };
+        this.assignError = err.error ?? 'Failed to assign user';
+        return;
+      }
+
+      this.successMessage = `${user.name} assigned to this store`;
+      this.assignEmail = '';
+      this.assignError = '';
+      await this.loadData();
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
     } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to create user';
+      this.assignError = e instanceof Error ? e.message : 'Failed to assign user';
     } finally {
-      this.saving = false;
+      this.assigning = false;
     }
   }
 
-  async toggleUserStatus(user: UserRecord) {
+  /** Opens the confirmation dialog for removing a member. */
+  private confirmRemoveMember(member: OrgMember) {
+    this.memberToRemove = member;
+  }
+
+  /** Executes the removal after the user confirms via the dialog. */
+  async handleRemoveMember() {
+    const member = this.memberToRemove;
+    if (!member) return;
+
+    const storeId = activeStoreId.get();
+    if (!storeId) return;
+
+    this.memberToRemove = null;
+    this.successMessage = '';
+    this.errorMessage = '';
+    try {
+      const res = await fetch('/api/users/store-membership', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ memberId: member.id, organizationId: storeId }),
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: string };
+        this.errorMessage = err.error ?? 'Failed to remove user';
+        return;
+      }
+      this.successMessage = `${member.user.name} removed from this store`;
+      await this.loadData();
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to remove user';
+    }
+  }
+
+  // NOTE: ban/unban uses authClient.admin which requires adminRoles: ['owner'].
+  // The UI only shows the deactivate/activate button when this.isOwner is true,
+  // but if that guard is ever relaxed, managers would get a 403 from the admin plugin.
+  async toggleUserStatus(member: OrgMember) {
     this.successMessage = '';
     this.errorMessage = '';
     try {
       const authClient = await getAuthClient();
 
-      if (user.banned) {
-        const result = await authClient.admin.unbanUser({ userId: user.id });
+      if (member.user.banned) {
+        const result = await authClient.admin.unbanUser({ userId: member.userId });
         if (result.error) {
           this.errorMessage = result.error.message ?? 'Failed to activate user';
           return;
         }
-        this.successMessage = `User ${user.name} activated`;
+        this.successMessage = `User ${member.user.name} activated`;
       } else {
         const result = await authClient.admin.banUser({
-          userId: user.id,
+          userId: member.userId,
           banReason: 'Deactivated by admin',
         });
         if (result.error) {
           this.errorMessage = result.error.message ?? 'Failed to deactivate user';
           return;
         }
-        this.successMessage = `User ${user.name} deactivated`;
+        this.successMessage = `User ${member.user.name} deactivated`;
       }
 
-      await this.loadUsers();
+      await this.loadData();
       setTimeout(() => {
         this.successMessage = '';
       }, 3000);
@@ -530,7 +621,7 @@ export class OgsSettingsUsersPage extends LitElement {
   render() {
     return html`
       <ogs-page
-        activePage="settings/users"
+        activePage="users"
         ?isAnonymous="${this.isAnonymous}"
         userName="${this.userName}"
         ?canManageInventory="${this.canManageInventory}"
@@ -541,21 +632,57 @@ export class OgsSettingsUsersPage extends LitElement {
         ?canManageUsers="${this.canManageUsers}"
         ?canViewTransactionLog="${this.canViewTransactionLog}"
         activeOrganizationId="${this.activeOrganizationId}"
+        ?showStoreSelector="${this.showStoreSelector}"
         showUserMenu
       >
         ${this.renderPageHeader()}
         ${when(
-          this.loading,
-          () => html`
-            <div class="loading-container">
-              <wa-spinner style="font-size: 2rem;"></wa-spinner>
-              <span>Loading users...</span>
-            </div>
-          `,
-          () => this.renderContent(),
+          !activeStoreId.get(),
+          () => this.renderNoStoreState(),
+          () =>
+            when(
+              this.loading,
+              () => html`
+                <div class="loading-container">
+                  <wa-spinner style="font-size: 2rem;"></wa-spinner>
+                  <span>Loading users...</span>
+                </div>
+              `,
+              () => this.renderContent(),
+            ),
         )}
-        ${this.renderAddDialog()}
+        ${this.renderRemoveConfirmDialog()}
       </ogs-page>
+    `;
+  }
+
+  private renderRemoveConfirmDialog() {
+    const member = this.memberToRemove;
+    return html`
+      <wa-dialog
+        label="Remove User"
+        ?open="${!!member}"
+        @wa-after-hide="${(e: Event) => {
+          if (e.target === e.currentTarget) this.memberToRemove = null;
+        }}"
+      >
+        <p>
+          Are you sure you want to remove <strong>${member?.user.name}</strong> from this store? They will lose access
+          until reassigned.
+        </p>
+        <wa-button
+          slot="footer"
+          variant="neutral"
+          @click="${() => {
+            this.memberToRemove = null;
+          }}"
+          >Cancel</wa-button
+        >
+        <wa-button slot="footer" variant="danger" @click="${this.handleRemoveMember}">
+          <wa-icon slot="start" name="xmark"></wa-icon>
+          Remove
+        </wa-button>
+      </wa-dialog>
     `;
   }
 
@@ -567,32 +694,44 @@ export class OgsSettingsUsersPage extends LitElement {
         </div>
         <div class="page-header-content">
           <h2>User Accounts</h2>
-          <p>Manage user accounts, roles, and access permissions</p>
+          <p>Manage user accounts, roles, and access permissions for this store</p>
         </div>
       </div>
     `;
   }
 
+  private renderNoStoreState() {
+    return html`
+      <div class="no-store-state">
+        <wa-icon name="store"></wa-icon>
+        <h3>No Store Selected</h3>
+        <p>Select a store from the header dropdown to manage its users.</p>
+      </div>
+    `;
+  }
+
   private renderStatsBar() {
-    const stats = this.computeUserStats();
+    const assigned = this.assignedMembers.length;
+    const active = this.assignedMembers.filter((m) => !m.user.banned).length;
+    const deactivated = this.assignedMembers.filter((m) => m.user.banned).length;
     return html`
       <div class="stats-bar">
-        <div class="stat-card">
-          <div class="stat-icon neutral">
-            <wa-icon name="users"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Total</span>
-            <span class="stat-value">${stats.total}</span>
-          </div>
-        </div>
         <div class="stat-card">
           <div class="stat-icon success">
             <wa-icon name="user-check"></wa-icon>
           </div>
           <div class="stat-content">
+            <span class="stat-label">Assigned</span>
+            <span class="stat-value">${assigned}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon neutral">
+            <wa-icon name="users"></wa-icon>
+          </div>
+          <div class="stat-content">
             <span class="stat-label">Active</span>
-            <span class="stat-value">${stats.active}</span>
+            <span class="stat-value">${active}</span>
           </div>
         </div>
         <div class="stat-card">
@@ -601,16 +740,7 @@ export class OgsSettingsUsersPage extends LitElement {
           </div>
           <div class="stat-content">
             <span class="stat-label">Deactivated</span>
-            <span class="stat-value">${stats.deactivated}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <wa-icon name="shield-halved"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Owners</span>
-            <span class="stat-value">${stats.owners}</span>
+            <span class="stat-value">${deactivated}</span>
           </div>
         </div>
       </div>
@@ -635,203 +765,164 @@ export class OgsSettingsUsersPage extends LitElement {
             </wa-callout>
           `
         : nothing}
-      ${this.renderStatsBar()} ${this.renderFilterBar()}
-      ${this.filteredUsers.length === 0 ? this.renderEmptyState() : this.renderTable()}
+      ${this.renderStatsBar()}
+
+      <wa-checkbox
+        ?checked="${this.hideDeactivated}"
+        @change="${(e: Event) => {
+          this.hideDeactivated = (e.target as HTMLInputElement).checked;
+        }}"
+        style="margin-bottom: 1rem;"
+      >
+        Hide deactivated users
+      </wa-checkbox>
+
+      ${this.renderAssignedSection()} ${this.renderAssignSection()}
     `;
   }
 
-  private renderFilterBar() {
+  private renderAssignedSection() {
     return html`
-      <div class="filter-bar">
-        <div class="filter-bar-left">
-          <wa-checkbox
-            ?checked="${this.hideDeactivated}"
-            @change="${(e: Event) => {
-              this.hideDeactivated = (e.target as HTMLInputElement).checked;
-            }}"
-          >
-            Hide deactivated users
-          </wa-checkbox>
-        </div>
-        <wa-button
-          variant="brand"
-          size="small"
-          @click="${() => {
-            this.showAddDialog = true;
-          }}"
-        >
-          <wa-icon slot="start" name="user-plus"></wa-icon>
-          Add User
-        </wa-button>
+      <div class="section-header">
+        <h3 class="section-title">Assigned Users</h3>
       </div>
-    `;
-  }
-
-  private renderEmptyState() {
-    return html`
-      <div class="empty-state">
-        <wa-icon name="users"></wa-icon>
-        <h3>No Users Found</h3>
-        <p>
-          ${this.hideDeactivated
-            ? 'No active users found. Try unchecking "Hide deactivated users" to see all users.'
-            : 'No users have been created yet. Add your first user to get started.'}
-        </p>
-        <wa-button
-          variant="brand"
-          @click="${() => {
-            this.showAddDialog = true;
-          }}"
-        >
-          <wa-icon slot="start" name="user-plus"></wa-icon>
-          Add User
-        </wa-button>
-      </div>
-    `;
-  }
-
-  private renderTable() {
-    return html`
       <wa-card appearance="outline">
-        <div class="table-container">
-          <table class="wa-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Created</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.filteredUsers.map(
-                (user) => html`
-                  <tr>
-                    <td><strong>${user.name}</strong></td>
-                    <td>${user.email}</td>
-                    <td>
-                      <wa-badge variant="${roleBadgeVariant(user.role)}"> ${roleLabel(user.role)} </wa-badge>
-                    </td>
-                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      ${user.banned
-                        ? html`<wa-badge variant="danger">Deactivated</wa-badge>`
-                        : html`<wa-badge variant="success">Active</wa-badge>`}
-                    </td>
-                    <td class="actions-cell">
-                      <div class="actions-cell-inner">
-                        <wa-button
-                          size="small"
-                          variant="neutral"
-                          appearance="outlined"
-                          href="/settings/users/${encodeURIComponent(user.id)}"
-                        >
-                          <wa-icon slot="start" name="pen-to-square"></wa-icon>
-                          Edit
-                        </wa-button>
-                        <wa-button
-                          size="small"
-                          variant="${user.banned ? 'success' : 'danger'}"
-                          appearance="outlined"
-                          @click="${() => this.toggleUserStatus(user)}"
-                        >
-                          <wa-icon slot="start" name="${user.banned ? 'user-check' : 'user-xmark'}"></wa-icon>
-                          ${user.banned ? 'Activate' : 'Deactivate'}
-                        </wa-button>
-                      </div>
-                    </td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
-        </div>
+        ${this.filteredAssigned.length === 0
+          ? html`
+              <div class="empty-state">
+                <wa-icon name="users"></wa-icon>
+                <h3>No Assigned Users</h3>
+                <p>
+                  No users are assigned to this store yet. Use the form below to assign a user by their email address.
+                </p>
+              </div>
+            `
+          : html`
+              <div class="table-container">
+                <table class="wa-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${this.filteredAssigned.map((member) => this.renderAssignedRow(member))}
+                  </tbody>
+                </table>
+              </div>
+            `}
       </wa-card>
     `;
   }
 
-  private renderAddDialog() {
+  private renderAssignedRow(member: OrgMember) {
+    const canManage = this.canManageMember(member);
     return html`
-      <wa-dialog
-        label="Add User"
-        ?open="${this.showAddDialog}"
-        @wa-after-hide="${(e: Event) => {
-          if (e.target === e.currentTarget) this.showAddDialog = false;
-        }}"
-      >
-        <div class="dialog-form">
-          <wa-input
-            label="Name"
-            required
-            .value="${this.addName}"
-            @input="${(e: Event) => {
-              this.addName = (e.target as HTMLInputElement).value;
-            }}"
-          >
-            <wa-icon slot="prefix" name="user"></wa-icon>
-          </wa-input>
+      <tr>
+        <td><strong>${member.user.name}</strong></td>
+        <td>${member.user.email}</td>
+        <td>
+          <wa-badge variant="${roleBadgeVariant(member.role)}"> ${roleLabel(member.role)} </wa-badge>
+        </td>
+        <td>
+          ${member.user.banned
+            ? html`<wa-badge variant="danger">Deactivated</wa-badge>`
+            : html`<wa-badge variant="success">Active</wa-badge>`}
+        </td>
+        <td class="actions-cell">
+          <div class="actions-cell-inner">
+            ${canManage
+              ? html`
+                  <wa-button
+                    size="small"
+                    variant="neutral"
+                    appearance="outlined"
+                    href="/users/${encodeURIComponent(member.userId)}"
+                  >
+                    <wa-icon slot="start" name="pen-to-square"></wa-icon>
+                    Edit
+                  </wa-button>
+                  ${when(
+                    this.isOwner,
+                    () => html`
+                      <wa-button
+                        size="small"
+                        variant="${member.user.banned ? 'success' : 'danger'}"
+                        appearance="outlined"
+                        @click="${() => this.toggleUserStatus(member)}"
+                      >
+                        <wa-icon slot="start" name="${member.user.banned ? 'user-check' : 'user-xmark'}"></wa-icon>
+                        ${member.user.banned ? 'Activate' : 'Deactivate'}
+                      </wa-button>
+                    `,
+                  )}
+                  <wa-button
+                    size="small"
+                    variant="danger"
+                    appearance="outlined"
+                    @click="${() => this.confirmRemoveMember(member)}"
+                  >
+                    <wa-icon slot="start" name="xmark"></wa-icon>
+                    Remove
+                  </wa-button>
+                `
+              : nothing}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  private renderAssignSection() {
+    return html`
+      <div class="section-header" style="margin-top: 2rem;">
+        <h3 class="section-title">Assign a User</h3>
+      </div>
+      <wa-card appearance="outline">
+        <div class="assign-form">
           <wa-input
             type="email"
-            label="Email"
-            required
-            .value="${this.addEmail}"
+            label="User Email"
+            placeholder="Enter the email of a registered user"
+            .value="${this.assignEmail}"
             @input="${(e: Event) => {
-              this.addEmail = (e.target as HTMLInputElement).value;
+              this.assignEmail = (e.target as HTMLInputElement).value;
+              this.assignError = '';
+            }}"
+            @keydown="${(e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                this.handleAssignByEmail();
+              }
             }}"
           >
             <wa-icon slot="prefix" name="envelope"></wa-icon>
           </wa-input>
-          <wa-input
-            type="password"
-            label="Password"
-            required
-            password-toggle
-            .value="${this.addPassword}"
-            @input="${(e: Event) => {
-              this.addPassword = (e.target as HTMLInputElement).value;
-            }}"
+          <wa-button
+            variant="brand"
+            ?loading="${this.assigning}"
+            ?disabled="${!this.assignEmail.trim()}"
+            @click="${this.handleAssignByEmail}"
           >
-            <wa-icon slot="prefix" name="lock"></wa-icon>
-          </wa-input>
-          <wa-select
-            label="Role"
-            .value="${this.addRole}"
-            @change="${(e: Event) => {
-              this.addRole = (e.target as HTMLSelectElement).value;
-            }}"
-          >
-            <wa-option value="owner">Owner</wa-option>
-            <wa-option value="manager">Store Manager</wa-option>
-            <wa-option value="member">Employee</wa-option>
-          </wa-select>
-          <wa-select
-            label="Store Assignment"
-            multiple
-            .value="${this.addStoreIds}"
-            @change="${(e: Event) => {
-              const select = e.target as HTMLSelectElement;
-              this.addStoreIds = Array.from((select as unknown as { value: string[] }).value);
-            }}"
-          >
-            ${this.stores.map((s) => html`<wa-option value="${s.id}">${s.name}</wa-option>`)}
-          </wa-select>
+            <wa-icon slot="start" name="user-plus"></wa-icon>
+            Assign
+          </wa-button>
         </div>
-        <wa-button
-          autofocus
-          slot="footer"
-          variant="neutral"
-          @click="${() => {
-            this.showAddDialog = false;
-          }}"
-          >Cancel</wa-button
-        >
-        <wa-button slot="footer" variant="brand" ?loading="${this.saving}" @click="${this.handleAddUser}">
-          <wa-icon slot="start" name="user-plus"></wa-icon>
-          Create User
-        </wa-button>
-      </wa-dialog>
+        ${this.assignError
+          ? html`
+              <div class="assign-form-error">
+                <wa-callout variant="danger" size="small">
+                  <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                  ${this.assignError}
+                </wa-callout>
+              </div>
+            `
+          : nothing}
+      </wa-card>
     `;
   }
 }
