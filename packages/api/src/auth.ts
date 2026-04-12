@@ -63,6 +63,30 @@ export const auth = betterAuth({
           },
         },
       },
+      organizationHooks: {
+        /**
+         * Prevent any role change on a member who currently holds the owner role.
+         * Owners must be managed outside of the normal role-edit flow (e.g. direct
+         * DB tooling or a dedicated ownership-transfer feature) to avoid accidental
+         * lockout.
+         */
+        beforeUpdateMemberRole: async ({ member }) => {
+          if (member.role === 'owner') {
+            throw new Error('Owner permissions cannot be changed through this interface.');
+          }
+        },
+        /**
+         * Prevent removal of any owner from a store. Better Auth already blocks
+         * removing the *last* owner, but this extends the rule to all owners so that
+         * owner accounts can only be managed through a dedicated ownership-transfer
+         * flow.
+         */
+        beforeRemoveMember: async ({ member }) => {
+          if (member.role === 'owner') {
+            throw new Error('Owner accounts cannot be removed from a store through this interface.');
+          }
+        },
+      },
     }),
     admin({
       ac,

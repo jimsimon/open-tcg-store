@@ -454,11 +454,11 @@ export class OgsSettingsUsersPage extends LitElement {
         this.errorMessage = result.error.message ?? 'Failed to create user';
       } else {
         // Add user to selected store organizations
-        const newUserId = (result.data as unknown as { id: string })?.id;
+        const newUserId = (result.data as unknown as { user: { id: string } })?.user?.id;
         if (newUserId && this.addStoreIds.length > 0) {
           for (const storeId of this.addStoreIds) {
             try {
-              await fetch('/api/auth/organization/add-member', {
+              await fetch('/api/users/store-membership', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
