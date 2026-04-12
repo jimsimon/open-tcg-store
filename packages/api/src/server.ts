@@ -356,29 +356,33 @@ const router = new Router()
     }
   })
   /**
-   * GET /api/users
-   * Returns all non-anonymous users. Used by the user management page to
-   * build the "Unassigned Users" table.
+   * POST /api/users/lookup
+   * Looks up a single non-anonymous user by email address. Returns minimal
+   * user info (id, name, email) for the assign-to-store workflow.
    * Requires userManagement:read permission.
    */
-  .get('/api/users', async (ctx: RouterContext) => {
+  .post('/api/users/lookup', async (ctx: RouterContext) => {
     if (!(await requireUserManagementPermission(ctx, 'read'))) return;
+    const body = ctx.request.body as { email?: string };
+    const email = body.email?.trim().toLowerCase();
+    if (!email) {
+      ctx.status = 400;
+      ctx.body = { error: 'Email is required' };
+      return;
+    }
     try {
-      const rows = await otcgs.all<{
-        id: string;
-        name: string;
-        email: string;
-        role: string | null;
-        banned: number;
-        banReason: string | null;
-        createdAt: string;
-      }>(
-        sql`SELECT id, name, email, role, banned, ban_reason AS "banReason", created_at AS "createdAt" FROM "user" WHERE is_anonymous = false ORDER BY created_at DESC`,
+      const rows = await otcgs.all<{ id: string; name: string; email: string }>(
+        sql`SELECT id, name, email FROM "user" WHERE LOWER(email) = ${email} AND is_anonymous = false LIMIT 1`,
       );
-      ctx.body = rows.map((r) => ({ ...r, banned: Boolean(r.banned) }));
+      if (rows.length === 0) {
+        ctx.status = 404;
+        ctx.body = { error: 'No user found with that email address. They may need to sign up first.' };
+        return;
+      }
+      ctx.body = rows[0];
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to fetch users' };
+      ctx.body = { error: error instanceof Error ? error.message : 'Failed to look up user' };
     }
   })
   /**

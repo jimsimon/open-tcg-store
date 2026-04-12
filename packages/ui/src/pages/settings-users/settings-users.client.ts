@@ -44,16 +44,6 @@ interface OrgMember {
   };
 }
 
-interface UserRecord {
-  id: string;
-  name: string;
-  email: string;
-  role: string | null;
-  banned: boolean;
-  banReason: string | null;
-  createdAt: string;
-}
-
 // --- Helpers ---
 
 /** Map a role value to a display label. */
@@ -380,17 +370,39 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
         max-width: 400px;
         margin-inline: auto;
       }
+
+      /* --- Assign User Form --- */
+
+      .assign-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.75rem;
+        padding: 1.25rem;
+      }
+
+      .assign-form wa-input {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .assign-form-error {
+        padding: 0 1.25rem 1.25rem;
+      }
     `,
   ];
 
   @state() private assignedMembers: OrgMember[] = [];
-  @state() private allUsers: UserRecord[] = [];
   @state() private loading = true;
   @state() private hideDeactivated = true;
   @state() private successMessage = '';
   @state() private errorMessage = '';
   /** The current user's role in the active store (to enable manager guards) */
   @state() private currentUserRole: string | null = null;
+
+  /** Assign-by-email form state */
+  @state() private assignEmail = '';
+  @state() private assigning = false;
+  @state() private assignError = '';
 
   private boundHandleStoreChanged = () => this.loadData();
 
@@ -415,7 +427,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     this.loading = true;
     this.errorMessage = '';
     try {
-      await Promise.all([this.loadAssignedMembers(), this.loadAllUsers()]);
+      await this.loadAssignedMembers();
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load data';
     } finally {
@@ -439,20 +451,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     }
   }
 
-  private async loadAllUsers() {
-    try {
-      const res = await fetch('/api/users', { credentials: 'include' });
-      if (res.ok) {
-        this.allUsers = (await res.json()) as UserRecord[];
-      } else {
-        console.warn('Failed to fetch users:', res.status);
-      }
-    } catch (e) {
-      // Non-fatal — unassigned table will be empty
-      console.warn('Failed to fetch users:', e);
-    }
-  }
-
   /** Whether the current user is an owner (can deactivate users, edit managers, etc.) */
   private get isOwner(): boolean {
     return this.currentUserRole === 'owner';
@@ -465,15 +463,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     return this.assignedMembers;
   }
 
-  private get unassignedUsers(): UserRecord[] {
-    const assignedUserIds = new Set(this.assignedMembers.map((m) => m.userId));
-    let users = this.allUsers.filter((u) => !assignedUserIds.has(u.id));
-    if (this.hideDeactivated) {
-      users = users.filter((u) => !u.banned);
-    }
-    return users;
-  }
-
   /** Check whether the current user can manage (edit/deactivate/remove) a given member. */
   private canManageMember(member: OrgMember): boolean {
     // Owners can manage anyone except other owners
@@ -483,31 +472,64 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     return member.role === 'member';
   }
 
-  async handleAssignUser(user: UserRecord) {
+  async handleAssignByEmail() {
     const storeId = activeStoreId.get();
-    if (!storeId) return;
+    const email = this.assignEmail.trim();
+    if (!storeId || !email) return;
 
+    this.assigning = true;
+    this.assignError = '';
     this.successMessage = '';
     this.errorMessage = '';
+
     try {
-      const res = await fetch('/api/users/store-membership', {
+      // Look up user by email
+      const lookupRes = await fetch('/api/users/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+
+      if (!lookupRes.ok) {
+        const err = (await lookupRes.json()) as { error?: string };
+        this.assignError = err.error ?? 'User not found';
+        return;
+      }
+
+      const user = (await lookupRes.json()) as { id: string; name: string; email: string };
+
+      // Check if the user is already assigned to this store
+      if (this.assignedMembers.some((m) => m.userId === user.id)) {
+        this.assignError = `${user.name} is already assigned to this store.`;
+        return;
+      }
+
+      // Assign the user to the store
+      const assignRes = await fetch('/api/users/store-membership', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ userId: user.id, organizationId: storeId, role: 'member' }),
       });
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: string };
-        this.errorMessage = err.error ?? 'Failed to assign user';
+
+      if (!assignRes.ok) {
+        const err = (await assignRes.json()) as { error?: string };
+        this.assignError = err.error ?? 'Failed to assign user';
         return;
       }
+
       this.successMessage = `${user.name} assigned to this store`;
+      this.assignEmail = '';
+      this.assignError = '';
       await this.loadData();
       setTimeout(() => {
         this.successMessage = '';
       }, 3000);
     } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to assign user';
+      this.assignError = e instanceof Error ? e.message : 'Failed to assign user';
+    } finally {
+      this.assigning = false;
     }
   }
 
@@ -638,7 +660,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     const assigned = this.assignedMembers.length;
     const active = this.assignedMembers.filter((m) => !m.user.banned).length;
     const deactivated = this.assignedMembers.filter((m) => m.user.banned).length;
-    const unassigned = this.unassignedUsers.length;
     return html`
       <div class="stats-bar">
         <div class="stat-card">
@@ -666,15 +687,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
           <div class="stat-content">
             <span class="stat-label">Deactivated</span>
             <span class="stat-value">${deactivated}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon warning">
-            <wa-icon name="user-plus"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Unassigned</span>
-            <span class="stat-value">${unassigned}</span>
           </div>
         </div>
       </div>
@@ -711,7 +723,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
         Hide deactivated users
       </wa-checkbox>
 
-      ${this.renderAssignedSection()} ${this.renderUnassignedSection()}
+      ${this.renderAssignedSection()} ${this.renderAssignSection()}
     `;
   }
 
@@ -726,7 +738,9 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
               <div class="empty-state">
                 <wa-icon name="users"></wa-icon>
                 <h3>No Assigned Users</h3>
-                <p>No users are assigned to this store. Assign users from the Unassigned Users section below.</p>
+                <p>
+                  No users are assigned to this store yet. Use the form below to assign a user by their email address.
+                </p>
               </div>
             `
           : html`
@@ -809,63 +823,52 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     `;
   }
 
-  private renderUnassignedSection() {
+  private renderAssignSection() {
     return html`
       <div class="section-header" style="margin-top: 2rem;">
-        <h3 class="section-title">Unassigned Users</h3>
+        <h3 class="section-title">Assign a User</h3>
       </div>
       <wa-card appearance="outline">
-        ${this.unassignedUsers.length === 0
+        <div class="assign-form">
+          <wa-input
+            type="email"
+            label="User Email"
+            placeholder="Enter the email of a registered user"
+            .value="${this.assignEmail}"
+            @input="${(e: Event) => {
+              this.assignEmail = (e.target as HTMLInputElement).value;
+              this.assignError = '';
+            }}"
+            @keydown="${(e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                this.handleAssignByEmail();
+              }
+            }}"
+          >
+            <wa-icon slot="prefix" name="envelope"></wa-icon>
+          </wa-input>
+          <wa-button
+            variant="brand"
+            ?loading="${this.assigning}"
+            ?disabled="${!this.assignEmail.trim()}"
+            @click="${this.handleAssignByEmail}"
+          >
+            <wa-icon slot="start" name="user-plus"></wa-icon>
+            Assign
+          </wa-button>
+        </div>
+        ${this.assignError
           ? html`
-              <div class="empty-state">
-                <wa-icon name="user-plus"></wa-icon>
-                <h3>No Unassigned Users</h3>
-                <p>
-                  All registered users are assigned to this store, or there are no other users yet. New users can sign
-                  up from the login page.
-                </p>
+              <div class="assign-form-error">
+                <wa-callout variant="danger" size="small">
+                  <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                  ${this.assignError}
+                </wa-callout>
               </div>
             `
-          : html`
-              <div class="table-container">
-                <table class="wa-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this.unassignedUsers.map((user) => this.renderUnassignedRow(user))}
-                  </tbody>
-                </table>
-              </div>
-            `}
+          : nothing}
       </wa-card>
-    `;
-  }
-
-  private renderUnassignedRow(user: UserRecord) {
-    return html`
-      <tr>
-        <td><strong>${user.name}</strong></td>
-        <td>${user.email}</td>
-        <td>
-          ${user.banned
-            ? html`<wa-badge variant="danger">Deactivated</wa-badge>`
-            : html`<wa-badge variant="success">Active</wa-badge>`}
-        </td>
-        <td class="actions-cell">
-          <div class="actions-cell-inner">
-            <wa-button size="small" variant="brand" appearance="outlined" @click="${() => this.handleAssignUser(user)}">
-              <wa-icon slot="start" name="user-plus"></wa-icon>
-              Assign to Store
-            </wa-button>
-          </div>
-        </td>
-      </tr>
     `;
   }
 }

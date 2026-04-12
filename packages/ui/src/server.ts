@@ -181,10 +181,12 @@ const router = new Router()
     }
   })
   // Proxy /api/users/* to the API server (user management endpoints)
-  .get('/api/users', async (ctx) => {
+  .post('/api/users/lookup', async (ctx) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users`, {
-        headers: { Cookie: ctx.headers.cookie ?? '' },
+      const res = await fetch(`${API_BASE_URL}/api/users/lookup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
+        body: JSON.stringify(ctx.request.body),
       });
       ctx.status = res.status;
       ctx.body = await res.json();

@@ -59,19 +59,6 @@ function fakeMember(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function fakeUser(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'user-1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'member',
-    banned: false,
-    banReason: null,
-    createdAt: '2025-01-01T00:00:00.000Z',
-    ...overrides,
-  };
-}
-
 /** Poll until the element has finished loading (async data + Lit render). */
 async function waitForLoaded(el: OgsSettingsUsersPage, timeout = 2000): Promise<void> {
   const deadline = Date.now() + timeout;
@@ -154,16 +141,8 @@ describe('ogs-settings-users-page', () => {
       },
     });
 
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => [
-        fakeUser({ id: 'user-1', name: 'John Doe', email: 'john@example.com' }),
-        fakeUser({ id: 'user-2', name: 'Jane Smith', email: 'jane@example.com' }),
-        fakeUser({ id: 'user-3', name: 'Bob Banned', email: 'bob@example.com', banned: true }),
-        fakeUser({ id: 'current-user', name: 'Admin', email: 'admin@example.com' }),
-        fakeUser({ id: 'user-4', name: 'Unassigned User', email: 'unassigned@example.com' }),
-      ],
-    });
+    // Default: no fetch calls expected during initial load (no more GET /api/users)
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) });
 
     element = document.createElement('ogs-settings-users-page') as OgsSettingsUsersPage;
     document.body.appendChild(element);
@@ -197,14 +176,19 @@ describe('ogs-settings-users-page', () => {
     expect(statsBar).toBeTruthy();
 
     const statCards = statsBar!.querySelectorAll('.stat-card');
-    expect(statCards.length).toBe(4); // Assigned, Active, Deactivated, Unassigned
+    expect(statCards.length).toBe(3); // Assigned, Active, Deactivated
   });
 
-  test('should display both Assigned and Unassigned tables', () => {
+  test('should display Assigned Users section', () => {
     const sectionHeaders = element.shadowRoot!.querySelectorAll('.section-title');
     const titles = Array.from(sectionHeaders).map((h) => h.textContent?.trim());
     expect(titles).toContain('Assigned Users');
-    expect(titles).toContain('Unassigned Users');
+  });
+
+  test('should display Assign a User section', () => {
+    const sectionHeaders = element.shadowRoot!.querySelectorAll('.section-title');
+    const titles = Array.from(sectionHeaders).map((h) => h.textContent?.trim());
+    expect(titles).toContain('Assign a User');
   });
 
   test('should display assigned user table with correct columns', () => {
@@ -232,20 +216,16 @@ describe('ogs-settings-users-page', () => {
     expect(badges.length).toBeGreaterThan(0);
   });
 
-  test('should show unassigned user in unassigned table', () => {
-    const tables = element.shadowRoot!.querySelectorAll('table');
-    // The unassigned table should show user-4 (the only user not assigned to the store)
-    expect(tables.length).toBe(2);
-    const unassignedRows = tables[1].querySelectorAll('tbody tr');
-    expect(unassignedRows.length).toBe(1);
-    expect(unassignedRows[0].textContent).toContain('Unassigned User');
-  });
+  test('should display assign-by-email form with input and button', () => {
+    const assignForm = element.shadowRoot!.querySelector('.assign-form');
+    expect(assignForm).toBeTruthy();
 
-  test('should show "Assign to Store" button in unassigned table', () => {
-    const tables = element.shadowRoot!.querySelectorAll('table');
-    const assignBtn = tables[1]?.querySelector('wa-button[variant="brand"]');
+    const emailInput = assignForm!.querySelector('wa-input[type="email"]');
+    expect(emailInput).toBeTruthy();
+
+    const assignBtn = assignForm!.querySelector('wa-button[variant="brand"]');
     expect(assignBtn).toBeTruthy();
-    expect(assignBtn?.textContent).toContain('Assign to Store');
+    expect(assignBtn?.textContent).toContain('Assign');
   });
 
   test('should show no-store state when no store is selected', async () => {
