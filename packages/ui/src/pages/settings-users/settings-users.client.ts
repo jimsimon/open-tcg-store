@@ -11,7 +11,6 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/badge/badge.js';
-import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
@@ -43,8 +42,6 @@ interface OrgMember {
     name: string;
     email: string;
     image: string | null;
-    banned: boolean;
-    banReason: string | null;
   };
 }
 
@@ -185,21 +182,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
       .stat-icon.success {
         background: var(--wa-color-success-container);
         color: var(--wa-color-success-text);
-      }
-
-      .stat-icon.warning {
-        background: var(--wa-color-warning-container);
-        color: var(--wa-color-warning-text);
-      }
-
-      .stat-icon.neutral {
-        background: var(--wa-color-neutral-container);
-        color: var(--wa-color-text-muted);
-      }
-
-      .stat-icon.danger {
-        background: var(--wa-color-danger-container);
-        color: var(--wa-color-danger-text);
       }
 
       .stat-content {
@@ -397,7 +379,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
 
   @state() private assignedMembers: OrgMember[] = [];
   @state() private loading = true;
-  @state() private hideDeactivated = true;
   @state() private successMessage = '';
   @state() private errorMessage = '';
   /** The current user's role in the active store (to enable manager guards) */
@@ -468,19 +449,12 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     }
   }
 
-  /** Whether the current user is an owner (can deactivate users, edit managers, etc.) */
+  /** Whether the current user is an owner (can edit managers, etc.) */
   private get isOwner(): boolean {
     return this.currentUserRole === 'owner';
   }
 
-  private get filteredAssigned(): OrgMember[] {
-    if (this.hideDeactivated) {
-      return this.assignedMembers.filter((m) => !m.user.banned);
-    }
-    return this.assignedMembers;
-  }
-
-  /** Check whether the current user can manage (edit/deactivate/remove) a given member. */
+  /** Check whether the current user can manage (edit/remove) a given member. */
   private canManageMember(member: OrgMember): boolean {
     // Owners can manage anyone except other owners
     if (this.isOwner) return member.role !== 'owner';
@@ -588,43 +562,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     }
   }
 
-  // NOTE: ban/unban uses authClient.admin which requires adminRoles: ['owner'].
-  // The UI only shows the deactivate/activate button when this.isOwner is true,
-  // but if that guard is ever relaxed, managers would get a 403 from the admin plugin.
-  async toggleUserStatus(member: OrgMember) {
-    this.successMessage = '';
-    this.errorMessage = '';
-    try {
-      const authClient = await getAuthClient();
-
-      if (member.user.banned) {
-        const result = await authClient.admin.unbanUser({ userId: member.userId });
-        if (result.error) {
-          this.errorMessage = result.error.message ?? 'Failed to activate user';
-          return;
-        }
-        this.successMessage = `User ${member.user.name} activated`;
-      } else {
-        const result = await authClient.admin.banUser({
-          userId: member.userId,
-          banReason: 'Deactivated by admin',
-        });
-        if (result.error) {
-          this.errorMessage = result.error.message ?? 'Failed to deactivate user';
-          return;
-        }
-        this.successMessage = `User ${member.user.name} deactivated`;
-      }
-
-      await this.loadData();
-      setTimeout(() => {
-        this.successMessage = '';
-      }, 3000);
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to update user status';
-    }
-  }
-
   render() {
     return html`
       <ogs-page
@@ -718,9 +655,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   }
 
   private renderStatsBar() {
-    const assigned = this.assignedMembers.length;
-    const active = this.assignedMembers.filter((m) => !m.user.banned).length;
-    const deactivated = this.assignedMembers.filter((m) => m.user.banned).length;
     return html`
       <div class="stats-bar">
         <div class="stat-card">
@@ -729,25 +663,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
           </div>
           <div class="stat-content">
             <span class="stat-label">Assigned</span>
-            <span class="stat-value">${assigned}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon neutral">
-            <wa-icon name="users"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Active</span>
-            <span class="stat-value">${active}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon danger">
-            <wa-icon name="user-xmark"></wa-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Deactivated</span>
-            <span class="stat-value">${deactivated}</span>
+            <span class="stat-value">${this.assignedMembers.length}</span>
           </div>
         </div>
       </div>
@@ -772,19 +688,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
             </wa-callout>
           `
         : nothing}
-      ${this.renderStatsBar()}
-
-      <wa-checkbox
-        ?checked="${this.hideDeactivated}"
-        @change="${(e: Event) => {
-          this.hideDeactivated = (e.target as HTMLInputElement).checked;
-        }}"
-        style="margin-bottom: 1rem;"
-      >
-        Hide deactivated users
-      </wa-checkbox>
-
-      ${this.renderAssignedSection()} ${this.renderAssignSection()}
+      ${this.renderStatsBar()} ${this.renderAssignedSection()} ${this.renderAssignSection()}
     `;
   }
 
@@ -794,7 +698,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
         <h3 class="section-title">Assigned Users</h3>
       </div>
       <wa-card appearance="outline">
-        ${this.filteredAssigned.length === 0
+        ${this.assignedMembers.length === 0
           ? html`
               <div class="empty-state">
                 <wa-icon name="users"></wa-icon>
@@ -812,12 +716,11 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
                       <th>Name</th>
                       <th>Email</th>
                       <th>Role</th>
-                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${this.filteredAssigned.map((member) => this.renderAssignedRow(member))}
+                    ${this.assignedMembers.map((member) => this.renderAssignedRow(member))}
                   </tbody>
                 </table>
               </div>
@@ -835,11 +738,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
         <td>
           <wa-badge variant="${roleBadgeVariant(member.role)}"> ${roleLabel(member.role)} </wa-badge>
         </td>
-        <td>
-          ${member.user.banned
-            ? html`<wa-badge variant="danger">Deactivated</wa-badge>`
-            : html`<wa-badge variant="success">Active</wa-badge>`}
-        </td>
         <td class="actions-cell">
           <div class="actions-cell-inner">
             ${canManage
@@ -853,20 +751,6 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
                     <wa-icon slot="start" name="pen-to-square"></wa-icon>
                     Edit
                   </wa-button>
-                  ${when(
-                    this.isOwner,
-                    () => html`
-                      <wa-button
-                        size="small"
-                        variant="${member.user.banned ? 'success' : 'danger'}"
-                        appearance="outlined"
-                        @click="${() => this.toggleUserStatus(member)}"
-                      >
-                        <wa-icon slot="start" name="${member.user.banned ? 'user-check' : 'user-xmark'}"></wa-icon>
-                        ${member.user.banned ? 'Activate' : 'Deactivate'}
-                      </wa-button>
-                    `,
-                  )}
                   <wa-button
                     size="small"
                     variant="danger"

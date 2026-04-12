@@ -12,7 +12,7 @@ import { defaultStatements as adminDefaultStatements, adminAc } from 'better-aut
  *
  * We merge default statements from both the organization plugin (organization, member,
  * invitation, ac) and the admin plugin (user, session) so custom roles can include
- * permissions for the admin plugin's built-in endpoints (createUser, banUser, etc.).
+ * permissions for the admin plugin's built-in endpoints (createUser, listUsers, etc.).
  */
 export const statement = {
   ...defaultStatements,
@@ -54,7 +54,7 @@ export const ownerRole = ac.newRole({
 /**
  * Manager role (Store Manager) — can manage inventory, orders, and view transaction log
  * at assigned stores. Can view and manage user assignments for their stores (read + update)
- * but cannot use admin-plugin endpoints (ban/unban — those require the owner role).
+ * but cannot use admin-plugin endpoints (those require the owner role).
  * No access to company settings.
  */
 export const managerRole = ac.newRole({
