@@ -299,10 +299,10 @@ const router = new Router()
    * Body: { memberId: string, organizationId: string }
    * Requires userManagement:update permission.
    */
-  .delete('/api/users/store-membership', async (ctx: RouterContext) => {
+  .post('/api/users/store-membership/remove', async (ctx: RouterContext) => {
     const session = await requireUserManagementUpdate(ctx);
     if (!session) return;
-    const body = ctx.request.body as { memberId?: string; organizationId?: string };
+    const body = (ctx.request.body ?? {}) as { memberId?: string; organizationId?: string };
     const { memberId, organizationId } = body;
     if (!memberId || !organizationId) {
       ctx.status = 400;

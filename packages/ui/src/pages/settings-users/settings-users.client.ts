@@ -567,8 +567,8 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     this.successMessage = '';
     this.errorMessage = '';
     try {
-      const res = await fetch('/api/users/store-membership', {
-        method: 'DELETE',
+      const res = await fetch('/api/users/store-membership/remove', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ memberId: member.id, organizationId: storeId }),

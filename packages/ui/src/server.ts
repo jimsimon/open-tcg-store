@@ -233,10 +233,10 @@ const router = new Router()
       ctx.body = { error: 'API server unavailable' };
     }
   })
-  .delete('/api/users/store-membership', async (ctx) => {
+  .post('/api/users/store-membership/remove', async (ctx) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/store-membership`, {
-        method: 'DELETE',
+      const res = await fetch(`${API_BASE_URL}/api/users/store-membership/remove`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
         body: JSON.stringify(ctx.request.body),
       });
