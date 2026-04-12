@@ -401,18 +401,16 @@ const router = new Router()
         name: string;
         email: string;
         role: string | null;
-        banned: number;
-        banReason: string | null;
         createdAt: string;
       }>(
-        sql`SELECT id, name, email, role, banned, ban_reason AS "banReason", created_at AS "createdAt" FROM "user" WHERE id = ${userId} AND is_anonymous = false LIMIT 1`,
+        sql`SELECT id, name, email, role, created_at AS "createdAt" FROM "user" WHERE id = ${userId} AND is_anonymous = false LIMIT 1`,
       );
       if (rows.length === 0) {
         ctx.status = 404;
         ctx.body = { error: 'User not found' };
         return;
       }
-      ctx.body = { ...rows[0], banned: Boolean(rows[0].banned) };
+      ctx.body = rows[0];
     } catch (error) {
       ctx.status = 500;
       ctx.body = { error: error instanceof Error ? error.message : 'Failed to fetch user' };

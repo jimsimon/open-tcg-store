@@ -142,8 +142,6 @@ interface UserRecord {
   name: string;
   email: string;
   role: string | null;
-  banned: boolean;
-  banReason: string | null;
   createdAt: string;
 }
 
@@ -900,14 +898,6 @@ export class OgsSettingsUserEditPage extends LitElement {
             <div class="info-item">
               <span class="info-label">Email</span>
               <span class="info-value">${this.user.email}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Status</span>
-              <span class="info-value">
-                ${this.user.banned
-                  ? html`<wa-badge variant="danger">Deactivated</wa-badge>`
-                  : html`<wa-badge variant="success">Active</wa-badge>`}
-              </span>
             </div>
             <div class="info-item">
               <span class="info-label">Created</span>

@@ -2,15 +2,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Declare mock variables via vi.hoisted() so they are available inside vi.mock() factories
 // (vi.mock is hoisted to the top of the file and cannot reference module-scoped variables).
-const { mockActiveStoreId, mockGetFullOrganization, mockGetSession, mockBanUser, mockUnbanUser, mockFetch } =
-  vi.hoisted(() => ({
-    mockActiveStoreId: { get: vi.fn().mockReturnValue('store-1'), set: vi.fn() },
-    mockGetFullOrganization: vi.fn(),
-    mockGetSession: vi.fn(),
-    mockBanUser: vi.fn(),
-    mockUnbanUser: vi.fn(),
-    mockFetch: vi.fn(),
-  }));
+const { mockActiveStoreId, mockGetFullOrganization, mockGetSession, mockFetch } = vi.hoisted(() => ({
+  mockActiveStoreId: { get: vi.fn().mockReturnValue('store-1'), set: vi.fn() },
+  mockGetFullOrganization: vi.fn(),
+  mockGetSession: vi.fn(),
+  mockFetch: vi.fn(),
+}));
 
 vi.mock('../../lib/store-context', () => ({
   activeStoreId: mockActiveStoreId,
@@ -25,10 +22,6 @@ vi.mock('../../auth-client', () => ({
       getFullOrganization: mockGetFullOrganization,
       setActive: vi.fn().mockResolvedValue({}),
       hasPermission: vi.fn().mockResolvedValue({ data: { success: true } }),
-    },
-    admin: {
-      banUser: mockBanUser,
-      unbanUser: mockUnbanUser,
     },
     getSession: mockGetSession,
   },
@@ -52,8 +45,6 @@ function fakeMember(overrides: Record<string, unknown> = {}) {
       name: 'John Doe',
       email: 'john@example.com',
       image: null,
-      banned: false,
-      banReason: null,
     },
     ...overrides,
   };
@@ -94,8 +85,6 @@ describe('ogs-settings-users-page', () => {
               name: 'John Doe',
               email: 'john@example.com',
               image: null,
-              banned: false,
-              banReason: null,
             },
           }),
           fakeMember({
@@ -107,21 +96,6 @@ describe('ogs-settings-users-page', () => {
               name: 'Jane Smith',
               email: 'jane@example.com',
               image: null,
-              banned: false,
-              banReason: null,
-            },
-          }),
-          fakeMember({
-            id: 'member-3',
-            userId: 'user-3',
-            role: 'member',
-            user: {
-              id: 'user-3',
-              name: 'Bob Banned',
-              email: 'bob@example.com',
-              image: null,
-              banned: true,
-              banReason: 'Deactivated by admin',
             },
           }),
           fakeMember({
@@ -133,8 +107,6 @@ describe('ogs-settings-users-page', () => {
               name: 'Admin',
               email: 'admin@example.com',
               image: null,
-              banned: false,
-              banReason: null,
             },
           }),
         ],
@@ -176,7 +148,7 @@ describe('ogs-settings-users-page', () => {
     expect(statsBar).toBeTruthy();
 
     const statCards = statsBar!.querySelectorAll('.stat-card');
-    expect(statCards.length).toBe(3); // Assigned, Active, Deactivated
+    expect(statCards.length).toBe(1); // Assigned
   });
 
   test('should display Assigned Users section', () => {
@@ -199,15 +171,7 @@ describe('ogs-settings-users-page', () => {
     expect(headers).toContain('Name');
     expect(headers).toContain('Email');
     expect(headers).toContain('Role');
-    expect(headers).toContain('Status');
     expect(headers).toContain('Actions');
-  });
-
-  test('should hide deactivated users from assigned table by default', () => {
-    const tables = element.shadowRoot!.querySelectorAll('table');
-    const assignedRows = tables[0].querySelectorAll('tbody tr');
-    // 4 members total, 1 banned (Bob) hidden = 3 visible
-    expect(assignedRows.length).toBe(3);
   });
 
   test('should display role badges in assigned table', () => {

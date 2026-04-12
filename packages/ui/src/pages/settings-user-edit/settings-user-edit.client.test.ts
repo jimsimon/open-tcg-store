@@ -49,8 +49,6 @@ function fakeUser(overrides: Record<string, unknown> = {}) {
     name: 'John Doe',
     email: 'john@example.com',
     role: 'manager',
-    banned: false,
-    banReason: null,
     createdAt: '2025-01-01T00:00:00.000Z',
     ...overrides,
   };
@@ -178,7 +176,6 @@ describe('ogs-settings-user-edit-page', () => {
     const labels = Array.from(infoGrid!.querySelectorAll('.info-label')).map((el) => el.textContent?.trim());
     expect(labels).toContain('Name');
     expect(labels).toContain('Email');
-    expect(labels).toContain('Status');
     expect(labels).toContain('Created');
   });
 
@@ -186,25 +183,6 @@ describe('ogs-settings-user-edit-page', () => {
     const values = Array.from(element.shadowRoot!.querySelectorAll('.info-value')).map((el) => el.textContent?.trim());
     expect(values).toContain('John Doe');
     expect(values).toContain('john@example.com');
-  });
-
-  test('should display Active badge for non-banned user', () => {
-    const badge = element.shadowRoot!.querySelector('.info-value wa-badge[variant="success"]');
-    expect(badge).toBeTruthy();
-    expect(badge?.textContent).toContain('Active');
-  });
-
-  test('should display Deactivated badge for banned user', async () => {
-    setupMockFetch(fakeUser({ banned: true }));
-
-    element.remove();
-    element = createElement();
-    document.body.appendChild(element);
-    await waitForLoaded(element);
-
-    const badge = element.shadowRoot!.querySelector('.info-value wa-badge[variant="danger"]');
-    expect(badge).toBeTruthy();
-    expect(badge?.textContent).toContain('Deactivated');
   });
 
   // --- Role & Permissions section ---
