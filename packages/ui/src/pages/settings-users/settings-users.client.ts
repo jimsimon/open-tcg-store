@@ -424,8 +424,15 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     this.removeEventListener('store-changed', this.boundHandleStoreChanged);
   }
 
+  /** The effective store ID — uses the signal if set, otherwise falls back to the
+   *  server-provided prop. On initial page load the signal may not be populated yet
+   *  (ogs-page sets it asynchronously), but the session already has the active org. */
+  private get effectiveStoreId(): string {
+    return activeStoreId.get() || this.activeOrganizationId;
+  }
+
   async loadData() {
-    const storeId = activeStoreId.get();
+    const storeId = this.effectiveStoreId;
     if (!storeId) {
       this.loading = false;
       return;
@@ -483,7 +490,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   }
 
   async handleAssignByEmail() {
-    const storeId = activeStoreId.get();
+    const storeId = this.effectiveStoreId;
     const email = this.assignEmail.trim();
     if (!storeId || !email) return;
 
@@ -553,7 +560,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
     const member = this.memberToRemove;
     if (!member) return;
 
-    const storeId = activeStoreId.get();
+    const storeId = this.effectiveStoreId;
     if (!storeId) return;
 
     this.memberToRemove = null;
@@ -637,7 +644,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
       >
         ${this.renderPageHeader()}
         ${when(
-          !activeStoreId.get(),
+          !this.effectiveStoreId,
           () => this.renderNoStoreState(),
           () =>
             when(
