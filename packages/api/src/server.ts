@@ -294,8 +294,9 @@ const router = new Router()
     }
   })
   /**
-   * DELETE /api/users/store-membership
-   * Removes a user from a store organization.
+   * POST /api/users/store-membership/remove
+   * Removes a user from a store organization. Uses POST instead of DELETE
+   * because some fetch implementations strip the body from DELETE requests.
    * Body: { memberId: string, organizationId: string }
    * Requires userManagement:update permission.
    */
