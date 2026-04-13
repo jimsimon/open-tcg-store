@@ -114,8 +114,7 @@ interface Store {
 export class FirstTimeSetupPage extends LitElement {
   static styles = css`
     :host {
-      display: flex;
-      justify-content: center;
+      display: block;
     }
 
     ogs-wizard {
