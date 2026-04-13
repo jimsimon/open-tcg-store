@@ -204,11 +204,8 @@ const router = new Router()
     }
   })
   .get('settings-dashboard', '/settings-dashboard', async (ctx) => {
-    if (!(await hasPermission(ctx, 'companySettings', 'read'))) {
-      ctx.status = 403;
-      ctx.body = ctx.state.auth?.user ? 'Forbidden: Insufficient permissions' : 'Forbidden: Authentication required';
-      return;
-    }
+    await requirePermission('companySettings', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
     return renderPage(ctx, 'settings-dashboard');
   })
   .get('first-time-setup', '/first-time-setup', async (ctx) => {
