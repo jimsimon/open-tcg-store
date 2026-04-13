@@ -10,12 +10,12 @@ import { ac, roles } from './lib/permissions';
 export { ac, roles } from './lib/permissions';
 
 export const auth = betterAuth({
-  baseURL: 'http://localhost:5174',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost',
   database: drizzleAdapter(otcgs, {
     provider: 'sqlite',
     schema,
   }),
-  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173').split(','),
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost').split(','),
   emailAndPassword: {
     enabled: true,
   },

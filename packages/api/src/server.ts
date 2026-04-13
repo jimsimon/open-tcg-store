@@ -37,7 +37,7 @@ const app = new Koa();
 app.use(
   koaCors({
     credentials: true,
-    origin: 'http://localhost:5173',
+    origin: process.env.APP_URL || 'http://localhost',
   }),
 );
 const schema = makeExecutableSchema({
@@ -195,10 +195,10 @@ const router = new Router()
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleGoogleDriveCallback(code);
-      ctx.redirect('http://localhost:5173/settings/backup?connected=google_drive');
+      ctx.redirect('/settings/backup?connected=google_drive');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
-      ctx.redirect(`http://localhost:5173/settings/backup?error=${encodeURIComponent(message)}`);
+      ctx.redirect(`/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
   .get('/api/backup/oauth/dropbox/authorize', async (ctx: RouterContext) => {
@@ -210,10 +210,10 @@ const router = new Router()
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleDropboxCallback(code);
-      ctx.redirect('http://localhost:5173/settings/backup?connected=dropbox');
+      ctx.redirect('/settings/backup?connected=dropbox');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
-      ctx.redirect(`http://localhost:5173/settings/backup?error=${encodeURIComponent(message)}`);
+      ctx.redirect(`/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
   .get('/api/backup/oauth/onedrive/authorize', async (ctx: RouterContext) => {
@@ -225,10 +225,10 @@ const router = new Router()
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleOneDriveCallback(code);
-      ctx.redirect('http://localhost:5173/settings/backup?connected=onedrive');
+      ctx.redirect('/settings/backup?connected=onedrive');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
-      ctx.redirect(`http://localhost:5173/settings/backup?error=${encodeURIComponent(message)}`);
+      ctx.redirect(`/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
   /**

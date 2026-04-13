@@ -60,7 +60,7 @@ interface OAuthProviderConfig {
 }
 
 function getProviderConfig(provider: BackupProvider): OAuthProviderConfig {
-  const baseUrl = process.env.API_BASE_URL || 'http://localhost:5174';
+  const baseUrl = process.env.APP_URL || 'http://localhost';
 
   switch (provider) {
     case 'google_drive':

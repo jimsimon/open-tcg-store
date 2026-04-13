@@ -3,7 +3,7 @@ import { adminClient, anonymousClient } from 'better-auth/client/plugins';
 import { ac, roles } from './auth';
 
 export const authClient = createAuthClient({
-  baseURL: 'http://localhost:5174',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost',
   plugins: [
     adminClient({
       ac,

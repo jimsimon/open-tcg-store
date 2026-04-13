@@ -3,7 +3,7 @@ import { adminClient, anonymousClient, organizationClient } from 'better-auth/cl
 import { ac, roles } from '../../api/src/lib/permissions';
 
 export const authClient = createAuthClient({
-  baseURL: 'http://localhost:5174',
+  baseURL: typeof process !== 'undefined' ? process.env.APP_URL || 'http://localhost' : window.location.origin,
   plugins: [
     organizationClient({
       ac,

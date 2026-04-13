@@ -170,7 +170,7 @@ describe('backup-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set env vars for OAuth configs
-    process.env.API_BASE_URL = 'http://localhost:5174';
+    process.env.APP_URL = 'http://localhost';
     process.env.GOOGLE_CLIENT_ID = 'google-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'google-client-secret';
     process.env.DROPBOX_APP_KEY = 'dropbox-app-key';

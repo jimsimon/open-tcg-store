@@ -17,6 +17,8 @@ interface ExecutionError {
   path: string[];
 }
 
+const APP_URL = typeof process !== 'undefined' ? process.env.APP_URL || 'http://localhost' : '';
+
 /**
  * Server-side variant of `execute` that forwards explicit headers (e.g. Cookie)
  * to the GraphQL endpoint. Used during SSR where `credentials: 'include'` has
@@ -26,7 +28,7 @@ export async function executeWithHeaders<TResult>(
   query: TypedDocumentString<TResult, Record<string, never>>,
   headers: Record<string, string>,
 ): Promise<ExecutionResult<TResult>> {
-  const response = await fetch('http://localhost:5174/graphql', {
+  const response = await fetch(`${APP_URL}/graphql`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -51,7 +53,7 @@ export async function execute<TResult, TVariables>(
       ? []
       : [TVariables]
 ) {
-  const response = await fetch('http://localhost:5174/graphql', {
+  const response = await fetch(`${APP_URL}/graphql`, {
     method: 'POST',
     credentials: 'include',
     headers: {

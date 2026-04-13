@@ -68,7 +68,7 @@ function requirePermission(resource: string, action: string) {
       fetchOptions: {
         headers: {
           Cookie: (ctx.headers.cookie as string) ?? '',
-          Origin: (ctx.headers.origin as string) ?? 'http://localhost:5173',
+          Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
         },
       },
     });
@@ -162,91 +162,9 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   return next();
 }
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5174';
+const APP_URL = process.env.APP_URL || 'http://localhost';
 
 const router = new Router()
-  // Proxy /api/status to the API server so client-side code can use a relative URL
-  .get('api-status', '/api/status', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/status`);
-      if (!res.ok) {
-        ctx.status = res.status;
-        ctx.body = { databaseUpdating: false };
-        return;
-      }
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { databaseUpdating: false };
-    }
-  })
-  // Proxy /api/users/* to the API server (user management endpoints)
-  .post('/api/users/lookup', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/lookup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
-        body: JSON.stringify(ctx.request.body),
-      });
-      ctx.status = res.status;
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { error: 'API server unavailable' };
-    }
-  })
-  .get('/api/users/:userId/store-memberships', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}/store-memberships`, {
-        headers: { Cookie: ctx.headers.cookie ?? '' },
-      });
-      ctx.status = res.status;
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { error: 'API server unavailable' };
-    }
-  })
-  .get('/api/users/:userId', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(ctx.params.userId)}`, {
-        headers: { Cookie: ctx.headers.cookie ?? '' },
-      });
-      ctx.status = res.status;
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { error: 'API server unavailable' };
-    }
-  })
-  .post('/api/users/store-membership', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/store-membership`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
-        body: JSON.stringify(ctx.request.body),
-      });
-      ctx.status = res.status;
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { error: 'API server unavailable' };
-    }
-  })
-  .post('/api/users/store-membership/remove', async (ctx) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/store-membership/remove`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Cookie: ctx.headers.cookie ?? '' },
-        body: JSON.stringify(ctx.request.body),
-      });
-      ctx.status = res.status;
-      ctx.body = await res.json();
-    } catch {
-      ctx.status = 502;
-      ctx.body = { error: 'API server unavailable' };
-    }
-  })
   .use(async (ctx: RouterContext, next: Next) => {
     if ((await isSetupPending()) && ctx._matchedRouteName !== 'first-time-setup') {
       const redirectUrlOrError = router.url('first-time-setup');
@@ -419,7 +337,7 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
 
 async function isDatabaseUpdating(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/status`);
+    const res = await fetch(`${APP_URL}/api/status`);
     if (!res.ok) return false;
     const data = (await res.json()) as { databaseUpdating: boolean };
     return data.databaseUpdating === true;
