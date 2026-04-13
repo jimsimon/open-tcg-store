@@ -17,8 +17,9 @@ interface ExecutionError {
   path: string[];
 }
 
-const APP_URL = typeof process !== 'undefined' ? process.env.APP_URL || 'http://localhost' : '';
-const API_INTERNAL_URL = typeof process !== 'undefined' ? process.env.API_INTERNAL_URL || 'http://localhost:5174' : '';
+const APP_URL = globalThis.process?.env?.APP_URL || (typeof window === 'undefined' ? 'http://localhost' : '');
+const API_INTERNAL_URL =
+  globalThis.process?.env?.API_INTERNAL_URL || (typeof window === 'undefined' ? 'http://localhost:5174' : '');
 
 /**
  * Server-side variant of `execute` that forwards explicit headers (e.g. Cookie)

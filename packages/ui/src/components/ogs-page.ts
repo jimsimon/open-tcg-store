@@ -467,7 +467,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       }
 
       .color-scheme-selector {
-        max-width: 120px;
+        max-width: 160px;
       }
     `,
   ];
