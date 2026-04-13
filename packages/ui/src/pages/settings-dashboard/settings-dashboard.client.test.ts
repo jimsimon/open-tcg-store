@@ -12,8 +12,8 @@ vi.mock('../../lib/store-context.ts', () => ({
   getActiveStoreId: () => 'test-org-id',
 }));
 
-import './home.client';
-import { HomePage } from './home.client';
+import './settings-dashboard.client';
+import { SettingsDashboardPage } from './settings-dashboard.client';
 import { execute } from '../../lib/graphql.ts';
 
 const mockExecute = execute as ReturnType<typeof vi.fn>;
@@ -99,8 +99,8 @@ function mockEmptyData() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('ogs-home-page', () => {
-  let element: HomePage;
+describe('ogs-settings-dashboard-page', () => {
+  let element: SettingsDashboardPage;
 
   afterEach(() => {
     element?.remove();
@@ -109,7 +109,7 @@ describe('ogs-home-page', () => {
   });
 
   async function createElement() {
-    element = document.createElement('ogs-home-page') as HomePage;
+    element = document.createElement('ogs-settings-dashboard-page') as SettingsDashboardPage;
     element.activeOrganizationId = 'test-org-id';
     document.body.appendChild(element);
     await element.updateComplete;

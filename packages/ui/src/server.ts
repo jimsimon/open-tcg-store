@@ -51,18 +51,14 @@ function getSession(ctx: Context) {
 }
 
 /**
- * Creates middleware that checks if the user has a specific permission
+ * Checks if the current user has a specific permission
  * using authClient.organization.hasPermission, which respects the user's
  * role in their active organization.
  */
-function requirePermission(resource: string, action: string) {
-  return async (ctx: Context, next: Next) => {
-    if (!ctx.state.auth?.user) {
-      ctx.status = 403;
-      ctx.body = 'Forbidden: Authentication required';
-      return;
-    }
+async function hasPermission(ctx: Context, resource: string, action: string): Promise<boolean> {
+  if (!ctx.state.auth?.user) return false;
 
+  try {
     const result = await authClient.organization.hasPermission({
       permissions: { [resource]: [action] },
       fetchOptions: {
@@ -73,13 +69,24 @@ function requirePermission(resource: string, action: string) {
       },
     });
 
-    if (!result.data?.success) {
-      ctx.status = 403;
-      ctx.body = 'Forbidden: Insufficient permissions';
-      return;
+    return result.data?.success === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Creates middleware that requires the user to have a specific permission.
+ * Returns 403 if the user is not authenticated or lacks the permission.
+ */
+function requirePermission(resource: string, action: string) {
+  return async (ctx: Context, next: Next) => {
+    if (await hasPermission(ctx, resource, action)) {
+      return next();
     }
 
-    return next();
+    ctx.status = 403;
+    ctx.body = ctx.state.auth?.user ? 'Forbidden: Insufficient permissions' : 'Forbidden: Authentication required';
   };
 }
 
@@ -187,10 +194,28 @@ const router = new Router()
     }
     return next();
   })
-  .get('dashboard', '/', async (ctx) => {
-    return renderPage(ctx, 'home');
+  .get('root', '/', async (ctx) => {
+    // Owners → settings dashboard; everyone else → product browsing
+    const isOwner = await hasPermission(ctx, 'companySettings', 'read');
+    if (isOwner) {
+      ctx.redirect('/settings-dashboard');
+    } else {
+      ctx.redirect('/products/singles');
+    }
+  })
+  .get('settings-dashboard', '/settings-dashboard', async (ctx) => {
+    if (!(await hasPermission(ctx, 'companySettings', 'read'))) {
+      ctx.status = 403;
+      ctx.body = ctx.state.auth?.user ? 'Forbidden: Insufficient permissions' : 'Forbidden: Authentication required';
+      return;
+    }
+    return renderPage(ctx, 'settings-dashboard');
   })
   .get('first-time-setup', '/first-time-setup', async (ctx) => {
+    if (!(await isSetupPending())) {
+      ctx.redirect('/');
+      return;
+    }
     return renderPage(ctx, 'first-time-setup');
   })
   .get('maintenance', '/maintenance', async (ctx) => {

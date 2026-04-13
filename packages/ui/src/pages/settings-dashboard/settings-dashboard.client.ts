@@ -179,8 +179,8 @@ function formatNumber(value: number | null | undefined): string {
 // Component
 // ---------------------------------------------------------------------------
 
-@customElement('ogs-home-page')
-export class HomePage extends LitElement {
+@customElement('ogs-settings-dashboard-page')
+export class SettingsDashboardPage extends LitElement {
   // --- Server-injected properties ---
   @property({ type: Boolean }) isAnonymous = false;
   @property({ type: String }) userName = '';
