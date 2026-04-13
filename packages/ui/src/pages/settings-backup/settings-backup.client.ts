@@ -561,7 +561,7 @@ export class OgsSettingsBackupPage extends LitElement {
             html`Click "Create Credentials" and select "OAuth client ID".`,
             html`Set the application type to "Web application".`,
             html`Add your redirect URI (e.g.
-              <code>http://localhost:5174/api/backup/oauth/google_drive/callback</code>).`,
+              <code>${window.location.origin}/api/backup/oauth/google_drive/callback</code>).`,
             html`Copy the generated Client ID and paste it below.`,
           ],
         };
@@ -580,7 +580,7 @@ export class OgsSettingsBackupPage extends LitElement {
             html`Choose "Scoped access" and "Full Dropbox" access type.`,
             html`Name your app and click "Create app".`,
             html`Under Settings, add your redirect URI (e.g.
-              <code>http://localhost:5174/api/backup/oauth/dropbox/callback</code>).`,
+              <code>${window.location.origin}/api/backup/oauth/dropbox/callback</code>).`,
             html`Copy the "App key" (this is your Client ID) and paste it below.`,
           ],
         };
@@ -598,7 +598,7 @@ export class OgsSettingsBackupPage extends LitElement {
               and click "New registration".`,
             html`Name your application.`,
             html`Set the redirect URI to "Web" with your callback URL (e.g.
-              <code>http://localhost:5174/api/backup/oauth/onedrive/callback</code>).`,
+              <code>${window.location.origin}/api/backup/oauth/onedrive/callback</code>).`,
             html`After registration, copy the "Application (client) ID" and paste it below.`,
           ],
         };
@@ -609,7 +609,7 @@ export class OgsSettingsBackupPage extends LitElement {
 
   connectProvider(providerKey: ProviderKey) {
     const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
-    window.location.href = `http://localhost:5174/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
+    window.location.href = `/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
   }
 
   render() {
