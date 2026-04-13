@@ -162,7 +162,7 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   return next();
 }
 
-const APP_URL = process.env.APP_URL || 'http://localhost';
+const API_INTERNAL_URL = process.env.API_INTERNAL_URL || 'http://localhost:5174';
 
 const router = new Router()
   .use(async (ctx: RouterContext, next: Next) => {
@@ -337,7 +337,7 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
 
 async function isDatabaseUpdating(): Promise<boolean> {
   try {
-    const res = await fetch(`${APP_URL}/api/status`);
+    const res = await fetch(`${API_INTERNAL_URL}/api/status`);
     if (!res.ok) return false;
     const data = (await res.json()) as { databaseUpdating: boolean };
     return data.databaseUpdating === true;

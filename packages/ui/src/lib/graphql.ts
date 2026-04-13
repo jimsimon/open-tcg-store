@@ -18,6 +18,7 @@ interface ExecutionError {
 }
 
 const APP_URL = typeof process !== 'undefined' ? process.env.APP_URL || 'http://localhost' : '';
+const API_INTERNAL_URL = typeof process !== 'undefined' ? process.env.API_INTERNAL_URL || 'http://localhost:5174' : '';
 
 /**
  * Server-side variant of `execute` that forwards explicit headers (e.g. Cookie)
@@ -28,7 +29,7 @@ export async function executeWithHeaders<TResult>(
   query: TypedDocumentString<TResult, Record<string, never>>,
   headers: Record<string, string>,
 ): Promise<ExecutionResult<TResult>> {
-  const response = await fetch(`${APP_URL}/graphql`, {
+  const response = await fetch(`${API_INTERNAL_URL}/graphql`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
