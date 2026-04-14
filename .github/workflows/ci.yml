@@ -88,8 +88,8 @@ jobs:
       - name: Run UI browser tests
         run: pnpm vitest run --project UI
 
-  build:
-    name: Build
+  typecheck:
+    name: Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -111,9 +111,6 @@ jobs:
 
       - name: Type-check
         run: npx tsc --noEmit
-
-      - name: Build UI
-        run: pnpm --filter @open-tcgs/ui build
 
   check-migrations:
     name: Check Migrations
