@@ -100,7 +100,6 @@ function cleanupTempBackup(tempPath: string): void {
 async function safeRestore(data: Buffer): Promise<void> {
   const tempDir = mkdtempSync(join(tmpdir(), 'otcgs-restore-'));
   const tempPath = join(tempDir, 'restore.sqlite');
-  const preRestoreBackupPath = `${DB_FILE_PATH}.pre-restore`;
 
   try {
     // 1. Write downloaded data to temp file
@@ -118,17 +117,42 @@ async function safeRestore(data: Buffer): Promise<void> {
       tempClient.close();
     }
 
-    // 3. Create a pre-restore backup of the current DB (best-effort)
+    // 3. Create a timestamped pre-restore backup of the current DB (best-effort)
     if (existsSync(DB_FILE_PATH)) {
       try {
+        const preRestoreBackupPath = `${DB_FILE_PATH}.pre-restore-${Date.now()}`;
         copyFileSync(DB_FILE_PATH, preRestoreBackupPath);
       } catch (err) {
         console.warn('Failed to create pre-restore backup:', err);
       }
     }
 
-    // 4. Atomically replace the live DB file
-    renameSync(tempPath, DB_FILE_PATH);
+    // 4. Replace the live DB file. Use rename for atomicity; fall back to
+    //    copy+unlink when the temp dir is on a different filesystem (EXDEV).
+    try {
+      renameSync(tempPath, DB_FILE_PATH);
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+        copyFileSync(tempPath, DB_FILE_PATH);
+        unlinkSync(tempPath);
+      } else {
+        throw err;
+      }
+    }
+
+    // 5. Remove stale WAL/SHM files from the previous database. If the old DB
+    //    was in WAL mode, these companion files could cause SQLite to replay
+    //    the old WAL into the freshly restored database, corrupting it.
+    try {
+      unlinkSync(`${DB_FILE_PATH}-wal`);
+    } catch {
+      /* may not exist */
+    }
+    try {
+      unlinkSync(`${DB_FILE_PATH}-shm`);
+    } catch {
+      /* may not exist */
+    }
   } finally {
     // Clean up temp directory (the file may have been renamed out)
     rmSync(tempDir, { recursive: true, force: true });

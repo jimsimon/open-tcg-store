@@ -36,6 +36,10 @@ export type GraphqlContext = {
 };
 
 const app = new Koa();
+// Trust X-Forwarded-* headers from the reverse proxy (nginx) so ctx.ip
+// returns the real client IP instead of the proxy's address. Required for
+// rate limiting to work correctly per-client.
+app.proxy = true;
 app.use(
   koaCors({
     credentials: true,
@@ -245,6 +249,7 @@ const router = new Router()
   })
   .get('/api/backup/oauth/google_drive/callback', async (ctx: RouterContext) => {
     try {
+      if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
       if (!state || validateOAuthState(state) !== 'google_drive') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
@@ -264,6 +269,7 @@ const router = new Router()
   })
   .get('/api/backup/oauth/dropbox/callback', async (ctx: RouterContext) => {
     try {
+      if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
       if (!state || validateOAuthState(state) !== 'dropbox') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
@@ -283,6 +289,7 @@ const router = new Router()
   })
   .get('/api/backup/oauth/onedrive/callback', async (ctx: RouterContext) => {
     try {
+      if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
       if (!state || validateOAuthState(state) !== 'onedrive') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
