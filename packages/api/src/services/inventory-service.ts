@@ -1,4 +1,4 @@
-import { eq, and, like, sql, inArray, isNull, gt } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
@@ -72,7 +72,7 @@ function buildFilterConditions(organizationId: string, filters?: InventoryFilter
   conditions.push(eq(inventoryItem.organizationId, organizationId));
 
   if (filters?.gameName) {
-    conditions.push(like(category.seoCategoryName, `${filters.gameName.toLowerCase()}%`));
+    conditions.push(likeEscaped(category.seoCategoryName, filters.gameName.toLowerCase(), 'startsWith'));
   }
   if (filters?.setName) {
     conditions.push(eq(group.name, filters.setName));
@@ -1051,10 +1051,10 @@ export async function searchProducts(
   isSingle?: boolean | null,
   isSealed?: boolean | null,
 ): Promise<ProductSearchResult[]> {
-  const conditions: ReturnType<typeof eq>[] = [like(product.name, `%${searchTerm}%`)];
+  const conditions: ReturnType<typeof eq>[] = [likeEscaped(product.name, searchTerm)];
 
   if (game) {
-    conditions.push(like(category.seoCategoryName, `${game.toLowerCase()}%`));
+    conditions.push(likeEscaped(category.seoCategoryName, game.toLowerCase(), 'startsWith'));
   }
 
   // Filter by product type (singles have Rarity or Number extended data; sealed do not)
