@@ -197,8 +197,8 @@ describe('card-service', () => {
       expect(card.inventory![0]!.NM.price).toBe('50000.00');
       expect(card.inventory![0]!.LP.price).toBe('40000.00');
       expect(card.inventory![0]!.MP.price).toBe('25000.00');
-      expect(card.inventory![0]!.HP.price).toBe('15000.00');
-      expect(card.inventory![0]!.D.price).toBe('10000.00');
+      expect(card.inventory![0]!.HP!.price).toBe('15000.00');
+      expect(card.inventory![0]!.D!.price).toBe('10000.00');
       expect(card.inventory![0]!.NM.quantity).toBe(0);
     });
 
@@ -352,10 +352,10 @@ describe('card-service', () => {
 
       expect(cards).toHaveLength(1);
       expect(cards[0].name).toBe('Lightning Bolt');
-      expect(cards[0].inventory![0].NM.quantity).toBe(5);
-      expect(cards[0].inventory![0].NM.price).toBe('9.00');
+      expect(cards[0].inventory![0]!.NM.quantity).toBe(5);
+      expect(cards[0].inventory![0]!.NM.price).toBe('9.00');
       // LP should use fallback: 10 * 0.8 = 8.00
-      expect(cards[0].inventory![0].LP.price).toBe('8.00');
+      expect(cards[0].inventory![0]!.LP.price).toBe('8.00');
     });
 
     it('should return empty array when no products match', async () => {
