@@ -130,7 +130,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
 
   // Wrap the entire order submission in a transaction to prevent race conditions
   // (e.g., two concurrent orders both seeing sufficient stock and overselling)
-  return await otcgs.transaction(async (tx) => {
+  const result = await otcgs.transaction(async (tx) => {
     // 2. Validate inventory availability — check total stock across all non-deleted stock entries
     //    for the parent inventory_item referenced by each cart item
     const insufficientItems: InsufficientItemInfo[] = [];
@@ -277,21 +277,6 @@ export async function submitOrder(organizationId: string, userId: string, custom
     const items = mapOrderItems(insertedOrderItems);
     const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
-    // Log the transaction (outside the DB transaction scope is fine — logging is best-effort)
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'order.created',
-      resourceType: 'order',
-      resourceId: insertedOrder.id,
-      details: {
-        orderNumber,
-        customerName,
-        totalAmount,
-        itemCount: cartItemsWithInventory.length,
-      },
-    });
-
     return {
       order: {
         id: insertedOrder.id,
@@ -307,6 +292,25 @@ export async function submitOrder(organizationId: string, userId: string, custom
       },
     };
   });
+
+  // Log after the transaction commits — best-effort, won't be rolled back with the order
+  if (result.order) {
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'order.created',
+      resourceType: 'order',
+      resourceId: result.order.id,
+      details: {
+        orderNumber: result.order.orderNumber,
+        customerName,
+        totalAmount: result.order.totalAmount,
+        itemCount: result.order.items.length,
+      },
+    });
+  }
+
+  return result;
 }
 
 export async function cancelOrder(

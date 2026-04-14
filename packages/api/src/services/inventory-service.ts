@@ -892,12 +892,12 @@ export async function bulkUpdateStock(
     return results;
   }
 
-  // Simple bulk update — only update stock that belongs to this organization
+  // Simple bulk update — only proceed if ALL stock entries belong to this organization
   const updates: Record<string, unknown> = { updatedBy: userId, updatedAt: now };
   if (input.quantity != null) updates.quantity = input.quantity;
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
-  // Verify all stock entries belong to this organization before updating
+  // Verify all stock entries belong to this organization before updating (strict all-or-nothing)
   const validStockIds = await otcgs
     .select({ id: inventoryItemStock.id })
     .from(inventoryItemStock)
@@ -905,7 +905,9 @@ export async function bulkUpdateStock(
     .where(and(inArray(inventoryItemStock.id, input.ids), eq(inventoryItem.organizationId, organizationId)));
 
   const validIds = validStockIds.map((r) => r.id);
-  if (validIds.length === 0) throw new Error('No valid stock entries found');
+  if (validIds.length !== input.ids.length) {
+    throw new Error('One or more stock entries not found or do not belong to this organization');
+  }
 
   await otcgs.update(inventoryItemStock).set(updates).where(inArray(inventoryItemStock.id, validIds));
 
@@ -943,7 +945,7 @@ export async function bulkUpdateStock(
 export async function bulkDeleteStock(ids: number[], organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
 
-  // Verify all stock entries belong to this organization before deleting
+  // Verify all stock entries belong to this organization before deleting (strict all-or-nothing)
   const validStockIds = await otcgs
     .select({ id: inventoryItemStock.id })
     .from(inventoryItemStock)
@@ -951,7 +953,9 @@ export async function bulkDeleteStock(ids: number[], organizationId: string, use
     .where(and(inArray(inventoryItemStock.id, ids), eq(inventoryItem.organizationId, organizationId)));
 
   const validIds = validStockIds.map((r) => r.id);
-  if (validIds.length === 0) throw new Error('No valid stock entries found');
+  if (validIds.length !== ids.length) {
+    throw new Error('One or more stock entries not found or do not belong to this organization');
+  }
 
   await otcgs
     .update(inventoryItemStock)
