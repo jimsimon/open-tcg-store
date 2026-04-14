@@ -1,119 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
-// Mocks for isSetupPending
+// Mocks
 // ---------------------------------------------------------------------------
 
-const mockOtcgs = vi.hoisted(() => {
-  const mock = {
-    select: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
-      // The tx object delegates to the same mocks so existing test setups work
-      const tx = {
-        select: (...args: unknown[]) => mock.select(...args),
-        insert: (...args: unknown[]) => mock.insert(...args),
-        update: (...args: unknown[]) => mock.update(...args),
-        delete: (...args: unknown[]) => mock.delete(...args),
-      };
-      return fn(tx);
-    }),
-  };
-  return mock;
-});
-
-vi.mock('../../../db', () => ({
-  otcgs: mockOtcgs,
+const { mockIsSetupPending, mockPerformFirstTimeSetup } = vi.hoisted(() => ({
+  mockIsSetupPending: vi.fn(),
+  mockPerformFirstTimeSetup: vi.fn(),
 }));
 
-vi.mock('../../../db/otcgs/schema', () => ({
-  user: {
-    id: 'user.id',
-    isAnonymous: 'user.is_anonymous',
-  },
+vi.mock('../../../services/setup-service', () => ({
+  isSetupPending: mockIsSetupPending,
+  performFirstTimeSetup: mockPerformFirstTimeSetup,
 }));
-
-vi.mock('drizzle-orm', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('drizzle-orm')>();
-  return {
-    ...actual,
-    count: vi.fn(() => 'count(*)'),
-    or: vi.fn((...args: unknown[]) => ({ type: 'or', args })),
-    eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
-    isNull: vi.fn((...args: unknown[]) => ({ type: 'isNull', args })),
-    sql: vi.fn((..._args: unknown[]) => ({ type: 'sql' })),
-  };
-});
-
-// ---------------------------------------------------------------------------
-// Mocks for firstTimeSetup
-// ---------------------------------------------------------------------------
-
-const mockAuth = vi.hoisted(() => ({
-  api: {
-    signUpEmail: vi.fn(),
-    signInEmail: vi.fn(),
-    createOrganization: vi.fn(),
-    setActiveOrganization: vi.fn(),
-  },
-}));
-
-vi.mock('../../../auth', () => ({
-  auth: mockAuth,
-}));
-
-vi.mock('better-auth/node', () => ({
-  fromNodeHeaders: vi.fn((headers: unknown) => headers),
-}));
-
-vi.mock('../../../db/index', () => ({
-  otcgs: mockOtcgs,
-}));
-
-vi.mock('../../../db/otcgs/company-settings-schema', () => ({
-  companySettings: {
-    id: 'company_settings.id',
-    companyName: 'company_settings.company_name',
-    ein: 'company_settings.ein',
-  },
-}));
-
-vi.mock('../../../db/otcgs/store-supported-game-schema', () => ({
-  storeSupportedGame: {
-    id: 'store_supported_game.id',
-    categoryId: 'store_supported_game.category_id',
-  },
-}));
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function chainable(rows: unknown[] = []) {
-  const chain = Object.assign(Promise.resolve(rows), {} as Record<string, unknown>);
-  for (const method of [
-    'select',
-    'from',
-    'where',
-    'limit',
-    'insert',
-    'update',
-    'delete',
-    'set',
-    'values',
-    'returning',
-    'onConflictDoUpdate',
-  ]) {
-    chain[method] = vi.fn().mockReturnValue(chain);
-  }
-  return chain;
-}
-
-// ---------------------------------------------------------------------------
-// Import after mocks
-// ---------------------------------------------------------------------------
 
 import { isSetupPending as _isSetupPending } from './Query/isSetupPending';
 import { firstTimeSetup as _firstTimeSetup } from './Mutation/firstTimeSetup';
@@ -123,261 +22,101 @@ const firstTimeSetup = _firstTimeSetup as (...args: unknown[]) => Promise<unknow
 
 function ctx() {
   return {
-    auth: { user: { id: 'user-1' }, session: {} },
-    req: { headers: { 'content-type': 'application/json' } },
+    auth: { user: { id: 'user-1' }, session: { activeOrganizationId: 'org-1' } },
+    req: { headers: {} },
     res: { append: vi.fn() },
   };
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('setup resolvers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  // -----------------------------------------------------------------------
+  // isSetupPending
+  // -----------------------------------------------------------------------
+
   describe('isSetupPending', () => {
-    it('should return true when no non-anonymous users exist', async () => {
-      const selectChain = chainable([{ count: 0 }]);
-      mockOtcgs.select.mockReturnValue(selectChain);
-
+    it('should return true when no users exist', async () => {
+      mockIsSetupPending.mockResolvedValue(true);
       const result = await isSetupPending(null, {}, ctx());
-
       expect(result).toBe(true);
+      expect(mockIsSetupPending).toHaveBeenCalled();
     });
 
-    it('should return false when non-anonymous users exist', async () => {
-      const selectChain = chainable([{ count: 3 }]);
-      mockOtcgs.select.mockReturnValue(selectChain);
-
+    it('should return false when users exist', async () => {
+      mockIsSetupPending.mockResolvedValue(false);
       const result = await isSetupPending(null, {}, ctx());
-
       expect(result).toBe(false);
     });
   });
 
+  // -----------------------------------------------------------------------
+  // firstTimeSetup
+  // -----------------------------------------------------------------------
+
   describe('firstTimeSetup', () => {
-    // Every firstTimeSetup test must mock the guard transaction which:
-    // 1. Checks user count (select) — return 0 to allow setup
-    // 2. Inserts company settings (insert)
-    // The rollback path also calls delete, so set up a default delete mock.
-    beforeEach(() => {
-      const guardChain = chainable([{ count: 0 }]);
-      const insertChain = chainable([]);
-      const deleteChain = chainable([]);
-      mockOtcgs.select.mockReturnValue(guardChain);
-      mockOtcgs.insert.mockReturnValue(insertChain);
-      mockOtcgs.delete.mockReturnValue(deleteChain);
+    const setupArgs = {
+      userDetails: { email: 'admin@test.com', password: 'password123!', firstName: 'Admin' },
+      company: { companyName: 'Test Store', ein: '12-3456789' },
+      store: {
+        name: 'Test Store',
+        slug: 'test-store',
+        street1: '123 Main St',
+        street2: null,
+        city: 'Springfield',
+        state: 'IL',
+        zip: '62701',
+        phone: null,
+      },
+      supportedGameCategoryIds: [1, 2],
+    };
+
+    it('should delegate to performFirstTimeSetup and return token', async () => {
+      mockPerformFirstTimeSetup.mockResolvedValue('session-token-123');
+
+      const result = await firstTimeSetup(null, setupArgs, ctx());
+
+      expect(result).toBe('session-token-123');
+      expect(mockPerformFirstTimeSetup).toHaveBeenCalledWith(
+        setupArgs.userDetails,
+        setupArgs.company,
+        setupArgs.store,
+        setupArgs.supportedGameCategoryIds,
+        expect.anything(), // req
+        expect.any(Function), // setCookie callback
+      );
     });
 
-    it('should create user, save settings, create org, and return token', async () => {
-      // Mock signUpEmail response
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ user: { id: 'new-user-id' }, token: 'session-token' }),
-        headers: {
-          getSetCookie: vi.fn().mockReturnValue(['session=abc123']),
+    it('should propagate errors from the service', async () => {
+      mockPerformFirstTimeSetup.mockRejectedValue(new Error('Setup has already been completed.'));
+
+      await expect(firstTimeSetup(null, setupArgs, ctx())).rejects.toThrow('Setup has already been completed.');
+    });
+
+    it('should pass a setCookie callback that calls ctx.res.append', async () => {
+      let capturedSetCookie: ((cookie: string) => void) | undefined;
+      mockPerformFirstTimeSetup.mockImplementation(
+        async (
+          _user: unknown,
+          _company: unknown,
+          _store: unknown,
+          _games: unknown,
+          _req: unknown,
+          setCookie: (cookie: string) => void,
+        ) => {
+          capturedSetCookie = setCookie;
+          return 'token';
         },
-      });
+      );
 
-      // Mock update and insert for DB operations
-      const updateChain = chainable([]);
-      const insertChain = chainable([]);
-      mockOtcgs.update.mockReturnValue(updateChain);
-      mockOtcgs.insert.mockReturnValue(insertChain);
+      const context = ctx();
+      await firstTimeSetup(null, setupArgs, context);
 
-      // Mock createOrganization
-      mockAuth.api.createOrganization.mockResolvedValue({ id: 'org-1' });
-      mockAuth.api.setActiveOrganization.mockResolvedValue({});
-
-      // Mock signInEmail response (fresh session after setup)
-      mockAuth.api.signInEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ token: 'session-token' }),
-        headers: {
-          getSetCookie: vi.fn().mockReturnValue(['session=fresh123']),
-        },
-      });
-
-      const args = {
-        userDetails: { email: 'admin@test.com', password: 'password123', firstName: 'Admin' },
-        company: { companyName: 'Test Corp', ein: '12-3456789' },
-        store: {
-          name: 'Main Store',
-          slug: 'main-store',
-          street1: '123 Main',
-          city: 'Chicago',
-          state: 'IL',
-          zip: '60601',
-        },
-        supportedGameCategoryIds: [1, 3],
-      };
-
-      const result = await firstTimeSetup(null, args, ctx());
-
-      expect(result).toBe('session-token');
-      expect(mockAuth.api.signUpEmail).toHaveBeenCalled();
-      expect(mockAuth.api.createOrganization).toHaveBeenCalled();
-      expect(mockAuth.api.setActiveOrganization).toHaveBeenCalled();
-      expect(mockAuth.api.signInEmail).toHaveBeenCalled();
-    });
-
-    it('should throw when signup fails', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: false,
-        json: vi.fn().mockResolvedValue({ message: 'Email already exists' }),
-        headers: { getSetCookie: vi.fn().mockReturnValue([]) },
-      });
-
-      const args = {
-        userDetails: { email: 'admin@test.com', password: 'password123', firstName: 'Admin' },
-        company: { companyName: 'Test Corp', ein: '12-3456789' },
-        store: {
-          name: 'Main Store',
-          slug: 'main-store',
-          street1: '123 Main',
-          city: 'Chicago',
-          state: 'IL',
-          zip: '60601',
-        },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Email already exists');
-    });
-
-    it('should rollback user on subsequent failure', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ user: { id: 'new-user-id' }, token: 'token' }),
-        headers: { getSetCookie: vi.fn().mockReturnValue(['session=abc123']) },
-      });
-
-      const updateChain = chainable([]);
-      mockOtcgs.update.mockReturnValue(updateChain);
-
-      // Insert (store settings) succeeds, but createOrganization fails
-      const insertChain = chainable([]);
-      mockOtcgs.insert.mockReturnValue(insertChain);
-      mockAuth.api.createOrganization.mockRejectedValue(new Error('Org creation failed'));
-
-      // Delete for rollback
-      const deleteChain = chainable([]);
-      mockOtcgs.delete.mockReturnValue(deleteChain);
-
-      const args = {
-        userDetails: { email: 'admin@test.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Org creation failed');
-      // Should have attempted to delete the user
-      expect(mockOtcgs.delete).toHaveBeenCalled();
-    });
-
-    it('should throw when signup returns no user id (line 38)', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ user: {}, token: 'token' }),
-        headers: { getSetCookie: vi.fn().mockReturnValue([]) },
-      });
-
-      const args = {
-        userDetails: { email: 'a@b.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Failed to create user account');
-    });
-
-    it('should throw when createOrganization returns null (line 89)', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ user: { id: 'user-1' }, token: 'token' }),
-        headers: { getSetCookie: vi.fn().mockReturnValue(['session=abc123']) },
-      });
-
-      const updateChain = chainable([]);
-      const insertChain = chainable([]);
-      mockOtcgs.update.mockReturnValue(updateChain);
-      mockOtcgs.insert.mockReturnValue(insertChain);
-
-      // createOrganization returns null
-      mockAuth.api.createOrganization.mockResolvedValue(null);
-
-      const deleteChain = chainable([]);
-      mockOtcgs.delete.mockReturnValue(deleteChain);
-
-      const args = {
-        userDetails: { email: 'a@b.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Failed to create organization');
-    });
-
-    it('should handle cleanup error during rollback (line 112)', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ user: { id: 'user-1' }, token: 'token' }),
-        headers: { getSetCookie: vi.fn().mockReturnValue(['session=abc123']) },
-      });
-
-      const updateChain = chainable([]);
-      mockOtcgs.update.mockReturnValue(updateChain);
-
-      const insertChain = chainable([]);
-      mockOtcgs.insert.mockReturnValue(insertChain);
-
-      mockAuth.api.createOrganization.mockRejectedValue(new Error('Org failed'));
-
-      // Delete (rollback) also fails
-      const failDeleteChain = Object.assign(Promise.reject(new Error('Delete failed')), {} as Record<string, unknown>);
-      failDeleteChain.where = vi.fn().mockReturnValue(failDeleteChain);
-      failDeleteChain.delete = vi.fn().mockReturnValue(failDeleteChain);
-      failDeleteChain.from = vi.fn().mockReturnValue(failDeleteChain);
-      mockOtcgs.delete.mockReturnValue(failDeleteChain);
-
-      const args = {
-        userDetails: { email: 'a@b.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      // Should still throw the original error, not the cleanup error
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Org failed');
-    });
-
-    it('should use default error message for non-Error throws', async () => {
-      mockAuth.api.signUpEmail.mockRejectedValue('string error');
-
-      const args = {
-        userDetails: { email: 'a@b.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('An unexpected error occurred during setup');
-    });
-
-    it('should handle signup failure without error message (default message)', async () => {
-      mockAuth.api.signUpEmail.mockResolvedValue({
-        ok: false,
-        json: vi.fn().mockResolvedValue({}),
-        headers: { getSetCookie: vi.fn().mockReturnValue([]) },
-      });
-
-      const args = {
-        userDetails: { email: 'a@b.com', password: 'pass', firstName: 'Admin' },
-        company: { companyName: 'Corp', ein: '00-0000000' },
-        store: { name: 'Store', slug: 'store', street1: '1 St', city: 'C', state: 'IL', zip: '60601' },
-      };
-
-      await expect(firstTimeSetup(null, args, ctx())).rejects.toThrow('Failed to create user account');
+      // Verify the setCookie callback forwards to ctx.res.append
+      capturedSetCookie!('session=abc123; Path=/');
+      expect(context.res.append).toHaveBeenCalledWith('Set-Cookie', 'session=abc123; Path=/');
     });
   });
 });
