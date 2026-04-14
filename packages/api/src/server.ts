@@ -330,7 +330,11 @@ const router = new Router()
   .post('/api/users/store-membership', async (ctx: RouterContext) => {
     const session = await requireUserManagementUpdate(ctx);
     if (!session) return;
-    const body = ctx.request.body as { userId?: string; organizationId?: string; role?: string };
+    const body = ctx.request.body as {
+      userId?: string;
+      organizationId?: string;
+      role?: 'owner' | 'manager' | 'member';
+    };
     const { userId, organizationId, role } = body;
     if (!userId || !organizationId || !role) {
       ctx.status = 400;

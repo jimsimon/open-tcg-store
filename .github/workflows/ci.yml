@@ -109,8 +109,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build API
-        run: pnpm --filter @open-tcgs/api build
+      - name: Type-check
+        run: npx tsc --noEmit
 
       - name: Build UI
         run: pnpm --filter @open-tcgs/ui build

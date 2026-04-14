@@ -351,7 +351,7 @@ describe('order-service', () => {
     it('should return error when order not found', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue(null);
 
-      const result = await cancelOrder(999);
+      const result = await cancelOrder(999, 'org-1', 'user-1');
 
       expect(result.error).toBe('Order not found');
     });
@@ -363,7 +363,7 @@ describe('order-service', () => {
         orderItems: [],
       });
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.error).toBe('Order is already cancelled');
     });
@@ -396,7 +396,7 @@ describe('order-service', () => {
       const stockLookupChain = chainable([{ id: 10, deletedAt: null }]);
       mockOtcgs.select.mockImplementation(() => stockLookupChain);
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.error).toBeUndefined();
       expect(result.order).toBeDefined();
@@ -433,7 +433,7 @@ describe('order-service', () => {
       const stockLookupChain = chainable([{ id: 10, deletedAt: new Date() }]);
       mockOtcgs.select.mockImplementation(() => stockLookupChain);
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.order).toBeDefined();
       expect(result.order!.status).toBe('cancelled');
@@ -475,7 +475,7 @@ describe('order-service', () => {
         return chainable([]);
       });
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.order).toBeDefined();
       expect(result.order!.status).toBe('cancelled');
@@ -509,7 +509,7 @@ describe('order-service', () => {
       const existingStockChain = chainable([{ id: 50, deletedAt: null }]);
       mockOtcgs.select.mockImplementation(() => existingStockChain);
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.order).toBeDefined();
       expect(result.order!.status).toBe('cancelled');
@@ -550,7 +550,7 @@ describe('order-service', () => {
         return chainable([]);
       });
 
-      const result = await cancelOrder(1);
+      const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.order).toBeDefined();
       expect(result.order!.status).toBe('cancelled');
@@ -562,7 +562,7 @@ describe('order-service', () => {
   // -----------------------------------------------------------------------
   describe('updateOrderStatus', () => {
     it('should return error for invalid status', async () => {
-      const result = await updateOrderStatus(1, 'shipped');
+      const result = await updateOrderStatus(1, 'shipped', 'org-1', 'user-1');
 
       expect(result.error).toBe('Invalid status "shipped". Valid statuses: open, completed');
     });
@@ -570,7 +570,7 @@ describe('order-service', () => {
     it('should return error when order not found', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue(null);
 
-      const result = await updateOrderStatus(1, 'completed');
+      const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
 
       expect(result.error).toBe('Order not found');
     });
@@ -582,7 +582,7 @@ describe('order-service', () => {
         orderItems: [],
       });
 
-      const result = await updateOrderStatus(1, 'completed');
+      const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
 
       expect(result.error).toBe('Cannot change status of a cancelled order');
     });
@@ -594,7 +594,7 @@ describe('order-service', () => {
         orderItems: [],
       });
 
-      const result = await updateOrderStatus(1, 'open');
+      const result = await updateOrderStatus(1, 'open', 'org-1', 'user-1');
 
       expect(result.error).toBe('Order is already open');
     });
@@ -621,7 +621,7 @@ describe('order-service', () => {
         ],
       });
 
-      const result = await updateOrderStatus(1, 'completed');
+      const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
 
       expect(result.error).toBeUndefined();
       expect(result.order).toBeDefined();

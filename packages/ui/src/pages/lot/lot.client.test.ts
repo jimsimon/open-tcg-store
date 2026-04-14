@@ -123,7 +123,16 @@ interface ItemLike {
   marketPrice?: number;
   searching?: boolean;
   searchTerm?: string;
-  searchResults?: unknown[];
+  searchResults?: Array<{
+    id: number;
+    name: string;
+    gameName: string;
+    setName: string;
+    rarity: string | null;
+    isSingle: boolean;
+    isSealed: boolean;
+    marketPrice: number;
+  }>;
 }
 
 let clientIdSeq = 0;
@@ -154,7 +163,7 @@ function makeItem(overrides: ItemLike = {}): Required<ItemLike> {
  * This mirrors what `selectProduct`, `updateItemField`, and the amountPaid input do.
  */
 function recalculate(el: LotPageInternal) {
-  el.recalculateAutoCosts();
+  el['recalculateAutoCosts']();
 }
 
 // ---------------------------------------------------------------------------
@@ -436,7 +445,7 @@ describe('ogs-lot-page', () => {
       const item = element.singlesItems[0];
       expect(item.costOverridden).toBe(false);
 
-      element.overrideCost(item.clientId, true, 5.0);
+      element['overrideCost'](item.clientId, true, 5.0);
       await element.updateComplete;
 
       const itemAfterInput = element.singlesItems[0];
@@ -451,7 +460,7 @@ describe('ogs-lot-page', () => {
 
     test('should show reset button when cost is overridden', async () => {
       const item = element.singlesItems[0];
-      element.overrideCost(item.clientId, true, 5.0);
+      element['overrideCost'](item.clientId, true, 5.0);
       await element.updateComplete;
 
       const resetBtn = element.shadowRoot!.querySelector('.reset-btn');
@@ -460,7 +469,7 @@ describe('ogs-lot-page', () => {
 
     test('should clear override when reset button is clicked', async () => {
       const item = element.singlesItems[0];
-      element.overrideCost(item.clientId, true, 5.0);
+      element['overrideCost'](item.clientId, true, 5.0);
       await element.updateComplete;
 
       expect(element.singlesItems[0].costOverridden).toBe(true);
@@ -710,7 +719,7 @@ describe('ogs-lot-page', () => {
       expect(element.singlesItems[0].costBasis).toBe(10);
       expect(element.singlesItems[1].costBasis).toBe(10);
 
-      element.overrideCost(item1.clientId, true, 6);
+      element['overrideCost'](item1.clientId, true, 6);
 
       expect(element.singlesItems[0].costBasis).toBe(6);
       expect(element.singlesItems[0].costOverridden).toBe(true);
@@ -730,7 +739,7 @@ describe('ogs-lot-page', () => {
 
       expect(element.singlesItems[1].costBasis).toBe(14);
 
-      element.resetCost(item1.clientId, true);
+      element['resetCost'](item1.clientId, true);
 
       expect(element.singlesItems[0].costOverridden).toBe(false);
       expect(element.singlesItems[0].costBasis).toBe(10);
