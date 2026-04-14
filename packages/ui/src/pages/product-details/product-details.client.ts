@@ -105,21 +105,35 @@ const GetProductQuery = new TypedDocumentString(`
 
 // --- HTML Sanitization ---
 
-/** Sanitize HTML to only allow safe formatting tags */
+const ALLOWED_TAGS = new Set(['br', 'em', 'strong', 'i', 'b', 'p', 'span']);
+
+/**
+ * Sanitize HTML using the browser's native DOM parser instead of regex.
+ * Only allows safe formatting tags (no attributes, no scripts, no event handlers).
+ * Regex-based sanitizers are bypassable with malformed nesting — the DOM parser
+ * handles all edge cases correctly.
+ */
 function sanitizeHtml(html: string): string {
-  const allowedTags = ['br', 'em', 'strong', 'i', 'b', 'p', 'span'];
-  // Remove all tags except allowed ones
-  return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/gi, (match, tag) => {
-    if (allowedTags.includes(tag.toLowerCase())) {
-      // For allowed tags, only keep the tag name (strip attributes)
-      const isClosing = match.startsWith('</');
-      const isSelfClosing = match.endsWith('/>');
-      if (isClosing) return `</${tag.toLowerCase()}>`;
-      if (isSelfClosing) return `<${tag.toLowerCase()} />`;
-      return `<${tag.toLowerCase()}>`;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  function walk(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent ?? '';
     }
-    return ''; // Strip disallowed tags
-  });
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const tag = el.tagName.toLowerCase();
+      const childContent = Array.from(el.childNodes).map(walk).join('');
+      if (ALLOWED_TAGS.has(tag)) {
+        return tag === 'br' ? '<br>' : `<${tag}>${childContent}</${tag}>`;
+      }
+      // Disallowed tag — keep text content, strip the tag
+      return childContent;
+    }
+    return '';
+  }
+
+  return Array.from(doc.body.childNodes).map(walk).join('');
 }
 
 // --- Component ---

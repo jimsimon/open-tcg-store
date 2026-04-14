@@ -18,6 +18,8 @@ export const auth = betterAuth({
   trustedOrigins: (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost').split(','),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
   },
   databaseHooks: {
     session: {

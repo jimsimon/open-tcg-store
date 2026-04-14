@@ -60,6 +60,51 @@ app.use(async (ctx, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// CSRF protection — validate Origin header on state-changing requests
+// ---------------------------------------------------------------------------
+const allowedOrigins = new Set(
+  (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost').split(',').map((o) => o.trim()),
+);
+
+app.use(async (ctx, next) => {
+  // Only validate POST/PUT/PATCH/DELETE — safe methods (GET, HEAD, OPTIONS) are exempt
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(ctx.method)) {
+    const origin = ctx.get('Origin');
+    if (origin) {
+      // Origin header present — must match an allowed origin
+      if (!allowedOrigins.has(origin)) {
+        ctx.status = 403;
+        ctx.body = { error: 'Forbidden: Origin not allowed' };
+        return;
+      }
+    } else {
+      // Origin absent — fall back to Referer header. HTML form POSTs may omit
+      // Origin in some browsers, so we check Referer to prevent cross-origin
+      // form submissions carrying the user's session cookie.
+      const referer = ctx.get('Referer');
+      if (referer) {
+        try {
+          const refererOrigin = new URL(referer).origin;
+          if (!allowedOrigins.has(refererOrigin)) {
+            ctx.status = 403;
+            ctx.body = { error: 'Forbidden: Origin not allowed' };
+            return;
+          }
+        } catch {
+          // Malformed Referer — block the request
+          ctx.status = 403;
+          ctx.body = { error: 'Forbidden: Invalid Referer' };
+          return;
+        }
+      }
+      // If neither Origin nor Referer is present, allow — this happens for
+      // same-origin requests in privacy-focused browsers and direct API calls.
+    }
+  }
+  return next();
+});
+
+// ---------------------------------------------------------------------------
 // Rate limiting
 // ---------------------------------------------------------------------------
 

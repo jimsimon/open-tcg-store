@@ -37,6 +37,14 @@ jobs:
       - name: Format
         run: pnpm format:check
 
+      - name: Check GraphQL codegen freshness
+        run: |
+          pnpm graphql:generate
+          if ! git diff --exit-code packages/api/src/schema/ packages/ui/src/graphql/; then
+            echo "::error::Generated GraphQL types are stale. Run 'pnpm graphql:generate' and commit the results."
+            exit 1
+          fi
+
   test:
     name: API Tests & Coverage
     runs-on: ubuntu-latest

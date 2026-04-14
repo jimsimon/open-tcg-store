@@ -33,13 +33,26 @@ function chainable(rows: unknown[] = []) {
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockOtcgs = vi.hoisted(() => ({
-  select: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-  all: vi.fn(),
-}));
+const mockOtcgs = vi.hoisted(() => {
+  const mock = {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    all: vi.fn(),
+    transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        select: (...args: unknown[]) => mock.select(...args),
+        insert: (...args: unknown[]) => mock.insert(...args),
+        update: (...args: unknown[]) => mock.update(...args),
+        delete: (...args: unknown[]) => mock.delete(...args),
+        all: (...args: unknown[]) => mock.all(...args),
+      };
+      return fn(tx);
+    }),
+  };
+  return mock;
+});
 
 const mockAuth = vi.hoisted(() => ({
   api: {

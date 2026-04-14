@@ -1,7 +1,9 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { user } from './auth-schema';
+import { inventoryItem } from './inventory-schema';
 import { inventoryItemStock } from './inventory-stock-schema';
+import { lot } from './lot-schema';
 
 export const order = sqliteTable(
   'order',
@@ -60,6 +62,16 @@ export const orderItem = sqliteTable(
       columns: [table.inventoryItemStockId],
       foreignColumns: [inventoryItemStock.id],
       name: 'order_item_stock_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.inventoryItemId],
+      foreignColumns: [inventoryItem.id],
+      name: 'order_item_inventory_item_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.lotId],
+      foreignColumns: [lot.id],
+      name: 'order_item_lot_id_fkey',
     }),
   ],
 );

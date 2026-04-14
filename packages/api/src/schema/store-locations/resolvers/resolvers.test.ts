@@ -26,6 +26,7 @@ const {
 
 vi.mock('../../../lib/assert-permission', () => ({
   assertPermission: mockAssertPermission,
+  assertAuthenticated: vi.fn(),
   getUserId: mockGetUserId,
 }));
 

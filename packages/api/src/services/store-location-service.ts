@@ -303,20 +303,25 @@ export async function updateStoreLocation(
  * organization remains before deleting.
  */
 export async function removeStoreLocation(id: string, headers: Record<string, string>): Promise<boolean> {
-  // Ensure at least one organization remains
-  const countResult = await otcgs.all<{ count: number }>(sql`SELECT COUNT(*) as count FROM organization`);
-  if (countResult[0].count <= 1) {
-    throw new Error('Cannot remove the last store location. At least one must remain.');
-  }
+  // Atomically check that at least one org remains before proceeding.
+  // This prevents a TOCTOU race where two concurrent deletions both see count > 1.
+  await otcgs.transaction(async (tx) => {
+    const countResult = await tx.all<{ count: number }>(sql`SELECT COUNT(*) as count FROM organization`);
+    if (countResult[0].count <= 1) {
+      throw new Error('Cannot remove the last store location. At least one must remain.');
+    }
+  });
 
-  // Delete store hours explicitly (CASCADE should handle it, but be explicit)
-  await otcgs.delete(storeHours).where(eq(storeHours.organizationId, id));
-
-  // Delete the organization via better-auth
+  // Delete the organization first (irreversible external call via better-auth).
+  // If this fails, no data has been modified and the operation is safely retryable.
   await auth.api.deleteOrganization({
     body: { organizationId: id },
     headers,
   });
+
+  // Clean up store hours after org deletion. If this fails, the orphaned hours
+  // are harmless — the org they reference no longer exists.
+  await otcgs.delete(storeHours).where(eq(storeHours.organizationId, id));
 
   return true;
 }
