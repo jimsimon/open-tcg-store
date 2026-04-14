@@ -1,4 +1,5 @@
 import { otcgs } from '../../../../db';
+import { escapeLikeWildcards } from '../../../../lib/sql-utils';
 import type { QueryResolvers } from '../../../types.generated';
 
 export const getSets: NonNullable<QueryResolvers['getSets']> = async (_parent, { game, filters }, _ctx) => {
@@ -22,7 +23,7 @@ export const getSets: NonNullable<QueryResolvers['getSets']> = async (_parent, {
       and(
         eq(group.categoryId, categoryId),
         filters?.searchTerm && filters.searchTerm.trim().length > 0
-          ? like(sql`lower(${group.name})`, `%${filters.searchTerm.toLowerCase()}%`)
+          ? like(sql`lower(${group.name})`, `%${escapeLikeWildcards(filters.searchTerm.toLowerCase())}%`)
           : undefined,
       ),
     orderBy: (group, { asc }) => asc(group.name),

@@ -4,6 +4,7 @@ import { productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
+import { escapeLikeWildcards } from '../../../../lib/sql-utils';
 import type { GraphqlContext } from '../../../../server';
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from '../../../types.generated';
 
@@ -59,7 +60,7 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
       and(
         eq(product.categoryId, categoryId),
         filters?.searchTerm && filters.searchTerm.trim().length > 0
-          ? like(sql`lower(${product.name})`, `%${filters.searchTerm.toLowerCase()}%`)
+          ? like(sql`lower(${product.name})`, `%${escapeLikeWildcards(filters.searchTerm.toLowerCase())}%`)
           : undefined,
         filters?.setCode ? eq(product.groupId, parseInt(filters.setCode, 10)) : undefined,
         // Product type filtering: singles vs sealed

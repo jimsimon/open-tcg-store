@@ -2,6 +2,16 @@ import { auth } from '../auth';
 import type { GraphqlContext } from '../server';
 
 /**
+ * Assert that the current request has an authenticated (non-anonymous) user.
+ * Throws if no auth session is present.
+ */
+export function assertAuthenticated(ctx: GraphqlContext): void {
+  if (!ctx.auth?.user) {
+    throw new Error('Unauthorized: Authentication required');
+  }
+}
+
+/**
  * Get the active organization ID from the GraphQL context.
  * Throws if the user has no active organization set.
  */

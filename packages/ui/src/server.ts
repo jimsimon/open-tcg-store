@@ -357,19 +357,45 @@ async function renderPage(ctx: RouterContext, pageDirectory: string) {
   ctx.body = renderShellTemplate(pageDirectory, await pageTemplate(ctx));
 }
 
+// Cache for isDatabaseUpdating — short TTL since updates are brief but we
+// don't want to hit the API on every single page navigation.
+let dbUpdatingCache: { value: boolean; expiresAt: number } | null = null;
+const DB_UPDATING_TTL_MS = 2_000; // 2 seconds
+
 async function isDatabaseUpdating(): Promise<boolean> {
+  const now = Date.now();
+  if (dbUpdatingCache && now < dbUpdatingCache.expiresAt) {
+    return dbUpdatingCache.value;
+  }
   try {
     const res = await fetch(`${API_INTERNAL_URL}/api/status`);
     if (!res.ok) return false;
     const data = (await res.json()) as { databaseUpdating: boolean };
-    return data.databaseUpdating === true;
+    const value = data.databaseUpdating === true;
+    dbUpdatingCache = { value, expiresAt: now + DB_UPDATING_TTL_MS };
+    return value;
   } catch {
     // If the API is unreachable, don't block the UI with a maintenance page
     return false;
   }
 }
 
+// Cache for isSetupPending — once setup is complete, it stays complete forever.
+// We cache `false` (setup done) indefinitely but re-check `true` (setup pending)
+// periodically in case setup just completed.
+let setupPendingCache: { value: boolean; expiresAt: number } | null = null;
+const SETUP_PENDING_TTL_MS = 30_000; // 30 seconds when pending
+/** Call this to invalidate the setup cache after first-time-setup completes */
+export function invalidateSetupCache(): void {
+  setupPendingCache = null;
+}
+
 async function isSetupPending() {
+  const now = Date.now();
+  if (setupPendingCache && now < setupPendingCache.expiresAt) {
+    return setupPendingCache.value;
+  }
+
   try {
     const IsSetupPendingQuery = graphql(`
       query IsSetupPending {
@@ -381,12 +407,17 @@ async function isSetupPending() {
 
     if (result?.errors?.length) {
       console.error('isSetupPending query errors:', JSON.stringify(result.errors));
-      // If we can't determine setup status, assume it IS pending (safer to redirect
-      // to setup than to let users through to a broken app with no data)
       return true;
     }
 
-    return result.data.isSetupPending;
+    const pending = result.data.isSetupPending;
+    // Cache indefinitely if setup is complete (it won't become pending again);
+    // cache with short TTL if still pending so we detect completion promptly.
+    setupPendingCache = {
+      value: pending,
+      expiresAt: pending ? now + SETUP_PENDING_TTL_MS : Number.MAX_SAFE_INTEGER,
+    };
+    return pending;
   } catch (err) {
     // API server may not be running yet during startup — assume setup is needed
     console.error('isSetupPending check failed:', err);

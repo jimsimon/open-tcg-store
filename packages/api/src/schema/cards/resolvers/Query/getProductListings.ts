@@ -1,6 +1,7 @@
 import { sql, and, like, eq, exists, isNull, gt } from 'drizzle-orm';
 import { otcgs } from '../../../../db';
 import { product, productExtendedData } from '../../../../db/tcg-data/schema';
+import { escapeLikeWildcards } from '../../../../lib/sql-utils';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
@@ -61,7 +62,7 @@ async function queryProductListings(
   }
 
   if (filters?.searchTerm && filters.searchTerm.trim().length > 0) {
-    conditions.push(like(sql`lower(${product.name})`, `%${filters.searchTerm.toLowerCase()}%`));
+    conditions.push(like(sql`lower(${product.name})`, `%${escapeLikeWildcards(filters.searchTerm.toLowerCase())}%`));
   }
 
   if (filters?.setCode) {

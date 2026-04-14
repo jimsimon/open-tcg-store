@@ -15,10 +15,10 @@ export const user = sqliteTable('user', {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   role: text('role'),
-  banned: integer('banned', { mode: 'boolean' }).default(false),
+  banned: integer('banned', { mode: 'boolean' }).default(false).notNull(),
   banReason: text('ban_reason'),
   banExpires: integer('ban_expires', { mode: 'timestamp_ms' }),
-  isAnonymous: integer('is_anonymous', { mode: 'boolean' }).default(false),
+  isAnonymous: integer('is_anonymous', { mode: 'boolean' }).default(false).notNull(),
 });
 
 export const session = sqliteTable(

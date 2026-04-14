@@ -60,6 +60,29 @@ app.use(async (ctx, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// CSRF protection — validate Origin header on state-changing requests
+// ---------------------------------------------------------------------------
+const allowedOrigins = new Set(
+  (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost').split(',').map((o) => o.trim()),
+);
+
+app.use(async (ctx, next) => {
+  // Only validate POST/PUT/PATCH/DELETE — safe methods (GET, HEAD, OPTIONS) are exempt
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(ctx.method)) {
+    const origin = ctx.get('Origin');
+    // If Origin header is present, it must match an allowed origin.
+    // If absent (e.g. same-origin requests from some browsers), allow — the
+    // CORS middleware already restricts cross-origin requests with credentials.
+    if (origin && !allowedOrigins.has(origin)) {
+      ctx.status = 403;
+      ctx.body = { error: 'Forbidden: Origin not allowed' };
+      return;
+    }
+  }
+  return next();
+});
+
+// ---------------------------------------------------------------------------
 // Rate limiting
 // ---------------------------------------------------------------------------
 
