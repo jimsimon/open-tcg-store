@@ -226,7 +226,7 @@ async function buildLotResult(lotRow: typeof lot.$inferSelect): Promise<LotResul
 // Database handle type — accepts either the top-level otcgs or a transaction
 // ---------------------------------------------------------------------------
 
-type DbHandle = typeof otcgs;
+type DbHandle = Pick<typeof otcgs, 'select' | 'insert' | 'update' | 'delete'>;
 
 // ---------------------------------------------------------------------------
 // findOrCreateInventoryItem — Reuse pattern from inventory-service

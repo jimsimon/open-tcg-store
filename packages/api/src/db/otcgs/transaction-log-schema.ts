@@ -12,8 +12,8 @@ export const transactionLog = sqliteTable(
     resourceType: text('resource_type').notNull(),
     resourceId: text('resource_id'),
     details: text('details').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
   (table) => [
