@@ -43,6 +43,21 @@ const mockOtcgs = vi.hoisted(() => ({
   insert: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
+  transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+    // The tx object mirrors the same mock methods so queries inside the transaction work
+    const tx = {
+      select: vi.fn(),
+      insert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    // Delegate tx methods to the same mocks so existing test setups work
+    tx.select.mockImplementation((...args: unknown[]) => mockOtcgs.select(...args));
+    tx.insert.mockImplementation((...args: unknown[]) => mockOtcgs.insert(...args));
+    tx.update.mockImplementation((...args: unknown[]) => mockOtcgs.update(...args));
+    tx.delete.mockImplementation((...args: unknown[]) => mockOtcgs.delete(...args));
+    return fn(tx);
+  }),
   query: {
     order: {
       findFirst: vi.fn(),

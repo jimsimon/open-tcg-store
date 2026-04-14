@@ -360,7 +360,7 @@ describe('inventory-service', () => {
       mockOtcgs.update.mockReturnValue(updChain);
       mockOtcgs.select.mockReturnValue(fetchChain);
 
-      const result = await updateInventoryItem({ id: 1, price: 19.99 }, 'user-1');
+      const result = await updateInventoryItem({ id: 1, price: 19.99 }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(1);
@@ -393,7 +393,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await updateInventoryItem({ id: 1, condition: 'LP' }, 'user-1');
+      const result = await updateInventoryItem({ id: 1, condition: 'LP' }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(3);
@@ -406,10 +406,13 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('deleteInventoryItem', () => {
     it('should soft-delete stock entries only (parent is never deleted)', async () => {
+      // Verify the item belongs to this organization
+      const verifyChain = chainable([{ id: 1 }]);
       const updChain = chainable([]);
+      mockOtcgs.select.mockReturnValue(verifyChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await deleteInventoryItem(1);
+      const result = await deleteInventoryItem(1, 'org-1', 'user-1');
 
       expect(result).toBe(true);
       // Should call update once: only stock entries are soft-deleted
@@ -443,6 +446,7 @@ describe('inventory-service', () => {
       const result = await addStock(
         { inventoryItemId: 1, quantity: 5, costBasis: 10, acquisitionDate: '2026-01-01' },
         'user-1',
+        'org-1',
       );
 
       expect(result).toBeDefined();
@@ -469,7 +473,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await updateStock({ id: 10, quantity: 8 }, 'user-1');
+      const result = await updateStock({ id: 10, quantity: 8 }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe(10);
@@ -482,10 +486,13 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('deleteStock', () => {
     it('should soft-delete a stock entry', async () => {
+      // Verify the stock entry belongs to this organization
+      const verifyChain = chainable([{ id: 10 }]);
       const updChain = chainable([]);
+      mockOtcgs.select.mockReturnValue(verifyChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await deleteStock(10);
+      const result = await deleteStock(10, 'org-1', 'user-1');
 
       expect(result).toBe(true);
       expect(mockOtcgs.update).toHaveBeenCalled();
@@ -503,7 +510,7 @@ describe('inventory-service', () => {
       mockOtcgs.update.mockReturnValue(updChain);
       mockOtcgs.select.mockReturnValue(fetchChain);
 
-      const result = await bulkUpdateStock({ ids: [10, 11], quantity: 5 }, 'user-1');
+      const result = await bulkUpdateStock({ ids: [10, 11], quantity: 5 }, 'user-1', 'org-1');
 
       expect(result).toHaveLength(2);
       expect(mockOtcgs.update).toHaveBeenCalled();
@@ -515,10 +522,13 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('bulkDeleteStock', () => {
     it('should soft-delete multiple stock entries', async () => {
+      // Verify stock entries belong to this organization
+      const verifyChain = chainable([{ id: 10 }, { id: 11 }, { id: 12 }]);
       const updChain = chainable([]);
+      mockOtcgs.select.mockReturnValue(verifyChain);
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await bulkDeleteStock([10, 11, 12]);
+      const result = await bulkDeleteStock([10, 11, 12], 'org-1', 'user-1');
 
       expect(result).toBe(true);
       expect(mockOtcgs.update).toHaveBeenCalled();
@@ -752,11 +762,11 @@ describe('inventory-service', () => {
 
   describe('updateInventoryItem validation', () => {
     it('should throw when id is missing', async () => {
-      await expect(updateInventoryItem({ id: 0 } as never, 'user-1')).rejects.toThrow('id is required');
+      await expect(updateInventoryItem({ id: 0 } as never, 'user-1', 'org-1')).rejects.toThrow('id is required');
     });
 
     it('should throw for invalid condition on update', async () => {
-      await expect(updateInventoryItem({ id: 1, condition: 'BAD' } as never, 'user-1')).rejects.toThrow(
+      await expect(updateInventoryItem({ id: 1, condition: 'BAD' } as never, 'user-1', 'org-1')).rejects.toThrow(
         'Invalid condition: BAD',
       );
     });
@@ -779,7 +789,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.update.mockReturnValue(updChain);
 
-      const result = await updateInventoryItem({ id: 1, condition: 'HP' }, 'user-1');
+      const result = await updateInventoryItem({ id: 1, condition: 'HP' }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
     });
@@ -791,7 +801,7 @@ describe('inventory-service', () => {
       mockOtcgs.update.mockReturnValue(updChain);
       mockOtcgs.select.mockReturnValue(fetchChain);
 
-      const result = await updateInventoryItem({ id: 1, price: 19.99 }, 'user-1');
+      const result = await updateInventoryItem({ id: 1, price: 19.99 }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
       expect(result.price).toBe(19.99);
@@ -806,7 +816,7 @@ describe('inventory-service', () => {
       const emptyChain = chainable([]);
       mockOtcgs.select.mockReturnValue(emptyChain);
 
-      const result = await getInventoryItemById(999);
+      const result = await getInventoryItemById(999, 'org-1');
 
       expect(result).toBeNull();
     });
@@ -816,7 +826,7 @@ describe('inventory-service', () => {
       const dataChain = chainable([row]);
       mockOtcgs.select.mockReturnValue(dataChain);
 
-      const result = await getInventoryItemById(1);
+      const result = await getInventoryItemById(1, 'org-1');
 
       expect(result).toBeDefined();
       expect(result!.isSingle).toBe(true);
@@ -828,7 +838,7 @@ describe('inventory-service', () => {
       const dataChain = chainable([row]);
       mockOtcgs.select.mockReturnValue(dataChain);
 
-      const result = await getInventoryItemById(2);
+      const result = await getInventoryItemById(2, 'org-1');
 
       expect(result).toBeDefined();
       expect(result!.isSingle).toBe(false);
@@ -895,6 +905,7 @@ describe('inventory-service', () => {
       const result = await addStock(
         { inventoryItemId: 1, quantity: 5, costBasis: 10, acquisitionDate: '2026-01-01' },
         'user-1',
+        'org-1',
       );
 
       expect(result).toBeDefined();
@@ -906,7 +917,7 @@ describe('inventory-service', () => {
       mockOtcgs.select.mockReturnValue(noParentChain);
 
       await expect(
-        addStock({ inventoryItemId: 999, quantity: 1, costBasis: 5, acquisitionDate: '2026-01-01' }, 'user-1'),
+        addStock({ inventoryItemId: 999, quantity: 1, costBasis: 5, acquisitionDate: '2026-01-01' }, 'user-1', 'org-1'),
       ).rejects.toThrow('Inventory item not found');
     });
   });
@@ -916,14 +927,16 @@ describe('inventory-service', () => {
   // -----------------------------------------------------------------------
   describe('updateStock (branch coverage)', () => {
     it('should throw when quantity is negative', async () => {
-      await expect(updateStock({ id: 10, quantity: -1 }, 'user-1')).rejects.toThrow('quantity must be non-negative');
+      await expect(updateStock({ id: 10, quantity: -1 }, 'user-1', 'org-1')).rejects.toThrow(
+        'quantity must be non-negative',
+      );
     });
 
     it('should throw when stock entry not found', async () => {
       const emptyChain = chainable([]);
       mockOtcgs.select.mockReturnValue(emptyChain);
 
-      await expect(updateStock({ id: 999 }, 'user-1')).rejects.toThrow('Stock entry not found');
+      await expect(updateStock({ id: 999 }, 'user-1', 'org-1')).rejects.toThrow('Stock entry not found');
     });
 
     it('should merge with duplicate when costBasis changes', async () => {
@@ -955,7 +968,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.update.mockReturnValue(chainable([]));
 
-      const result = await updateStock({ id: 10, costBasis: 8 }, 'user-1');
+      const result = await updateStock({ id: 10, costBasis: 8 }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
       // Should have called update at least twice (merge into dup + soft-delete original)
@@ -975,7 +988,7 @@ describe('inventory-service', () => {
       });
       mockOtcgs.update.mockReturnValue(chainable([]));
 
-      const result = await updateStock({ id: 10, quantity: 8, notes: 'updated' }, 'user-1');
+      const result = await updateStock({ id: 10, quantity: 8, notes: 'updated' }, 'user-1', 'org-1');
 
       expect(result).toBeDefined();
     });
@@ -1005,6 +1018,7 @@ describe('inventory-service', () => {
       const result = await bulkUpdateStock(
         { ids: [10], costBasis: 8, acquisitionDate: null, quantity: null, notes: null },
         'user-1',
+        'org-1',
       );
 
       expect(result).toHaveLength(1);

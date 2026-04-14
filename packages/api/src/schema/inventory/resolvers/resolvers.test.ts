@@ -232,7 +232,7 @@ describe('inventory resolvers', () => {
       await getInventoryItem(null, { id: 1 }, ctx());
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['read'] });
-      expect(mockGetInventoryItemById).toHaveBeenCalledWith(1);
+      expect(mockGetInventoryItemById).toHaveBeenCalledWith(1, 'org-1');
     });
   });
 

@@ -1,7 +1,7 @@
 import type { MutationResolvers } from '../../../types.generated.ts';
 import { auth } from '../../../../auth.ts';
 import { fromNodeHeaders } from 'better-auth/node';
-import { eq } from 'drizzle-orm';
+import { count, eq, or, isNull } from 'drizzle-orm';
 import { otcgs } from '../../../../db/index.ts';
 import { user as userTable } from '../../../../db/otcgs/schema.ts';
 import { companySettings } from '../../../../db/otcgs/company-settings-schema.ts';
@@ -13,6 +13,17 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
   args,
   ctx: GraphqlContext,
 ) => {
+  // Guard: prevent re-execution after setup is already complete.
+  // Check if any non-anonymous users exist — if so, setup has already been done.
+  const [{ count: userCount }] = await otcgs
+    .select({ count: count() })
+    .from(userTable)
+    .where(or(eq(userTable.isAnonymous, false), isNull(userTable.isAnonymous)));
+
+  if (userCount > 0) {
+    throw new Error('Setup has already been completed. This operation cannot be performed again.');
+  }
+
   let createdUserId: string | undefined;
 
   try {

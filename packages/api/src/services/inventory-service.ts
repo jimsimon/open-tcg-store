@@ -293,7 +293,7 @@ export async function getInventoryItemDetails(
 // 2. getInventoryItemById — Returns a parent InventoryItem with derived qty
 // ---------------------------------------------------------------------------
 
-export async function getInventoryItemById(id: number): Promise<InventoryItem | null> {
+export async function getInventoryItemById(id: number, organizationId: string): Promise<InventoryItem | null> {
   const rows = await otcgs
     .select({
       id: inventoryItem.id,
@@ -334,7 +334,7 @@ export async function getInventoryItemById(id: number): Promise<InventoryItem | 
     .leftJoin(group, eq(product.groupId, group.id))
     .leftJoin(category, eq(product.categoryId, category.id))
     .leftJoin(inventoryItemStock, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
-    .where(eq(inventoryItem.id, id))
+    .where(and(eq(inventoryItem.id, id), eq(inventoryItem.organizationId, organizationId)))
     .groupBy(inventoryItem.id)
     .limit(1);
 
@@ -474,7 +474,7 @@ export async function addInventoryItem(
     },
   });
 
-  return (await getInventoryItemById(parentId))!;
+  return (await getInventoryItemById(parentId, organizationId))!;
 }
 
 // ---------------------------------------------------------------------------
@@ -484,14 +484,18 @@ export async function addInventoryItem(
 export async function updateInventoryItem(
   input: UpdateInventoryItemInput,
   userId: string,
-  organizationId?: string,
+  organizationId: string,
 ): Promise<InventoryItem> {
   validateUpdateInput(input);
   const now = new Date();
 
   // If condition is changing, we may need to merge parents
   if (input.condition != null) {
-    const [currentItem] = await otcgs.select().from(inventoryItem).where(eq(inventoryItem.id, input.id)).limit(1);
+    const [currentItem] = await otcgs
+      .select()
+      .from(inventoryItem)
+      .where(and(eq(inventoryItem.id, input.id), eq(inventoryItem.organizationId, organizationId)))
+      .limit(1);
 
     if (!currentItem) throw new Error('Inventory item not found');
 
@@ -531,25 +535,23 @@ export async function updateInventoryItem(
         await mergeStockDuplicates(existingTarget.id, userId);
 
         // Log the transaction
-        if (organizationId) {
-          await logTransaction({
-            organizationId,
-            userId,
-            action: 'inventory.item_updated',
-            resourceType: 'inventory',
-            resourceId: existingTarget.id,
-            details: {
-              productId: currentItem.productId,
-              conditionBefore: currentItem.condition,
-              conditionAfter: input.condition,
-              priceBefore: currentItem.price,
-              priceAfter: input.price ?? currentItem.price,
-              merged: true,
-            },
-          });
-        }
+        await logTransaction({
+          organizationId,
+          userId,
+          action: 'inventory.item_updated',
+          resourceType: 'inventory',
+          resourceId: existingTarget.id,
+          details: {
+            productId: currentItem.productId,
+            conditionBefore: currentItem.condition,
+            conditionAfter: input.condition,
+            priceBefore: currentItem.price,
+            priceAfter: input.price ?? currentItem.price,
+            merged: true,
+          },
+        });
 
-        return (await getInventoryItemById(existingTarget.id))!;
+        return (await getInventoryItemById(existingTarget.id, organizationId))!;
       }
     }
   }
@@ -559,32 +561,43 @@ export async function updateInventoryItem(
   if (input.condition != null) updates.condition = input.condition;
   if (input.price != null) updates.price = input.price;
 
-  await otcgs.update(inventoryItem).set(updates).where(eq(inventoryItem.id, input.id));
+  await otcgs
+    .update(inventoryItem)
+    .set(updates)
+    .where(and(eq(inventoryItem.id, input.id), eq(inventoryItem.organizationId, organizationId)));
 
   // Log the transaction
-  if (organizationId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.item_updated',
-      resourceType: 'inventory',
-      resourceId: input.id,
-      details: {
-        condition: input.condition ?? undefined,
-        price: input.price ?? undefined,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.item_updated',
+    resourceType: 'inventory',
+    resourceId: input.id,
+    details: {
+      condition: input.condition ?? undefined,
+      price: input.price ?? undefined,
+    },
+  });
 
-  return (await getInventoryItemById(input.id))!;
+  return (await getInventoryItemById(input.id, organizationId))!;
 }
 
 // ---------------------------------------------------------------------------
 // 5. deleteInventoryItem — Soft-delete all stock (parent stays; hidden when no stock)
 // ---------------------------------------------------------------------------
 
-export async function deleteInventoryItem(id: number, organizationId?: string, userId?: string): Promise<boolean> {
+export async function deleteInventoryItem(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
+
+  // Verify the inventory item belongs to this organization
+  const [item] = await otcgs
+    .select({ id: inventoryItem.id })
+    .from(inventoryItem)
+    .where(and(eq(inventoryItem.id, id), eq(inventoryItem.organizationId, organizationId)))
+    .limit(1);
+
+  if (!item) throw new Error('Inventory item not found');
+
   // Soft-delete all non-deleted stock entries for this parent.
   // The parent row itself is never deleted — it will be hidden from the
   // list view automatically because the HAVING clause filters out items
@@ -595,16 +608,14 @@ export async function deleteInventoryItem(id: number, organizationId?: string, u
     .where(and(eq(inventoryItemStock.inventoryItemId, id), stockNotDeleted()));
 
   // Log the transaction
-  if (organizationId && userId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.item_deleted',
-      resourceType: 'inventory',
-      resourceId: id,
-      details: { inventoryItemId: id },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.item_deleted',
+    resourceType: 'inventory',
+    resourceId: id,
+    details: { inventoryItemId: id },
+  });
 
   return true;
 }
@@ -616,15 +627,15 @@ export async function deleteInventoryItem(id: number, organizationId?: string, u
 export async function addStock(
   input: AddStockInput,
   userId: string,
-  organizationId?: string,
+  organizationId: string,
 ): Promise<InventoryItemStockGql> {
   const now = new Date();
 
-  // Verify parent exists (parents are never deleted)
+  // Verify parent exists and belongs to this organization
   const [parent] = await otcgs
     .select({ id: inventoryItem.id })
     .from(inventoryItem)
-    .where(eq(inventoryItem.id, input.inventoryItemId))
+    .where(and(eq(inventoryItem.id, input.inventoryItemId), eq(inventoryItem.organizationId, organizationId)))
     .limit(1);
 
   if (!parent) throw new Error('Inventory item not found');
@@ -682,21 +693,19 @@ export async function addStock(
   }
 
   // Log the transaction
-  if (organizationId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.stock_added',
-      resourceType: 'inventory',
-      resourceId: resultStockId,
-      details: {
-        inventoryItemId: input.inventoryItemId,
-        quantity: input.quantity,
-        costBasis: input.costBasis,
-        acquisitionDate: input.acquisitionDate,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.stock_added',
+    resourceType: 'inventory',
+    resourceId: resultStockId,
+    details: {
+      inventoryItemId: input.inventoryItemId,
+      quantity: input.quantity,
+      costBasis: input.costBasis,
+      acquisitionDate: input.acquisitionDate,
+    },
+  });
 
   return (await getStockById(resultStockId))!;
 }
@@ -704,7 +713,7 @@ export async function addStock(
 export async function updateStock(
   input: UpdateStockInput,
   userId: string,
-  organizationId?: string,
+  organizationId: string,
 ): Promise<InventoryItemStockGql> {
   const now = new Date();
 
@@ -712,11 +721,26 @@ export async function updateStock(
     throw new Error('quantity must be non-negative');
   }
 
-  // Fetch current stock entry
+  // Fetch current stock entry and verify it belongs to this organization
   const [current] = await otcgs
-    .select()
+    .select({
+      id: inventoryItemStock.id,
+      inventoryItemId: inventoryItemStock.inventoryItemId,
+      quantity: inventoryItemStock.quantity,
+      costBasis: inventoryItemStock.costBasis,
+      acquisitionDate: inventoryItemStock.acquisitionDate,
+      notes: inventoryItemStock.notes,
+      deletedAt: inventoryItemStock.deletedAt,
+      createdBy: inventoryItemStock.createdBy,
+      updatedBy: inventoryItemStock.updatedBy,
+      createdAt: inventoryItemStock.createdAt,
+      updatedAt: inventoryItemStock.updatedAt,
+    })
     .from(inventoryItemStock)
-    .where(and(eq(inventoryItemStock.id, input.id), stockNotDeleted()))
+    .innerJoin(inventoryItem, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
+    .where(
+      and(eq(inventoryItemStock.id, input.id), eq(inventoryItem.organizationId, organizationId), stockNotDeleted()),
+    )
     .limit(1);
 
   if (!current) throw new Error('Stock entry not found');
@@ -764,16 +788,14 @@ export async function updateStock(
         .where(eq(inventoryItemStock.id, input.id));
 
       // Log the transaction
-      if (organizationId) {
-        await logTransaction({
-          organizationId,
-          userId,
-          action: 'inventory.stock_updated',
-          resourceType: 'inventory',
-          resourceId: duplicate.id,
-          details: { stockId: input.id, mergedInto: duplicate.id, quantity: input.quantity },
-        });
-      }
+      await logTransaction({
+        organizationId,
+        userId,
+        action: 'inventory.stock_updated',
+        resourceType: 'inventory',
+        resourceId: duplicate.id,
+        details: { stockId: input.id, mergedInto: duplicate.id, quantity: input.quantity },
+      });
 
       return (await getStockById(duplicate.id))!;
     }
@@ -789,42 +811,49 @@ export async function updateStock(
   await otcgs.update(inventoryItemStock).set(updates).where(eq(inventoryItemStock.id, input.id));
 
   // Log the transaction
-  if (organizationId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.stock_updated',
-      resourceType: 'inventory',
-      resourceId: input.id,
-      details: {
-        stockId: input.id,
-        quantity: input.quantity ?? undefined,
-        costBasis: input.costBasis ?? undefined,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.stock_updated',
+    resourceType: 'inventory',
+    resourceId: input.id,
+    details: {
+      stockId: input.id,
+      quantity: input.quantity ?? undefined,
+      costBasis: input.costBasis ?? undefined,
+    },
+  });
 
   return (await getStockById(input.id))!;
 }
 
-export async function deleteStock(id: number, organizationId?: string, userId?: string): Promise<boolean> {
+export async function deleteStock(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
+
+  // Verify the stock entry belongs to this organization
+  const [stockEntry] = await otcgs
+    .select({ id: inventoryItemStock.id })
+    .from(inventoryItemStock)
+    .innerJoin(inventoryItem, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
+    .where(and(eq(inventoryItemStock.id, id), eq(inventoryItem.organizationId, organizationId)))
+    .limit(1);
+
+  if (!stockEntry) throw new Error('Stock entry not found');
+
   await otcgs
     .update(inventoryItemStock)
     .set({ deletedAt: now, quantity: 0, updatedAt: now })
     .where(eq(inventoryItemStock.id, id));
 
   // Log the transaction
-  if (organizationId && userId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.stock_deleted',
-      resourceType: 'inventory',
-      resourceId: id,
-      details: { stockId: id },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.stock_deleted',
+    resourceType: 'inventory',
+    resourceId: id,
+    details: { stockId: id },
+  });
 
   return true;
 }
@@ -836,7 +865,7 @@ export async function deleteStock(id: number, organizationId?: string, userId?: 
 export async function bulkUpdateStock(
   input: BulkUpdateStockInput,
   userId: string,
-  organizationId?: string,
+  organizationId: string,
 ): Promise<InventoryItemStockGql[]> {
   const now = new Date();
 
@@ -863,33 +892,41 @@ export async function bulkUpdateStock(
     return results;
   }
 
-  // Simple bulk update — no unique-key fields changing
+  // Simple bulk update — only update stock that belongs to this organization
   const updates: Record<string, unknown> = { updatedBy: userId, updatedAt: now };
   if (input.quantity != null) updates.quantity = input.quantity;
   if (input.notes !== undefined) updates.notes = input.notes ?? null;
 
-  await otcgs.update(inventoryItemStock).set(updates).where(inArray(inventoryItemStock.id, input.ids));
+  // Verify all stock entries belong to this organization before updating
+  const validStockIds = await otcgs
+    .select({ id: inventoryItemStock.id })
+    .from(inventoryItemStock)
+    .innerJoin(inventoryItem, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
+    .where(and(inArray(inventoryItemStock.id, input.ids), eq(inventoryItem.organizationId, organizationId)));
+
+  const validIds = validStockIds.map((r) => r.id);
+  if (validIds.length === 0) throw new Error('No valid stock entries found');
+
+  await otcgs.update(inventoryItemStock).set(updates).where(inArray(inventoryItemStock.id, validIds));
 
   // Fetch updated stock entries
   const rows = await otcgs
     .select()
     .from(inventoryItemStock)
-    .where(and(inArray(inventoryItemStock.id, input.ids), stockNotDeleted()));
+    .where(and(inArray(inventoryItemStock.id, validIds), stockNotDeleted()));
 
   // Log the transaction
-  if (organizationId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.stock_bulk_updated',
-      resourceType: 'inventory',
-      details: {
-        count: input.ids.length,
-        ids: input.ids,
-        quantity: input.quantity ?? undefined,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.stock_bulk_updated',
+    resourceType: 'inventory',
+    details: {
+      count: validIds.length,
+      ids: validIds,
+      quantity: input.quantity ?? undefined,
+    },
+  });
 
   return rows.map((r) => ({
     id: r.id,
@@ -903,23 +940,32 @@ export async function bulkUpdateStock(
   }));
 }
 
-export async function bulkDeleteStock(ids: number[], organizationId?: string, userId?: string): Promise<boolean> {
+export async function bulkDeleteStock(ids: number[], organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
+
+  // Verify all stock entries belong to this organization before deleting
+  const validStockIds = await otcgs
+    .select({ id: inventoryItemStock.id })
+    .from(inventoryItemStock)
+    .innerJoin(inventoryItem, eq(inventoryItemStock.inventoryItemId, inventoryItem.id))
+    .where(and(inArray(inventoryItemStock.id, ids), eq(inventoryItem.organizationId, organizationId)));
+
+  const validIds = validStockIds.map((r) => r.id);
+  if (validIds.length === 0) throw new Error('No valid stock entries found');
+
   await otcgs
     .update(inventoryItemStock)
     .set({ deletedAt: now, quantity: 0, updatedAt: now })
-    .where(inArray(inventoryItemStock.id, ids));
+    .where(inArray(inventoryItemStock.id, validIds));
 
   // Log the transaction
-  if (organizationId && userId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'inventory.stock_bulk_deleted',
-      resourceType: 'inventory',
-      details: { count: ids.length, ids },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'inventory.stock_bulk_deleted',
+    resourceType: 'inventory',
+    details: { count: validIds.length, ids: validIds },
+  });
 
   return true;
 }

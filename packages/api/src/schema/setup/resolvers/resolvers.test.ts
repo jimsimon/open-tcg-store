@@ -146,6 +146,13 @@ describe('setup resolvers', () => {
   });
 
   describe('firstTimeSetup', () => {
+    // Every firstTimeSetup test must mock the user-count guard query
+    // that checks if setup is already complete. Return count: 0 to allow setup.
+    beforeEach(() => {
+      const guardChain = chainable([{ count: 0 }]);
+      mockOtcgs.select.mockReturnValue(guardChain);
+    });
+
     it('should create user, save settings, create org, and return token', async () => {
       // Mock signUpEmail response
       mockAuth.api.signUpEmail.mockResolvedValue({

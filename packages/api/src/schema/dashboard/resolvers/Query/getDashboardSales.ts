@@ -9,6 +9,7 @@ export const getDashboardSales: NonNullable<QueryResolvers['getDashboardSales']>
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { order: ['read'] });
-  const organizationId = _arg.organizationId || getOrganizationId(ctx);
+  // Always use the session's organization — never trust client-supplied organizationId
+  const organizationId = getOrganizationId(ctx);
   return getSalesBreakdown(organizationId, _arg.dateRange.startDate, _arg.dateRange.endDate);
 };

@@ -128,194 +128,198 @@ export async function submitOrder(organizationId: string, userId: string, custom
     return { error: 'Cart is empty' };
   }
 
-  // 2. Validate inventory availability — check total stock across all non-deleted stock entries
-  //    for the parent inventory_item referenced by each cart item
-  const insufficientItems: InsufficientItemInfo[] = [];
-  const cartItemsWithInventory: {
-    inventoryItemId: number; // parent inventory_item.id
-    productId: number;
-    productName: string;
-    condition: string;
-    quantity: number;
-    unitPrice: number;
-  }[] = [];
+  // Wrap the entire order submission in a transaction to prevent race conditions
+  // (e.g., two concurrent orders both seeing sufficient stock and overselling)
+  return await otcgs.transaction(async (tx) => {
+    // 2. Validate inventory availability — check total stock across all non-deleted stock entries
+    //    for the parent inventory_item referenced by each cart item
+    const insufficientItems: InsufficientItemInfo[] = [];
+    const cartItemsWithInventory: {
+      inventoryItemId: number; // parent inventory_item.id
+      productId: number;
+      productName: string;
+      condition: string;
+      quantity: number;
+      unitPrice: number;
+    }[] = [];
 
-  for (const ci of cart.cartItems) {
-    if (!ci.inventoryItem?.product) continue;
+    for (const ci of cart.cartItems) {
+      if (!ci.inventoryItem?.product) continue;
 
-    const inv = ci.inventoryItem;
+      const inv = ci.inventoryItem;
 
-    // Check total available from stock entries for this parent
-    const [totalResult] = await otcgs
-      .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
-      .from(inventoryItemStock)
-      .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
+      // Check total available from stock entries for this parent
+      const [totalResult] = await tx
+        .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
+        .from(inventoryItemStock)
+        .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
 
-    const totalAvailable = totalResult?.total ?? 0;
+      const totalAvailable = totalResult?.total ?? 0;
 
-    if (totalAvailable < ci.quantity) {
-      insufficientItems.push({
+      if (totalAvailable < ci.quantity) {
+        insufficientItems.push({
+          productId: inv.product.id,
+          productName: inv.product.name,
+          condition: inv.condition,
+          requested: ci.quantity,
+          available: totalAvailable,
+        });
+      }
+
+      cartItemsWithInventory.push({
+        inventoryItemId: inv.id,
         productId: inv.product.id,
         productName: inv.product.name,
         condition: inv.condition,
-        requested: ci.quantity,
-        available: totalAvailable,
+        quantity: ci.quantity,
+        unitPrice: inv.price,
       });
     }
 
-    cartItemsWithInventory.push({
-      inventoryItemId: inv.id,
-      productId: inv.product.id,
-      productName: inv.product.name,
-      condition: inv.condition,
-      quantity: ci.quantity,
-      unitPrice: inv.price,
-    });
-  }
+    if (insufficientItems.length > 0) {
+      return {
+        error: 'Insufficient inventory for one or more items',
+        insufficientItems,
+      };
+    }
 
-  if (insufficientItems.length > 0) {
-    return {
-      error: 'Insufficient inventory for one or more items',
-      insufficientItems,
-    };
-  }
+    // 3. Create the order
+    const orderNumber = generateOrderNumber();
+    const totalAmount = cartItemsWithInventory.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
-  // 3. Create the order
-  const orderNumber = generateOrderNumber();
-  const totalAmount = cartItemsWithInventory.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-
-  const [insertedOrder] = await otcgs
-    .insert(order)
-    .values({
-      organizationId,
-      orderNumber,
-      customerName,
-      userId,
-      status: 'open',
-      totalAmount,
-      createdAt: new Date(),
-    })
-    .returning();
-
-  // 4. Decrement inventory using FIFO (oldest first by createdAt) across stock entries.
-  const allOrderItemValues: {
-    orderId: number;
-    inventoryItemId: number;
-    inventoryItemStockId: number;
-    productId: number;
-    productName: string;
-    condition: string;
-    quantity: number;
-    unitPrice: number;
-    costBasis: number | null;
-    lotId: number | null;
-  }[] = [];
-
-  for (const item of cartItemsWithInventory) {
-    // Get all non-deleted stock entries with quantity > 0 for this parent, FIFO ordered
-    const fifoStockEntries = await otcgs
-      .select({
-        id: inventoryItemStock.id,
-        quantity: inventoryItemStock.quantity,
-        costBasis: inventoryItemStock.costBasis,
-        lotId: inventoryItemStock.lotId,
+    const [insertedOrder] = await tx
+      .insert(order)
+      .values({
+        organizationId,
+        orderNumber,
+        customerName,
+        userId,
+        status: 'open',
+        totalAmount,
+        createdAt: new Date(),
       })
-      .from(inventoryItemStock)
-      .where(
-        and(
-          eq(inventoryItemStock.inventoryItemId, item.inventoryItemId),
-          isNull(inventoryItemStock.deletedAt),
-          gt(inventoryItemStock.quantity, 0),
-        ),
-      )
-      .orderBy(asc(inventoryItemStock.createdAt));
+      .returning();
 
-    let remaining = item.quantity;
+    // 4. Decrement inventory using FIFO (oldest first by createdAt) across stock entries.
+    const allOrderItemValues: {
+      orderId: number;
+      inventoryItemId: number;
+      inventoryItemStockId: number;
+      productId: number;
+      productName: string;
+      condition: string;
+      quantity: number;
+      unitPrice: number;
+      costBasis: number | null;
+      lotId: number | null;
+    }[] = [];
 
-    for (const stockEntry of fifoStockEntries) {
-      if (remaining <= 0) break;
-      if (stockEntry.quantity <= 0) continue;
+    for (const item of cartItemsWithInventory) {
+      // Get all non-deleted stock entries with quantity > 0 for this parent, FIFO ordered
+      const fifoStockEntries = await tx
+        .select({
+          id: inventoryItemStock.id,
+          quantity: inventoryItemStock.quantity,
+          costBasis: inventoryItemStock.costBasis,
+          lotId: inventoryItemStock.lotId,
+        })
+        .from(inventoryItemStock)
+        .where(
+          and(
+            eq(inventoryItemStock.inventoryItemId, item.inventoryItemId),
+            isNull(inventoryItemStock.deletedAt),
+            gt(inventoryItemStock.quantity, 0),
+          ),
+        )
+        .orderBy(asc(inventoryItemStock.createdAt));
 
-      const deduct = Math.min(remaining, stockEntry.quantity);
-      const newQuantity = stockEntry.quantity - deduct;
+      let remaining = item.quantity;
 
-      await otcgs
-        .update(inventoryItemStock)
-        .set({ quantity: newQuantity, updatedAt: new Date() })
-        .where(eq(inventoryItemStock.id, stockEntry.id));
+      for (const stockEntry of fifoStockEntries) {
+        if (remaining <= 0) break;
+        if (stockEntry.quantity <= 0) continue;
 
-      // Create an order item for each stock entry consumed (tracks exact cost basis lot)
-      allOrderItemValues.push({
-        orderId: insertedOrder.id,
-        inventoryItemId: item.inventoryItemId,
-        inventoryItemStockId: stockEntry.id,
-        productId: item.productId,
-        productName: item.productName,
-        condition: item.condition,
-        quantity: deduct,
-        unitPrice: item.unitPrice,
-        costBasis: stockEntry.costBasis,
-        lotId: stockEntry.lotId ?? null,
-      });
+        const deduct = Math.min(remaining, stockEntry.quantity);
+        const newQuantity = stockEntry.quantity - deduct;
 
-      remaining -= deduct;
+        await tx
+          .update(inventoryItemStock)
+          .set({ quantity: newQuantity, updatedAt: new Date() })
+          .where(eq(inventoryItemStock.id, stockEntry.id));
+
+        // Create an order item for each stock entry consumed (tracks exact cost basis lot)
+        allOrderItemValues.push({
+          orderId: insertedOrder.id,
+          inventoryItemId: item.inventoryItemId,
+          inventoryItemStockId: stockEntry.id,
+          productId: item.productId,
+          productName: item.productName,
+          condition: item.condition,
+          quantity: deduct,
+          unitPrice: item.unitPrice,
+          costBasis: stockEntry.costBasis,
+          lotId: stockEntry.lotId ?? null,
+        });
+
+        remaining -= deduct;
+      }
     }
-  }
 
-  const insertedOrderItems = await otcgs.insert(orderItem).values(allOrderItemValues).returning();
+    const insertedOrderItems = await tx.insert(orderItem).values(allOrderItemValues).returning();
 
-  // 5. Clear the cart
-  const cartItemIds = cart.cartItems.map((ci) => ci.id);
-  if (cartItemIds.length > 0) {
-    await otcgs.delete(cartItem).where(inArray(cartItem.id, cartItemIds));
-  }
+    // 5. Clear the cart
+    const cartItemIds = cart.cartItems.map((ci) => ci.id);
+    if (cartItemIds.length > 0) {
+      await tx.delete(cartItem).where(inArray(cartItem.id, cartItemIds));
+    }
 
-  // 6. Return the created order
-  const items = mapOrderItems(insertedOrderItems);
-  const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
+    // 6. Return the created order
+    const items = mapOrderItems(insertedOrderItems);
+    const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
-  // Log the transaction
-  await logTransaction({
-    organizationId,
-    userId,
-    action: 'order.created',
-    resourceType: 'order',
-    resourceId: insertedOrder.id,
-    details: {
-      orderNumber,
-      customerName,
-      totalAmount,
-      itemCount: cartItemsWithInventory.length,
-    },
+    // Log the transaction (outside the DB transaction scope is fine — logging is best-effort)
+    await logTransaction({
+      organizationId,
+      userId,
+      action: 'order.created',
+      resourceType: 'order',
+      resourceId: insertedOrder.id,
+      details: {
+        orderNumber,
+        customerName,
+        totalAmount,
+        itemCount: cartItemsWithInventory.length,
+      },
+    });
+
+    return {
+      order: {
+        id: insertedOrder.id,
+        organizationId: insertedOrder.organizationId,
+        orderNumber: insertedOrder.orderNumber,
+        customerName: insertedOrder.customerName,
+        status: insertedOrder.status,
+        totalAmount: insertedOrder.totalAmount,
+        totalCostBasis,
+        totalProfit,
+        createdAt: safeISOString(insertedOrder.createdAt),
+        items,
+      },
+    };
   });
-
-  return {
-    order: {
-      id: insertedOrder.id,
-      organizationId: insertedOrder.organizationId,
-      orderNumber: insertedOrder.orderNumber,
-      customerName: insertedOrder.customerName,
-      status: insertedOrder.status,
-      totalAmount: insertedOrder.totalAmount,
-      totalCostBasis,
-      totalProfit,
-      createdAt: safeISOString(insertedOrder.createdAt),
-      items,
-    },
-  };
 }
 
 export async function cancelOrder(
   orderId: number,
-  organizationId?: string,
-  userId?: string,
+  organizationId: string,
+  userId: string,
 ): Promise<{ order?: OrderResult['order']; error?: string }> {
-  // 1. Find the order
+  // 1. Find the order — scoped to the caller's organization
   const existingOrder = await otcgs.query.order.findFirst({
     with: {
       orderItems: true,
     },
-    where: (o, { eq }) => eq(o.id, orderId),
+    where: (o, { eq, and }) => and(eq(o.id, orderId), eq(o.organizationId, organizationId)),
   });
 
   if (!existingOrder) {
@@ -365,20 +369,18 @@ export async function cancelOrder(
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
   // Log the transaction
-  if (organizationId && userId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'order.cancelled',
-      resourceType: 'order',
-      resourceId: orderId,
-      details: {
-        orderNumber: existingOrder.orderNumber,
-        customerName: existingOrder.customerName,
-        totalAmount: existingOrder.totalAmount,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'order.cancelled',
+    resourceType: 'order',
+    resourceId: orderId,
+    details: {
+      orderNumber: existingOrder.orderNumber,
+      customerName: existingOrder.customerName,
+      totalAmount: existingOrder.totalAmount,
+    },
+  });
 
   return {
     order: {
@@ -489,17 +491,18 @@ async function restockFallbackByProduct(
 export async function updateOrderStatus(
   orderId: number,
   newStatus: string,
-  organizationId?: string,
-  userId?: string,
+  organizationId: string,
+  userId: string,
 ): Promise<{ order?: OrderResult['order']; error?: string }> {
   const validStatuses = ['open', 'completed'];
   if (!validStatuses.includes(newStatus)) {
     return { error: `Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(', ')}` };
   }
 
+  // Scope the lookup to the caller's organization
   const existingOrder = await otcgs.query.order.findFirst({
     with: { orderItems: true },
-    where: (o, { eq }) => eq(o.id, orderId),
+    where: (o, { eq, and }) => and(eq(o.id, orderId), eq(o.organizationId, organizationId)),
   });
 
   if (!existingOrder) {
@@ -520,20 +523,18 @@ export async function updateOrderStatus(
   const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
   // Log the transaction
-  if (organizationId && userId) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'order.status_updated',
-      resourceType: 'order',
-      resourceId: orderId,
-      details: {
-        orderNumber: existingOrder.orderNumber,
-        previousStatus: existingOrder.status,
-        newStatus,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'order.status_updated',
+    resourceType: 'order',
+    resourceId: orderId,
+    details: {
+      orderNumber: existingOrder.orderNumber,
+      previousStatus: existingOrder.status,
+      newStatus,
+    },
+  });
 
   return {
     order: {
