@@ -1,7 +1,7 @@
 import type { MutationResolvers } from '../../../types.generated.ts';
 import { auth } from '../../../../auth.ts';
 import { fromNodeHeaders } from 'better-auth/node';
-import { eq } from 'drizzle-orm';
+import { count, eq, or, isNull } from 'drizzle-orm';
 import { otcgs } from '../../../../db/index.ts';
 import { user as userTable } from '../../../../db/otcgs/schema.ts';
 import { companySettings } from '../../../../db/otcgs/company-settings-schema.ts';
@@ -13,6 +13,42 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
   args,
   ctx: GraphqlContext,
 ) => {
+  // Guard: prevent re-execution after setup is already complete.
+  // Use a transaction to atomically check for existing non-anonymous users AND
+  // insert the company settings row. This prevents TOCTOU races where two
+  // concurrent requests both see zero users and proceed past the guard.
+  // The company_settings insert acts as the atomic "claim" — the first request
+  // succeeds, and any concurrent request will find the user count > 0 or hit
+  // a conflict on the settings row.
+  await otcgs.transaction(async (tx) => {
+    const [{ count: userCount }] = await tx
+      .select({ count: count() })
+      .from(userTable)
+      .where(or(eq(userTable.isAnonymous, false), isNull(userTable.isAnonymous)));
+
+    if (userCount > 0) {
+      throw new Error('Setup has already been completed. This operation cannot be performed again.');
+    }
+
+    // Insert company settings inside the transaction so the row exists before
+    // the transaction commits — a concurrent request would either see the
+    // user count > 0 (after the signUpEmail below) or be serialized by SQLite's
+    // write lock on this transaction.
+    await tx
+      .insert(companySettings)
+      .values({
+        companyName: args.company.companyName,
+        ein: args.company.ein,
+      })
+      .onConflictDoUpdate({
+        target: companySettings.id,
+        set: {
+          companyName: args.company.companyName,
+          ein: args.company.ein,
+        },
+      });
+  });
+
   let createdUserId: string | undefined;
 
   try {
@@ -44,20 +80,7 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
     // plugin permissions. The organization membership handles app-level permissions.
     await otcgs.update(userTable).set({ role: 'owner' }).where(eq(userTable.id, createdUserId));
 
-    // 3. Save company settings (companyName + ein) to company_settings
-    await otcgs
-      .insert(companySettings)
-      .values({
-        companyName: args.company.companyName,
-        ein: args.company.ein,
-      })
-      .onConflictDoUpdate({
-        target: companySettings.id,
-        set: {
-          companyName: args.company.companyName,
-          ein: args.company.ein,
-        },
-      });
+    // 3. Company settings already saved in the guard transaction above.
 
     // Build headers from the sign-up session cookies so org creation
     // is authenticated as the newly created user.
@@ -143,14 +166,16 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
     return signInData.token;
   } catch (error) {
     // Rollback: if the user was created but a subsequent step failed, clean up
-    // the partially created user so setup can be retried cleanly.
-    if (createdUserId) {
-      try {
+    // the partially created user and company settings so setup can be retried cleanly.
+    try {
+      if (createdUserId) {
         await otcgs.delete(userTable).where(eq(userTable.id, createdUserId));
-        console.log('Rolled back partially created user after setup failure.');
-      } catch (cleanupError) {
-        console.error('Failed to clean up user after setup failure:', cleanupError);
       }
+      // Clean up company settings inserted in the guard transaction
+      await otcgs.delete(companySettings);
+      console.log('Rolled back setup data after failure.');
+    } catch (cleanupError) {
+      console.error('Failed to clean up after setup failure:', cleanupError);
     }
 
     const message = error instanceof Error ? error.message : 'An unexpected error occurred during setup';

@@ -4,12 +4,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks for isSetupPending
 // ---------------------------------------------------------------------------
 
-const mockOtcgs = vi.hoisted(() => ({
-  select: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-}));
+const mockOtcgs = vi.hoisted(() => {
+  const mock = {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+      // The tx object delegates to the same mocks so existing test setups work
+      const tx = {
+        select: (...args: unknown[]) => mock.select(...args),
+        insert: (...args: unknown[]) => mock.insert(...args),
+        update: (...args: unknown[]) => mock.update(...args),
+        delete: (...args: unknown[]) => mock.delete(...args),
+      };
+      return fn(tx);
+    }),
+  };
+  return mock;
+});
 
 vi.mock('../../../db', () => ({
   otcgs: mockOtcgs,
@@ -146,6 +159,19 @@ describe('setup resolvers', () => {
   });
 
   describe('firstTimeSetup', () => {
+    // Every firstTimeSetup test must mock the guard transaction which:
+    // 1. Checks user count (select) — return 0 to allow setup
+    // 2. Inserts company settings (insert)
+    // The rollback path also calls delete, so set up a default delete mock.
+    beforeEach(() => {
+      const guardChain = chainable([{ count: 0 }]);
+      const insertChain = chainable([]);
+      const deleteChain = chainable([]);
+      mockOtcgs.select.mockReturnValue(guardChain);
+      mockOtcgs.insert.mockReturnValue(insertChain);
+      mockOtcgs.delete.mockReturnValue(deleteChain);
+    });
+
     it('should create user, save settings, create org, and return token', async () => {
       // Mock signUpEmail response
       mockAuth.api.signUpEmail.mockResolvedValue({

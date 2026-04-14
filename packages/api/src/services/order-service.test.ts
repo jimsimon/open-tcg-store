@@ -43,6 +43,21 @@ const mockOtcgs = vi.hoisted(() => ({
   insert: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
+  transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+    // The tx object mirrors the same mock methods so queries inside the transaction work
+    const tx = {
+      select: vi.fn(),
+      insert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    // Delegate tx methods to the same mocks so existing test setups work
+    tx.select.mockImplementation((...args: unknown[]) => mockOtcgs.select(...args));
+    tx.insert.mockImplementation((...args: unknown[]) => mockOtcgs.insert(...args));
+    tx.update.mockImplementation((...args: unknown[]) => mockOtcgs.update(...args));
+    tx.delete.mockImplementation((...args: unknown[]) => mockOtcgs.delete(...args));
+    return fn(tx);
+  }),
   query: {
     order: {
       findFirst: vi.fn(),
@@ -106,13 +121,14 @@ vi.mock('../db', () => ({
   },
 }));
 
-// Mock the shopping cart service
-const { mockGetOrCreateShoppingCart } = vi.hoisted(() => ({
-  mockGetOrCreateShoppingCart: vi.fn(),
-}));
-
-vi.mock('./shopping-cart-service', () => ({
-  getOrCreateShoppingCart: mockGetOrCreateShoppingCart,
+// Mock tcg-data product table
+vi.mock('../db/tcg-data/schema', () => ({
+  product: {
+    id: 'product.id',
+    name: 'product.name',
+    categoryId: 'product.category_id',
+    groupId: 'product.group_id',
+  },
 }));
 
 // Mock the transaction log service so logging calls don't break tests
@@ -173,8 +189,29 @@ describe('order-service', () => {
   // submitOrder
   // -----------------------------------------------------------------------
   describe('submitOrder', () => {
-    it('should return error when cart is empty', async () => {
-      mockGetOrCreateShoppingCart.mockResolvedValue({ cartItems: [] });
+    it('should return error when cart is empty (no cart found)', async () => {
+      // select #1: cart lookup returns empty
+      const noCartChain = chainable([]);
+      mockOtcgs.select.mockImplementation(() => noCartChain);
+
+      const result = await submitOrder('org-1', 'user-1', 'Customer');
+
+      expect(result.error).toBe('Cart is empty');
+      expect(result.order).toBeUndefined();
+    });
+
+    it('should return error when cart has no items', async () => {
+      // select #1: cart lookup returns a cart
+      const cartChain = chainable([{ id: 1 }]);
+      // select #2: cart items query returns empty
+      const emptyItemsChain = chainable([]);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return cartChain;
+        return emptyItemsChain;
+      });
 
       const result = await submitOrder('org-1', 'user-1', 'Customer');
 
@@ -183,24 +220,31 @@ describe('order-service', () => {
     });
 
     it('should return insufficient inventory error when stock is too low', async () => {
-      mockGetOrCreateShoppingCart.mockResolvedValue({
-        cartItems: [
-          {
-            id: 1,
-            quantity: 10,
-            inventoryItem: {
-              id: 100,
-              condition: 'NM',
-              price: 5.0,
-              product: { id: 200, name: 'Charizard' },
-            },
-          },
-        ],
-      });
-
-      // Stock check: only 3 available
+      // select #1: cart lookup
+      const cartChain = chainable([{ id: 1 }]);
+      // select #2: cart items with inventory+product join
+      const cartItemsChain = chainable([
+        {
+          id: 1,
+          inventoryItemId: 100,
+          quantity: 10,
+          invId: 100,
+          invCondition: 'NM',
+          invPrice: 5.0,
+          productId: 200,
+          productName: 'Charizard',
+        },
+      ]);
+      // select #3: stock check — only 3 available
       const stockCheckChain = chainable([{ total: 3 }]);
-      mockOtcgs.select.mockImplementation(() => stockCheckChain);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return cartChain;
+        if (selectIdx === 2) return cartItemsChain;
+        return stockCheckChain;
+      });
 
       const result = await submitOrder('org-1', 'user-1', 'Customer');
 
@@ -212,23 +256,37 @@ describe('order-service', () => {
     });
 
     it('should create order and decrement stock using FIFO', async () => {
-      mockGetOrCreateShoppingCart.mockResolvedValue({
-        cartItems: [
-          {
-            id: 1,
-            quantity: 3,
-            inventoryItem: {
-              id: 100,
-              condition: 'NM',
-              price: 10.0,
-              product: { id: 200, name: 'Sol Ring' },
-            },
-          },
-        ],
-      });
-
-      // Stock availability check: 5 available
+      // select #1: cart lookup
+      const cartChain = chainable([{ id: 1 }]);
+      // select #2: cart items with inventory+product join
+      const cartItemsChain = chainable([
+        {
+          id: 1,
+          inventoryItemId: 100,
+          quantity: 3,
+          invId: 100,
+          invCondition: 'NM',
+          invPrice: 10.0,
+          productId: 200,
+          productName: 'Sol Ring',
+        },
+      ]);
+      // select #3: stock availability check — 5 available
       const stockCheckChain = chainable([{ total: 5 }]);
+      // select #4: FIFO stock entries
+      const fifoChain = chainable([
+        { id: 10, quantity: 2, costBasis: 5.0 },
+        { id: 11, quantity: 3, costBasis: 6.0 },
+      ]);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return cartChain;
+        if (selectIdx === 2) return cartItemsChain;
+        if (selectIdx === 3) return stockCheckChain;
+        return fifoChain;
+      });
 
       // Insert order: returns inserted order
       const insertOrderChain = chainable([
@@ -241,12 +299,6 @@ describe('order-service', () => {
           totalAmount: 30.0,
           createdAt: new Date('2026-01-01'),
         },
-      ]);
-
-      // FIFO stock entries
-      const fifoChain = chainable([
-        { id: 10, quantity: 2, costBasis: 5.0 },
-        { id: 11, quantity: 3, costBasis: 6.0 },
       ]);
 
       // Insert order items
@@ -271,13 +323,6 @@ describe('order-service', () => {
         },
       ]);
 
-      let selectIdx = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        selectIdx++;
-        if (selectIdx === 1) return stockCheckChain;
-        return fifoChain;
-      });
-
       let insertIdx = 0;
       mockOtcgs.insert.mockImplementation(() => {
         insertIdx++;
@@ -296,49 +341,6 @@ describe('order-service', () => {
       expect(mockOtcgs.update).toHaveBeenCalled();
       // Cart should have been cleared
       expect(mockOtcgs.delete).toHaveBeenCalled();
-    });
-
-    it('should skip cart items without inventory product and create empty order', async () => {
-      mockGetOrCreateShoppingCart.mockResolvedValue({
-        cartItems: [
-          {
-            id: 1,
-            quantity: 1,
-            inventoryItem: null,
-          },
-        ],
-      });
-
-      // The service creates an order with totalAmount = 0 and no order items
-      // since all cart items were filtered out. insert returns the order.
-      const insertOrderChain = chainable([
-        {
-          id: 1,
-          organizationId: 'org-1',
-          orderNumber: 'ORD-20260101-0000',
-          customerName: 'Customer',
-          status: 'open',
-          totalAmount: 0,
-          createdAt: new Date('2026-01-01'),
-        },
-      ]);
-
-      // insert for order items returns empty array
-      const insertItemsChain = chainable([]);
-
-      let insertIdx = 0;
-      mockOtcgs.insert.mockImplementation(() => {
-        insertIdx++;
-        if (insertIdx === 1) return insertOrderChain;
-        return insertItemsChain;
-      });
-
-      const result = await submitOrder('org-1', 'user-1', 'Customer');
-
-      // Order is created (not an error), but with 0 items
-      expect(result.order).toBeDefined();
-      expect(result.order!.totalAmount).toBe(0);
-      expect(result.order!.items).toHaveLength(0);
     });
   });
 

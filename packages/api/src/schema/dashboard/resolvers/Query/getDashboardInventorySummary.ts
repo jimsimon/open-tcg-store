@@ -9,6 +9,7 @@ export const getDashboardInventorySummary: NonNullable<QueryResolvers['getDashbo
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { inventory: ['read'] });
-  const organizationId = _arg.organizationId || getOrganizationId(ctx);
+  // Always use the session's organization — never trust client-supplied organizationId
+  const organizationId = getOrganizationId(ctx);
   return getInventorySummary(organizationId);
 };
