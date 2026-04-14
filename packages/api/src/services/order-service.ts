@@ -1,6 +1,6 @@
 import { and, eq, sql, asc, inArray, like, or, isNull, gt } from 'drizzle-orm';
-import { cartItem, inventoryItem, inventoryItemStock, order, orderItem, otcgs } from '../db';
-import { getOrCreateShoppingCart } from './shopping-cart-service';
+import { cart, cartItem, inventoryItem, inventoryItemStock, order, orderItem, otcgs } from '../db';
+import { product } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 
 /** Return today's date as YYYY-MM-DD. */
@@ -121,20 +121,47 @@ function generateOrderNumber(): string {
 }
 
 export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderResult> {
-  // 1. Get the user's cart with items (includes inventoryItem join)
-  const cart = await getOrCreateShoppingCart(organizationId, userId);
-
-  if (cart.cartItems.length === 0) {
-    return { error: 'Cart is empty' };
-  }
-
-  // Wrap the entire order submission in a transaction to prevent race conditions
-  // (e.g., two concurrent orders both seeing sufficient stock and overselling)
+  // Wrap the entire order submission — including the cart read — in a transaction
+  // to prevent race conditions. This ensures the cart state is consistent with the
+  // inventory checks and stock decrements (no stale data between fetch and delete).
   const result = await otcgs.transaction(async (tx) => {
+    // 1. Read the user's cart with items inside the transaction for a consistent snapshot.
+    //    Uses a direct join query instead of the relational API (which isn't available on tx).
+    const [userCart] = await tx
+      .select({ id: cart.id })
+      .from(cart)
+      .where(and(eq(cart.organizationId, organizationId), eq(cart.userId, userId)))
+      .limit(1);
+
+    if (!userCart) {
+      return { error: 'Cart is empty' };
+    }
+
+    const cartItems = await tx
+      .select({
+        id: cartItem.id,
+        inventoryItemId: cartItem.inventoryItemId,
+        quantity: cartItem.quantity,
+        invId: inventoryItem.id,
+        invCondition: inventoryItem.condition,
+        invPrice: inventoryItem.price,
+        productId: product.id,
+        productName: product.name,
+      })
+      .from(cartItem)
+      .innerJoin(inventoryItem, eq(cartItem.inventoryItemId, inventoryItem.id))
+      .innerJoin(product, eq(inventoryItem.productId, product.id))
+      .where(eq(cartItem.cartId, userCart.id));
+
+    if (cartItems.length === 0) {
+      return { error: 'Cart is empty' };
+    }
+
     // 2. Validate inventory availability — check total stock across all non-deleted stock entries
     //    for the parent inventory_item referenced by each cart item
     const insufficientItems: InsufficientItemInfo[] = [];
     const cartItemsWithInventory: {
+      cartItemId: number; // cartItem.id for deletion
       inventoryItemId: number; // parent inventory_item.id
       productId: number;
       productName: string;
@@ -143,36 +170,33 @@ export async function submitOrder(organizationId: string, userId: string, custom
       unitPrice: number;
     }[] = [];
 
-    for (const ci of cart.cartItems) {
-      if (!ci.inventoryItem?.product) continue;
-
-      const inv = ci.inventoryItem;
-
+    for (const ci of cartItems) {
       // Check total available from stock entries for this parent
       const [totalResult] = await tx
         .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
         .from(inventoryItemStock)
-        .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
+        .where(and(eq(inventoryItemStock.inventoryItemId, ci.invId), isNull(inventoryItemStock.deletedAt)));
 
       const totalAvailable = totalResult?.total ?? 0;
 
       if (totalAvailable < ci.quantity) {
         insufficientItems.push({
-          productId: inv.product.id,
-          productName: inv.product.name,
-          condition: inv.condition,
+          productId: ci.productId,
+          productName: ci.productName,
+          condition: ci.invCondition,
           requested: ci.quantity,
           available: totalAvailable,
         });
       }
 
       cartItemsWithInventory.push({
-        inventoryItemId: inv.id,
-        productId: inv.product.id,
-        productName: inv.product.name,
-        condition: inv.condition,
+        cartItemId: ci.id,
+        inventoryItemId: ci.invId,
+        productId: ci.productId,
+        productName: ci.productName,
+        condition: ci.invCondition,
         quantity: ci.quantity,
-        unitPrice: inv.price,
+        unitPrice: ci.invPrice,
       });
     }
 
@@ -268,7 +292,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     const insertedOrderItems = await tx.insert(orderItem).values(allOrderItemValues).returning();
 
     // 5. Clear the cart
-    const cartItemIds = cart.cartItems.map((ci) => ci.id);
+    const cartItemIds = cartItemsWithInventory.map((ci) => ci.cartItemId);
     if (cartItemIds.length > 0) {
       await tx.delete(cartItem).where(inArray(cartItem.id, cartItemIds));
     }
