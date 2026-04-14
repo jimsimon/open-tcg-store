@@ -20,10 +20,12 @@ import {
   handleDropboxCallback,
   getOneDriveAuthUrl,
   handleOneDriveCallback,
+  validateOAuthState,
 } from './services/backup-service.ts';
 import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
 import { startUpdateScheduler } from './services/tcg-data-update-service.ts';
 import { sql } from 'drizzle-orm';
+import { rateLimit } from './lib/rate-limit.ts';
 
 export type GraphqlContext = {
   auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
@@ -40,6 +42,39 @@ app.use(
     origin: process.env.APP_URL || 'http://localhost',
   }),
 );
+
+// ---------------------------------------------------------------------------
+// Security headers
+// ---------------------------------------------------------------------------
+app.use(async (ctx, next) => {
+  ctx.set('X-Content-Type-Options', 'nosniff');
+  ctx.set('X-Frame-Options', 'DENY');
+  ctx.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  ctx.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  ctx.set('X-XSS-Protection', '0'); // Disabled per OWASP — modern browsers use CSP instead
+  return next();
+});
+
+// ---------------------------------------------------------------------------
+// Rate limiting
+// ---------------------------------------------------------------------------
+
+// Strict rate limit on auth endpoints (login, signup, password reset)
+const authRateLimit = rateLimit({
+  max: 20,
+  windowMs: 60_000, // 20 requests per minute per IP
+  keyFn: (ctx) => `auth:${ctx.ip}`,
+  message: 'Too many authentication attempts. Please try again later.',
+});
+
+// More generous limit on GraphQL (general API usage)
+const graphqlRateLimit = rateLimit({
+  max: 200,
+  windowMs: 60_000, // 200 requests per minute per IP
+  keyFn: (ctx) => `gql:${ctx.ip}`,
+  message: 'Too many requests. Please slow down.',
+});
+
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers: resolvers as Resolvers,
@@ -61,14 +96,26 @@ app.use(async (ctx, next) => {
   return next();
 });
 
+// Apply rate limiting to auth endpoints
 app.use(async (ctx, next) => {
   if (ctx.URL.pathname.startsWith('/api/auth')) {
-    await toNodeHandler(auth)(ctx.req, ctx.res);
+    await authRateLimit(ctx, async () => {
+      await toNodeHandler(auth)(ctx.req, ctx.res);
+    });
   } else {
     return next();
   }
 });
 app.use(bodyParser());
+
+// Apply rate limiting to GraphQL endpoint
+app.use(async (ctx, next) => {
+  if (ctx.URL.pathname === '/graphql') {
+    return graphqlRateLimit(ctx, next);
+  }
+  return next();
+});
+
 app.use(
   mount(
     '/graphql',
@@ -179,6 +226,11 @@ const router = new Router()
     ctx.body = { databaseUpdating: isDatabaseUpdating() };
   })
   .get('/graphiql', (ctx: RouterContext) => {
+    if (process.env.NODE_ENV === 'production') {
+      ctx.status = 404;
+      ctx.body = { error: 'Not found' };
+      return;
+    }
     ctx.status = 200;
     ctx.type = 'html';
     ctx.body = ruruHTML({
@@ -186,12 +238,17 @@ const router = new Router()
     });
   })
   // OAuth callback routes for backup providers
+  // Authorize routes require authentication; callbacks validate the CSRF state parameter.
   .get('/api/backup/oauth/google_drive/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
     ctx.redirect(getGoogleDriveAuthUrl());
   })
   .get('/api/backup/oauth/google_drive/callback', async (ctx: RouterContext) => {
     try {
+      const state = ctx.query.state as string;
+      if (!state || validateOAuthState(state) !== 'google_drive') {
+        throw new Error('Invalid or expired OAuth state. Please try again.');
+      }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleGoogleDriveCallback(code);
@@ -207,6 +264,10 @@ const router = new Router()
   })
   .get('/api/backup/oauth/dropbox/callback', async (ctx: RouterContext) => {
     try {
+      const state = ctx.query.state as string;
+      if (!state || validateOAuthState(state) !== 'dropbox') {
+        throw new Error('Invalid or expired OAuth state. Please try again.');
+      }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleDropboxCallback(code);
@@ -222,6 +283,10 @@ const router = new Router()
   })
   .get('/api/backup/oauth/onedrive/callback', async (ctx: RouterContext) => {
     try {
+      const state = ctx.query.state as string;
+      if (!state || validateOAuthState(state) !== 'onedrive') {
+        throw new Error('Invalid or expired OAuth state. Please try again.');
+      }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
       await handleOneDriveCallback(code);

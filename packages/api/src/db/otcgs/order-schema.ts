@@ -13,8 +13,8 @@ export const order = sqliteTable(
     userId: text('user_id').notNull(),
     status: text('status').notNull().default('open'),
     totalAmount: real('total_amount').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
   (table) => [

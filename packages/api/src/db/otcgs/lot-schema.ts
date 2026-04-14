@@ -11,11 +11,11 @@ export const lot = sqliteTable(
     description: text('description', { length: 2000 }),
     amountPaid: real('amount_paid').notNull(),
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
     createdBy: text('created_by'),
     updatedBy: text('updated_by'),

@@ -82,7 +82,7 @@
   },
   "lint-staged": {
     "*.{ts,js,tsx,jsx}": [
-      "pnpm run lint",
+      "pnpm run lint:check",
       "pnpm run format"
     ],
     "!(**/migrations/**).{json,css,html}": [

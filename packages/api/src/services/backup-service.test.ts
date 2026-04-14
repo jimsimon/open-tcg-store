@@ -15,6 +15,8 @@ const {
   mockUnlinkSync,
   mockRmSync,
   mockMkdtempSync,
+  mockRenameSync,
+  mockCopyFileSync,
   mockAuthorizeURL,
   mockGetToken,
   mockCreateToken,
@@ -29,6 +31,8 @@ const {
   mockOneDriveUploadSimple,
   mockOneDriveDownload,
   mockDbRun,
+  mockLibsqlExecute,
+  mockLibsqlClose,
 } = vi.hoisted(() => ({
   mockStoreOAuthTokens: vi.fn(),
   mockGetOAuthTokens: vi.fn(),
@@ -40,6 +44,8 @@ const {
   mockUnlinkSync: vi.fn(),
   mockRmSync: vi.fn(),
   mockMkdtempSync: vi.fn(() => '/tmp/otcgs-backup-xyz'),
+  mockRenameSync: vi.fn(),
+  mockCopyFileSync: vi.fn(),
   mockAuthorizeURL: vi.fn(),
   mockGetToken: vi.fn(),
   mockCreateToken: vi.fn(),
@@ -54,6 +60,8 @@ const {
   mockOneDriveUploadSimple: vi.fn(),
   mockOneDriveDownload: vi.fn(),
   mockDbRun: vi.fn().mockResolvedValue(undefined),
+  mockLibsqlExecute: vi.fn().mockResolvedValue({ rows: [['ok']] }),
+  mockLibsqlClose: vi.fn(),
 }));
 
 // Mock settings-service
@@ -91,11 +99,26 @@ vi.mock('node:fs', () => ({
   unlinkSync: mockUnlinkSync,
   rmSync: mockRmSync,
   mkdtempSync: mockMkdtempSync,
+  renameSync: mockRenameSync,
+  copyFileSync: mockCopyFileSync,
 }));
 
 // Mock node:os
 vi.mock('node:os', () => ({
   tmpdir: vi.fn(() => '/tmp'),
+}));
+
+// Mock node:crypto
+vi.mock('node:crypto', () => ({
+  randomBytes: vi.fn(() => ({ toString: () => 'mock-state-token' })),
+}));
+
+// Mock @libsql/client for safeRestore integrity check
+vi.mock('@libsql/client', () => ({
+  createClient: vi.fn(() => ({
+    execute: mockLibsqlExecute,
+    close: mockLibsqlClose,
+  })),
 }));
 
 // Mock simple-oauth2 - use a class so `new AuthorizationCode(...)` works
@@ -169,6 +192,9 @@ import {
 describe('backup-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Restore default implementations cleared by clearAllMocks
+    mockMkdtempSync.mockReturnValue('/tmp/otcgs-backup-xyz');
+    mockLibsqlExecute.mockResolvedValue({ rows: [['ok']] });
     // Set env vars for OAuth configs
     process.env.APP_URL = 'http://localhost';
     process.env.GOOGLE_CLIENT_ID = 'google-client-id';
@@ -537,7 +563,7 @@ describe('backup-service', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('restored successfully');
-      expect(mockWriteFileSync).toHaveBeenCalled();
+      expect(mockRenameSync).toHaveBeenCalled();
     });
 
     it('should fail OneDrive restore when no backup folder found', async () => {

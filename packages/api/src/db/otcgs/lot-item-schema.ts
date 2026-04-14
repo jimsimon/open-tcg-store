@@ -14,11 +14,11 @@ export const lotItem = sqliteTable(
     costBasis: real('cost_basis').notNull(),
     costOverridden: integer('cost_overridden').notNull().default(0), // boolean
     inventoryItemStockId: integer('inventory_item_stock_id'),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
   (table) => [

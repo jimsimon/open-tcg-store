@@ -97,9 +97,11 @@ function calculateOrderTotals(items: OrderItemResult[]) {
 function safeISOString(value: unknown): string {
   if (!value) return new Date().toISOString();
   if (value instanceof Date) {
-    const iso = value.toISOString();
-    if (iso === 'Invalid Date') return new Date().toISOString();
-    return iso;
+    try {
+      return value.toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
   }
   if (typeof value === 'string') {
     const d = new Date(value);

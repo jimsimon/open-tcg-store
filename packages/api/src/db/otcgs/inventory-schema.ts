@@ -10,11 +10,11 @@ export const inventoryItem = sqliteTable(
     productId: integer('product_id').notNull(),
     condition: text('condition').notNull(), // NM, LP, MP, HP, D
     price: real('price').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
     createdBy: text('created_by'),
     updatedBy: text('updated_by'),

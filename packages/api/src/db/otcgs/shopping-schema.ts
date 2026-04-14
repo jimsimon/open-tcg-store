@@ -34,14 +34,14 @@ export const cart = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     organizationId: text('organization_id').notNull(),
     userId: text('user_id').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    lastUpdatedAt: integer('last_updated_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    lastUpdatedAt: integer('last_updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    lastAccessedAt: integer('last_accessed_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    lastAccessedAt: integer('last_accessed_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
   (table) => [

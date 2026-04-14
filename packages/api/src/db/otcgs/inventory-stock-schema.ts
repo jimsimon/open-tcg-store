@@ -14,12 +14,12 @@ export const inventoryItemStock = sqliteTable(
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     notes: text('notes', { length: 1000 }),
     lotId: integer('lot_id'),
-    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-      .default(sql`(CURRENT_TIMESTAMP)`)
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
     createdBy: text('created_by'),
     updatedBy: text('updated_by'),

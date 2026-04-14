@@ -1,18 +1,62 @@
-import { readFileSync, writeFileSync, existsSync, createReadStream, unlinkSync, rmSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  createReadStream,
+  unlinkSync,
+  rmSync,
+  renameSync,
+  copyFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
 import { AuthorizationCode } from 'simple-oauth2';
 import { google } from 'googleapis';
 import { Dropbox } from 'dropbox';
 import oneDriveAPI from 'onedrive-api';
 import { sql } from 'drizzle-orm';
+import { createClient } from '@libsql/client';
 import { databaseFilePath } from '../db/otcgs/drizzle.config';
 import { otcgs } from '../db/otcgs/index';
 import { storeOAuthTokens, getOAuthTokens, updateLastBackupAt } from './settings-service';
 
 const DB_FILE_PATH = databaseFilePath;
 const BACKUP_FOLDER = 'otcgs-backups';
+
+// ---------------------------------------------------------------------------
+// OAuth CSRF state management
+// ---------------------------------------------------------------------------
+
+const pendingOAuthStates = new Map<string, { provider: BackupProvider; expiresAt: number }>();
+
+/** Generate a cryptographic state parameter for OAuth CSRF protection. */
+export function generateOAuthState(provider: BackupProvider): string {
+  const state = randomBytes(32).toString('hex');
+  pendingOAuthStates.set(state, {
+    provider,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minute expiry
+  });
+  return state;
+}
+
+/** Validate and consume an OAuth state parameter. Returns the provider if valid. */
+export function validateOAuthState(state: string): BackupProvider | null {
+  const entry = pendingOAuthStates.get(state);
+  if (!entry) return null;
+  pendingOAuthStates.delete(state);
+  if (Date.now() > entry.expiresAt) return null;
+  return entry.provider;
+}
+
+// Periodically clean up expired state entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of pendingOAuthStates) {
+    if (now > entry.expiresAt) pendingOAuthStates.delete(key);
+  }
+}, 60_000).unref();
 
 export type BackupProvider = 'google_drive' | 'dropbox' | 'onedrive';
 
@@ -43,6 +87,51 @@ function cleanupTempBackup(tempPath: string): void {
     rmSync(tempDir, { recursive: true, force: true });
   } catch {
     // Best-effort cleanup
+  }
+}
+
+/**
+ * Safely restore a database from downloaded data:
+ * 1. Write to a temp file
+ * 2. Validate SQLite integrity
+ * 3. Create a pre-restore backup of the current DB
+ * 4. Atomically replace the live DB via rename
+ */
+async function safeRestore(data: Buffer): Promise<void> {
+  const tempDir = mkdtempSync(join(tmpdir(), 'otcgs-restore-'));
+  const tempPath = join(tempDir, 'restore.sqlite');
+  const preRestoreBackupPath = `${DB_FILE_PATH}.pre-restore`;
+
+  try {
+    // 1. Write downloaded data to temp file
+    writeFileSync(tempPath, data);
+
+    // 2. Validate the downloaded file is a valid SQLite database
+    const tempClient = createClient({ url: `file:${tempPath}` });
+    try {
+      const result = await tempClient.execute('PRAGMA integrity_check');
+      const checkResult = result.rows[0]?.[0];
+      if (checkResult !== 'ok') {
+        throw new Error(`Backup integrity check failed: ${checkResult}`);
+      }
+    } finally {
+      tempClient.close();
+    }
+
+    // 3. Create a pre-restore backup of the current DB (best-effort)
+    if (existsSync(DB_FILE_PATH)) {
+      try {
+        copyFileSync(DB_FILE_PATH, preRestoreBackupPath);
+      } catch (err) {
+        console.warn('Failed to create pre-restore backup:', err);
+      }
+    }
+
+    // 4. Atomically replace the live DB file
+    renameSync(tempPath, DB_FILE_PATH);
+  } finally {
+    // Clean up temp directory (the file may have been renamed out)
+    rmSync(tempDir, { recursive: true, force: true });
   }
 }
 
@@ -120,9 +209,12 @@ export function getAuthUrl(provider: BackupProvider): string {
   const config = getProviderConfig(provider);
   const client = createOAuthClient(provider);
 
+  const state = generateOAuthState(provider);
+
   const params: Record<string, string> = {
     redirect_uri: config.redirectUri,
     scope: config.scopes.join(' '),
+    state,
   };
 
   // Provider-specific params
@@ -291,7 +383,7 @@ async function restoreFromGoogleDrive(): Promise<void> {
 
   const fileId = fileSearch.data.files[0].id!;
   const response = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'arraybuffer' });
-  writeFileSync(DB_FILE_PATH, Buffer.from(response.data as ArrayBuffer));
+  await safeRestore(Buffer.from(response.data as ArrayBuffer));
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +425,7 @@ async function restoreFromDropbox(): Promise<void> {
 
   const downloadResult = await dbx.filesDownload({ path: backupFiles[0].path_lower! });
   const fileData = (downloadResult.result as unknown as { fileBinary: Buffer }).fileBinary;
-  writeFileSync(DB_FILE_PATH, fileData);
+  await safeRestore(fileData);
 }
 
 // ---------------------------------------------------------------------------
@@ -396,7 +488,7 @@ async function restoreFromOneDrive(): Promise<void> {
   for await (const chunk of fileStream) {
     chunks.push(Buffer.from(chunk));
   }
-  writeFileSync(DB_FILE_PATH, Buffer.concat(chunks));
+  await safeRestore(Buffer.concat(chunks));
 }
 
 // ---------------------------------------------------------------------------
