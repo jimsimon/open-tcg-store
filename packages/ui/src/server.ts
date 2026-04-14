@@ -382,13 +382,9 @@ async function isDatabaseUpdating(): Promise<boolean> {
 
 // Cache for isSetupPending — once setup is complete, it stays complete forever.
 // We cache `false` (setup done) indefinitely but re-check `true` (setup pending)
-// periodically in case setup just completed.
+// with a 30-second TTL so the app detects setup completion within half a minute.
 let setupPendingCache: { value: boolean; expiresAt: number } | null = null;
 const SETUP_PENDING_TTL_MS = 30_000; // 30 seconds when pending
-/** Call this to invalidate the setup cache after first-time-setup completes */
-export function invalidateSetupCache(): void {
-  setupPendingCache = null;
-}
 
 async function isSetupPending() {
   const now = Date.now();

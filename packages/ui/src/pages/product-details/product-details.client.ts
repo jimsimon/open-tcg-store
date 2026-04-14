@@ -125,7 +125,7 @@ function sanitizeHtml(html: string): string {
       const tag = el.tagName.toLowerCase();
       const childContent = Array.from(el.childNodes).map(walk).join('');
       if (ALLOWED_TAGS.has(tag)) {
-        return `<${tag}>${childContent}</${tag}>`;
+        return tag === 'br' ? '<br>' : `<${tag}>${childContent}</${tag}>`;
       }
       // Disallowed tag — keep text content, strip the tag
       return childContent;

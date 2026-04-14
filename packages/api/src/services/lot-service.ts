@@ -1,10 +1,10 @@
-import { eq, and, like, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { lot } from '../db/otcgs/lot-schema';
 import { lotItem } from '../db/otcgs/lot-item-schema';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
-import { escapeLikeWildcards } from '../lib/sql-utils';
+import { likeEscaped } from '../lib/sql-utils';
 import type { PaginationInput } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
@@ -728,7 +728,7 @@ export async function getLots(
   const conditions: ReturnType<typeof eq>[] = [eq(lot.organizationId, organizationId)];
 
   if (filters?.searchTerm) {
-    conditions.push(like(lot.name, `%${escapeLikeWildcards(filters.searchTerm)}%`));
+    conditions.push(likeEscaped(lot.name, filters.searchTerm));
   }
 
   const whereClause = and(...conditions);

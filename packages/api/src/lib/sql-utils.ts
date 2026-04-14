@@ -1,8 +1,20 @@
+import { sql, type SQL, type Column } from 'drizzle-orm';
+
 /**
- * Escape SQL LIKE wildcard characters (% and _) in a search term.
- * Without this, user input containing these characters acts as wildcards,
- * e.g. searching "%" matches all records.
+ * Escape SQL LIKE wildcard characters (% and _) in a search term using
+ * backslash as the escape character.
  */
-export function escapeLikeWildcards(term: string): string {
-  return term.replace(/[%_]/g, '\\$&');
+function escapeLikeWildcards(term: string): string {
+  return term.replace(/[%_\\]/g, '\\$&');
+}
+
+/**
+ * Build a `column LIKE pattern ESCAPE '\'` SQL expression with properly
+ * escaped wildcards in the search term. SQLite's LIKE has no default escape
+ * character — without the explicit ESCAPE clause, backslash-escaped wildcards
+ * are treated as literal characters and the escaping has no effect.
+ */
+export function likeEscaped(column: Column | SQL, pattern: string): SQL {
+  const escaped = `%${escapeLikeWildcards(pattern)}%`;
+  return sql`${column} LIKE ${escaped} ESCAPE '\\'`;
 }

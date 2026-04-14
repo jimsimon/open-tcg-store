@@ -2,7 +2,7 @@ import { eq, and, like, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
-import { escapeLikeWildcards } from '../lib/sql-utils';
+import { likeEscaped } from '../lib/sql-utils';
 import type {
   InventoryItem,
   InventoryPage,
@@ -81,7 +81,7 @@ function buildFilterConditions(organizationId: string, filters?: InventoryFilter
     conditions.push(eq(inventoryItem.condition, filters.condition));
   }
   if (filters?.searchTerm) {
-    conditions.push(like(product.name, `%${escapeLikeWildcards(filters.searchTerm)}%`));
+    conditions.push(likeEscaped(product.name, filters.searchTerm));
   }
   if (filters?.rarity) {
     conditions.push(

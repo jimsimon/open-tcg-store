@@ -4,7 +4,7 @@ import { productExtendedData } from '../../../../db/tcg-data/schema';
 import { inventoryItem } from '../../../../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../../../../db/otcgs/inventory-stock-schema';
 import { getOrganizationIdOptional } from '../../../../lib/assert-permission';
-import { escapeLikeWildcards } from '../../../../lib/sql-utils';
+import { likeEscaped } from '../../../../lib/sql-utils';
 import type { GraphqlContext } from '../../../../server';
 import { Card, InputMaybe, SingleCardFilters, type QueryResolvers } from '../../../types.generated';
 
@@ -56,11 +56,11 @@ async function getInventory(categoryId: number, filters: InputMaybe<SingleCardFi
         },
       },
     },
-    where: (product, { and, like, eq, exists }) =>
+    where: (product, { and, eq, exists }) =>
       and(
         eq(product.categoryId, categoryId),
         filters?.searchTerm && filters.searchTerm.trim().length > 0
-          ? like(sql`lower(${product.name})`, `%${escapeLikeWildcards(filters.searchTerm.toLowerCase())}%`)
+          ? likeEscaped(sql`lower(${product.name})`, filters.searchTerm.toLowerCase())
           : undefined,
         filters?.setCode ? eq(product.groupId, parseInt(filters.setCode, 10)) : undefined,
         // Product type filtering: singles vs sealed
