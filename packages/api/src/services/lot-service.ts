@@ -177,7 +177,7 @@ async function buildLotItemResults(lotId: number): Promise<LotItemResult[]> {
       id: item.id,
       lotId: item.lotId,
       productId: item.productId,
-      productName: item.productName ?? '',
+      productName: item.productName,
       gameName: item.gameName ?? '',
       setName: item.setName ?? '',
       rarity: item.rarity ?? null,
