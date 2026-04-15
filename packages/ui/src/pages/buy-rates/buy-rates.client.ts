@@ -13,6 +13,7 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
 import { TypedDocumentString } from '../../graphql/graphql';
+import { formatCurrency } from '../../lib/currency';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -28,7 +29,9 @@ const GetPublicBuyRatesQuery = new TypedDocumentString(`
         entries {
           id
           description
-          rate
+          fixedRateCents
+          percentageRate
+          type
           sortOrder
         }
       }
@@ -44,7 +47,9 @@ const GetPublicBuyRatesQuery = new TypedDocumentString(`
         entries: Array<{
           id: number;
           description: string;
-          rate: number;
+          fixedRateCents: number | null;
+          percentageRate: number | null;
+          type: string;
           sortOrder: number;
         }>;
       }>;
@@ -64,7 +69,9 @@ interface BuyRateGame {
   entries: Array<{
     id: number;
     description: string;
-    rate: number;
+    fixedRateCents: number | null;
+    percentageRate: number | null;
+    type: string;
     sortOrder: number;
   }>;
 }
@@ -247,11 +254,12 @@ export class OgsBuyRatesPage extends LitElement {
     }
   }
 
-  private formatRate(rate: number): string {
-    return rate.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 3,
-    });
+  private formatRate(entry: { fixedRateCents: number | null; percentageRate: number | null; type: string }): string {
+    if (entry.type === 'percentage') {
+      const pct = (entry.percentageRate ?? 0) * 100;
+      return `${pct.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+    }
+    return formatCurrency(entry.fixedRateCents);
   }
 
   render() {
@@ -367,7 +375,7 @@ export class OgsBuyRatesPage extends LitElement {
             (entry) => html`
               <tr>
                 <td>${entry.description}</td>
-                <td>${this.formatRate(entry.rate)}</td>
+                <td>${this.formatRate(entry)}</td>
               </tr>
             `,
           )}

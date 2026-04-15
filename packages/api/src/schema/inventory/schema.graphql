@@ -9,7 +9,7 @@ type InventoryItem {
   isSingle: Boolean!
   isSealed: Boolean!
   condition: String!
-  price: Float!
+  price: Int! # cents
   totalQuantity: Int!
   entryCount: Int!
   createdAt: String!
@@ -20,7 +20,7 @@ type InventoryItemStock {
   id: Int!
   inventoryItemId: Int!
   quantity: Int!
-  costBasis: Float!
+  costBasis: Int! # cents
   acquisitionDate: String!
   notes: String
   createdAt: String!
@@ -62,9 +62,9 @@ input PaginationInput {
 input AddInventoryItemInput {
   productId: Int!
   condition: String!
-  price: Float!
+  price: Int! # cents
   quantity: Int!
-  costBasis: Float!
+  costBasis: Int! # cents
   acquisitionDate: String!
   notes: String
 }
@@ -72,13 +72,13 @@ input AddInventoryItemInput {
 input UpdateInventoryItemInput {
   id: Int!
   condition: String
-  price: Float
+  price: Int # cents
 }
 
 input AddStockInput {
   inventoryItemId: Int!
   quantity: Int!
-  costBasis: Float!
+  costBasis: Int! # cents
   acquisitionDate: String!
   notes: String
 }
@@ -86,7 +86,7 @@ input AddStockInput {
 input UpdateStockInput {
   id: Int!
   quantity: Int
-  costBasis: Float
+  costBasis: Int # cents
   acquisitionDate: String
   notes: String
 }
@@ -94,7 +94,7 @@ input UpdateStockInput {
 input BulkUpdateStockInput {
   ids: [Int!]!
   quantity: Int
-  costBasis: Float
+  costBasis: Int # cents
   acquisitionDate: String
   notes: String
 }
@@ -124,11 +124,11 @@ type ProductSearchResult {
 
 type ProductPrice {
   subTypeName: String!
-  lowPrice: Float
-  midPrice: Float
-  highPrice: Float
-  marketPrice: Float
-  directLowPrice: Float
+  lowPrice: Int # cents
+  midPrice: Int # cents
+  highPrice: Int # cents
+  marketPrice: Int # cents
+  directLowPrice: Int # cents
 }
 
 extend type Mutation {

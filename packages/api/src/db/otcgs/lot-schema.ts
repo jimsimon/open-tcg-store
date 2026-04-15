@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, foreignKey, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, foreignKey, index } from 'drizzle-orm/sqlite-core';
 import { user } from './auth-schema';
 
 export const lot = sqliteTable(
@@ -9,7 +9,7 @@ export const lot = sqliteTable(
     organizationId: text('organization_id').notNull(),
     name: text('name').notNull(),
     description: text('description', { length: 2000 }),
-    amountPaid: real('amount_paid').notNull(),
+    amountPaid: integer('amount_paid').notNull(), // cents
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

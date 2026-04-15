@@ -6,6 +6,8 @@ import {
   type ProductPrice,
   TypedDocumentString,
 } from '../../graphql/graphql.ts';
+import { formatCurrency } from '../../lib/currency.ts';
+export { formatCurrency };
 
 // --- GraphQL Operations ---
 
@@ -963,11 +965,6 @@ export function renderConditionBadge(condition: string | null | undefined) {
   return html`<span class="condition-badge ${lower}">${labels[lower] ?? condition}</span>`;
 }
 
-export function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '—';
-  return `$${value.toFixed(2)}`;
-}
-
 export function renderProfitSummary(price: number, costBasis: number, quantity: number) {
   if (!costBasis || costBasis <= 0) return nothing;
 
@@ -1002,9 +999,9 @@ export function renderMarketPrices(prices: ProductPrice[]) {
         (p: ProductPrice) => html`
           <div class="price-row">
             <span>${p.subTypeName}</span>
-            <span>Low: ${p.lowPrice != null ? `$${p.lowPrice.toFixed(2)}` : '—'}</span>
-            <span>Mid: ${p.midPrice != null ? `$${p.midPrice.toFixed(2)}` : '—'}</span>
-            <span>Market: ${p.marketPrice != null ? `$${p.marketPrice.toFixed(2)}` : '—'}</span>
+            <span>Low: ${p.lowPrice != null ? formatCurrency(p.lowPrice) : '—'}</span>
+            <span>Mid: ${p.midPrice != null ? formatCurrency(p.midPrice) : '—'}</span>
+            <span>Market: ${p.marketPrice != null ? formatCurrency(p.marketPrice) : '—'}</span>
           </div>
         `,
       )}

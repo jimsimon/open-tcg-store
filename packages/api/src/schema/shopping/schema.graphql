@@ -9,7 +9,7 @@ type CartItemOutput {
   productName: String!
   condition: String!
   quantity: Int!
-  unitPrice: Float!
+  unitPrice: Int! # cents
   maxAvailable: Int!
 }
 

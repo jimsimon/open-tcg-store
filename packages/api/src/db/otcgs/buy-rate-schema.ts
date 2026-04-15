@@ -7,7 +7,8 @@ export const buyRate = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     categoryId: integer('category_id').notNull(),
     description: text('description').notNull(),
-    rate: real('rate').notNull(),
+    fixedRateCents: integer('fixed_rate_cents'), // cents — non-null when type='fixed'
+    percentageRate: real('percentage_rate'), // 0.0–1.0 — non-null when type='percentage'
     type: text('type').notNull().default('fixed'), // 'fixed' or 'percentage'
     rarity: text('rarity'), // set for rarity-default entries
     hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),

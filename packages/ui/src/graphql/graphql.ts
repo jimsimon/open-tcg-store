@@ -19,16 +19,16 @@ export type Scalars = {
 export type AddInventoryItemInput = {
   acquisitionDate: Scalars['String']['input'];
   condition: Scalars['String']['input'];
-  costBasis: Scalars['Float']['input'];
+  costBasis: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
-  price: Scalars['Float']['input'];
+  price: Scalars['Int']['input'];
   productId: Scalars['Int']['input'];
   quantity: Scalars['Int']['input'];
 };
 
 export type AddStockInput = {
   acquisitionDate: Scalars['String']['input'];
-  costBasis: Scalars['Float']['input'];
+  costBasis: Scalars['Int']['input'];
   inventoryItemId: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   quantity: Scalars['Int']['input'];
@@ -68,7 +68,7 @@ export type BestSeller = {
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   totalQuantity: Scalars['Int']['output'];
-  totalRevenue: Scalars['Float']['output'];
+  totalRevenue: Scalars['Int']['output'];
 };
 
 export type BulkDeleteStockInput = {
@@ -77,7 +77,7 @@ export type BulkDeleteStockInput = {
 
 export type BulkUpdateStockInput = {
   acquisitionDate?: InputMaybe<Scalars['String']['input']>;
-  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  costBasis?: InputMaybe<Scalars['Int']['input']>;
   ids: Array<Scalars['Int']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
   quantity?: InputMaybe<Scalars['Int']['input']>;
@@ -86,19 +86,21 @@ export type BulkUpdateStockInput = {
 export type BuyRateEntry = {
   __typename?: 'BuyRateEntry';
   description: Scalars['String']['output'];
+  fixedRateCents?: Maybe<Scalars['Int']['output']>;
   hidden: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
+  percentageRate?: Maybe<Scalars['Float']['output']>;
   rarity?: Maybe<Scalars['String']['output']>;
-  rate: Scalars['Float']['output'];
   sortOrder: Scalars['Int']['output'];
   type: Scalars['String']['output'];
 };
 
 export type BuyRateEntryInput = {
   description: Scalars['String']['input'];
+  fixedRateCents?: InputMaybe<Scalars['Int']['input']>;
   hidden?: InputMaybe<Scalars['Boolean']['input']>;
+  percentageRate?: InputMaybe<Scalars['Float']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
-  rate: Scalars['Float']['input'];
   sortOrder: Scalars['Int']['input'];
   type: Scalars['String']['input'];
 };
@@ -150,7 +152,7 @@ export type CartItemOutput = {
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
-  unitPrice: Scalars['Float']['output'];
+  unitPrice: Scalars['Int']['output'];
 };
 
 export type CompanySettings = {
@@ -170,13 +172,13 @@ export type ConditionInventories = {
 
 export type ConditionInventory = {
   __typename?: 'ConditionInventory';
-  price: Scalars['String']['output'];
+  price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
 };
 
 export type CreateLotInput = {
   acquisitionDate: Scalars['String']['input'];
-  amountPaid: Scalars['Float']['input'];
+  amountPaid: Scalars['Int']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
@@ -249,7 +251,7 @@ export type InventoryItem = {
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   organizationId: Scalars['String']['output'];
-  price: Scalars['Float']['output'];
+  price: Scalars['Int']['output'];
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
@@ -261,7 +263,7 @@ export type InventoryItem = {
 export type InventoryItemStock = {
   __typename?: 'InventoryItemStock';
   acquisitionDate: Scalars['String']['output'];
-  costBasis: Scalars['Float']['output'];
+  costBasis: Scalars['Int']['output'];
   createdAt: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   inventoryItemId: Scalars['Int']['output'];
@@ -290,8 +292,8 @@ export type InventoryStockPage = {
 
 export type InventorySummary = {
   __typename?: 'InventorySummary';
-  totalCostValue: Scalars['Float']['output'];
-  totalRetailValue: Scalars['Float']['output'];
+  totalCostValue: Scalars['Int']['output'];
+  totalRetailValue: Scalars['Int']['output'];
   totalSkus: Scalars['Int']['output'];
   totalUnits: Scalars['Int']['output'];
 };
@@ -299,17 +301,17 @@ export type InventorySummary = {
 export type Lot = {
   __typename?: 'Lot';
   acquisitionDate: Scalars['String']['output'];
-  amountPaid: Scalars['Float']['output'];
+  amountPaid: Scalars['Int']['output'];
   createdAt: Scalars['String']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['Int']['output'];
   items: Array<LotItem>;
   name: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
-  projectedProfitLoss: Scalars['Float']['output'];
+  projectedProfitLoss: Scalars['Int']['output'];
   projectedProfitMargin: Scalars['Float']['output'];
-  totalCost: Scalars['Float']['output'];
-  totalMarketValue: Scalars['Float']['output'];
+  totalCost: Scalars['Int']['output'];
+  totalMarketValue: Scalars['Int']['output'];
   updatedAt: Scalars['String']['output'];
 };
 
@@ -320,14 +322,14 @@ export type LotFilters = {
 export type LotItem = {
   __typename?: 'LotItem';
   condition?: Maybe<Scalars['String']['output']>;
-  costBasis: Scalars['Float']['output'];
+  costBasis: Scalars['Int']['output'];
   costOverridden: Scalars['Boolean']['output'];
   gameName: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   isSealed: Scalars['Boolean']['output'];
   isSingle: Scalars['Boolean']['output'];
   lotId: Scalars['Int']['output'];
-  marketValue?: Maybe<Scalars['Float']['output']>;
+  marketValue?: Maybe<Scalars['Int']['output']>;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
@@ -337,7 +339,7 @@ export type LotItem = {
 
 export type LotItemInput = {
   condition?: InputMaybe<Scalars['String']['input']>;
-  costBasis: Scalars['Float']['input'];
+  costBasis: Scalars['Int']['input'];
   costOverridden: Scalars['Boolean']['input'];
   id?: InputMaybe<Scalars['Int']['input']>;
   productId: Scalars['Int']['input'];
@@ -355,10 +357,10 @@ export type LotPage = {
 
 export type LotStats = {
   __typename?: 'LotStats';
-  totalInvested: Scalars['Float']['output'];
+  totalInvested: Scalars['Int']['output'];
   totalLots: Scalars['Int']['output'];
-  totalMarketValue: Scalars['Float']['output'];
-  totalProfitLoss: Scalars['Float']['output'];
+  totalMarketValue: Scalars['Int']['output'];
+  totalProfitLoss: Scalars['Int']['output'];
 };
 
 export type Mutation = {
@@ -566,7 +568,7 @@ export type OpenOrder = {
   id: Scalars['Int']['output'];
   itemCount: Scalars['Int']['output'];
   orderNumber: Scalars['String']['output'];
-  totalAmount: Scalars['Float']['output'];
+  totalAmount: Scalars['Int']['output'];
 };
 
 export type Order = {
@@ -578,9 +580,9 @@ export type Order = {
   orderNumber: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
   status: Scalars['String']['output'];
-  totalAmount: Scalars['Float']['output'];
-  totalCostBasis?: Maybe<Scalars['Float']['output']>;
-  totalProfit?: Maybe<Scalars['Float']['output']>;
+  totalAmount: Scalars['Int']['output'];
+  totalCostBasis?: Maybe<Scalars['Int']['output']>;
+  totalProfit?: Maybe<Scalars['Int']['output']>;
 };
 
 export type OrderFilters = {
@@ -592,14 +594,14 @@ export type OrderFilters = {
 export type OrderItem = {
   __typename?: 'OrderItem';
   condition: Scalars['String']['output'];
-  costBasis?: Maybe<Scalars['Float']['output']>;
+  costBasis?: Maybe<Scalars['Int']['output']>;
   id: Scalars['Int']['output'];
   lotId?: Maybe<Scalars['Int']['output']>;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
-  profit?: Maybe<Scalars['Float']['output']>;
+  profit?: Maybe<Scalars['Int']['output']>;
   quantity: Scalars['Int']['output'];
-  unitPrice: Scalars['Float']['output'];
+  unitPrice: Scalars['Int']['output'];
 };
 
 export type OrderPage = {
@@ -628,7 +630,7 @@ export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
   condition: Scalars['String']['output'];
   inventoryItemId: Scalars['Int']['output'];
-  price: Scalars['Float']['output'];
+  price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -653,7 +655,7 @@ export type ProductInventoryRecord = {
   __typename?: 'ProductInventoryRecord';
   condition: Scalars['String']['output'];
   inventoryItemId: Scalars['Int']['output'];
-  price: Scalars['Float']['output'];
+  price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
 };
 
@@ -664,7 +666,7 @@ export type ProductListing = {
   gameName: Scalars['String']['output'];
   id: Scalars['String']['output'];
   images?: Maybe<CardImages>;
-  lowestPrice?: Maybe<Scalars['String']['output']>;
+  lowestPrice?: Maybe<Scalars['Int']['output']>;
   lowestPriceInventoryItemId?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   rarity?: Maybe<Scalars['String']['output']>;
@@ -698,11 +700,11 @@ export type ProductListingPagination = {
 
 export type ProductPrice = {
   __typename?: 'ProductPrice';
-  directLowPrice?: Maybe<Scalars['Float']['output']>;
-  highPrice?: Maybe<Scalars['Float']['output']>;
-  lowPrice?: Maybe<Scalars['Float']['output']>;
-  marketPrice?: Maybe<Scalars['Float']['output']>;
-  midPrice?: Maybe<Scalars['Float']['output']>;
+  directLowPrice?: Maybe<Scalars['Int']['output']>;
+  highPrice?: Maybe<Scalars['Int']['output']>;
+  lowPrice?: Maybe<Scalars['Int']['output']>;
+  marketPrice?: Maybe<Scalars['Int']['output']>;
+  midPrice?: Maybe<Scalars['Int']['output']>;
   subTypeName: Scalars['String']['output'];
 };
 
@@ -929,20 +931,20 @@ export type SalesBreakdown = {
 
 export type SalesDataPoint = {
   __typename?: 'SalesDataPoint';
-  cost: Scalars['Float']['output'];
+  cost: Scalars['Int']['output'];
   label: Scalars['String']['output'];
   orderCount: Scalars['Int']['output'];
-  profit: Scalars['Float']['output'];
-  revenue: Scalars['Float']['output'];
+  profit: Scalars['Int']['output'];
+  revenue: Scalars['Int']['output'];
 };
 
 export type SalesSummary = {
   __typename?: 'SalesSummary';
   orderCount: Scalars['Int']['output'];
   profitMargin: Scalars['Float']['output'];
-  totalCost: Scalars['Float']['output'];
-  totalProfit: Scalars['Float']['output'];
-  totalRevenue: Scalars['Float']['output'];
+  totalCost: Scalars['Int']['output'];
+  totalProfit: Scalars['Int']['output'];
+  totalRevenue: Scalars['Int']['output'];
 };
 
 export type SalesTaxLookupResult = {
@@ -1083,12 +1085,12 @@ export type UpdateBackupSettingsInput = {
 export type UpdateInventoryItemInput = {
   condition?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['Int']['input'];
-  price?: InputMaybe<Scalars['Float']['input']>;
+  price?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateLotInput = {
   acquisitionDate: Scalars['String']['input'];
-  amountPaid: Scalars['Float']['input'];
+  amountPaid: Scalars['Int']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['Int']['input'];
   items: Array<LotItemInput>;
@@ -1109,7 +1111,7 @@ export type UpdateShopifyIntegrationInput = {
 
 export type UpdateStockInput = {
   acquisitionDate?: InputMaybe<Scalars['String']['input']>;
-  costBasis?: InputMaybe<Scalars['Float']['input']>;
+  costBasis?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   quantity?: InputMaybe<Scalars['Int']['input']>;

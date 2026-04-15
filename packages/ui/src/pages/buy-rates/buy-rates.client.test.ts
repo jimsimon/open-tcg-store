@@ -11,9 +11,30 @@ vi.mock('../../lib/graphql.ts', () => ({
             gameName: 'Magic',
             gameDisplayName: 'Magic: The Gathering',
             entries: [
-              { id: 1, description: 'Commons & Uncommons', rate: 0.01, sortOrder: 0 },
-              { id: 2, description: 'Rares (Non-Holo)', rate: 0.02, sortOrder: 1 },
-              { id: 3, description: 'Holos and Reverse Holos', rate: 0.05, sortOrder: 2 },
+              {
+                id: 1,
+                description: 'Commons & Uncommons',
+                fixedRateCents: 1,
+                percentageRate: null,
+                type: 'fixed',
+                sortOrder: 0,
+              },
+              {
+                id: 2,
+                description: 'Rares (Non-Holo)',
+                fixedRateCents: 2,
+                percentageRate: null,
+                type: 'fixed',
+                sortOrder: 1,
+              },
+              {
+                id: 3,
+                description: 'Holos and Reverse Holos',
+                fixedRateCents: 5,
+                percentageRate: null,
+                type: 'fixed',
+                sortOrder: 2,
+              },
             ],
           },
           {
@@ -21,8 +42,22 @@ vi.mock('../../lib/graphql.ts', () => ({
             gameName: 'Pokemon',
             gameDisplayName: 'Pokemon',
             entries: [
-              { id: 4, description: 'Commons & Uncommons', rate: 0.01, sortOrder: 0 },
-              { id: 5, description: 'Illustration Rares', rate: 1.0, sortOrder: 1 },
+              {
+                id: 4,
+                description: 'Commons & Uncommons',
+                fixedRateCents: 1,
+                percentageRate: null,
+                type: 'fixed',
+                sortOrder: 0,
+              },
+              {
+                id: 5,
+                description: 'Illustration Rares',
+                fixedRateCents: 100,
+                percentageRate: null,
+                type: 'fixed',
+                sortOrder: 1,
+              },
             ],
           },
         ],
@@ -52,9 +87,30 @@ describe('ogs-buy-rates-page', () => {
               gameName: 'Magic',
               gameDisplayName: 'Magic: The Gathering',
               entries: [
-                { id: 1, description: 'Commons & Uncommons', rate: 0.01, sortOrder: 0 },
-                { id: 2, description: 'Rares (Non-Holo)', rate: 0.02, sortOrder: 1 },
-                { id: 3, description: 'Holos and Reverse Holos', rate: 0.05, sortOrder: 2 },
+                {
+                  id: 1,
+                  description: 'Commons & Uncommons',
+                  fixedRateCents: 1,
+                  percentageRate: null,
+                  type: 'fixed',
+                  sortOrder: 0,
+                },
+                {
+                  id: 2,
+                  description: 'Rares (Non-Holo)',
+                  fixedRateCents: 2,
+                  percentageRate: null,
+                  type: 'fixed',
+                  sortOrder: 1,
+                },
+                {
+                  id: 3,
+                  description: 'Holos and Reverse Holos',
+                  fixedRateCents: 5,
+                  percentageRate: null,
+                  type: 'fixed',
+                  sortOrder: 2,
+                },
               ],
             },
             {
@@ -62,8 +118,22 @@ describe('ogs-buy-rates-page', () => {
               gameName: 'Pokemon',
               gameDisplayName: 'Pokemon',
               entries: [
-                { id: 4, description: 'Commons & Uncommons', rate: 0.01, sortOrder: 0 },
-                { id: 5, description: 'Illustration Rares', rate: 1.0, sortOrder: 1 },
+                {
+                  id: 4,
+                  description: 'Commons & Uncommons',
+                  fixedRateCents: 1,
+                  percentageRate: null,
+                  type: 'fixed',
+                  sortOrder: 0,
+                },
+                {
+                  id: 5,
+                  description: 'Illustration Rares',
+                  fixedRateCents: 100,
+                  percentageRate: null,
+                  type: 'fixed',
+                  sortOrder: 1,
+                },
               ],
             },
           ],
@@ -128,7 +198,7 @@ describe('ogs-buy-rates-page', () => {
     const tables = element.shadowRoot!.querySelectorAll('.rate-table');
     const cells = Array.from(tables).flatMap((t) => Array.from(t.querySelectorAll('td:last-child')));
     const rateTexts = cells.map((c) => c.textContent?.trim());
-    expect(rateTexts.some((r) => r === '0.01' || r === '0.02' || r === '0.05')).toBe(true);
+    expect(rateTexts.some((r) => r === '$0.01' || r === '$0.02' || r === '$0.05')).toBe(true);
   });
 
   test('should display description text in table rows', () => {
@@ -146,9 +216,9 @@ describe('ogs-buy-rates-page', () => {
   test('should format rate values with two decimal places', () => {
     const cells = element.shadowRoot!.querySelectorAll('.rate-table td:last-child');
     const rateTexts = Array.from(cells).map((c) => c.textContent?.trim());
-    expect(rateTexts).toContain('0.01');
-    expect(rateTexts).toContain('0.02');
-    expect(rateTexts).toContain('0.05');
+    expect(rateTexts).toContain('$0.01');
+    expect(rateTexts).toContain('$0.02');
+    expect(rateTexts).toContain('$0.05');
   });
 
   test('should display description text in table rows', () => {
@@ -189,7 +259,9 @@ describe('ogs-buy-rates-page', () => {
               categoryId: 1,
               gameName: 'Magic',
               gameDisplayName: 'Magic: The Gathering',
-              entries: [{ id: 1, description: 'Commons', rate: 0.01, sortOrder: 0 }],
+              entries: [
+                { id: 1, description: 'Commons', fixedRateCents: 1, percentageRate: null, type: 'fixed', sortOrder: 0 },
+              ],
             },
           ],
         },

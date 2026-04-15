@@ -50,6 +50,20 @@
       "when": 1776144365417,
       "tag": "0006_aromatic_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1776227240050,
+      "tag": "0007_gorgeous_omega_red",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1776400000000,
+      "tag": "0008_split_buy_rate_columns",
+      "breakpoints": true
     }
   ]
 }

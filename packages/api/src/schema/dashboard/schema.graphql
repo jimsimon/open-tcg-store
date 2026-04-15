@@ -6,18 +6,18 @@ input DashboardDateRange {
 # --- Sales ---
 
 type SalesSummary {
-  totalRevenue: Float!
-  totalCost: Float!
-  totalProfit: Float!
+  totalRevenue: Int! # cents
+  totalCost: Int! # cents
+  totalProfit: Int! # cents
   profitMargin: Float!
   orderCount: Int!
 }
 
 type SalesDataPoint {
   label: String!
-  revenue: Float!
-  cost: Float!
-  profit: Float!
+  revenue: Int! # cents
+  cost: Int! # cents
+  profit: Int! # cents
   orderCount: Int!
 }
 
@@ -33,7 +33,7 @@ type BestSeller {
   productId: Int!
   productName: String!
   totalQuantity: Int!
-  totalRevenue: Float!
+  totalRevenue: Int! # cents
 }
 
 # --- Inventory Summary ---
@@ -41,8 +41,8 @@ type BestSeller {
 type InventorySummary {
   totalSkus: Int!
   totalUnits: Int!
-  totalCostValue: Float!
-  totalRetailValue: Float!
+  totalCostValue: Int! # cents
+  totalRetailValue: Int! # cents
 }
 
 # --- Order Status Breakdown ---
@@ -60,7 +60,7 @@ type OpenOrder {
   id: Int!
   orderNumber: String!
   customerName: String!
-  totalAmount: Float!
+  totalAmount: Int! # cents
   itemCount: Int!
   createdAt: String!
 }

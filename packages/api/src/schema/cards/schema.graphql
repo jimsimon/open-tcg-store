@@ -27,7 +27,7 @@ type ConditionInventories {
 
 type ConditionInventory {
   quantity: Int!
-  price: String!
+  price: Int! # cents
 }
 
 type Set {
@@ -55,7 +55,7 @@ type ProductListing {
   finishes: [String!]!
   images: CardImages
   totalQuantity: Int!
-  lowestPrice: String
+  lowestPrice: Int # cents
   lowestPriceInventoryItemId: Int
   conditionPrices: [ProductConditionPrice!]!
 }
@@ -64,7 +64,7 @@ type ProductConditionPrice {
   inventoryItemId: Int!
   condition: String!
   quantity: Int!
-  price: Float!
+  price: Int! # cents
 }
 
 input ProductListingFilters {
@@ -110,7 +110,7 @@ type ProductInventoryRecord {
   inventoryItemId: Int!
   condition: String!
   quantity: Int!
-  price: Float!
+  price: Int! # cents
 }
 
 # extend type Mutation {}

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { user } from './auth-schema';
 import { inventoryItem } from './inventory-schema';
 import { inventoryItemStock } from './inventory-stock-schema';
@@ -14,7 +14,7 @@ export const order = sqliteTable(
     customerName: text('customer_name').notNull(),
     userId: text('user_id').notNull(),
     status: text('status').notNull().default('open'),
-    totalAmount: real('total_amount').notNull(),
+    totalAmount: integer('total_amount').notNull(), // cents
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -44,8 +44,8 @@ export const orderItem = sqliteTable(
     productName: text('product_name').notNull(),
     condition: text('condition').notNull(),
     quantity: integer('quantity').notNull(),
-    unitPrice: real('unit_price').notNull(),
-    costBasis: real('cost_basis'),
+    unitPrice: integer('unit_price').notNull(), // cents
+    costBasis: integer('cost_basis'), // cents
     lotId: integer('lot_id'),
   },
   (table) => [

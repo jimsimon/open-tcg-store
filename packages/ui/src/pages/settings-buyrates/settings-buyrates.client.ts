@@ -18,6 +18,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { execute } from '../../lib/graphql';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries';
 import { TypedDocumentString } from '../../graphql/graphql';
+import { centsToInputValue, inputValueToCents } from '../../lib/currency';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
@@ -28,7 +29,8 @@ const GetBuyRatesQuery = new TypedDocumentString(`
     getBuyRates(categoryId: $categoryId) {
       id
       description
-      rate
+      fixedRateCents
+      percentageRate
       type
       rarity
       hidden
@@ -40,7 +42,8 @@ const GetBuyRatesQuery = new TypedDocumentString(`
     getBuyRates: Array<{
       id: number;
       description: string;
-      rate: number;
+      fixedRateCents: number | null;
+      percentageRate: number | null;
       type: string;
       rarity: string | null;
       hidden: boolean;
@@ -61,7 +64,8 @@ const SaveBuyRatesMutation = new TypedDocumentString(`
     saveBuyRates(input: $input) {
       id
       description
-      rate
+      fixedRateCents
+      percentageRate
       type
       rarity
       hidden
@@ -73,7 +77,8 @@ const SaveBuyRatesMutation = new TypedDocumentString(`
     saveBuyRates: Array<{
       id: number;
       description: string;
-      rate: number;
+      fixedRateCents: number | null;
+      percentageRate: number | null;
       type: string;
       rarity: string | null;
       hidden: boolean;
@@ -85,7 +90,8 @@ const SaveBuyRatesMutation = new TypedDocumentString(`
       categoryId: number;
       entries: Array<{
         description: string;
-        rate: number;
+        fixedRateCents: number | null;
+        percentageRate: number | null;
         type: string;
         rarity?: string | null;
         hidden?: boolean;
@@ -107,7 +113,8 @@ interface SupportedGame {
 
 interface BuyRateRow {
   description: string;
-  rate: number;
+  fixedRateCents: number | null;
+  percentageRate: number | null;
   type: string; // 'fixed' or 'percentage'
   rarity: string | null; // set for rarity-default rows
   hidden: boolean; // whether this row is hidden from public view
@@ -305,7 +312,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
             const existing = existingByRarity.get(rarity);
             rows.push({
               description: rarity,
-              rate: existing?.rate ?? 0,
+              fixedRateCents: existing?.fixedRateCents ?? 0,
+              percentageRate: existing?.percentageRate ?? null,
               type: existing?.type ?? 'fixed',
               rarity,
               hidden: existing?.hidden ?? false,
@@ -317,7 +325,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           for (const entry of customEntries) {
             rows.push({
               description: entry.description,
-              rate: entry.rate,
+              fixedRateCents: entry.fixedRateCents,
+              percentageRate: entry.percentageRate,
               type: entry.type ?? 'fixed',
               rarity: null,
               hidden: entry.hidden ?? false,
@@ -355,7 +364,15 @@ export class OgsSettingsBuyRatesPage extends LitElement {
   private handleAddRow(categoryId: number) {
     const rows = [
       ...this.getRows(categoryId),
-      { description: '', rate: 0, type: 'fixed', rarity: null, hidden: false, isRarityDefault: false },
+      {
+        description: '',
+        fixedRateCents: 0,
+        percentageRate: null,
+        type: 'fixed',
+        rarity: null,
+        hidden: false,
+        isRarityDefault: false,
+      },
     ];
     this.setRows(categoryId, rows);
   }
@@ -377,13 +394,22 @@ export class OgsSettingsBuyRatesPage extends LitElement {
 
   private handleRowRateChange(categoryId: number, index: number, value: string) {
     const rows = [...this.getRows(categoryId)];
-    rows[index] = { ...rows[index], rate: parseFloat(value) || 0 };
+    const row = rows[index];
+    if (row.type === 'fixed') {
+      rows[index] = { ...row, fixedRateCents: inputValueToCents(parseFloat(value) || 0) };
+    } else {
+      rows[index] = { ...row, percentageRate: parseFloat(value) || 0 };
+    }
     this.setRows(categoryId, rows);
   }
 
   private handleRowTypeChange(categoryId: number, index: number, value: string) {
     const rows = [...this.getRows(categoryId)];
-    rows[index] = { ...rows[index], type: value };
+    if (value === 'fixed') {
+      rows[index] = { ...rows[index], type: value, fixedRateCents: 0, percentageRate: null };
+    } else {
+      rows[index] = { ...rows[index], type: value, fixedRateCents: null, percentageRate: 0 };
+    }
     this.setRows(categoryId, rows);
   }
 
@@ -401,7 +427,11 @@ export class OgsSettingsBuyRatesPage extends LitElement {
     const rows = this.getRows(categoryId);
 
     // Validate: all visible rarity defaults must have rate > 0
-    const missingRarities = rows.filter((r) => r.isRarityDefault && !r.hidden && r.rate <= 0);
+    const missingRarities = rows.filter((r) => {
+      if (!r.isRarityDefault || r.hidden) return false;
+      if (r.type === 'fixed') return (r.fixedRateCents ?? 0) <= 0;
+      return (r.percentageRate ?? 0) <= 0;
+    });
     if (missingRarities.length > 0) {
       this.errorMessage = `All visible rarity rates must be greater than 0. Missing: ${missingRarities.map((r) => r.description).join(', ')}`;
       this.savingGame = null;
@@ -417,7 +447,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           categoryId,
           entries: validRows.map((r, i) => ({
             description: r.description.trim(),
-            rate: r.rate,
+            fixedRateCents: r.fixedRateCents,
+            percentageRate: r.percentageRate,
             type: r.type,
             rarity: r.rarity || null,
             hidden: r.hidden,
@@ -440,7 +471,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           const existing = existingByRarity.get(rarity);
           newRows.push({
             description: rarity,
-            rate: existing?.rate ?? 0,
+            fixedRateCents: existing?.fixedRateCents ?? 0,
+            percentageRate: existing?.percentageRate ?? null,
             type: existing?.type ?? 'fixed',
             rarity,
             hidden: existing?.hidden ?? false,
@@ -450,7 +482,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
         for (const entry of customEntries) {
           newRows.push({
             description: entry.description,
-            rate: entry.rate,
+            fixedRateCents: entry.fixedRateCents,
+            percentageRate: entry.percentageRate,
             type: entry.type ?? 'fixed',
             rarity: null,
             hidden: entry.hidden ?? false,
@@ -665,10 +698,12 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           <wa-input
             size="small"
             type="number"
-            step="0.001"
+            step="${row.type === 'percentage' ? '0.001' : '0.01'}"
             min="0"
-            placeholder="0.000"
-            .value="${String(row.rate)}"
+            placeholder="${row.type === 'percentage' ? '0.000' : '0.00'}"
+            .value="${row.type === 'percentage'
+              ? String(row.percentageRate ?? 0)
+              : String(centsToInputValue(row.fixedRateCents ?? 0))}"
             @input="${(e: Event) => {
               this.handleRowRateChange(categoryId, index, (e.target as HTMLInputElement).value);
             }}"

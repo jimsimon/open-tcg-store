@@ -30,6 +30,7 @@ import {
   loadingStateStyles,
   getQuantityBadgeClass,
 } from '../products/products-shared.ts';
+import { formatCurrency } from '../../lib/currency.ts';
 
 // --- Types ---
 
@@ -495,12 +496,16 @@ export class OgsProductsSinglesPage extends LitElement {
     if (activeCond && product.conditionPrices.length > 0) {
       const cp = product.conditionPrices.find((c) => c.condition === activeCond);
       if (cp) {
-        return { price: cp.price.toFixed(2), quantity: cp.quantity, inventoryItemId: cp.inventoryItemId };
+        return { price: formatCurrency(cp.price), quantity: cp.quantity, inventoryItemId: cp.inventoryItemId };
       }
       return { price: null, quantity: 0, inventoryItemId: 0 };
     }
     // Fallback when no conditions available
-    return { price: product.lowestPrice, quantity: product.totalQuantity, inventoryItemId: 0 };
+    return {
+      price: product.lowestPrice != null ? formatCurrency(Number(product.lowestPrice)) : null,
+      quantity: product.totalQuantity,
+      inventoryItemId: 0,
+    };
   }
 
   // --- Pagination handlers ---
@@ -765,7 +770,7 @@ export class OgsProductsSinglesPage extends LitElement {
                   </td>
                   <td class="price-cell">
                     ${display.price != null
-                      ? html`<span class="price-value">$${display.price}</span>`
+                      ? html`<span class="price-value">${display.price}</span>`
                       : html`<span class="out-of-stock-text">—</span>`}
                   </td>
                   <td>

@@ -156,7 +156,7 @@ describe('card-service', () => {
       name: 'Black Lotus',
       tcgpProductId: 9999,
       group: { name: 'Alpha' },
-      prices: [{ marketPrice: 50000, midPrice: 45000, subTypeName: 'Normal' }],
+      prices: [{ marketPrice: 5000000, midPrice: 4500000, subTypeName: 'Normal' }], // cents
       extendedData: [
         { name: 'Rarity', value: 'Rare' },
         { name: 'SubType', value: 'Artifact' },
@@ -183,7 +183,7 @@ describe('card-service', () => {
       expect(card.finishes).toEqual(['Normal']);
       expect(card.inventory).toHaveLength(1);
       expect(card.inventory![0]!.NM.quantity).toBe(3);
-      expect(card.inventory![0]!.NM.price).toBe('49000.00');
+      expect(card.inventory![0]!.NM.price).toBe(49000);
     });
 
     it('should use fallback pricing with condition multipliers when no inventory', async () => {
@@ -193,12 +193,12 @@ describe('card-service', () => {
 
       const card = await getCardById(100, 1, null);
 
-      // NM: 50000 * 1.0, LP: 50000 * 0.8, MP: 50000 * 0.5, HP: 50000 * 0.3, D: 50000 * 0.2
-      expect(card.inventory![0]!.NM.price).toBe('50000.00');
-      expect(card.inventory![0]!.LP.price).toBe('40000.00');
-      expect(card.inventory![0]!.MP.price).toBe('25000.00');
-      expect(card.inventory![0]!.HP!.price).toBe('15000.00');
-      expect(card.inventory![0]!.D!.price).toBe('10000.00');
+      // NM: toCents(50000*1.0)=5000000, LP: toCents(50000*0.8)=4000000, etc.
+      expect(card.inventory![0]!.NM.price).toBe(5000000);
+      expect(card.inventory![0]!.LP.price).toBe(4000000);
+      expect(card.inventory![0]!.MP.price).toBe(2500000);
+      expect(card.inventory![0]!.HP!.price).toBe(1500000);
+      expect(card.inventory![0]!.D!.price).toBe(1000000);
       expect(card.inventory![0]!.NM.quantity).toBe(0);
     });
 
@@ -222,13 +222,13 @@ describe('card-service', () => {
     it('should use midPrice when marketPrice is null', async () => {
       mockOtcgs.query.product.findFirst.mockResolvedValue({
         ...fakeProduct,
-        prices: [{ marketPrice: null, midPrice: 100, subTypeName: 'Normal' }],
+        prices: [{ marketPrice: null, midPrice: 10000, subTypeName: 'Normal' }], // cents
       });
       mockOtcgs.select.mockReturnValue(chainable([]));
 
       const card = await getCardById(100, 1, null);
-      expect(card.inventory![0]!.NM.price).toBe('100.00'); // midPrice * 1.0
-      expect(card.inventory![0]!.LP.price).toBe('80.00'); // midPrice * 0.8
+      expect(card.inventory![0]!.NM.price).toBe(10000); // toCents(100 * 1.0)
+      expect(card.inventory![0]!.LP.price).toBe(8000); // toCents(100 * 0.8)
     });
   });
 
@@ -244,7 +244,7 @@ describe('card-service', () => {
       categoryId: 1,
       group: { name: 'Commander' },
       category: { name: 'Magic' },
-      prices: [{ marketPrice: 5, midPrice: 4, subTypeName: 'Normal' }],
+      prices: [{ marketPrice: 500, midPrice: 400, subTypeName: 'Normal' }], // cents
       extendedData: [
         { name: 'Rarity', value: 'Uncommon' },
         { name: 'SubType', value: 'Artifact' },
@@ -341,7 +341,7 @@ describe('card-service', () => {
           name: 'Lightning Bolt',
           tcgpProductId: 7777,
           group: { name: 'Alpha' },
-          prices: [{ marketPrice: 10, midPrice: 8, subTypeName: 'Normal' }],
+          prices: [{ marketPrice: 1000, midPrice: 800, subTypeName: 'Normal' }], // cents
         },
       ]);
       // Inventory query
@@ -353,9 +353,9 @@ describe('card-service', () => {
       expect(cards).toHaveLength(1);
       expect(cards[0].name).toBe('Lightning Bolt');
       expect(cards[0].inventory![0]!.NM.quantity).toBe(5);
-      expect(cards[0].inventory![0]!.NM.price).toBe('9.00');
-      // LP should use fallback: 10 * 0.8 = 8.00
-      expect(cards[0].inventory![0]!.LP.price).toBe('8.00');
+      expect(cards[0].inventory![0]!.NM.price).toBe(9); // 9 cents from mock lowestPrice
+      // LP should use fallback: toCents(10 * 0.8) = 800
+      expect(cards[0].inventory![0]!.LP.price).toBe(800);
     });
 
     it('should return empty array when no products match', async () => {
@@ -374,8 +374,8 @@ describe('card-service', () => {
           tcgpProductId: 7777,
           group: { name: 'Alpha' },
           prices: [
-            { marketPrice: 10, midPrice: 8, subTypeName: 'Normal' },
-            { marketPrice: 20, midPrice: 18, subTypeName: 'Foil' },
+            { marketPrice: 1000, midPrice: 800, subTypeName: 'Normal' }, // cents
+            { marketPrice: 2000, midPrice: 1800, subTypeName: 'Foil' }, // cents
           ],
         },
       ]);
@@ -447,7 +447,7 @@ describe('card-service', () => {
           categoryId: 1,
           group: { name: 'Alpha' },
           category: { name: 'Magic' },
-          prices: [{ subTypeName: 'Normal', marketPrice: 10 }],
+          prices: [{ subTypeName: 'Normal', marketPrice: 1000 }], // cents
           extendedData: [{ name: 'Rarity', value: 'Rare' }],
         },
       ]);
@@ -486,14 +486,14 @@ describe('card-service', () => {
           categoryId: 1,
           group: { name: 'Set' },
           category: { name: 'Magic' },
-          prices: [{ subTypeName: 'Normal', marketPrice: 15.5 }],
+          prices: [{ subTypeName: 'Normal', marketPrice: 1550 }], // cents
           extendedData: [],
         },
       ]);
 
       const result = await getProductListings({ gameName: 'Magic' }, { page: 1, pageSize: 10 }, null);
 
-      expect(result.items[0].lowestPrice).toBe('15.50');
+      expect(result.items[0].lowestPrice).toBe(1550); // toCents(15.50)
     });
 
     it('should build image URLs with tcgpProductId', async () => {

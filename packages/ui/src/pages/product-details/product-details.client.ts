@@ -16,6 +16,7 @@ import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { cartState } from '../../lib/cart-state.ts';
+import { formatCurrency } from '../../lib/currency.ts';
 
 // --- Types ---
 
@@ -555,7 +556,7 @@ export class ProductDetailsPage extends LitElement {
           ? html`
               <div class="sealed-cart-section">
                 ${p.inventoryRecords[0]?.price != null
-                  ? html`<span class="sealed-price">$${p.inventoryRecords[0].price.toFixed(2)}</span>`
+                  ? html`<span class="sealed-price">${formatCurrency(p.inventoryRecords[0].price)}</span>`
                   : nothing}
                 <span class="sealed-available">${totalQuantity} available</span>
                 <div style="flex: 1;"></div>
@@ -656,7 +657,7 @@ export class ProductDetailsPage extends LitElement {
                 return html`
                   <tr>
                     <td>${conditionLabels[condition] ?? condition}</td>
-                    <td class="price-cell">$${data.lowestPrice.toFixed(2)}</td>
+                    <td class="price-cell">${formatCurrency(data.lowestPrice)}</td>
                     <td class="quantity-cell">
                       ${inStock ? data.totalQuantity : html`<span class="out-of-stock">0</span>`}
                     </td>
@@ -711,7 +712,7 @@ export class ProductDetailsPage extends LitElement {
             ${records.map(
               (record) => html`
                 <tr>
-                  <td class="price-cell">$${record.price.toFixed(2)}</td>
+                  <td class="price-cell">${formatCurrency(record.price)}</td>
                   <td class="quantity-cell">${record.quantity}</td>
                   <td>
                     ${record.quantity > 0

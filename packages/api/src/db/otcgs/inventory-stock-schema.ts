@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { inventoryItem } from './inventory-schema';
 import { user } from './auth-schema';
 import { lot } from './lot-schema';
@@ -10,7 +10,7 @@ export const inventoryItemStock = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     inventoryItemId: integer('inventory_item_id').notNull(),
     quantity: integer('quantity').notNull().default(0),
-    costBasis: real('cost_basis').notNull().default(0),
+    costBasis: integer('cost_basis').notNull().default(0), // cents
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     notes: text('notes', { length: 1000 }),
     lotId: integer('lot_id'),
