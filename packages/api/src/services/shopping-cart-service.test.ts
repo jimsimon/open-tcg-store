@@ -74,6 +74,7 @@ vi.mock('drizzle-orm', () => {
   return {
     eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
     and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
+    inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
     sql: sqlFn,
     isNull: vi.fn((...args: unknown[]) => ({ type: 'isNull', args })),
   };
@@ -184,8 +185,8 @@ describe('shopping-cart-service', () => {
         ],
       };
 
-      // Stock query for the cart item
-      const stockChain = chainable([{ total: 8 }]);
+      // Batched stock query returns grouped totals per inventoryItemId
+      const stockChain = chainable([{ inventoryItemId: 100, total: 8 }]);
       mockOtcgs.select.mockImplementation(() => stockChain);
 
       const result = await mapToGraphqlShoppingCart(cart as never);
@@ -275,12 +276,12 @@ describe('shopping-cart-service', () => {
         ],
       };
 
-      let callIdx = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIdx++;
-        if (callIdx === 1) return chainable([{ total: 5 }]);
-        return chainable([{ total: 12 }]);
-      });
+      // Batched stock query returns all totals in one result
+      const stockChain = chainable([
+        { inventoryItemId: 100, total: 5 },
+        { inventoryItemId: 101, total: 12 },
+      ]);
+      mockOtcgs.select.mockImplementation(() => stockChain);
 
       const result = await mapToGraphqlShoppingCart(cart as never);
 
@@ -308,8 +309,8 @@ describe('shopping-cart-service', () => {
         ],
       };
 
-      // Stock query returns empty result
-      const stockChain = chainable([undefined]);
+      // Batched stock query returns empty (no stock entries found)
+      const stockChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => stockChain);
 
       const result = await mapToGraphqlShoppingCart(cart as never);

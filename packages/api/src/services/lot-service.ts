@@ -223,6 +223,121 @@ async function buildLotResult(lotRow: typeof lot.$inferSelect): Promise<LotResul
   };
 }
 
+/**
+ * Batch variant of buildLotResult — fetches all lot items and prices for
+ * multiple lots in 2 queries instead of 2*N.
+ */
+async function buildLotResults(lotRows: (typeof lot.$inferSelect)[]): Promise<LotResult[]> {
+  const lotIds = lotRows.map((r) => r.id);
+  if (lotIds.length === 0) return [];
+
+  // Fetch all items for all lots in one query
+  const allItems = await otcgs
+    .select({
+      id: lotItem.id,
+      lotId: lotItem.lotId,
+      productId: lotItem.productId,
+      productName: product.name,
+      gameName: category.name,
+      setName: group.name,
+      condition: lotItem.condition,
+      quantity: lotItem.quantity,
+      costBasis: lotItem.costBasis,
+      costOverridden: lotItem.costOverridden,
+      rarity: sql<string | null>`(
+        SELECT ${productExtendedData.value}
+        FROM ${productExtendedData}
+        WHERE ${productExtendedData.productId} = ${product.id}
+          AND ${productExtendedData.name} = 'Rarity'
+        LIMIT 1
+      )`.as('rarity'),
+      isSingle: sql<boolean>`(
+        EXISTS (
+          SELECT 1 FROM ${productExtendedData}
+          WHERE ${productExtendedData.productId} = ${product.id}
+            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
+        )
+      )`.as('is_single'),
+    })
+    .from(lotItem)
+    .innerJoin(product, eq(lotItem.productId, product.id))
+    .leftJoin(group, eq(product.groupId, group.id))
+    .leftJoin(category, eq(product.categoryId, category.id))
+    .where(inArray(lotItem.lotId, lotIds));
+
+  // Fetch market prices for all distinct products across all lots
+  const allProductIds = [...new Set(allItems.map((i) => i.productId))];
+  const priceRows =
+    allProductIds.length > 0
+      ? await otcgs
+          .select({
+            productId: price.productId,
+            subTypeName: price.subTypeName,
+            marketPrice: price.marketPrice,
+            midPrice: price.midPrice,
+          })
+          .from(price)
+          .where(inArray(price.productId, allProductIds))
+      : [];
+
+  // Build market value map
+  const marketValueByProduct = new Map<number, number>();
+  for (const pr of priceRows) {
+    if (pr.productId == null) continue;
+    const existing = marketValueByProduct.get(pr.productId);
+    if (existing == null || pr.subTypeName === 'Normal') {
+      marketValueByProduct.set(pr.productId, pr.marketPrice ?? pr.midPrice ?? 0);
+    }
+  }
+
+  // Group items by lotId and build results
+  const itemsByLot = new Map<number, typeof allItems>();
+  for (const item of allItems) {
+    const arr = itemsByLot.get(item.lotId) ?? [];
+    arr.push(item);
+    itemsByLot.set(item.lotId, arr);
+  }
+
+  return lotRows.map((lotRow) => {
+    const rawItems = itemsByLot.get(lotRow.id) ?? [];
+    const items: LotItemResult[] = rawItems.map((item) => {
+      const isSingle = Boolean(item.isSingle);
+      const unitMarketValue = marketValueByProduct.get(item.productId) ?? null;
+      return {
+        id: item.id,
+        lotId: item.lotId,
+        productId: item.productId,
+        productName: item.productName,
+        gameName: item.gameName ?? '',
+        setName: item.setName ?? '',
+        rarity: item.rarity ?? null,
+        isSingle,
+        isSealed: !isSingle,
+        condition: item.condition ?? null,
+        quantity: item.quantity,
+        costBasis: item.costBasis,
+        costOverridden: Boolean(item.costOverridden),
+        marketValue: unitMarketValue != null ? unitMarketValue * item.quantity : null,
+      };
+    });
+
+    const summary = computeLotSummary(items);
+
+    return {
+      id: lotRow.id,
+      organizationId: lotRow.organizationId,
+      name: lotRow.name,
+      description: lotRow.description ?? null,
+      amountPaid: lotRow.amountPaid,
+      acquisitionDate: lotRow.acquisitionDate,
+      items,
+      ...summary,
+      createdAt: formatDate(lotRow.createdAt) ?? new Date().toISOString(),
+      updatedAt: formatDate(lotRow.updatedAt) ?? new Date().toISOString(),
+    };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Database handle type — accepts either the top-level otcgs or a transaction
 // ---------------------------------------------------------------------------
@@ -457,15 +572,21 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
     const inputItemIds = new Set(input.items.filter((i) => i.id != null).map((i) => i.id!));
     const removedItems = existingItems.filter((i) => !inputItemIds.has(i.id));
 
-    // Remove items: soft-delete associated stock entries, delete lot items
-    for (const removed of removedItems) {
-      if (removed.inventoryItemStockId) {
+    // Remove items: batch soft-delete associated stock entries, batch delete lot items
+    if (removedItems.length > 0) {
+      const stockIdsToDelete = removedItems.filter((r) => r.inventoryItemStockId).map((r) => r.inventoryItemStockId!);
+      if (stockIdsToDelete.length > 0) {
         await tx
           .update(inventoryItemStock)
           .set({ quantity: 0, deletedAt: now, updatedBy: userId, updatedAt: now })
-          .where(eq(inventoryItemStock.id, removed.inventoryItemStockId));
+          .where(inArray(inventoryItemStock.id, stockIdsToDelete));
       }
-      await tx.delete(lotItem).where(eq(lotItem.id, removed.id));
+      await tx.delete(lotItem).where(
+        inArray(
+          lotItem.id,
+          removedItems.map((r) => r.id),
+        ),
+      );
     }
 
     // Process input items
@@ -751,7 +872,7 @@ export async function getLots(
     .limit(pageSize)
     .offset(offset);
 
-  const lots = await Promise.all(rows.map((row) => buildLotResult(row)));
+  const lots = await buildLotResults(rows);
 
   return { lots, totalCount, page, pageSize, totalPages };
 }

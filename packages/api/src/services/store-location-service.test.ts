@@ -94,6 +94,7 @@ vi.mock('drizzle-orm', () => {
   );
   return {
     eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
+    inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
     sql: sqlFn,
   };
 });
@@ -156,8 +157,8 @@ describe('store-location-service', () => {
     it('should return all store locations with hours', async () => {
       mockOtcgs.all.mockResolvedValue([fakeOrg()]);
 
-      // Hours query for each org
-      const hoursChain = chainable(fakeHoursRows());
+      // Batched hours query returns rows with organizationId for grouping
+      const hoursChain = chainable(fakeHoursRows().map((h) => ({ organizationId: 'org-1', ...h })));
       mockOtcgs.select.mockImplementation(() => hoursChain);
 
       const result = await getAllStoreLocations();
@@ -179,12 +180,12 @@ describe('store-location-service', () => {
     it('should return multiple locations each with their own hours', async () => {
       mockOtcgs.all.mockResolvedValue([fakeOrg({ id: 'org-1' }), fakeOrg({ id: 'org-2', name: 'Branch Store' })]);
 
-      let callIdx = 0;
-      mockOtcgs.select.mockImplementation(() => {
-        callIdx++;
-        if (callIdx === 1) return chainable(fakeHoursRows());
-        return chainable([{ dayOfWeek: 1, openTime: '10:00', closeTime: '18:00' }]);
-      });
+      // Batched: single query returns hours for both orgs
+      const hoursChain = chainable([
+        ...fakeHoursRows().map((h) => ({ organizationId: 'org-1', ...h })),
+        { organizationId: 'org-2', dayOfWeek: 1, openTime: '10:00', closeTime: '18:00' },
+      ]);
+      mockOtcgs.select.mockImplementation(() => hoursChain);
 
       const result = await getAllStoreLocations();
 
@@ -214,7 +215,8 @@ describe('store-location-service', () => {
         },
       ]);
 
-      const hoursChain = chainable(fakeHoursRows());
+      // Batched hours query
+      const hoursChain = chainable(fakeHoursRows().map((h) => ({ organizationId: 'org-1', ...h })));
       mockOtcgs.select.mockImplementation(() => hoursChain);
 
       const result = await getEmployeeStoreLocations(testHeaders);

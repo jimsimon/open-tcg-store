@@ -159,12 +159,23 @@ export async function submitOrder(organizationId: string, userId: string, custom
       return { error: 'Cart is empty' };
     }
 
-    // 2. Validate inventory availability — check total stock across all non-deleted stock entries
-    //    for the parent inventory_item referenced by each cart item
+    // 2. Validate inventory availability — batch-check stock totals for all cart items in one query
+    const invIds = cartItems.map((ci) => ci.invId);
+    const stockTotals = await tx
+      .select({
+        inventoryItemId: inventoryItemStock.inventoryItemId,
+        total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)`.as('total'),
+      })
+      .from(inventoryItemStock)
+      .where(and(inArray(inventoryItemStock.inventoryItemId, invIds), isNull(inventoryItemStock.deletedAt)))
+      .groupBy(inventoryItemStock.inventoryItemId);
+
+    const stockMap = new Map(stockTotals.map((s) => [s.inventoryItemId, s.total]));
+
     const insufficientItems: InsufficientItemInfo[] = [];
     const cartItemsWithInventory: {
-      cartItemId: number; // cartItem.id for deletion
-      inventoryItemId: number; // parent inventory_item.id
+      cartItemId: number;
+      inventoryItemId: number;
       productId: number;
       productName: string;
       condition: string;
@@ -173,13 +184,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     }[] = [];
 
     for (const ci of cartItems) {
-      // Check total available from stock entries for this parent
-      const [totalResult] = await tx
-        .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
-        .from(inventoryItemStock)
-        .where(and(eq(inventoryItemStock.inventoryItemId, ci.invId), isNull(inventoryItemStock.deletedAt)));
-
-      const totalAvailable = totalResult?.total ?? 0;
+      const totalAvailable = stockMap.get(ci.invId) ?? 0;
 
       if (totalAvailable < ci.quantity) {
         insufficientItems.push({
@@ -227,6 +232,34 @@ export async function submitOrder(organizationId: string, userId: string, custom
       .returning();
 
     // 4. Decrement inventory using FIFO (oldest first by createdAt) across stock entries.
+    //    Prefetch all stock entries for all inventory items in one query, then process per-item in JS.
+    const allInvIds = cartItemsWithInventory.map((ci) => ci.inventoryItemId);
+    const allFifoStockEntries = await tx
+      .select({
+        id: inventoryItemStock.id,
+        inventoryItemId: inventoryItemStock.inventoryItemId,
+        quantity: inventoryItemStock.quantity,
+        costBasis: inventoryItemStock.costBasis,
+        lotId: inventoryItemStock.lotId,
+      })
+      .from(inventoryItemStock)
+      .where(
+        and(
+          inArray(inventoryItemStock.inventoryItemId, allInvIds),
+          isNull(inventoryItemStock.deletedAt),
+          gt(inventoryItemStock.quantity, 0),
+        ),
+      )
+      .orderBy(asc(inventoryItemStock.createdAt));
+
+    // Group by inventoryItemId for FIFO processing
+    const stockByInvId = new Map<number, typeof allFifoStockEntries>();
+    for (const entry of allFifoStockEntries) {
+      const arr = stockByInvId.get(entry.inventoryItemId) ?? [];
+      arr.push(entry);
+      stockByInvId.set(entry.inventoryItemId, arr);
+    }
+
     const allOrderItemValues: {
       orderId: number;
       inventoryItemId: number;
@@ -241,24 +274,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
     }[] = [];
 
     for (const item of cartItemsWithInventory) {
-      // Get all non-deleted stock entries with quantity > 0 for this parent, FIFO ordered
-      const fifoStockEntries = await tx
-        .select({
-          id: inventoryItemStock.id,
-          quantity: inventoryItemStock.quantity,
-          costBasis: inventoryItemStock.costBasis,
-          lotId: inventoryItemStock.lotId,
-        })
-        .from(inventoryItemStock)
-        .where(
-          and(
-            eq(inventoryItemStock.inventoryItemId, item.inventoryItemId),
-            isNull(inventoryItemStock.deletedAt),
-            gt(inventoryItemStock.quantity, 0),
-          ),
-        )
-        .orderBy(asc(inventoryItemStock.createdAt));
-
+      const fifoStockEntries = stockByInvId.get(item.inventoryItemId) ?? [];
       let remaining = item.quantity;
 
       for (const stockEntry of fifoStockEntries) {
@@ -273,7 +289,11 @@ export async function submitOrder(organizationId: string, userId: string, custom
           .set({ quantity: newQuantity, updatedAt: new Date() })
           .where(eq(inventoryItemStock.id, stockEntry.id));
 
-        // Create an order item for each stock entry consumed (tracks exact cost basis lot)
+        // Keep in-memory state consistent with the DB update so that if
+        // a future change allows the same stock entry to be visited by
+        // multiple cart items, quantities won't be double-counted.
+        stockEntry.quantity = newQuantity;
+
         allOrderItemValues.push({
           orderId: insertedOrder.id,
           inventoryItemId: item.inventoryItemId,
@@ -360,15 +380,24 @@ export async function cancelOrder(
     return { error: 'Order is already cancelled' };
   }
 
-  // 2. Return items to inventory — use inventoryItemStockId for precise restocking
+  // 2. Return items to inventory — batch-fetch all stock entries first, then process
+  const stockIds = existingOrder.orderItems
+    .filter((oi) => oi.inventoryItemStockId != null)
+    .map((oi) => oi.inventoryItemStockId!);
+
+  const stockEntries =
+    stockIds.length > 0
+      ? await otcgs
+          .select({ id: inventoryItemStock.id, deletedAt: inventoryItemStock.deletedAt })
+          .from(inventoryItemStock)
+          .where(inArray(inventoryItemStock.id, stockIds))
+      : [];
+
+  const stockEntryMap = new Map(stockEntries.map((s) => [s.id, s]));
+
   for (const oi of existingOrder.orderItems) {
     if (oi.inventoryItemStockId) {
-      // Precise restocking using stock entry ID
-      const [stockEntry] = await otcgs
-        .select({ id: inventoryItemStock.id, deletedAt: inventoryItemStock.deletedAt })
-        .from(inventoryItemStock)
-        .where(eq(inventoryItemStock.id, oi.inventoryItemStockId))
-        .limit(1);
+      const stockEntry = stockEntryMap.get(oi.inventoryItemStockId);
 
       if (stockEntry) {
         const updateSet: Record<string, unknown> = {
@@ -380,14 +409,11 @@ export async function cancelOrder(
         }
         await otcgs.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
       } else {
-        // Stock entry was hard-deleted — create a new stock entry under the parent
         await restockFallback(existingOrder.organizationId, oi);
       }
     } else if (oi.inventoryItemId) {
-      // Legacy: has parent inventoryItemId but no stock ID — find or create stock
       await restockFallback(existingOrder.organizationId, oi);
     } else {
-      // Very legacy: no inventoryItemId at all — find by product+condition
       await restockFallbackByProduct(existingOrder.organizationId, oi);
     }
   }

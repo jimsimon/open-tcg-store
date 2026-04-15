@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, inArray } from 'drizzle-orm';
 import { otcgs } from '../db';
 import { storeHours } from '../db/otcgs/store-hours-schema';
 import { auth } from '../auth';
@@ -62,6 +62,30 @@ async function getHoursForOrg(organizationId: string): Promise<StoreHoursData[]>
   }));
 }
 
+/** Batch-fetch store hours for multiple orgs in a single query. */
+async function getHoursForOrgs(orgIds: string[]): Promise<Map<string, StoreHoursData[]>> {
+  if (orgIds.length === 0) return new Map();
+
+  const rows = await otcgs
+    .select({
+      organizationId: storeHours.organizationId,
+      dayOfWeek: storeHours.dayOfWeek,
+      openTime: storeHours.openTime,
+      closeTime: storeHours.closeTime,
+    })
+    .from(storeHours)
+    .where(inArray(storeHours.organizationId, orgIds))
+    .orderBy(storeHours.dayOfWeek);
+
+  const map = new Map<string, StoreHoursData[]>();
+  for (const row of rows) {
+    const arr = map.get(row.organizationId) ?? [];
+    arr.push({ dayOfWeek: row.dayOfWeek, openTime: row.openTime, closeTime: row.closeTime });
+    map.set(row.organizationId, arr);
+  }
+  return map;
+}
+
 function toStoreLocationData(org: OrganizationRow, hours: StoreHoursData[]): StoreLocationData {
   return {
     id: org.id,
@@ -91,13 +115,8 @@ export async function getAllStoreLocations(): Promise<StoreLocationData[]> {
     sql`SELECT id, name, slug, street1, street2, city, state, zip, phone, created_at as "createdAt" FROM organization`,
   );
 
-  const results: StoreLocationData[] = [];
-  for (const org of orgs) {
-    const hours = await getHoursForOrg(org.id);
-    results.push(toStoreLocationData(org, hours));
-  }
-
-  return results;
+  const hoursMap = await getHoursForOrgs(orgs.map((o) => o.id));
+  return orgs.map((org) => toStoreLocationData(org, hoursMap.get(org.id) ?? []));
 }
 
 /**
@@ -119,25 +138,20 @@ export async function getEmployeeStoreLocations(headers: Record<string, string>)
     createdAt: Date;
   }>;
 
-  const results: StoreLocationData[] = [];
-  for (const org of orgs) {
-    const hours = await getHoursForOrg(org.id);
-    results.push({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      street1: org.street1,
-      street2: org.street2,
-      city: org.city,
-      state: org.state,
-      zip: org.zip,
-      phone: org.phone,
-      hours,
-      createdAt: new Date(org.createdAt).toISOString(),
-    });
-  }
-
-  return results;
+  const hoursMap = await getHoursForOrgs(orgs.map((o) => o.id));
+  return orgs.map((org) => ({
+    id: org.id,
+    name: org.name,
+    slug: org.slug,
+    street1: org.street1,
+    street2: org.street2,
+    city: org.city,
+    state: org.state,
+    zip: org.zip,
+    phone: org.phone,
+    hours: hoursMap.get(org.id) ?? [],
+    createdAt: new Date(org.createdAt).toISOString(),
+  }));
 }
 
 /**

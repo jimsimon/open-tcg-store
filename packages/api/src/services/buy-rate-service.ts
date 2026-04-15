@@ -87,11 +87,9 @@ export async function setSupportedGames(categoryIds: number[]): Promise<Supporte
     // Determine removed games
     const removedCategoryIds = [...currentCategoryIds].filter((id) => !newCategoryIds.has(id));
 
-    // Delete buy rates for removed games
+    // Delete buy rates for removed games (batched)
     if (removedCategoryIds.length > 0) {
-      for (const catId of removedCategoryIds) {
-        await tx.delete(buyRate).where(eq(buyRate.categoryId, catId));
-      }
+      await tx.delete(buyRate).where(inArray(buyRate.categoryId, removedCategoryIds));
     }
 
     // Delete all existing supported game records
