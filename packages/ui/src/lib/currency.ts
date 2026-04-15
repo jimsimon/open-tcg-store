@@ -10,9 +10,13 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-/** Format integer cents as a USD currency string (e.g. 1999 -> "$19.99"). */
+/**
+ * Format integer cents as a USD currency string (e.g. 1999 -> "$19.99").
+ * Returns '—' for null/undefined (unknown value). Callers that want '$0.00'
+ * for null should pass `?? 0` explicitly.
+ */
 export function formatCurrency(cents: number | null | undefined): string {
-  if (cents == null) return '$0.00';
+  if (cents == null) return '—';
   return usdFormatter.format(cents / 100);
 }
 
