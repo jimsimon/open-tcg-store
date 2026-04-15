@@ -3,12 +3,12 @@ type Lot {
   organizationId: String!
   name: String!
   description: String
-  amountPaid: Float!
+  amountPaid: Int! # cents
   acquisitionDate: String!
   items: [LotItem!]!
-  totalMarketValue: Float!
-  totalCost: Float!
-  projectedProfitLoss: Float!
+  totalMarketValue: Int! # cents
+  totalCost: Int! # cents
+  projectedProfitLoss: Int! # cents
   projectedProfitMargin: Float!
   createdAt: String!
   updatedAt: String!
@@ -26,9 +26,9 @@ type LotItem {
   isSealed: Boolean!
   condition: String
   quantity: Int!
-  costBasis: Float!
+  costBasis: Int! # cents
   costOverridden: Boolean!
-  marketValue: Float
+  marketValue: Int # cents
 }
 
 type LotPage {
@@ -42,7 +42,7 @@ type LotPage {
 input CreateLotInput {
   name: String!
   description: String
-  amountPaid: Float!
+  amountPaid: Int! # cents
   acquisitionDate: String!
   items: [LotItemInput!]!
 }
@@ -51,7 +51,7 @@ input UpdateLotInput {
   id: Int!
   name: String!
   description: String
-  amountPaid: Float!
+  amountPaid: Int! # cents
   acquisitionDate: String!
   items: [LotItemInput!]!
 }
@@ -61,7 +61,7 @@ input LotItemInput {
   productId: Int!
   condition: String
   quantity: Int!
-  costBasis: Float!
+  costBasis: Int! # cents
   costOverridden: Boolean!
 }
 
@@ -71,9 +71,9 @@ input LotFilters {
 
 type LotStats {
   totalLots: Int!
-  totalInvested: Float!
-  totalMarketValue: Float!
-  totalProfitLoss: Float!
+  totalInvested: Int! # cents
+  totalMarketValue: Int! # cents
+  totalProfitLoss: Int! # cents
 }
 
 extend type Query {

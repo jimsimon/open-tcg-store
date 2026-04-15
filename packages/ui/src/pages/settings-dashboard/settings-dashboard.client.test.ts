@@ -25,15 +25,15 @@ const mockExecute = execute as ReturnType<typeof vi.fn>;
 const mockSalesData = {
   getDashboardSales: {
     summary: {
-      totalRevenue: 12345.67,
-      totalCost: 8234.0,
-      totalProfit: 4111.67,
+      totalRevenue: 1234567,
+      totalCost: 823400,
+      totalProfit: 411167,
       profitMargin: 33.3,
       orderCount: 42,
     },
     dataPoints: [
-      { label: 'Jan 1', revenue: 1000, cost: 600, profit: 400, orderCount: 5 },
-      { label: 'Jan 2', revenue: 1200, cost: 700, profit: 500, orderCount: 7 },
+      { label: 'Jan 1', revenue: 100000, cost: 60000, profit: 40000, orderCount: 5 },
+      { label: 'Jan 2', revenue: 120000, cost: 70000, profit: 50000, orderCount: 7 },
     ],
     granularity: 'day',
   },
@@ -41,8 +41,8 @@ const mockSalesData = {
 
 const mockBestSellers = {
   getDashboardBestSellers: [
-    { productId: 1, productName: 'Product A', totalQuantity: 125, totalRevenue: 1234.56 },
-    { productId: 2, productName: 'Product B', totalQuantity: 98, totalRevenue: 987.65 },
+    { productId: 1, productName: 'Product A', totalQuantity: 125, totalRevenue: 123456 },
+    { productId: 2, productName: 'Product B', totalQuantity: 98, totalRevenue: 98765 },
   ],
 };
 
@@ -50,8 +50,8 @@ const mockInventorySummary = {
   getDashboardInventorySummary: {
     totalSkus: 156,
     totalUnits: 2340,
-    totalCostValue: 45678.0,
-    totalRetailValue: 67890.0,
+    totalCostValue: 4567800,
+    totalRetailValue: 6789000,
   },
 };
 
@@ -70,7 +70,7 @@ const mockOpenOrders = {
       id: 1,
       orderNumber: 'ORD-20250405-0001',
       customerName: 'John Smith',
-      totalAmount: 45.67,
+      totalAmount: 4567,
       itemCount: 3,
       createdAt: new Date().toISOString(),
     },

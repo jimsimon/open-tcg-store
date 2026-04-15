@@ -4,6 +4,7 @@ import { product, productExtendedData } from '../db/tcg-data/schema';
 import { inventoryItem } from '../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../db/otcgs/inventory-stock-schema';
 import { likeEscaped } from '../lib/sql-utils';
+
 import type { Card, InputMaybe, SingleCardFilters, ProductListingFilters } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ function getConditionInventory(
   const multiplier = CONDITION_MULTIPLIERS[condition] ?? 1.0;
   return {
     quantity: inv?.quantity ?? 0,
-    price: inv?.price != null ? inv.price.toFixed(2) : (fallbackPrice * multiplier).toFixed(2),
+    price: inv?.price != null ? inv.price : Math.round(fallbackPrice * multiplier),
   };
 }
 
@@ -322,7 +323,7 @@ export async function getSingleCardInventory(
     const multiplier = CONDITION_MULTIPLIERS[condition] ?? 1.0;
     return {
       quantity: inv?.quantity ?? 0,
-      price: inv?.price != null ? inv.price.toFixed(2) : (fallbackPrice * multiplier).toFixed(2),
+      price: inv?.price != null ? inv.price : Math.round(fallbackPrice * multiplier),
     };
   }
 
@@ -614,11 +615,11 @@ async function queryProductListings(
     const extendedDataMap = buildExtendedDataMap(productData?.extendedData ?? []);
     const finishes = productData?.prices?.map((p) => p.subTypeName) ?? [];
 
-    let lowestPrice: string | null = null;
+    let lowestPrice: number | null = null;
     if (r.lowestPrice != null) {
-      lowestPrice = r.lowestPrice.toFixed(2);
+      lowestPrice = r.lowestPrice;
     } else if (productData?.prices?.[0]?.marketPrice != null) {
-      lowestPrice = productData.prices[0].marketPrice.toFixed(2);
+      lowestPrice = productData.prices[0].marketPrice;
     }
 
     const conditionPrices = (conditionPricesMap.get(r.id) ?? [])

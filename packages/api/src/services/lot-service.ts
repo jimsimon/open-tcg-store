@@ -5,6 +5,7 @@ import { lotItem } from '../db/otcgs/lot-item-schema';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
+
 import type { PaginationInput } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
@@ -101,11 +102,11 @@ function validateLotInput(input: CreateLotInput): void {
     }
   }
 
-  // Validate cost total matches amount paid
+  // Validate cost total matches amount paid (all values are integer cents)
   const totalCost = input.items.reduce((sum, item) => sum + item.costBasis * item.quantity, 0);
-  if (Math.abs(totalCost - input.amountPaid) > 0.01) {
+  if (Math.abs(totalCost - input.amountPaid) > 1) {
     throw new Error(
-      `Total cost ($${totalCost.toFixed(2)}) does not match amount paid ($${input.amountPaid.toFixed(2)})`,
+      `Total cost ($${(totalCost / 100).toFixed(2)}) does not match amount paid ($${(input.amountPaid / 100).toFixed(2)})`,
     );
   }
 }
@@ -821,7 +822,7 @@ export async function getLotStats(organizationId: string): Promise<LotStatsResul
     }
   }
 
-  // Sum total market value across all lot items
+  // Sum total market value across all lot items (market prices are already in cents)
   let totalMarketValue = 0;
   for (const item of items) {
     const unitPrice = marketValueByProduct.get(item.productId) ?? 0;

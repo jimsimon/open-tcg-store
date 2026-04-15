@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, foreignKey, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, foreignKey, index } from 'drizzle-orm/sqlite-core';
 
 export const category = sqliteTable(
   'category',
@@ -96,11 +96,11 @@ export const price = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     tcgpProductId: integer('tcgp_product_id').notNull(),
-    lowPrice: real('low_price'),
-    midPrice: real('mid_price'),
-    highPrice: real('high_price'),
-    marketPrice: real('market_price'),
-    directLowPrice: real('direct_low_price'),
+    lowPrice: integer('low_price'), // cents
+    midPrice: integer('mid_price'), // cents
+    highPrice: integer('high_price'), // cents
+    marketPrice: integer('market_price'), // cents
+    directLowPrice: integer('direct_low_price'), // cents
     subTypeName: text('sub_type_name').notNull(),
     productId: integer('product_id'),
   },

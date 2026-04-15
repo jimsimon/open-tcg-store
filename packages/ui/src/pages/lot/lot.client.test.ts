@@ -26,7 +26,7 @@ function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
         id: 1,
         name: 'Test Lot',
         description: 'A test lot',
-        amountPaid: 100,
+        amountPaid: 10000,
         acquisitionDate: '2025-01-15',
         items: [
           {
@@ -40,9 +40,9 @@ function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
             isSealed: false,
             condition: 'NM',
             quantity: 2,
-            costBasis: 25,
+            costBasis: 2500,
             costOverridden: false,
-            marketValue: 100,
+            marketValue: 10000,
           },
           {
             id: 11,
@@ -55,14 +55,14 @@ function mockGetLotResponse(overrides: Record<string, unknown> = {}) {
             isSealed: true,
             condition: null,
             quantity: 1,
-            costBasis: 50,
+            costBasis: 5000,
             costOverridden: false,
-            marketValue: 150,
+            marketValue: 15000,
           },
         ],
-        totalMarketValue: 250,
-        totalCost: 100,
-        projectedProfitLoss: 150,
+        totalMarketValue: 25000,
+        totalCost: 10000,
+        projectedProfitLoss: 15000,
         projectedProfitMargin: 60,
         ...overrides,
       },
@@ -306,7 +306,7 @@ describe('ogs-lot-page', () => {
       const rows = table.querySelectorAll('tbody tr');
       expect(rows.length).toBeGreaterThan(0);
       const costTotalCell = rows[0].querySelectorAll('td')[costTotalIdx];
-      // Item has costBasis=25, quantity=2, so total = $50.00
+      // Item has costBasis=2500 (cents), quantity=2, so total = 5000 cents = $50.00
       expect(costTotalCell.textContent?.trim()).toBe('$50.00');
     });
 
@@ -319,7 +319,7 @@ describe('ogs-lot-page', () => {
       const rows = table.querySelectorAll('tbody tr');
       expect(rows.length).toBeGreaterThan(0);
       const unitMarketCell = rows[0].querySelectorAll('td')[unitMarketIdx];
-      // marketValue=100 / quantity=2 => marketPrice per unit = $50.00
+      // marketValue=10000 (cents) / quantity=2 => marketPrice per unit = 5000 cents = $50.00
       expect(unitMarketCell.textContent?.trim()).toBe('$50.00');
     });
 
@@ -332,7 +332,7 @@ describe('ogs-lot-page', () => {
       const rows = table.querySelectorAll('tbody tr');
       expect(rows.length).toBeGreaterThan(0);
       const marketTotalCell = rows[0].querySelectorAll('td')[marketTotalIdx];
-      // marketPrice per unit = 50, quantity=2, so total = $100.00
+      // marketPrice per unit = 5000 (cents), quantity=2, so total = 10000 cents = $100.00
       expect(marketTotalCell.textContent?.trim()).toBe('$100.00');
     });
   });
@@ -355,9 +355,9 @@ describe('ogs-lot-page', () => {
                   isSealed: true,
                   condition: null,
                   quantity: 3,
-                  costBasis: 20,
+                  costBasis: 2000,
                   costOverridden: false,
-                  marketValue: 150,
+                  marketValue: 15000,
                 },
               ],
             }),
@@ -760,10 +760,10 @@ describe('ogs-lot-page', () => {
     });
 
     test('shows summary totals', async () => {
-      const item1 = makeItem({ marketPrice: 30, quantity: 1 });
-      const item2 = makeItem({ marketPrice: 10, quantity: 1 });
+      const item1 = makeItem({ marketPrice: 3000, quantity: 1 });
+      const item2 = makeItem({ marketPrice: 1000, quantity: 1 });
       element.singlesItems = [item1, item2];
-      element.amountPaid = 20;
+      element.amountPaid = 2000;
       recalculate(element);
       await element.updateComplete;
 

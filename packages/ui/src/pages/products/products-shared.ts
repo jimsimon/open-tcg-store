@@ -632,13 +632,8 @@ export function getQuantityBadgeClass(quantity: number | null | undefined): stri
 }
 
 // --- Helper: Format currency ---
-
-export function formatCurrency(value: string | null | undefined, fromPrefix = true): string {
-  if (value == null) return '—';
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '—';
-  return `${fromPrefix ? '$' : ''}${num.toFixed(2)}`;
-}
+// Re-exported from shared utility; values are now integer cents.
+export { formatCurrency } from '../../lib/currency.ts';
 
 // --- Helper: Compute product stats ---
 

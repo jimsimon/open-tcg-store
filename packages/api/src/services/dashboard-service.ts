@@ -206,9 +206,9 @@ export async function getSalesBreakdown(
 
   return {
     summary: {
-      totalRevenue: Math.round(totalRevenue * 100) / 100,
-      totalCost: Math.round(totalCost * 100) / 100,
-      totalProfit: Math.round(totalProfit * 100) / 100,
+      totalRevenue,
+      totalCost,
+      totalProfit,
       profitMargin: Math.round(profitMargin * 10) / 10,
       orderCount,
     },
@@ -260,7 +260,7 @@ export async function getBestSellers(
     productId: r.productId,
     productName: r.productName,
     totalQuantity: r.totalQuantity ?? 0,
-    totalRevenue: Math.round((r.totalRevenue ?? 0) * 100) / 100,
+    totalRevenue: r.totalRevenue ?? 0,
   }));
 }
 
@@ -297,8 +297,8 @@ export async function getInventorySummary(organizationId: string): Promise<Inven
   return {
     totalSkus: skuResult[0]?.totalSkus ?? 0,
     totalUnits: stockResult[0]?.totalUnits ?? 0,
-    totalCostValue: Math.round((stockResult[0]?.totalCostValue ?? 0) * 100) / 100,
-    totalRetailValue: Math.round((stockResult[0]?.totalRetailValue ?? 0) * 100) / 100,
+    totalCostValue: stockResult[0]?.totalCostValue ?? 0,
+    totalRetailValue: stockResult[0]?.totalRetailValue ?? 0,
   };
 }
 

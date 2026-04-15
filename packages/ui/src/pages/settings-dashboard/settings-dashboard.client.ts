@@ -16,6 +16,7 @@ import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import { activeStoreId } from '../../lib/store-context.ts';
 import type { ChartData } from 'chart.js';
+import { formatCurrency } from '../../lib/currency.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -163,11 +164,6 @@ function computeDateRange(preset: DatePreset): { startDate: string; endDate: str
   }
 
   return { startDate: start.toISOString(), endDate };
-}
-
-function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '--';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 }
 
 function formatNumber(value: number | null | undefined): string {

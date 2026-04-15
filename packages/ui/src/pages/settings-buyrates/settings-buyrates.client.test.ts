@@ -42,8 +42,26 @@ function setupDefaultMock() {
       return Promise.resolve({
         data: {
           getBuyRates: [
-            { id: 1, description: 'Common', rate: 0.01, type: 'fixed', rarity: 'Common', hidden: false, sortOrder: 0 },
-            { id: 2, description: 'Rare', rate: 0.05, type: 'fixed', rarity: 'Rare', hidden: false, sortOrder: 1 },
+            {
+              id: 1,
+              description: 'Common',
+              fixedRateCents: 1,
+              percentageRate: null,
+              type: 'fixed',
+              rarity: 'Common',
+              hidden: false,
+              sortOrder: 0,
+            },
+            {
+              id: 2,
+              description: 'Rare',
+              fixedRateCents: 5,
+              percentageRate: null,
+              type: 'fixed',
+              rarity: 'Rare',
+              hidden: false,
+              sortOrder: 1,
+            },
           ],
         },
       });

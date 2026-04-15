@@ -31,6 +31,7 @@ import { TypedDocumentString } from '../graphql/graphql';
 import logoSvg from '../assets/logo.svg?raw';
 import { cartState } from '../lib/cart-state';
 import type { CartItem } from '../lib/cart-state';
+import { formatCurrency } from '../lib/currency';
 import {
   storeList,
   activeStoreId,
@@ -871,7 +872,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                     <div class="cart-items">${cart.items.map((item) => this.renderCartItem(item))}</div>
                     <div class="cart-total">
                       <span>Total</span>
-                      <span>$${cartTotal.toFixed(2)}</span>
+                      <span>${formatCurrency(cartTotal)}</span>
                     </div>
                     <div class="cart-form">
                       <wa-input
@@ -926,7 +927,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         <div class="cart-item-header">
           <div>
             <div class="cart-item-name">${item.productName}</div>
-            <div class="cart-item-condition">${item.condition} · $${item.unitPrice.toFixed(2)} each</div>
+            <div class="cart-item-condition">${item.condition} · ${formatCurrency(item.unitPrice)} each</div>
           </div>
           <wa-button
             size="small"
@@ -977,7 +978,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
               of ${item.maxAvailable}
             </span>
           </div>
-          <div class="cart-item-price">$${lineTotal.toFixed(2)}</div>
+          <div class="cart-item-price">${formatCurrency(lineTotal)}</div>
         </div>
       </div>
     `;
@@ -1084,7 +1085,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
           // Refresh cart to get updated maxAvailable values
           await this.fetchCart();
         } else if (data.order) {
-          this.orderSuccess = `Order ${data.order.orderNumber} created for $${data.order.totalAmount.toFixed(2)}`;
+          this.orderSuccess = `Order ${data.order.orderNumber} created for ${formatCurrency(data.order.totalAmount)}`;
           cartState.set({ items: [] });
           this.customerName = '';
           // Notify product pages to refresh listings with updated inventory

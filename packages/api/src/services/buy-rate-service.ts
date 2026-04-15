@@ -17,7 +17,8 @@ export interface SupportedGameResult {
 export interface BuyRateEntryResult {
   id: number;
   description: string;
-  rate: number;
+  fixedRateCents: number | null;
+  percentageRate: number | null;
   type: string;
   rarity: string | null;
   hidden: boolean;
@@ -37,7 +38,8 @@ export interface PublicBuyRatesResult {
 
 export interface BuyRateEntryInput {
   description: string;
-  rate: number;
+  fixedRateCents?: number | null;
+  percentageRate?: number | null;
   type: string;
   rarity?: string | null;
   hidden?: boolean;
@@ -122,7 +124,8 @@ export async function getBuyRates(categoryId: number): Promise<BuyRateEntryResul
   return rows.map((row) => ({
     id: row.id,
     description: row.description,
-    rate: row.rate,
+    fixedRateCents: row.fixedRateCents ?? null,
+    percentageRate: row.percentageRate ?? null,
     type: row.type ?? 'fixed',
     rarity: row.rarity ?? null,
     hidden: row.hidden ?? false,
@@ -133,9 +136,6 @@ export async function getBuyRates(categoryId: number): Promise<BuyRateEntryResul
 export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInput[]): Promise<BuyRateEntryResult[]> {
   // Validate entries
   for (const entry of entries) {
-    if (entry.rate < 0) {
-      throw new Error('Rate must not be negative');
-    }
     if (!entry.description || entry.description.trim().length === 0) {
       throw new Error('Description must not be empty');
     }
@@ -143,12 +143,21 @@ export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInpu
     if (entry.type && !validTypes.includes(entry.type)) {
       throw new Error(`Invalid type: ${entry.type}. Must be one of: ${validTypes.join(', ')}`);
     }
+    if (entry.type === 'fixed') {
+      if (entry.fixedRateCents == null) throw new Error('fixedRateCents is required for fixed buy rates');
+      if (entry.fixedRateCents < 0) throw new Error('Fixed rate must not be negative');
+    }
+    if (entry.type === 'percentage') {
+      if (entry.percentageRate == null) throw new Error('percentageRate is required for percentage buy rates');
+      if (entry.percentageRate < 0) throw new Error('Percentage rate must not be negative');
+    }
   }
 
   // Validate all visible rarity-default rows have non-zero rates
   const visibleRarityEntries = entries.filter((e) => e.rarity && !e.hidden);
   for (const entry of visibleRarityEntries) {
-    if (entry.rate <= 0) {
+    const effectiveRate = entry.type === 'fixed' ? (entry.fixedRateCents ?? 0) : (entry.percentageRate ?? 0);
+    if (effectiveRate <= 0) {
       throw new Error(`Buy rate for rarity "${entry.rarity}" must be greater than 0`);
     }
   }
@@ -163,7 +172,8 @@ export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInpu
         entries.map((entry) => ({
           categoryId,
           description: entry.description,
-          rate: entry.rate,
+          fixedRateCents: entry.type === 'fixed' ? (entry.fixedRateCents ?? 0) : null,
+          percentageRate: entry.type === 'percentage' ? (entry.percentageRate ?? 0) : null,
           type: entry.type || 'fixed',
           rarity: entry.rarity || null,
           hidden: entry.hidden ?? false,
@@ -224,7 +234,8 @@ export async function getPublicBuyRates(): Promise<PublicBuyRatesResult> {
     existing.push({
       id: rate.id,
       description: rate.description,
-      rate: rate.rate,
+      fixedRateCents: rate.fixedRateCents ?? null,
+      percentageRate: rate.percentageRate ?? null,
       type: rate.type ?? 'fixed',
       rarity: rate.rarity ?? null,
       hidden: false,

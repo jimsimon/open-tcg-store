@@ -4,9 +4,9 @@ type Order {
   orderNumber: String!
   customerName: String!
   status: String!
-  totalAmount: Float!
-  totalCostBasis: Float
-  totalProfit: Float
+  totalAmount: Int! # cents
+  totalCostBasis: Int # cents
+  totalProfit: Int # cents
   createdAt: String!
   items: [OrderItem!]!
 }
@@ -17,9 +17,9 @@ type OrderItem {
   productName: String!
   condition: String!
   quantity: Int!
-  unitPrice: Float!
-  costBasis: Float
-  profit: Float
+  unitPrice: Int! # cents
+  costBasis: Int # cents
+  profit: Int # cents
   lotId: Int
 }
 

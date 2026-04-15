@@ -19,6 +19,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { formatCurrency } from '../../lib/currency.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 
@@ -166,11 +167,6 @@ const UpdateOrderStatusMutation = new TypedDocumentString(`
 >;
 
 // --- Helpers ---
-
-function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '—';
-  return `$${value.toFixed(2)}`;
-}
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
   let timer: ReturnType<typeof setTimeout>;

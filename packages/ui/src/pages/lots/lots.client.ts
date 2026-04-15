@@ -15,6 +15,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { formatCurrency } from '../../lib/currency.ts';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
@@ -115,12 +116,6 @@ interface LotSummary {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-
-function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
-}
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
   let timer: ReturnType<typeof setTimeout>;

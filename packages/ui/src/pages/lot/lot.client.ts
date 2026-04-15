@@ -20,6 +20,7 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
 import { TypedDocumentString } from '../../graphql/graphql';
+import { formatCurrency, centsToInputValue, inputValueToCents } from '../../lib/currency';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -157,10 +158,6 @@ function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T & 
 
 function getTodayDateString(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -824,9 +821,9 @@ export class OgsLotPage extends LitElement {
             type="number"
             step="0.01"
             min="0"
-            .value="${String(this.amountPaid)}"
+            .value="${String(centsToInputValue(this.amountPaid))}"
             @input="${(e: Event) => {
-              this.amountPaid = parseFloat((e.target as HTMLInputElement).value) || 0;
+              this.amountPaid = inputValueToCents(parseFloat((e.target as HTMLInputElement).value) || 0);
               this.recalculateAutoCosts();
             }}"
           >
@@ -1028,9 +1025,13 @@ export class OgsLotPage extends LitElement {
               type="number"
               step="0.01"
               min="0"
-              .value="${String(item.costBasis)}"
+              .value="${String(centsToInputValue(item.costBasis))}"
               @input="${(e: Event) => {
-                this.overrideCost(item.clientId, isSingle, parseFloat((e.target as HTMLInputElement).value) || 0);
+                this.overrideCost(
+                  item.clientId,
+                  isSingle,
+                  inputValueToCents(parseFloat((e.target as HTMLInputElement).value) || 0),
+                );
               }}"
             >
               <span slot="prefix">$</span>

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, foreignKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { user } from './auth-schema';
 
 export const inventoryItem = sqliteTable(
@@ -9,7 +9,7 @@ export const inventoryItem = sqliteTable(
     organizationId: text('organization_id').notNull(),
     productId: integer('product_id').notNull(),
     condition: text('condition').notNull(), // NM, LP, MP, HP, D
-    price: real('price').notNull(),
+    price: integer('price').notNull(), // cents
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

@@ -399,11 +399,11 @@ async function populateTcgData() {
           return {
             tcgpProductId: p.productId,
             productId: internalId,
-            lowPrice: p.lowPrice,
-            midPrice: p.midPrice,
-            highPrice: p.highPrice,
-            marketPrice: p.marketPrice,
-            directLowPrice: p.directLowPrice,
+            lowPrice: p.lowPrice != null ? Math.round(p.lowPrice * 100) : null,
+            midPrice: p.midPrice != null ? Math.round(p.midPrice * 100) : null,
+            highPrice: p.highPrice != null ? Math.round(p.highPrice * 100) : null,
+            marketPrice: p.marketPrice != null ? Math.round(p.marketPrice * 100) : null,
+            directLowPrice: p.directLowPrice != null ? Math.round(p.directLowPrice * 100) : null,
             subTypeName: p.subTypeName,
           };
         })

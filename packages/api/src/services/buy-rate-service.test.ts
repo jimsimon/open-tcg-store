@@ -66,7 +66,8 @@ vi.mock('../db/otcgs/buy-rate-schema', () => ({
     id: 'buy_rate.id',
     categoryId: 'buy_rate.category_id',
     description: 'buy_rate.description',
-    rate: 'buy_rate.rate',
+    fixedRateCents: 'buy_rate.fixed_rate_cents',
+    percentageRate: 'buy_rate.percentage_rate',
     hidden: 'buy_rate.hidden',
     sortOrder: 'buy_rate.sort_order',
   },
@@ -220,9 +221,36 @@ describe('buy-rate-service', () => {
   describe('getBuyRates', () => {
     it('should return buy rates for a game ordered by sortOrder', async () => {
       const rows = [
-        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, hidden: false, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, hidden: false, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, hidden: false, sortOrder: 2 },
+        {
+          id: 1,
+          description: 'Commons',
+          fixedRateCents: 1,
+          percentageRate: null,
+          type: 'fixed',
+          rarity: null,
+          hidden: false,
+          sortOrder: 0,
+        },
+        {
+          id: 2,
+          description: 'Rares',
+          fixedRateCents: 5,
+          percentageRate: null,
+          type: 'fixed',
+          rarity: null,
+          hidden: false,
+          sortOrder: 1,
+        },
+        {
+          id: 3,
+          description: 'Holos',
+          fixedRateCents: null,
+          percentageRate: 0.1,
+          type: 'percentage',
+          rarity: null,
+          hidden: false,
+          sortOrder: 2,
+        },
       ];
       selectChain = chainable(rows);
       mockOtcgs.select.mockImplementation(() => selectChain);
@@ -230,9 +258,36 @@ describe('buy-rate-service', () => {
       const result = await getBuyRates(1);
 
       expect(result).toEqual([
-        { id: 1, description: 'Commons', rate: 0.01, type: 'fixed', rarity: null, hidden: false, sortOrder: 0 },
-        { id: 2, description: 'Rares', rate: 0.05, type: 'fixed', rarity: null, hidden: false, sortOrder: 1 },
-        { id: 3, description: 'Holos', rate: 0.1, type: 'percentage', rarity: null, hidden: false, sortOrder: 2 },
+        {
+          id: 1,
+          description: 'Commons',
+          fixedRateCents: 1,
+          percentageRate: null,
+          type: 'fixed',
+          rarity: null,
+          hidden: false,
+          sortOrder: 0,
+        },
+        {
+          id: 2,
+          description: 'Rares',
+          fixedRateCents: 5,
+          percentageRate: null,
+          type: 'fixed',
+          rarity: null,
+          hidden: false,
+          sortOrder: 1,
+        },
+        {
+          id: 3,
+          description: 'Holos',
+          fixedRateCents: null,
+          percentageRate: 0.1,
+          type: 'percentage',
+          rarity: null,
+          hidden: false,
+          sortOrder: 2,
+        },
       ]);
     });
 
@@ -252,16 +307,16 @@ describe('buy-rate-service', () => {
   describe('saveBuyRates', () => {
     it('should delete existing entries and insert new ones', async () => {
       const savedRows = [
-        { id: 10, description: 'Commons', rate: 0.01, sortOrder: 0 },
-        { id: 11, description: 'Rares', rate: 0.05, sortOrder: 1 },
+        { id: 10, description: 'Commons', fixedRateCents: 1, percentageRate: null, type: 'fixed', sortOrder: 0 },
+        { id: 11, description: 'Rares', fixedRateCents: 5, percentageRate: null, type: 'fixed', sortOrder: 1 },
       ];
       // First select is getBuyRates after save
       selectChain = chainable(savedRows);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
       const result = await saveBuyRates(1, [
-        { description: 'Commons', rate: 0.01, type: 'fixed', sortOrder: 0 },
-        { description: 'Rares', rate: 0.05, type: 'fixed', sortOrder: 1 },
+        { description: 'Commons', fixedRateCents: 1, type: 'fixed', sortOrder: 0 },
+        { description: 'Rares', fixedRateCents: 5, type: 'fixed', sortOrder: 1 },
       ]);
 
       expect(mockOtcgs.delete).toHaveBeenCalled();
@@ -281,13 +336,23 @@ describe('buy-rate-service', () => {
     });
 
     it('should allow hidden rarity entries with zero rate', async () => {
-      const savedRows = [{ id: 10, description: 'Common', rate: 0, hidden: true, sortOrder: 0 }];
+      const savedRows = [
+        {
+          id: 10,
+          description: 'Common',
+          fixedRateCents: 0,
+          percentageRate: null,
+          type: 'fixed',
+          hidden: true,
+          sortOrder: 0,
+        },
+      ];
       selectChain = chainable(savedRows);
       mockOtcgs.select.mockImplementation(() => selectChain);
 
       // Should not throw — hidden rarity entries can have rate 0
       const result = await saveBuyRates(1, [
-        { description: 'Common', rate: 0, type: 'fixed', rarity: 'Common', hidden: true, sortOrder: 0 },
+        { description: 'Common', fixedRateCents: 0, type: 'fixed', rarity: 'Common', hidden: true, sortOrder: 0 },
       ]);
 
       expect(mockOtcgs.delete).toHaveBeenCalled();
@@ -298,7 +363,7 @@ describe('buy-rate-service', () => {
     it('should reject visible rarity entries with zero rate', async () => {
       await expect(
         saveBuyRates(1, [
-          { description: 'Common', rate: 0, type: 'fixed', rarity: 'Common', hidden: false, sortOrder: 0 },
+          { description: 'Common', fixedRateCents: 0, type: 'fixed', rarity: 'Common', hidden: false, sortOrder: 0 },
         ]),
       ).rejects.toThrow('Buy rate for rarity "Common" must be greater than 0');
     });
@@ -333,9 +398,36 @@ describe('buy-rate-service', () => {
         }
         // Buy rates query
         return chainable([
-          { id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 },
-          { id: 2, categoryId: 1, description: 'Rares', rate: 0.05, hidden: false, sortOrder: 1 },
-          { id: 3, categoryId: 3, description: 'Commons', rate: 0.02, hidden: false, sortOrder: 0 },
+          {
+            id: 1,
+            categoryId: 1,
+            description: 'Commons',
+            fixedRateCents: 1,
+            percentageRate: null,
+            type: 'fixed',
+            hidden: false,
+            sortOrder: 0,
+          },
+          {
+            id: 2,
+            categoryId: 1,
+            description: 'Rares',
+            fixedRateCents: 5,
+            percentageRate: null,
+            type: 'fixed',
+            hidden: false,
+            sortOrder: 1,
+          },
+          {
+            id: 3,
+            categoryId: 3,
+            description: 'Commons',
+            fixedRateCents: 2,
+            percentageRate: null,
+            type: 'fixed',
+            hidden: false,
+            sortOrder: 0,
+          },
         ]);
       });
 
@@ -357,8 +449,26 @@ describe('buy-rate-service', () => {
         }
         // Simulates DB returning only visible entries (hidden=false WHERE clause applied)
         return chainable([
-          { id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 },
-          { id: 3, categoryId: 1, description: 'Holos', rate: 0.1, hidden: false, sortOrder: 2 },
+          {
+            id: 1,
+            categoryId: 1,
+            description: 'Commons',
+            fixedRateCents: 1,
+            percentageRate: null,
+            type: 'fixed',
+            hidden: false,
+            sortOrder: 0,
+          },
+          {
+            id: 3,
+            categoryId: 1,
+            description: 'Holos',
+            fixedRateCents: null,
+            percentageRate: 0.1,
+            type: 'percentage',
+            hidden: false,
+            sortOrder: 2,
+          },
         ]);
       });
 
@@ -390,7 +500,18 @@ describe('buy-rate-service', () => {
           ]);
         }
         // Only Magic has entries
-        return chainable([{ id: 1, categoryId: 1, description: 'Commons', rate: 0.01, hidden: false, sortOrder: 0 }]);
+        return chainable([
+          {
+            id: 1,
+            categoryId: 1,
+            description: 'Commons',
+            fixedRateCents: 1,
+            percentageRate: null,
+            type: 'fixed',
+            hidden: false,
+            sortOrder: 0,
+          },
+        ]);
       });
 
       const result = await getPublicBuyRates();
