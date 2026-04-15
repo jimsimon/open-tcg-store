@@ -63,28 +63,34 @@ export async function getOrCreateShoppingCart(organizationId: string, userId: st
 export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof getOrCreateShoppingCart>>) {
   const cartItemsWithInventory = cart.cartItems.filter((ci) => ci.inventoryItem?.product);
 
-  const items: CartItemOutput[] = [];
+  // Batch fetch stock totals for all inventory items in one query (instead of 1 per cart item)
+  const invIds = cartItemsWithInventory.map((ci) => ci.inventoryItem.id);
+  const stockTotals =
+    invIds.length > 0
+      ? await otcgs
+          .select({
+            inventoryItemId: inventoryItemStock.inventoryItemId,
+            total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)`.as('total'),
+          })
+          .from(inventoryItemStock)
+          .where(and(inArray(inventoryItemStock.inventoryItemId, invIds), isNull(inventoryItemStock.deletedAt)))
+          .groupBy(inventoryItemStock.inventoryItemId)
+      : [];
 
-  for (const ci of cartItemsWithInventory) {
+  const stockMap = new Map(stockTotals.map((s) => [s.inventoryItemId, s.total]));
+
+  const items: CartItemOutput[] = cartItemsWithInventory.map((ci) => {
     const inv = ci.inventoryItem;
-
-    const [stockResult] = await otcgs
-      .select({ total: sql<number>`COALESCE(SUM(${inventoryItemStock.quantity}), 0)` })
-      .from(inventoryItemStock)
-      .where(and(eq(inventoryItemStock.inventoryItemId, inv.id), isNull(inventoryItemStock.deletedAt)));
-
-    const maxAvailable = stockResult?.total ?? 0;
-
-    items.push({
+    return {
       inventoryItemId: ci.inventoryItemId,
       productId: inv.product.id,
       productName: inv.product.name,
       condition: inv.condition,
       quantity: ci.quantity,
       unitPrice: inv.price,
-      maxAvailable,
-    });
-  }
+      maxAvailable: stockMap.get(inv.id) ?? 0,
+    };
+  });
 
   return { organizationId: cart.organizationId, items };
 }

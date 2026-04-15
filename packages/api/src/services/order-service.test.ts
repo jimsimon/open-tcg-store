@@ -235,8 +235,8 @@ describe('order-service', () => {
           productName: 'Charizard',
         },
       ]);
-      // select #3: stock check — only 3 available
-      const stockCheckChain = chainable([{ total: 3 }]);
+      // select #3: batched stock check — only 3 available for invId 100
+      const stockCheckChain = chainable([{ inventoryItemId: 100, total: 3 }]);
 
       let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
@@ -271,12 +271,12 @@ describe('order-service', () => {
           productName: 'Sol Ring',
         },
       ]);
-      // select #3: stock availability check — 5 available
-      const stockCheckChain = chainable([{ total: 5 }]);
-      // select #4: FIFO stock entries
+      // select #3: batched stock availability check — 5 available for invId 100
+      const stockCheckChain = chainable([{ inventoryItemId: 100, total: 5 }]);
+      // select #4: prefetched FIFO stock entries for all inventory items
       const fifoChain = chainable([
-        { id: 10, quantity: 2, costBasis: 5.0 },
-        { id: 11, quantity: 3, costBasis: 6.0 },
+        { id: 10, inventoryItemId: 100, quantity: 2, costBasis: 5.0 },
+        { id: 11, inventoryItemId: 100, quantity: 3, costBasis: 6.0 },
       ]);
 
       let selectIdx = 0;
