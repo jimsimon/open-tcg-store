@@ -1203,6 +1203,37 @@ export type UserPermissions = {
   canViewTransactionLog: Scalars['Boolean']['output'];
 };
 
+export type UpdateItemInCartMutationVariables = Exact<{
+  cartItem: CartItemInput;
+}>;
+
+
+export type UpdateItemInCartMutation = { __typename?: 'Mutation', updateItemInCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+
+export type RemoveFromCartMutationVariables = Exact<{
+  cartItem: CartItemInput;
+}>;
+
+
+export type RemoveFromCartMutation = { __typename?: 'Mutation', removeFromCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+
+export type SubmitOrderMutationVariables = Exact<{
+  input: SubmitOrderInput;
+}>;
+
+
+export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder: { __typename?: 'SubmitOrderResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } | null, insufficientItems?: Array<{ __typename?: 'InsufficientItem', productId: number, productName: string, condition: CardCondition, requested: number, available: number }> | null } };
+
+export type GetAllStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAllStoreLocationsQuery = { __typename?: 'Query', getAllStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, city: string, state: string }> };
+
+export type GetEmployeeStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetEmployeeStoreLocationsQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, city: string, state: string }> };
+
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1213,6 +1244,28 @@ export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean } };
 
+export type GetSupportedGamesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetSupportedGamesQuery = { __typename?: 'Query', getSupportedGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+
+export type AddToCartMutationVariables = Exact<{
+  cartItem: CartItemInput;
+}>;
+
+
+export type AddToCartMutation = { __typename?: 'Mutation', addToCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+
+export type GetPublicBuyRatesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetPublicBuyRatesQuery = { __typename?: 'Query', getPublicBuyRates: { __typename?: 'PublicBuyRates', games: Array<{ __typename?: 'BuyRateTable', categoryId: number, gameName: string, gameDisplayName: string, entries: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, sortOrder: number }> }> } };
+
+export type GetAvailableGamesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAvailableGamesQuery = { __typename?: 'Query', getAvailableGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   company: CompanySettings;
@@ -1222,6 +1275,370 @@ export type FirstTimeSetupMutationMutationVariables = Exact<{
 
 
 export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
+
+export type GetInventoryQueryVariables = Exact<{
+  filters?: InputMaybe<InventoryFilters>;
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetInventoryQuery = { __typename?: 'Query', getInventory: { __typename?: 'InventoryPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number }> } };
+
+export type GetInventoryItemQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetInventoryItemQuery = { __typename?: 'Query', getInventoryItem?: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } | null };
+
+export type GetInventoryItemDetailsQueryVariables = Exact<{
+  inventoryItemId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetInventoryItemDetailsQuery = { __typename?: 'Query', getInventoryItemDetails: { __typename?: 'InventoryStockPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null, createdAt: string, updatedAt: string }> } };
+
+export type SearchProductsQueryVariables = Exact<{
+  searchTerm: Scalars['String']['input'];
+  game?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SearchProductsQuery = { __typename?: 'Query', searchProducts: Array<{ __typename?: 'ProductSearchResult', id: number, name: string, gameName: string, setName: string, rarity?: string | null, imageUrl?: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ __typename?: 'ProductPrice', subTypeName: string, lowPrice?: number | null, midPrice?: number | null, highPrice?: number | null, marketPrice?: number | null, directLowPrice?: number | null }> }> };
+
+export type AddInventoryItemMutationVariables = Exact<{
+  input: AddInventoryItemInput;
+}>;
+
+
+export type AddInventoryItemMutation = { __typename?: 'Mutation', addInventoryItem: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
+
+export type UpdateInventoryItemMutationVariables = Exact<{
+  input: UpdateInventoryItemInput;
+}>;
+
+
+export type UpdateInventoryItemMutation = { __typename?: 'Mutation', updateInventoryItem: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
+
+export type DeleteInventoryItemMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteInventoryItemMutation = { __typename?: 'Mutation', deleteInventoryItem: boolean };
+
+export type AddStockMutationVariables = Exact<{
+  input: AddStockInput;
+}>;
+
+
+export type AddStockMutation = { __typename?: 'Mutation', addStock: { __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null } };
+
+export type UpdateStockMutationVariables = Exact<{
+  input: UpdateStockInput;
+}>;
+
+
+export type UpdateStockMutation = { __typename?: 'Mutation', updateStock: { __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null } };
+
+export type DeleteStockMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteStockMutation = { __typename?: 'Mutation', deleteStock: boolean };
+
+export type BulkUpdateStockMutationVariables = Exact<{
+  input: BulkUpdateStockInput;
+}>;
+
+
+export type BulkUpdateStockMutation = { __typename?: 'Mutation', bulkUpdateStock: Array<{ __typename?: 'InventoryItemStock', id: number }> };
+
+export type BulkDeleteStockMutationVariables = Exact<{
+  input: BulkDeleteStockInput;
+}>;
+
+
+export type BulkDeleteStockMutation = { __typename?: 'Mutation', bulkDeleteStock: boolean };
+
+export type SearchProductsForLotQueryVariables = Exact<{
+  searchTerm: Scalars['String']['input'];
+  isSingle?: InputMaybe<Scalars['Boolean']['input']>;
+  isSealed?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type SearchProductsForLotQuery = { __typename?: 'Query', searchProducts: Array<{ __typename?: 'ProductSearchResult', id: number, name: string, gameName: string, setName: string, rarity?: string | null, imageUrl?: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ __typename?: 'ProductPrice', subTypeName: string, marketPrice?: number | null, midPrice?: number | null }> }> };
+
+export type GetLotQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetLotQuery = { __typename?: 'Query', getLot?: { __typename?: 'Lot', id: number, name: string, description?: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, items: Array<{ __typename?: 'LotItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition?: CardCondition | null, quantity: number, costBasis: number, costOverridden: boolean, marketValue?: number | null }> } | null };
+
+export type CreateLotMutationVariables = Exact<{
+  input: CreateLotInput;
+}>;
+
+
+export type CreateLotMutation = { __typename?: 'Mutation', createLot: { __typename?: 'Lot', id: number } };
+
+export type UpdateLotMutationVariables = Exact<{
+  input: UpdateLotInput;
+}>;
+
+
+export type UpdateLotMutation = { __typename?: 'Mutation', updateLot: { __typename?: 'Lot', id: number } };
+
+export type GetLotsQueryVariables = Exact<{
+  filters?: InputMaybe<LotFilters>;
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetLotsQuery = { __typename?: 'Query', getLots: { __typename?: 'LotPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Lot', id: number, name: string, description?: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, createdAt: string, items: Array<{ __typename?: 'LotItem', id: number }> }> } };
+
+export type DeleteLotMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteLotMutation = { __typename?: 'Mutation', deleteLot: boolean };
+
+export type GetLotStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetLotStatsQuery = { __typename?: 'Query', getLotStats: { __typename?: 'LotStats', totalLots: number, totalInvested: number, totalMarketValue: number, totalProfitLoss: number } };
+
+export type GetOrdersQueryVariables = Exact<{
+  pagination?: InputMaybe<PaginationInput>;
+  filters?: InputMaybe<OrderFilters>;
+}>;
+
+
+export type GetOrdersQuery = { __typename?: 'Query', getOrders: { __typename?: 'OrderPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null, lotId?: number | null }> }> } };
+
+export type CancelOrderMutationVariables = Exact<{
+  orderId: Scalars['Int']['input'];
+}>;
+
+
+export type CancelOrderMutation = { __typename?: 'Mutation', cancelOrder: { __typename?: 'CancelOrderResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } | null } };
+
+export type UpdateOrderStatusMutationVariables = Exact<{
+  orderId: Scalars['Int']['input'];
+  status: OrderStatus;
+}>;
+
+
+export type UpdateOrderStatusMutation = { __typename?: 'Mutation', updateOrderStatus: { __typename?: 'UpdateOrderStatusResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } | null } };
+
+export type GetProductQueryVariables = Exact<{
+  productId: Scalars['String']['input'];
+}>;
+
+
+export type GetProductQuery = { __typename?: 'Query', getProduct: { __typename?: 'ProductDetail', id: string, name: string, setName: string, gameName: string, rarity?: string | null, type?: string | null, text?: string | null, flavorText?: string | null, finishes: Array<string>, isSingle: boolean, isSealed: boolean, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventoryRecords: Array<{ __typename?: 'ProductInventoryRecord', inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> } };
+
+export type GetSealedProductListingsQueryVariables = Exact<{
+  filters?: InputMaybe<ProductListingFilters>;
+  pagination?: InputMaybe<ProductListingPagination>;
+}>;
+
+
+export type GetSealedProductListingsQuery = { __typename?: 'Query', getProductListings: { __typename?: 'ProductListingPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'ProductListing', id: string, name: string, setName: string, gameName: string, finishes: Array<string>, totalQuantity: number, lowestPrice?: number | null, lowestPriceInventoryItemId?: number | null, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null }> } };
+
+export type GetSealedSetsQueryVariables = Exact<{
+  game: Scalars['String']['input'];
+  filters?: InputMaybe<SetFilters>;
+}>;
+
+
+export type GetSealedSetsQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
+
+export type GetSinglesProductListingsQueryVariables = Exact<{
+  filters?: InputMaybe<ProductListingFilters>;
+  pagination?: InputMaybe<ProductListingPagination>;
+}>;
+
+
+export type GetSinglesProductListingsQuery = { __typename?: 'Query', getProductListings: { __typename?: 'ProductListingPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'ProductListing', id: string, name: string, setName: string, gameName: string, rarity?: string | null, finishes: Array<string>, totalQuantity: number, lowestPrice?: number | null, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, conditionPrices: Array<{ __typename?: 'ProductConditionPrice', inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> }> } };
+
+export type GetSinglesSetsQueryVariables = Exact<{
+  game: Scalars['String']['input'];
+  filters?: InputMaybe<SetFilters>;
+}>;
+
+
+export type GetSinglesSetsQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
+
+export type GetBackupSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetBackupSettingsQuery = { __typename?: 'Query', getBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
+
+export type UpdateBackupSettingsMutationVariables = Exact<{
+  input: UpdateBackupSettingsInput;
+}>;
+
+
+export type UpdateBackupSettingsMutation = { __typename?: 'Mutation', updateBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
+
+export type TriggerBackupMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TriggerBackupMutation = { __typename?: 'Mutation', triggerBackup: { __typename?: 'BackupResult', success: boolean, message?: string | null, timestamp?: string | null } };
+
+export type TriggerRestoreMutationVariables = Exact<{
+  provider: BackupProvider;
+}>;
+
+
+export type TriggerRestoreMutation = { __typename?: 'Mutation', triggerRestore: { __typename?: 'RestoreResult', success: boolean, message?: string | null } };
+
+export type GetBuyRatesQueryVariables = Exact<{
+  categoryId: Scalars['Int']['input'];
+}>;
+
+
+export type GetBuyRatesQuery = { __typename?: 'Query', getBuyRates: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, rarity?: string | null, hidden: boolean, sortOrder: number }> };
+
+export type GetDistinctRaritiesQueryVariables = Exact<{
+  categoryId: Scalars['Int']['input'];
+}>;
+
+
+export type GetDistinctRaritiesQuery = { __typename?: 'Query', getDistinctRarities: Array<string> };
+
+export type SaveBuyRatesMutationVariables = Exact<{
+  input: SaveBuyRatesInput;
+}>;
+
+
+export type SaveBuyRatesMutation = { __typename?: 'Mutation', saveBuyRates: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, rarity?: string | null, hidden: boolean, sortOrder: number }> };
+
+export type GetDashboardSalesQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+  dateRange: DashboardDateRange;
+}>;
+
+
+export type GetDashboardSalesQuery = { __typename?: 'Query', getDashboardSales: { __typename?: 'SalesBreakdown', granularity: Granularity, summary: { __typename?: 'SalesSummary', totalRevenue: number, totalCost: number, totalProfit: number, profitMargin: number, orderCount: number }, dataPoints: Array<{ __typename?: 'SalesDataPoint', label: string, revenue: number, cost: number, profit: number, orderCount: number }> } };
+
+export type GetDashboardBestSellersQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+  dateRange: DashboardDateRange;
+  sortBy: BestSellerSortBy;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type GetDashboardBestSellersQuery = { __typename?: 'Query', getDashboardBestSellers: Array<{ __typename?: 'BestSeller', productId: number, productName: string, totalQuantity: number, totalRevenue: number }> };
+
+export type GetDashboardInventorySummaryQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+}>;
+
+
+export type GetDashboardInventorySummaryQuery = { __typename?: 'Query', getDashboardInventorySummary: { __typename?: 'InventorySummary', totalSkus: number, totalUnits: number, totalCostValue: number, totalRetailValue: number } };
+
+export type GetDashboardOrderStatusQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+  dateRange: DashboardDateRange;
+}>;
+
+
+export type GetDashboardOrderStatusQuery = { __typename?: 'Query', getDashboardOrderStatus: { __typename?: 'OrderStatusBreakdown', open: number, completed: number, cancelled: number, total: number } };
+
+export type GetDataUpdateStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetDataUpdateStatusQuery = { __typename?: 'Query', getDataUpdateStatus: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
+
+export type TriggerDataUpdateMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TriggerDataUpdateMutation = { __typename?: 'Mutation', triggerDataUpdate: { __typename?: 'DataUpdateResult', success: boolean, message?: string | null, newVersion?: string | null } };
+
+export type GetStoreSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetStoreSettingsQuery = { __typename?: 'Query', getStoreSettings: { __typename?: 'StoreSettings', companyName?: string | null, ein?: string | null } };
+
+export type UpdateStoreSettingsMutationVariables = Exact<{
+  input: UpdateStoreSettingsInput;
+}>;
+
+
+export type UpdateStoreSettingsMutation = { __typename?: 'Mutation', updateStoreSettings: { __typename?: 'StoreSettings', companyName?: string | null, ein?: string | null } };
+
+export type GetAvailableGamesForSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAvailableGamesForSettingsQuery = { __typename?: 'Query', getAvailableGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+
+export type SetSupportedGamesMutationVariables = Exact<{
+  categoryIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+}>;
+
+
+export type SetSupportedGamesMutation = { __typename?: 'Mutation', setSupportedGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+
+export type GetIntegrationSettingsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetIntegrationSettingsQuery = { __typename?: 'Query', getIntegrationSettings: { __typename?: 'IntegrationSettings', stripe: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean }, shopify: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } } };
+
+export type UpdateStripeIntegrationMutationVariables = Exact<{
+  input: UpdateStripeIntegrationInput;
+}>;
+
+
+export type UpdateStripeIntegrationMutation = { __typename?: 'Mutation', updateStripeIntegration: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean } };
+
+export type UpdateShopifyIntegrationMutationVariables = Exact<{
+  input: UpdateShopifyIntegrationInput;
+}>;
+
+
+export type UpdateShopifyIntegrationMutation = { __typename?: 'Mutation', updateShopifyIntegration: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } };
+
+export type GetAllStoreLocationsAdminQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAllStoreLocationsAdminQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> }> };
+
+export type AddStoreLocationMutationVariables = Exact<{
+  input: AddStoreLocationInput;
+}>;
+
+
+export type AddStoreLocationMutation = { __typename?: 'Mutation', addStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+
+export type UpdateStoreLocationMutationVariables = Exact<{
+  input: UpdateStoreLocationInput;
+}>;
+
+
+export type UpdateStoreLocationMutation = { __typename?: 'Mutation', updateStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+
+export type RemoveStoreLocationMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type RemoveStoreLocationMutation = { __typename?: 'Mutation', removeStoreLocation: boolean };
+
+export type GetTransactionLogsQueryVariables = Exact<{
+  pagination?: InputMaybe<PaginationInput>;
+  filters?: InputMaybe<TransactionLogFilters>;
+}>;
+
+
+export type GetTransactionLogsQuery = { __typename?: 'Query', getTransactionLogs: { __typename?: 'TransactionLogPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'TransactionLogEntry', id: number, action: string, resourceType: ResourceType, resourceId?: string | null, details: string, userName: string, userEmail: string, createdAt: string }> } };
 
 export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1247,6 +1664,79 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const UpdateItemInCartDocument = new TypedDocumentString(`
+    mutation UpdateItemInCart($cartItem: CartItemInput!) {
+  updateItemInCart(cartItem: $cartItem) {
+    items {
+      inventoryItemId
+      productId
+      productName
+      condition
+      quantity
+      unitPrice
+      maxAvailable
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateItemInCartMutation, UpdateItemInCartMutationVariables>;
+export const RemoveFromCartDocument = new TypedDocumentString(`
+    mutation RemoveFromCart($cartItem: CartItemInput!) {
+  removeFromCart(cartItem: $cartItem) {
+    items {
+      inventoryItemId
+      productId
+      productName
+      condition
+      quantity
+      unitPrice
+      maxAvailable
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<RemoveFromCartMutation, RemoveFromCartMutationVariables>;
+export const SubmitOrderDocument = new TypedDocumentString(`
+    mutation SubmitOrder($input: SubmitOrderInput!) {
+  submitOrder(input: $input) {
+    order {
+      id
+      orderNumber
+      customerName
+      totalAmount
+      createdAt
+    }
+    error
+    insufficientItems {
+      productId
+      productName
+      condition
+      requested
+      available
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<SubmitOrderMutation, SubmitOrderMutationVariables>;
+export const GetAllStoreLocationsDocument = new TypedDocumentString(`
+    query GetAllStoreLocations {
+  getAllStoreLocations {
+    id
+    name
+    slug
+    city
+    state
+  }
+}
+    `) as unknown as TypedDocumentString<GetAllStoreLocationsQuery, GetAllStoreLocationsQueryVariables>;
+export const GetEmployeeStoreLocationsDocument = new TypedDocumentString(`
+    query GetEmployeeStoreLocations {
+  getEmployeeStoreLocations {
+    id
+    name
+    slug
+    city
+    state
+  }
+}
+    `) as unknown as TypedDocumentString<GetEmployeeStoreLocationsQuery, GetEmployeeStoreLocationsQueryVariables>;
 export const GetShoppingCartQueryDocument = new TypedDocumentString(`
     query GetShoppingCartQuery {
   getShoppingCart {
@@ -1275,6 +1765,58 @@ export const UserPermissionsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UserPermissionsQuery, UserPermissionsQueryVariables>;
+export const GetSupportedGamesDocument = new TypedDocumentString(`
+    query GetSupportedGames {
+  getSupportedGames {
+    categoryId
+    name
+    displayName
+  }
+}
+    `) as unknown as TypedDocumentString<GetSupportedGamesQuery, GetSupportedGamesQueryVariables>;
+export const AddToCartDocument = new TypedDocumentString(`
+    mutation AddToCart($cartItem: CartItemInput!) {
+  addToCart(cartItem: $cartItem) {
+    items {
+      inventoryItemId
+      productId
+      productName
+      condition
+      quantity
+      unitPrice
+      maxAvailable
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AddToCartMutation, AddToCartMutationVariables>;
+export const GetPublicBuyRatesDocument = new TypedDocumentString(`
+    query GetPublicBuyRates {
+  getPublicBuyRates {
+    games {
+      categoryId
+      gameName
+      gameDisplayName
+      entries {
+        id
+        description
+        fixedRateCents
+        percentageRate
+        type
+        sortOrder
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetPublicBuyRatesQuery, GetPublicBuyRatesQueryVariables>;
+export const GetAvailableGamesDocument = new TypedDocumentString(`
+    query GetAvailableGames {
+  getAvailableGames {
+    categoryId
+    name
+    displayName
+  }
+}
+    `) as unknown as TypedDocumentString<GetAvailableGamesQuery, GetAvailableGamesQueryVariables>;
 export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
     mutation FirstTimeSetupMutation($userDetails: UserDetails!, $company: CompanySettings!, $store: InitialStoreLocation!, $supportedGameCategoryIds: [Int!]!) {
   firstTimeSetup(
@@ -1285,6 +1827,760 @@ export const FirstTimeSetupMutationDocument = new TypedDocumentString(`
   )
 }
     `) as unknown as TypedDocumentString<FirstTimeSetupMutationMutation, FirstTimeSetupMutationMutationVariables>;
+export const GetInventoryDocument = new TypedDocumentString(`
+    query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
+  getInventory(filters: $filters, pagination: $pagination) {
+    items {
+      id
+      productId
+      productName
+      gameName
+      setName
+      rarity
+      isSingle
+      isSealed
+      condition
+      price
+      totalQuantity
+      entryCount
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetInventoryQuery, GetInventoryQueryVariables>;
+export const GetInventoryItemDocument = new TypedDocumentString(`
+    query GetInventoryItem($id: Int!) {
+  getInventoryItem(id: $id) {
+    id
+    productId
+    productName
+    gameName
+    setName
+    rarity
+    isSingle
+    isSealed
+    condition
+    price
+    totalQuantity
+    entryCount
+  }
+}
+    `) as unknown as TypedDocumentString<GetInventoryItemQuery, GetInventoryItemQueryVariables>;
+export const GetInventoryItemDetailsDocument = new TypedDocumentString(`
+    query GetInventoryItemDetails($inventoryItemId: Int!, $pagination: PaginationInput) {
+  getInventoryItemDetails(
+    inventoryItemId: $inventoryItemId
+    pagination: $pagination
+  ) {
+    items {
+      id
+      inventoryItemId
+      quantity
+      costBasis
+      acquisitionDate
+      notes
+      createdAt
+      updatedAt
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetInventoryItemDetailsQuery, GetInventoryItemDetailsQueryVariables>;
+export const SearchProductsDocument = new TypedDocumentString(`
+    query SearchProducts($searchTerm: String!, $game: String) {
+  searchProducts(searchTerm: $searchTerm, game: $game) {
+    id
+    name
+    gameName
+    setName
+    rarity
+    imageUrl
+    isSingle
+    isSealed
+    prices {
+      subTypeName
+      lowPrice
+      midPrice
+      highPrice
+      marketPrice
+      directLowPrice
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<SearchProductsQuery, SearchProductsQueryVariables>;
+export const AddInventoryItemDocument = new TypedDocumentString(`
+    mutation AddInventoryItem($input: AddInventoryItemInput!) {
+  addInventoryItem(input: $input) {
+    id
+    productId
+    productName
+    gameName
+    setName
+    rarity
+    condition
+    price
+    totalQuantity
+    entryCount
+  }
+}
+    `) as unknown as TypedDocumentString<AddInventoryItemMutation, AddInventoryItemMutationVariables>;
+export const UpdateInventoryItemDocument = new TypedDocumentString(`
+    mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {
+  updateInventoryItem(input: $input) {
+    id
+    productId
+    productName
+    condition
+    price
+    totalQuantity
+    entryCount
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateInventoryItemMutation, UpdateInventoryItemMutationVariables>;
+export const DeleteInventoryItemDocument = new TypedDocumentString(`
+    mutation DeleteInventoryItem($id: Int!) {
+  deleteInventoryItem(id: $id)
+}
+    `) as unknown as TypedDocumentString<DeleteInventoryItemMutation, DeleteInventoryItemMutationVariables>;
+export const AddStockDocument = new TypedDocumentString(`
+    mutation AddStock($input: AddStockInput!) {
+  addStock(input: $input) {
+    id
+    inventoryItemId
+    quantity
+    costBasis
+    acquisitionDate
+    notes
+  }
+}
+    `) as unknown as TypedDocumentString<AddStockMutation, AddStockMutationVariables>;
+export const UpdateStockDocument = new TypedDocumentString(`
+    mutation UpdateStock($input: UpdateStockInput!) {
+  updateStock(input: $input) {
+    id
+    inventoryItemId
+    quantity
+    costBasis
+    acquisitionDate
+    notes
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateStockMutation, UpdateStockMutationVariables>;
+export const DeleteStockDocument = new TypedDocumentString(`
+    mutation DeleteStock($id: Int!) {
+  deleteStock(id: $id)
+}
+    `) as unknown as TypedDocumentString<DeleteStockMutation, DeleteStockMutationVariables>;
+export const BulkUpdateStockDocument = new TypedDocumentString(`
+    mutation BulkUpdateStock($input: BulkUpdateStockInput!) {
+  bulkUpdateStock(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<BulkUpdateStockMutation, BulkUpdateStockMutationVariables>;
+export const BulkDeleteStockDocument = new TypedDocumentString(`
+    mutation BulkDeleteStock($input: BulkDeleteStockInput!) {
+  bulkDeleteStock(input: $input)
+}
+    `) as unknown as TypedDocumentString<BulkDeleteStockMutation, BulkDeleteStockMutationVariables>;
+export const SearchProductsForLotDocument = new TypedDocumentString(`
+    query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {
+  searchProducts(
+    searchTerm: $searchTerm
+    isSingle: $isSingle
+    isSealed: $isSealed
+  ) {
+    id
+    name
+    gameName
+    setName
+    rarity
+    imageUrl
+    isSingle
+    isSealed
+    prices {
+      subTypeName
+      marketPrice
+      midPrice
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<SearchProductsForLotQuery, SearchProductsForLotQueryVariables>;
+export const GetLotDocument = new TypedDocumentString(`
+    query GetLot($id: Int!) {
+  getLot(id: $id) {
+    id
+    name
+    description
+    amountPaid
+    acquisitionDate
+    items {
+      id
+      productId
+      productName
+      gameName
+      setName
+      rarity
+      isSingle
+      isSealed
+      condition
+      quantity
+      costBasis
+      costOverridden
+      marketValue
+    }
+    totalMarketValue
+    totalCost
+    projectedProfitLoss
+    projectedProfitMargin
+  }
+}
+    `) as unknown as TypedDocumentString<GetLotQuery, GetLotQueryVariables>;
+export const CreateLotDocument = new TypedDocumentString(`
+    mutation CreateLot($input: CreateLotInput!) {
+  createLot(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<CreateLotMutation, CreateLotMutationVariables>;
+export const UpdateLotDocument = new TypedDocumentString(`
+    mutation UpdateLot($input: UpdateLotInput!) {
+  updateLot(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateLotMutation, UpdateLotMutationVariables>;
+export const GetLotsDocument = new TypedDocumentString(`
+    query GetLots($filters: LotFilters, $pagination: PaginationInput) {
+  getLots(filters: $filters, pagination: $pagination) {
+    items {
+      id
+      name
+      description
+      amountPaid
+      acquisitionDate
+      totalMarketValue
+      totalCost
+      projectedProfitLoss
+      projectedProfitMargin
+      createdAt
+      items {
+        id
+      }
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetLotsQuery, GetLotsQueryVariables>;
+export const DeleteLotDocument = new TypedDocumentString(`
+    mutation DeleteLot($id: Int!) {
+  deleteLot(id: $id)
+}
+    `) as unknown as TypedDocumentString<DeleteLotMutation, DeleteLotMutationVariables>;
+export const GetLotStatsDocument = new TypedDocumentString(`
+    query GetLotStats {
+  getLotStats {
+    totalLots
+    totalInvested
+    totalMarketValue
+    totalProfitLoss
+  }
+}
+    `) as unknown as TypedDocumentString<GetLotStatsQuery, GetLotStatsQueryVariables>;
+export const GetOrdersDocument = new TypedDocumentString(`
+    query GetOrders($pagination: PaginationInput, $filters: OrderFilters) {
+  getOrders(pagination: $pagination, filters: $filters) {
+    items {
+      id
+      orderNumber
+      customerName
+      status
+      totalAmount
+      totalCostBasis
+      totalProfit
+      createdAt
+      items {
+        id
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        costBasis
+        profit
+        lotId
+      }
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetOrdersQuery, GetOrdersQueryVariables>;
+export const CancelOrderDocument = new TypedDocumentString(`
+    mutation CancelOrder($orderId: Int!) {
+  cancelOrder(orderId: $orderId) {
+    order {
+      id
+      orderNumber
+      customerName
+      status
+      totalAmount
+      totalCostBasis
+      totalProfit
+      createdAt
+      items {
+        id
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        costBasis
+        profit
+      }
+    }
+    error
+  }
+}
+    `) as unknown as TypedDocumentString<CancelOrderMutation, CancelOrderMutationVariables>;
+export const UpdateOrderStatusDocument = new TypedDocumentString(`
+    mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {
+  updateOrderStatus(orderId: $orderId, status: $status) {
+    order {
+      id
+      orderNumber
+      customerName
+      status
+      totalAmount
+      totalCostBasis
+      totalProfit
+      createdAt
+      items {
+        id
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        costBasis
+        profit
+      }
+    }
+    error
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateOrderStatusMutation, UpdateOrderStatusMutationVariables>;
+export const GetProductDocument = new TypedDocumentString(`
+    query GetProduct($productId: String!) {
+  getProduct(productId: $productId) {
+    id
+    name
+    setName
+    gameName
+    rarity
+    type
+    text
+    flavorText
+    finishes
+    isSingle
+    isSealed
+    images {
+      small
+      large
+    }
+    inventoryRecords {
+      inventoryItemId
+      condition
+      quantity
+      price
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetProductQuery, GetProductQueryVariables>;
+export const GetSealedProductListingsDocument = new TypedDocumentString(`
+    query GetSealedProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
+  getProductListings(filters: $filters, pagination: $pagination) {
+    items {
+      id
+      name
+      setName
+      gameName
+      finishes
+      images {
+        small
+        large
+      }
+      totalQuantity
+      lowestPrice
+      lowestPriceInventoryItemId
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetSealedProductListingsQuery, GetSealedProductListingsQueryVariables>;
+export const GetSealedSetsDocument = new TypedDocumentString(`
+    query GetSealedSets($game: String!, $filters: SetFilters) {
+  getSets(game: $game, filters: $filters) {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<GetSealedSetsQuery, GetSealedSetsQueryVariables>;
+export const GetSinglesProductListingsDocument = new TypedDocumentString(`
+    query GetSinglesProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
+  getProductListings(filters: $filters, pagination: $pagination) {
+    items {
+      id
+      name
+      setName
+      gameName
+      rarity
+      finishes
+      images {
+        small
+        large
+      }
+      totalQuantity
+      lowestPrice
+      conditionPrices {
+        inventoryItemId
+        condition
+        quantity
+        price
+      }
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetSinglesProductListingsQuery, GetSinglesProductListingsQueryVariables>;
+export const GetSinglesSetsDocument = new TypedDocumentString(`
+    query GetSinglesSets($game: String!, $filters: SetFilters) {
+  getSets(game: $game, filters: $filters) {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<GetSinglesSetsQuery, GetSinglesSetsQueryVariables>;
+export const GetBackupSettingsDocument = new TypedDocumentString(`
+    query GetBackupSettings {
+  getBackupSettings {
+    provider
+    frequency
+    lastBackupAt
+    googleDriveConnected
+    dropboxConnected
+    onedriveConnected
+  }
+}
+    `) as unknown as TypedDocumentString<GetBackupSettingsQuery, GetBackupSettingsQueryVariables>;
+export const UpdateBackupSettingsDocument = new TypedDocumentString(`
+    mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {
+  updateBackupSettings(input: $input) {
+    provider
+    frequency
+    lastBackupAt
+    googleDriveConnected
+    dropboxConnected
+    onedriveConnected
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateBackupSettingsMutation, UpdateBackupSettingsMutationVariables>;
+export const TriggerBackupDocument = new TypedDocumentString(`
+    mutation TriggerBackup {
+  triggerBackup {
+    success
+    message
+    timestamp
+  }
+}
+    `) as unknown as TypedDocumentString<TriggerBackupMutation, TriggerBackupMutationVariables>;
+export const TriggerRestoreDocument = new TypedDocumentString(`
+    mutation TriggerRestore($provider: BackupProvider!) {
+  triggerRestore(provider: $provider) {
+    success
+    message
+  }
+}
+    `) as unknown as TypedDocumentString<TriggerRestoreMutation, TriggerRestoreMutationVariables>;
+export const GetBuyRatesDocument = new TypedDocumentString(`
+    query GetBuyRates($categoryId: Int!) {
+  getBuyRates(categoryId: $categoryId) {
+    id
+    description
+    fixedRateCents
+    percentageRate
+    type
+    rarity
+    hidden
+    sortOrder
+  }
+}
+    `) as unknown as TypedDocumentString<GetBuyRatesQuery, GetBuyRatesQueryVariables>;
+export const GetDistinctRaritiesDocument = new TypedDocumentString(`
+    query GetDistinctRarities($categoryId: Int!) {
+  getDistinctRarities(categoryId: $categoryId)
+}
+    `) as unknown as TypedDocumentString<GetDistinctRaritiesQuery, GetDistinctRaritiesQueryVariables>;
+export const SaveBuyRatesDocument = new TypedDocumentString(`
+    mutation SaveBuyRates($input: SaveBuyRatesInput!) {
+  saveBuyRates(input: $input) {
+    id
+    description
+    fixedRateCents
+    percentageRate
+    type
+    rarity
+    hidden
+    sortOrder
+  }
+}
+    `) as unknown as TypedDocumentString<SaveBuyRatesMutation, SaveBuyRatesMutationVariables>;
+export const GetDashboardSalesDocument = new TypedDocumentString(`
+    query GetDashboardSales($organizationId: String!, $dateRange: DashboardDateRange!) {
+  getDashboardSales(organizationId: $organizationId, dateRange: $dateRange) {
+    summary {
+      totalRevenue
+      totalCost
+      totalProfit
+      profitMargin
+      orderCount
+    }
+    dataPoints {
+      label
+      revenue
+      cost
+      profit
+      orderCount
+    }
+    granularity
+  }
+}
+    `) as unknown as TypedDocumentString<GetDashboardSalesQuery, GetDashboardSalesQueryVariables>;
+export const GetDashboardBestSellersDocument = new TypedDocumentString(`
+    query GetDashboardBestSellers($organizationId: String!, $dateRange: DashboardDateRange!, $sortBy: BestSellerSortBy!, $limit: Int) {
+  getDashboardBestSellers(
+    organizationId: $organizationId
+    dateRange: $dateRange
+    sortBy: $sortBy
+    limit: $limit
+  ) {
+    productId
+    productName
+    totalQuantity
+    totalRevenue
+  }
+}
+    `) as unknown as TypedDocumentString<GetDashboardBestSellersQuery, GetDashboardBestSellersQueryVariables>;
+export const GetDashboardInventorySummaryDocument = new TypedDocumentString(`
+    query GetDashboardInventorySummary($organizationId: String!) {
+  getDashboardInventorySummary(organizationId: $organizationId) {
+    totalSkus
+    totalUnits
+    totalCostValue
+    totalRetailValue
+  }
+}
+    `) as unknown as TypedDocumentString<GetDashboardInventorySummaryQuery, GetDashboardInventorySummaryQueryVariables>;
+export const GetDashboardOrderStatusDocument = new TypedDocumentString(`
+    query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {
+  getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {
+    open
+    completed
+    cancelled
+    total
+  }
+}
+    `) as unknown as TypedDocumentString<GetDashboardOrderStatusQuery, GetDashboardOrderStatusQueryVariables>;
+export const GetDataUpdateStatusDocument = new TypedDocumentString(`
+    query GetDataUpdateStatus {
+  getDataUpdateStatus {
+    currentVersion
+    latestVersion
+    updateAvailable
+    isUpdating
+  }
+}
+    `) as unknown as TypedDocumentString<GetDataUpdateStatusQuery, GetDataUpdateStatusQueryVariables>;
+export const TriggerDataUpdateDocument = new TypedDocumentString(`
+    mutation TriggerDataUpdate {
+  triggerDataUpdate {
+    success
+    message
+    newVersion
+  }
+}
+    `) as unknown as TypedDocumentString<TriggerDataUpdateMutation, TriggerDataUpdateMutationVariables>;
+export const GetStoreSettingsDocument = new TypedDocumentString(`
+    query GetStoreSettings {
+  getStoreSettings {
+    companyName
+    ein
+  }
+}
+    `) as unknown as TypedDocumentString<GetStoreSettingsQuery, GetStoreSettingsQueryVariables>;
+export const UpdateStoreSettingsDocument = new TypedDocumentString(`
+    mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {
+  updateStoreSettings(input: $input) {
+    companyName
+    ein
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateStoreSettingsMutation, UpdateStoreSettingsMutationVariables>;
+export const GetAvailableGamesForSettingsDocument = new TypedDocumentString(`
+    query GetAvailableGamesForSettings {
+  getAvailableGames {
+    categoryId
+    name
+    displayName
+  }
+}
+    `) as unknown as TypedDocumentString<GetAvailableGamesForSettingsQuery, GetAvailableGamesForSettingsQueryVariables>;
+export const SetSupportedGamesDocument = new TypedDocumentString(`
+    mutation SetSupportedGames($categoryIds: [Int!]!) {
+  setSupportedGames(categoryIds: $categoryIds) {
+    categoryId
+    name
+    displayName
+  }
+}
+    `) as unknown as TypedDocumentString<SetSupportedGamesMutation, SetSupportedGamesMutationVariables>;
+export const GetIntegrationSettingsDocument = new TypedDocumentString(`
+    query GetIntegrationSettings {
+  getIntegrationSettings {
+    stripe {
+      enabled
+      hasApiKey
+    }
+    shopify {
+      enabled
+      hasApiKey
+      shopDomain
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetIntegrationSettingsQuery, GetIntegrationSettingsQueryVariables>;
+export const UpdateStripeIntegrationDocument = new TypedDocumentString(`
+    mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {
+  updateStripeIntegration(input: $input) {
+    enabled
+    hasApiKey
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateStripeIntegrationMutation, UpdateStripeIntegrationMutationVariables>;
+export const UpdateShopifyIntegrationDocument = new TypedDocumentString(`
+    mutation UpdateShopifyIntegration($input: UpdateShopifyIntegrationInput!) {
+  updateShopifyIntegration(input: $input) {
+    enabled
+    hasApiKey
+    shopDomain
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateShopifyIntegrationMutation, UpdateShopifyIntegrationMutationVariables>;
+export const GetAllStoreLocationsAdminDocument = new TypedDocumentString(`
+    query GetAllStoreLocationsAdmin {
+  getEmployeeStoreLocations {
+    id
+    name
+    slug
+    street1
+    street2
+    city
+    state
+    zip
+    phone
+    hours {
+      dayOfWeek
+      openTime
+      closeTime
+    }
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<GetAllStoreLocationsAdminQuery, GetAllStoreLocationsAdminQueryVariables>;
+export const AddStoreLocationDocument = new TypedDocumentString(`
+    mutation AddStoreLocation($input: AddStoreLocationInput!) {
+  addStoreLocation(input: $input) {
+    id
+    name
+    slug
+    street1
+    street2
+    city
+    state
+    zip
+    phone
+    hours {
+      dayOfWeek
+      openTime
+      closeTime
+    }
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<AddStoreLocationMutation, AddStoreLocationMutationVariables>;
+export const UpdateStoreLocationDocument = new TypedDocumentString(`
+    mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {
+  updateStoreLocation(input: $input) {
+    id
+    name
+    slug
+    street1
+    street2
+    city
+    state
+    zip
+    phone
+    hours {
+      dayOfWeek
+      openTime
+      closeTime
+    }
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateStoreLocationMutation, UpdateStoreLocationMutationVariables>;
+export const RemoveStoreLocationDocument = new TypedDocumentString(`
+    mutation RemoveStoreLocation($id: String!) {
+  removeStoreLocation(id: $id)
+}
+    `) as unknown as TypedDocumentString<RemoveStoreLocationMutation, RemoveStoreLocationMutationVariables>;
+export const GetTransactionLogsDocument = new TypedDocumentString(`
+    query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {
+  getTransactionLogs(pagination: $pagination, filters: $filters) {
+    items {
+      id
+      action
+      resourceType
+      resourceId
+      details
+      userName
+      userEmail
+      createdAt
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetTransactionLogsQuery, GetTransactionLogsQueryVariables>;
 export const IsSetupPendingDocument = new TypedDocumentString(`
     query IsSetupPending {
   isSetupPending

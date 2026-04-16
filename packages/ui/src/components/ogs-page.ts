@@ -27,23 +27,16 @@ if (typeof globalThis.document !== 'undefined') {
 import Cookies from 'js-cookie';
 import { graphql } from '../graphql';
 import { execute } from '../lib/graphql';
-import { TypedDocumentString } from '../graphql/graphql';
 import logoSvg from '../assets/logo.svg?raw';
 import { cartState } from '../lib/cart-state';
 import type { CartItem } from '../lib/cart-state';
 import { formatCurrency } from '../lib/currency';
-import {
-  storeList,
-  activeStoreId,
-  initActiveStoreFromCookie,
-  setActiveStoreCookie,
-  type StoreInfo,
-} from '../lib/store-context';
+import { storeList, activeStoreId, initActiveStoreFromCookie, setActiveStoreCookie } from '../lib/store-context';
 import { getAuthClient } from '../lib/auth';
 
 // --- GraphQL Mutations for Cart ---
 
-const UpdateItemInCartMutation = new TypedDocumentString(`
+const UpdateItemInCartMutation = graphql(`
   mutation UpdateItemInCart($cartItem: CartItemInput!) {
     updateItemInCart(cartItem: $cartItem) {
       items {
@@ -57,12 +50,9 @@ const UpdateItemInCartMutation = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  { updateItemInCart: { items: CartItem[] } },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
+`);
 
-const RemoveFromCartMutation = new TypedDocumentString(`
+const RemoveFromCartMutation = graphql(`
   mutation RemoveFromCart($cartItem: CartItemInput!) {
     removeFromCart(cartItem: $cartItem) {
       items {
@@ -76,12 +66,9 @@ const RemoveFromCartMutation = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  { removeFromCart: { items: CartItem[] } },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
+`);
 
-const SubmitOrderMutation = new TypedDocumentString(`
+const SubmitOrderMutation = graphql(`
   mutation SubmitOrder($input: SubmitOrderInput!) {
     submitOrder(input: $input) {
       order {
@@ -101,26 +88,11 @@ const SubmitOrderMutation = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    submitOrder: {
-      order?: { id: number; orderNumber: string; customerName: string; totalAmount: number; createdAt: string };
-      error?: string;
-      insufficientItems?: {
-        productId: number;
-        productName: string;
-        condition: string;
-        requested: number;
-        available: number;
-      }[];
-    };
-  },
-  { input: { organizationId: string; customerName: string } }
->;
+`);
 
 // --- GraphQL Queries for Store Locations ---
 
-const GetAllStoreLocationsQuery = new TypedDocumentString(`
+const GetAllStoreLocationsQuery = graphql(`
   query GetAllStoreLocations {
     getAllStoreLocations {
       id
@@ -130,9 +102,9 @@ const GetAllStoreLocationsQuery = new TypedDocumentString(`
       state
     }
   }
-`) as unknown as TypedDocumentString<{ getAllStoreLocations: StoreInfo[] }, Record<string, never>>;
+`);
 
-const GetEmployeeStoreLocationsQuery = new TypedDocumentString(`
+const GetEmployeeStoreLocationsQuery = graphql(`
   query GetEmployeeStoreLocations {
     getEmployeeStoreLocations {
       id
@@ -142,7 +114,7 @@ const GetEmployeeStoreLocationsQuery = new TypedDocumentString(`
       state
     }
   }
-`) as unknown as TypedDocumentString<{ getEmployeeStoreLocations: StoreInfo[] }, Record<string, never>>;
+`);
 
 @customElement('ogs-page')
 export class OgsPage extends SignalWatcher(LitElement) {

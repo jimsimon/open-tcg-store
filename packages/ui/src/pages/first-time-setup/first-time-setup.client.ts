@@ -14,10 +14,9 @@ import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import { graphql } from '../../graphql/index.ts';
 import { execute } from '../../lib/graphql.ts';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
 import { US_STATES } from '../../lib/us-states';
 
-const GetAvailableGamesQuery = new TypedDocumentString(`
+const GetAvailableGamesQuery = graphql(`
   query GetAvailableGames {
     getAvailableGames {
       categoryId
@@ -25,16 +24,7 @@ const GetAvailableGamesQuery = new TypedDocumentString(`
       displayName
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getAvailableGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  Record<string, never>
->;
+`);
 
 interface User {
   firstName?: string;

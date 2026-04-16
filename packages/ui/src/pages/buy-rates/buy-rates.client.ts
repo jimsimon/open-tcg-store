@@ -12,14 +12,14 @@ import '@awesome.me/webawesome/dist/components/tab-panel/tab-panel.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
 import { formatCurrency } from '../../lib/currency';
 
 // ---------------------------------------------------------------------------
 // GraphQL
 // ---------------------------------------------------------------------------
 
-const GetPublicBuyRatesQuery = new TypedDocumentString(`
+const GetPublicBuyRatesQuery = graphql(`
   query GetPublicBuyRates {
     getPublicBuyRates {
       games {
@@ -37,26 +37,7 @@ const GetPublicBuyRatesQuery = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getPublicBuyRates: {
-      games: Array<{
-        categoryId: number;
-        gameName: string;
-        gameDisplayName: string;
-        entries: Array<{
-          id: number;
-          description: string;
-          fixedRateCents: number | null;
-          percentageRate: number | null;
-          type: string;
-          sortOrder: number;
-        }>;
-      }>;
-    };
-  },
-  Record<string, never>
->;
+`);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -245,7 +226,7 @@ export class OgsBuyRatesPage extends LitElement {
       const result = await execute(GetPublicBuyRatesQuery);
 
       if (result?.data?.getPublicBuyRates) {
-        this.games = result.data.getPublicBuyRates.games;
+        this.games = result.data.getPublicBuyRates.games as BuyRateGame[];
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load buy rates';

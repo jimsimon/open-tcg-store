@@ -17,7 +17,7 @@ import { execute } from '../../lib/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import { cartState } from '../../lib/cart-state.ts';
 import {
@@ -57,14 +57,6 @@ interface ProductListing {
   conditionPrices: ConditionPrice[];
 }
 
-interface ProductListingPage {
-  items: ProductListing[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 interface SetOption {
   code: string;
   name: string;
@@ -72,8 +64,8 @@ interface SetOption {
 
 // --- GraphQL ---
 
-const GetProductListingsQuery = new TypedDocumentString(`
-  query GetProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
+const GetProductListingsQuery = graphql(`
+  query GetSinglesProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
     getProductListings(filters: $filters, pagination: $pagination) {
       items {
         id
@@ -101,33 +93,16 @@ const GetProductListingsQuery = new TypedDocumentString(`
       totalPages
     }
   }
-`) as unknown as TypedDocumentString<
-  { getProductListings: ProductListingPage },
-  {
-    filters?: {
-      searchTerm?: string | null;
-      gameName?: string | null;
-      setCode?: string | null;
-      condition?: string | null;
-      inStockOnly?: boolean | null;
-      includeSingles?: boolean | null;
-      includeSealed?: boolean | null;
-    } | null;
-    pagination?: { page?: number | null; pageSize?: number | null } | null;
-  }
->;
+`);
 
-const GetSetsQuery = new TypedDocumentString(`
-  query GetSets($game: String!, $filters: SetFilters) {
+const GetSetsQuery = graphql(`
+  query GetSinglesSets($game: String!, $filters: SetFilters) {
     getSets(game: $game, filters: $filters) {
       code
       name
     }
   }
-`) as unknown as TypedDocumentString<
-  { getSets: SetOption[] },
-  { game: string; filters?: { searchTerm?: string | null } | null }
->;
+`);
 
 // --- Component ---
 
@@ -359,7 +334,7 @@ export class OgsProductsSinglesPage extends LitElement {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.getProductListings;
-        this.products = data.items;
+        this.products = data.items as ProductListing[];
         this.totalCount = data.totalCount;
         this.totalPages = data.totalPages;
         this.currentPage = data.page;

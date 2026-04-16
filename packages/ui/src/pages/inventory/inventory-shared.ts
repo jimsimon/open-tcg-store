@@ -4,15 +4,15 @@ import {
   type InventoryItemStock,
   type ProductSearchResult,
   type ProductPrice,
-  TypedDocumentString,
 } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 export { formatCurrency };
 export { debounce } from '../../lib/debounce';
 
 // --- GraphQL Operations ---
 
-export const GetInventoryQuery = new TypedDocumentString(`
+export const GetInventoryQuery = graphql(`
   query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
     getInventory(filters: $filters, pagination: $pagination) {
       items {
@@ -35,31 +35,9 @@ export const GetInventoryQuery = new TypedDocumentString(`
       totalPages
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getInventory: {
-      items: InventoryItem[];
-      totalCount: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  },
-  {
-    filters?: {
-      gameName?: string | null;
-      setName?: string | null;
-      rarity?: string | null;
-      condition?: string | null;
-      searchTerm?: string | null;
-      includeSingles?: boolean | null;
-      includeSealed?: boolean | null;
-    } | null;
-    pagination?: { page?: number | null; pageSize?: number | null } | null;
-  }
->;
+`);
 
-export const GetInventoryItemQuery = new TypedDocumentString(`
+export const GetInventoryItemQuery = graphql(`
   query GetInventoryItem($id: Int!) {
     getInventoryItem(id: $id) {
       id
@@ -76,9 +54,9 @@ export const GetInventoryItemQuery = new TypedDocumentString(`
       entryCount
     }
   }
-`) as unknown as TypedDocumentString<{ getInventoryItem: InventoryItem | null }, { id: number }>;
+`);
 
-export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
+export const GetInventoryItemDetailsQuery = graphql(`
   query GetInventoryItemDetails($inventoryItemId: Int!, $pagination: PaginationInput) {
     getInventoryItemDetails(inventoryItemId: $inventoryItemId, pagination: $pagination) {
       items {
@@ -97,23 +75,9 @@ export const GetInventoryItemDetailsQuery = new TypedDocumentString(`
       totalPages
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getInventoryItemDetails: {
-      items: InventoryItemStock[];
-      totalCount: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  },
-  {
-    inventoryItemId: number;
-    pagination?: { page?: number | null; pageSize?: number | null } | null;
-  }
->;
+`);
 
-export const SearchProductsQuery = new TypedDocumentString(`
+export const SearchProductsQuery = graphql(`
   query SearchProducts($searchTerm: String!, $game: String) {
     searchProducts(searchTerm: $searchTerm, game: $game) {
       id
@@ -134,12 +98,9 @@ export const SearchProductsQuery = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  { searchProducts: ProductSearchResult[] },
-  { searchTerm: string; game?: string | null }
->;
+`);
 
-export const AddInventoryItemMutation = new TypedDocumentString(`
+export const AddInventoryItemMutation = graphql(`
   mutation AddInventoryItem($input: AddInventoryItemInput!) {
     addInventoryItem(input: $input) {
       id
@@ -154,22 +115,9 @@ export const AddInventoryItemMutation = new TypedDocumentString(`
       entryCount
     }
   }
-`) as unknown as TypedDocumentString<
-  { addInventoryItem: InventoryItem },
-  {
-    input: {
-      productId: number;
-      condition: string;
-      quantity: number;
-      price: number;
-      costBasis: number;
-      acquisitionDate: string;
-      notes?: string | null;
-    };
-  }
->;
+`);
 
-export const UpdateInventoryItemMutation = new TypedDocumentString(`
+export const UpdateInventoryItemMutation = graphql(`
   mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {
     updateInventoryItem(input: $input) {
       id
@@ -181,26 +129,17 @@ export const UpdateInventoryItemMutation = new TypedDocumentString(`
       entryCount
     }
   }
-`) as unknown as TypedDocumentString<
-  { updateInventoryItem: InventoryItem },
-  {
-    input: {
-      id: number;
-      condition?: string | null;
-      price?: number | null;
-    };
-  }
->;
+`);
 
-export const DeleteInventoryItemMutation = new TypedDocumentString(`
+export const DeleteInventoryItemMutation = graphql(`
   mutation DeleteInventoryItem($id: Int!) {
     deleteInventoryItem(id: $id)
   }
-`) as unknown as TypedDocumentString<{ deleteInventoryItem: boolean }, { id: number }>;
+`);
 
 // --- Stock-level mutations ---
 
-export const AddStockMutation = new TypedDocumentString(`
+export const AddStockMutation = graphql(`
   mutation AddStock($input: AddStockInput!) {
     addStock(input: $input) {
       id
@@ -211,20 +150,9 @@ export const AddStockMutation = new TypedDocumentString(`
       notes
     }
   }
-`) as unknown as TypedDocumentString<
-  { addStock: InventoryItemStock },
-  {
-    input: {
-      inventoryItemId: number;
-      quantity: number;
-      costBasis: number;
-      acquisitionDate: string;
-      notes?: string | null;
-    };
-  }
->;
+`);
 
-export const UpdateStockMutation = new TypedDocumentString(`
+export const UpdateStockMutation = graphql(`
   mutation UpdateStock($input: UpdateStockInput!) {
     updateStock(input: $input) {
       id
@@ -235,49 +163,27 @@ export const UpdateStockMutation = new TypedDocumentString(`
       notes
     }
   }
-`) as unknown as TypedDocumentString<
-  { updateStock: InventoryItemStock },
-  {
-    input: {
-      id: number;
-      quantity?: number | null;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
-    };
-  }
->;
+`);
 
-export const DeleteStockMutation = new TypedDocumentString(`
+export const DeleteStockMutation = graphql(`
   mutation DeleteStock($id: Int!) {
     deleteStock(id: $id)
   }
-`) as unknown as TypedDocumentString<{ deleteStock: boolean }, { id: number }>;
+`);
 
-export const BulkUpdateStockMutation = new TypedDocumentString(`
+export const BulkUpdateStockMutation = graphql(`
   mutation BulkUpdateStock($input: BulkUpdateStockInput!) {
     bulkUpdateStock(input: $input) {
       id
     }
   }
-`) as unknown as TypedDocumentString<
-  { bulkUpdateStock: { id: number }[] },
-  {
-    input: {
-      ids: number[];
-      quantity?: number | null;
-      costBasis?: number | null;
-      acquisitionDate?: string | null;
-      notes?: string | null;
-    };
-  }
->;
+`);
 
-export const BulkDeleteStockMutation = new TypedDocumentString(`
+export const BulkDeleteStockMutation = graphql(`
   mutation BulkDeleteStock($input: BulkDeleteStockInput!) {
     bulkDeleteStock(input: $input)
   }
-`) as unknown as TypedDocumentString<{ bulkDeleteStock: boolean }, { input: { ids: number[] } }>;
+`);
 
 // --- Interfaces ---
 

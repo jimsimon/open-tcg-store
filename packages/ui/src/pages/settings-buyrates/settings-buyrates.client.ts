@@ -17,14 +17,15 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
+import { BuyRateType } from '../../graphql/graphql.ts';
 import { centsToInputValue, inputValueToCents } from '../../lib/currency';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
 // ---------------------------------------------------------------------------
 
-const GetBuyRatesQuery = new TypedDocumentString(`
+const GetBuyRatesQuery = graphql(`
   query GetBuyRates($categoryId: Int!) {
     getBuyRates(categoryId: $categoryId) {
       id
@@ -37,29 +38,15 @@ const GetBuyRatesQuery = new TypedDocumentString(`
       sortOrder
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getBuyRates: Array<{
-      id: number;
-      description: string;
-      fixedRateCents: number | null;
-      percentageRate: number | null;
-      type: string;
-      rarity: string | null;
-      hidden: boolean;
-      sortOrder: number;
-    }>;
-  },
-  { categoryId: number }
->;
+`);
 
-const GetDistinctRaritiesQuery = new TypedDocumentString(`
+const GetDistinctRaritiesQuery = graphql(`
   query GetDistinctRarities($categoryId: Int!) {
     getDistinctRarities(categoryId: $categoryId)
   }
-`) as unknown as TypedDocumentString<{ getDistinctRarities: string[] }, { categoryId: number }>;
+`);
 
-const SaveBuyRatesMutation = new TypedDocumentString(`
+const SaveBuyRatesMutation = graphql(`
   mutation SaveBuyRates($input: SaveBuyRatesInput!) {
     saveBuyRates(input: $input) {
       id
@@ -72,34 +59,7 @@ const SaveBuyRatesMutation = new TypedDocumentString(`
       sortOrder
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    saveBuyRates: Array<{
-      id: number;
-      description: string;
-      fixedRateCents: number | null;
-      percentageRate: number | null;
-      type: string;
-      rarity: string | null;
-      hidden: boolean;
-      sortOrder: number;
-    }>;
-  },
-  {
-    input: {
-      categoryId: number;
-      entries: Array<{
-        description: string;
-        fixedRateCents: number | null;
-        percentageRate: number | null;
-        type: string;
-        rarity?: string | null;
-        hidden?: boolean;
-        sortOrder: number;
-      }>;
-    };
-  }
->;
+`);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -325,8 +285,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
           for (const entry of customEntries) {
             rows.push({
               description: entry.description,
-              fixedRateCents: entry.fixedRateCents,
-              percentageRate: entry.percentageRate,
+              fixedRateCents: entry.fixedRateCents as number | null,
+              percentageRate: entry.percentageRate as number | null,
               type: entry.type ?? 'fixed',
               rarity: null,
               hidden: entry.hidden ?? false,
@@ -449,7 +409,7 @@ export class OgsSettingsBuyRatesPage extends LitElement {
             description: r.description.trim(),
             fixedRateCents: r.fixedRateCents,
             percentageRate: r.percentageRate,
-            type: r.type,
+            type: r.type as BuyRateType,
             rarity: r.rarity || null,
             hidden: r.hidden,
             sortOrder: i,
@@ -482,8 +442,8 @@ export class OgsSettingsBuyRatesPage extends LitElement {
         for (const entry of customEntries) {
           newRows.push({
             description: entry.description,
-            fixedRateCents: entry.fixedRateCents,
-            percentageRate: entry.percentageRate,
+            fixedRateCents: entry.fixedRateCents as number | null,
+            percentageRate: entry.percentageRate as number | null,
             type: entry.type ?? 'fixed',
             rarity: null,
             hidden: entry.hidden ?? false,

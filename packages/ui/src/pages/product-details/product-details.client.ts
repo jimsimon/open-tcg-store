@@ -13,7 +13,7 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { cartState } from '../../lib/cart-state.ts';
 import { formatCurrency } from '../../lib/currency.ts';
@@ -47,7 +47,7 @@ interface ProductDetail {
 
 // --- GraphQL ---
 
-const GetProductQuery = new TypedDocumentString(`
+const GetProductQuery = graphql(`
   query GetProduct($productId: String!) {
     getProduct(productId: $productId) {
       id
@@ -73,7 +73,7 @@ const GetProductQuery = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<{ getProduct: ProductDetail }, { productId: string }>;
+`);
 
 // --- HTML Sanitization ---
 
@@ -328,7 +328,7 @@ export class ProductDetailsPage extends LitElement {
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        this.product = result.data.getProduct;
+        this.product = result.data.getProduct as ProductDetail;
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to load product';

@@ -18,7 +18,8 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
+import { OrderStatus } from '../../graphql/graphql.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
@@ -52,7 +53,7 @@ interface Order {
 
 // --- GraphQL ---
 
-const GetOrdersQuery = new TypedDocumentString(`
+const GetOrdersQuery = graphql(`
   query GetOrders($pagination: PaginationInput, $filters: OrderFilters) {
     getOrders(pagination: $pagination, filters: $filters) {
       items {
@@ -82,20 +83,9 @@ const GetOrdersQuery = new TypedDocumentString(`
       totalPages
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getOrders: {
-      items: Order[];
-      totalCount: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  },
-  { pagination?: { page?: number; pageSize?: number }; filters?: { status?: string; searchTerm?: string } }
->;
+`);
 
-const CancelOrderMutation = new TypedDocumentString(`
+const CancelOrderMutation = graphql(`
   mutation CancelOrder($orderId: Int!) {
     cancelOrder(orderId: $orderId) {
       order {
@@ -121,18 +111,10 @@ const CancelOrderMutation = new TypedDocumentString(`
       error
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    cancelOrder: {
-      order?: Order;
-      error?: string;
-    };
-  },
-  { orderId: number }
->;
+`);
 
-const UpdateOrderStatusMutation = new TypedDocumentString(`
-  mutation UpdateOrderStatus($orderId: Int!, $status: String!) {
+const UpdateOrderStatusMutation = graphql(`
+  mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {
     updateOrderStatus(orderId: $orderId, status: $status) {
       order {
         id
@@ -157,15 +139,7 @@ const UpdateOrderStatusMutation = new TypedDocumentString(`
       error
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    updateOrderStatus: {
-      order?: Order;
-      error?: string;
-    };
-  },
-  { orderId: number; status: string }
->;
+`);
 
 @customElement('ogs-orders-page')
 export class OrdersPage extends LitElement {
@@ -639,7 +613,7 @@ export class OrdersPage extends LitElement {
       const result = await execute(GetOrdersQuery, {
         pagination: { page: this.page, pageSize: this.pageSize },
         filters: {
-          ...(this.statusFilter ? { status: this.statusFilter } : {}),
+          ...(this.statusFilter ? { status: this.statusFilter as OrderStatus } : {}),
           ...(this.searchTerm ? { searchTerm: this.searchTerm } : {}),
         },
       });
@@ -648,7 +622,7 @@ export class OrdersPage extends LitElement {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.getOrders;
-        this.orders = data.items;
+        this.orders = data.items as Order[];
         this.totalCount = data.totalCount;
         this.totalPages = data.totalPages;
       }
@@ -697,7 +671,7 @@ export class OrdersPage extends LitElement {
         if (data.error) {
           this.error = data.error;
         } else if (data.order) {
-          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o));
+          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o)) as Order[];
         }
       }
     } catch (e) {
@@ -714,7 +688,7 @@ export class OrdersPage extends LitElement {
     this.updatingStatusOrderId = orderId;
 
     try {
-      const result = await execute(UpdateOrderStatusMutation, { orderId, status: newStatus });
+      const result = await execute(UpdateOrderStatusMutation, { orderId, status: newStatus as OrderStatus });
 
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
@@ -723,7 +697,7 @@ export class OrdersPage extends LitElement {
         if (data.error) {
           this.error = data.error;
         } else if (data.order) {
-          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o));
+          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o)) as Order[];
         }
       }
     } catch (e) {

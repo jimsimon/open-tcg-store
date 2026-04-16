@@ -11,9 +11,9 @@ import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
 
-const GetDataUpdateStatusQuery = new TypedDocumentString(`
+const GetDataUpdateStatusQuery = graphql(`
   query GetDataUpdateStatus {
     getDataUpdateStatus {
       currentVersion
@@ -22,19 +22,9 @@ const GetDataUpdateStatusQuery = new TypedDocumentString(`
       isUpdating
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getDataUpdateStatus: {
-      currentVersion: string | null;
-      latestVersion: string | null;
-      updateAvailable: boolean;
-      isUpdating: boolean;
-    };
-  },
-  Record<string, never>
->;
+`);
 
-const TriggerDataUpdateMutation = new TypedDocumentString(`
+const TriggerDataUpdateMutation = graphql(`
   mutation TriggerDataUpdate {
     triggerDataUpdate {
       success
@@ -42,16 +32,7 @@ const TriggerDataUpdateMutation = new TypedDocumentString(`
       newVersion
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    triggerDataUpdate: {
-      success: boolean;
-      message: string | null;
-      newVersion: string | null;
-    };
-  },
-  Record<string, never>
->;
+`);
 
 @customElement('ogs-settings-data-updates-page')
 export class OgsSettingsDataUpdatesPage extends LitElement {
@@ -237,8 +218,8 @@ export class OgsSettingsDataUpdatesPage extends LitElement {
     const result = await execute(GetDataUpdateStatusQuery);
     if (result?.data?.getDataUpdateStatus) {
       const s = result.data.getDataUpdateStatus;
-      this.currentVersion = s.currentVersion;
-      this.latestVersion = s.latestVersion;
+      this.currentVersion = s.currentVersion as string | null;
+      this.latestVersion = s.latestVersion as string | null;
       this.updateAvailable = s.updateAvailable;
       this.isUpdating = s.isUpdating;
     }

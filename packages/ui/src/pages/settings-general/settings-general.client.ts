@@ -14,48 +14,27 @@ import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
 
-const GetStoreSettingsQuery = new TypedDocumentString(`
+const GetStoreSettingsQuery = graphql(`
   query GetStoreSettings {
     getStoreSettings {
       companyName
       ein
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getStoreSettings: {
-      companyName: string | null;
-      ein: string | null;
-    };
-  },
-  Record<string, never>
->;
+`);
 
-const UpdateStoreSettingsMutation = new TypedDocumentString(`
+const UpdateStoreSettingsMutation = graphql(`
   mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {
     updateStoreSettings(input: $input) {
       companyName
       ein
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    updateStoreSettings: {
-      companyName: string | null;
-      ein: string | null;
-    };
-  },
-  {
-    input: {
-      companyName?: string;
-      ein?: string;
-    };
-  }
->;
+`);
 
-const GetAvailableGamesQuery = new TypedDocumentString(`
+const GetAvailableGamesQuery = graphql(`
   query GetAvailableGamesForSettings {
     getAvailableGames {
       categoryId
@@ -63,18 +42,9 @@ const GetAvailableGamesQuery = new TypedDocumentString(`
       displayName
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getAvailableGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  Record<string, never>
->;
+`);
 
-const SetSupportedGamesMutation = new TypedDocumentString(`
+const SetSupportedGamesMutation = graphql(`
   mutation SetSupportedGames($categoryIds: [Int!]!) {
     setSupportedGames(categoryIds: $categoryIds) {
       categoryId
@@ -82,18 +52,7 @@ const SetSupportedGamesMutation = new TypedDocumentString(`
       displayName
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    setSupportedGames: Array<{
-      categoryId: number;
-      name: string;
-      displayName: string;
-    }>;
-  },
-  {
-    categoryIds: number[];
-  }
->;
+`);
 
 @customElement('ogs-settings-general-page')
 export class OgsSettingsGeneralPage extends LitElement {

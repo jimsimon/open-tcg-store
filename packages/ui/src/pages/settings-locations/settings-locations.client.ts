@@ -15,7 +15,7 @@ import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
 import { US_STATES } from '../../lib/us-states';
 
 if (typeof globalThis.document !== 'undefined') {
@@ -46,72 +46,77 @@ interface StoreLocation {
   createdAt: string;
 }
 
-const GetAllStoreLocationsAdminQuery = new TypedDocumentString(`
+const GetAllStoreLocationsAdminQuery = graphql(`
   query GetAllStoreLocationsAdmin {
     getEmployeeStoreLocations {
-      id name slug street1 street2 city state zip phone
-      hours { dayOfWeek openTime closeTime }
+      id
+      name
+      slug
+      street1
+      street2
+      city
+      state
+      zip
+      phone
+      hours {
+        dayOfWeek
+        openTime
+        closeTime
+      }
       createdAt
     }
   }
-`) as unknown as TypedDocumentString<{ getEmployeeStoreLocations: StoreLocation[] }, Record<string, never>>;
+`);
 
-const AddStoreLocationMutation = new TypedDocumentString(`
+const AddStoreLocationMutation = graphql(`
   mutation AddStoreLocation($input: AddStoreLocationInput!) {
     addStoreLocation(input: $input) {
-      id name slug street1 street2 city state zip phone
-      hours { dayOfWeek openTime closeTime }
+      id
+      name
+      slug
+      street1
+      street2
+      city
+      state
+      zip
+      phone
+      hours {
+        dayOfWeek
+        openTime
+        closeTime
+      }
       createdAt
     }
   }
-`) as unknown as TypedDocumentString<
-  { addStoreLocation: StoreLocation },
-  {
-    input: {
-      name: string;
-      slug: string;
-      street1: string;
-      street2?: string;
-      city: string;
-      state: string;
-      zip: string;
-      phone?: string;
-      hours?: { dayOfWeek: number; openTime: string | null; closeTime: string | null }[];
-    };
-  }
->;
+`);
 
-const UpdateStoreLocationMutation = new TypedDocumentString(`
+const UpdateStoreLocationMutation = graphql(`
   mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {
     updateStoreLocation(input: $input) {
-      id name slug street1 street2 city state zip phone
-      hours { dayOfWeek openTime closeTime }
+      id
+      name
+      slug
+      street1
+      street2
+      city
+      state
+      zip
+      phone
+      hours {
+        dayOfWeek
+        openTime
+        closeTime
+      }
       createdAt
     }
   }
-`) as unknown as TypedDocumentString<
-  { updateStoreLocation: StoreLocation },
-  {
-    input: {
-      id: string;
-      name?: string;
-      slug?: string;
-      street1?: string;
-      street2?: string;
-      city?: string;
-      state?: string;
-      zip?: string;
-      phone?: string;
-      hours?: { dayOfWeek: number; openTime: string | null; closeTime: string | null }[];
-    };
-  }
->;
+`);
 
-const RemoveStoreLocationMutation = new TypedDocumentString(`
+const RemoveStoreLocationMutation = graphql(`
   mutation RemoveStoreLocation($id: String!) {
     removeStoreLocation(id: $id)
   }
-`) as unknown as TypedDocumentString<{ removeStoreLocation: boolean }, { id: string }>;
+`);
 
 // --- Helpers ---
 
@@ -473,7 +478,7 @@ export class SettingsLocationsPage extends LitElement {
       if (result.errors?.length) {
         this.errorMessage = result.errors[0].message;
       } else {
-        this.locations = result.data.getEmployeeStoreLocations;
+        this.locations = result.data.getEmployeeStoreLocations as StoreLocation[];
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load store locations';
