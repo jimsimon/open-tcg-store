@@ -24,7 +24,7 @@ type OrderItem {
 }
 
 type OrderPage {
-  orders: [Order!]!
+  items: [Order!]!
   totalCount: Int!
   page: Int!
   pageSize: Int!

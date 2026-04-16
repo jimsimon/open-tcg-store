@@ -32,7 +32,7 @@ type LotItem {
 }
 
 type LotPage {
-  lots: [Lot!]!
+  items: [Lot!]!
   totalCount: Int!
   page: Int!
   pageSize: Int!

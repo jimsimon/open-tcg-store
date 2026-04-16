@@ -55,7 +55,7 @@ interface Order {
 const GetOrdersQuery = new TypedDocumentString(`
   query GetOrders($pagination: PaginationInput, $filters: OrderFilters) {
     getOrders(pagination: $pagination, filters: $filters) {
-      orders {
+      items {
         id
         orderNumber
         customerName
@@ -85,7 +85,7 @@ const GetOrdersQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     getOrders: {
-      orders: Order[];
+      items: Order[];
       totalCount: number;
       page: number;
       pageSize: number;
@@ -648,7 +648,7 @@ export class OrdersPage extends LitElement {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         const data = result.data.getOrders;
-        this.orders = data.orders;
+        this.orders = data.items;
         this.totalCount = data.totalCount;
         this.totalPages = data.totalPages;
       }
