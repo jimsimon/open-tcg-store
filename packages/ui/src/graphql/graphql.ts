@@ -18,7 +18,7 @@ export type Scalars = {
 
 export type AddInventoryItemInput = {
   acquisitionDate: Scalars['String']['input'];
-  condition: Scalars['String']['input'];
+  condition: CardCondition;
   costBasis: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   price: Scalars['Int']['input'];
@@ -46,6 +46,12 @@ export type AddStoreLocationInput = {
   zip: Scalars['String']['input'];
 };
 
+export enum BackupProvider {
+  Dropbox = 'dropbox',
+  GoogleDrive = 'google_drive',
+  Onedrive = 'onedrive'
+}
+
 export type BackupResult = {
   __typename?: 'BackupResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -60,7 +66,7 @@ export type BackupSettings = {
   googleDriveConnected: Scalars['Boolean']['output'];
   lastBackupAt?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
-  provider?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<BackupProvider>;
 };
 
 export type BestSeller = {
@@ -70,6 +76,11 @@ export type BestSeller = {
   totalQuantity: Scalars['Int']['output'];
   totalRevenue: Scalars['Int']['output'];
 };
+
+export enum BestSellerSortBy {
+  Quantity = 'quantity',
+  Revenue = 'revenue'
+}
 
 export type BulkDeleteStockInput = {
   ids: Array<Scalars['Int']['input']>;
@@ -92,7 +103,7 @@ export type BuyRateEntry = {
   percentageRate?: Maybe<Scalars['Float']['output']>;
   rarity?: Maybe<Scalars['String']['output']>;
   sortOrder: Scalars['Int']['output'];
-  type: Scalars['String']['output'];
+  type: BuyRateType;
 };
 
 export type BuyRateEntryInput = {
@@ -102,7 +113,7 @@ export type BuyRateEntryInput = {
   percentageRate?: InputMaybe<Scalars['Float']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
   sortOrder: Scalars['Int']['input'];
-  type: Scalars['String']['input'];
+  type: BuyRateType;
 };
 
 export type BuyRateTable = {
@@ -112,6 +123,11 @@ export type BuyRateTable = {
   gameDisplayName: Scalars['String']['output'];
   gameName: Scalars['String']['output'];
 };
+
+export enum BuyRateType {
+  Fixed = 'fixed',
+  Percentage = 'percentage'
+}
 
 export type CancelOrderResult = {
   __typename?: 'CancelOrderResult';
@@ -133,6 +149,14 @@ export type Card = {
   type?: Maybe<Scalars['String']['output']>;
 };
 
+export enum CardCondition {
+  D = 'D',
+  Hp = 'HP',
+  Lp = 'LP',
+  Mp = 'MP',
+  Nm = 'NM'
+}
+
 export type CardImages = {
   __typename?: 'CardImages';
   large?: Maybe<Scalars['String']['output']>;
@@ -146,7 +170,7 @@ export type CartItemInput = {
 
 export type CartItemOutput = {
   __typename?: 'CartItemOutput';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   maxAvailable: Scalars['Int']['output'];
   productId: Scalars['Int']['output'];
@@ -204,6 +228,12 @@ export type DataUpdateStatus = {
   updateAvailable: Scalars['Boolean']['output'];
 };
 
+export enum Granularity {
+  Day = 'day',
+  Hour = 'hour',
+  Month = 'month'
+}
+
 export type InitialStoreLocation = {
   city: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -218,7 +248,7 @@ export type InitialStoreLocation = {
 export type InsufficientItem = {
   __typename?: 'InsufficientItem';
   available: Scalars['Int']['output'];
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   requested: Scalars['Int']['output'];
@@ -231,7 +261,7 @@ export type IntegrationSettings = {
 };
 
 export type InventoryFilters = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
   includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
@@ -243,7 +273,7 @@ export type InventoryFilters = {
 
 export type InventoryItem = {
   __typename?: 'InventoryItem';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   createdAt: Scalars['String']['output'];
   entryCount: Scalars['Int']['output'];
   gameName: Scalars['String']['output'];
@@ -321,7 +351,7 @@ export type LotFilters = {
 
 export type LotItem = {
   __typename?: 'LotItem';
-  condition?: Maybe<Scalars['String']['output']>;
+  condition?: Maybe<CardCondition>;
   costBasis: Scalars['Int']['output'];
   costOverridden: Scalars['Boolean']['output'];
   gameName: Scalars['String']['output'];
@@ -338,7 +368,7 @@ export type LotItem = {
 };
 
 export type LotItemInput = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   costBasis: Scalars['Int']['input'];
   costOverridden: Scalars['Boolean']['input'];
   id?: InputMaybe<Scalars['Int']['input']>;
@@ -507,7 +537,7 @@ export type MutationSubmitOrderArgs = {
 
 
 export type MutationTriggerRestoreArgs = {
-  provider: Scalars['String']['input'];
+  provider: BackupProvider;
 };
 
 
@@ -533,7 +563,7 @@ export type MutationUpdateLotArgs = {
 
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
-  status: Scalars['String']['input'];
+  status: OrderStatus;
 };
 
 
@@ -579,7 +609,7 @@ export type Order = {
   items: Array<OrderItem>;
   orderNumber: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
-  status: Scalars['String']['output'];
+  status: OrderStatus;
   totalAmount: Scalars['Int']['output'];
   totalCostBasis?: Maybe<Scalars['Int']['output']>;
   totalProfit?: Maybe<Scalars['Int']['output']>;
@@ -588,12 +618,12 @@ export type Order = {
 export type OrderFilters = {
   organizationId?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<OrderStatus>;
 };
 
 export type OrderItem = {
   __typename?: 'OrderItem';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   costBasis?: Maybe<Scalars['Int']['output']>;
   id: Scalars['Int']['output'];
   lotId?: Maybe<Scalars['Int']['output']>;
@@ -613,6 +643,12 @@ export type OrderPage = {
   totalPages: Scalars['Int']['output'];
 };
 
+export enum OrderStatus {
+  Cancelled = 'cancelled',
+  Completed = 'completed',
+  Open = 'open'
+}
+
 export type OrderStatusBreakdown = {
   __typename?: 'OrderStatusBreakdown';
   cancelled: Scalars['Int']['output'];
@@ -628,7 +664,7 @@ export type PaginationInput = {
 
 export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
@@ -653,7 +689,7 @@ export type ProductDetail = {
 
 export type ProductInventoryRecord = {
   __typename?: 'ProductInventoryRecord';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
@@ -675,7 +711,7 @@ export type ProductListing = {
 };
 
 export type ProductListingFilters = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -801,7 +837,7 @@ export type QueryGetDashboardBestSellersArgs = {
   dateRange: DashboardDateRange;
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
-  sortBy: Scalars['String']['input'];
+  sortBy: BestSellerSortBy;
 };
 
 
@@ -916,6 +952,12 @@ export type QuerySearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
+export enum ResourceType {
+  Inventory = 'inventory',
+  Lot = 'lot',
+  Order = 'order'
+}
+
 export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -925,7 +967,7 @@ export type RestoreResult = {
 export type SalesBreakdown = {
   __typename?: 'SalesBreakdown';
   dataPoints: Array<SalesDataPoint>;
-  granularity: Scalars['String']['output'];
+  granularity: Granularity;
   summary: SalesSummary;
 };
 
@@ -1055,7 +1097,7 @@ export type TransactionLogEntry = {
   details: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   resourceId?: Maybe<Scalars['String']['output']>;
-  resourceType: Scalars['String']['output'];
+  resourceType: ResourceType;
   userEmail: Scalars['String']['output'];
   userName: Scalars['String']['output'];
 };
@@ -1063,7 +1105,7 @@ export type TransactionLogEntry = {
 export type TransactionLogFilters = {
   action?: InputMaybe<Scalars['String']['input']>;
   month?: InputMaybe<Scalars['Int']['input']>;
-  resourceType?: InputMaybe<Scalars['String']['input']>;
+  resourceType?: InputMaybe<ResourceType>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   year?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -1079,11 +1121,11 @@ export type TransactionLogPage = {
 
 export type UpdateBackupSettingsInput = {
   frequency?: InputMaybe<Scalars['String']['input']>;
-  provider?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<BackupProvider>;
 };
 
 export type UpdateInventoryItemInput = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   id: Scalars['Int']['input'];
   price?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -1164,7 +1206,7 @@ export type UserPermissions = {
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: string, unitPrice: number, maxAvailable: number }> } };
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: CardCondition, unitPrice: number, maxAvailable: number }> } };
 
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 

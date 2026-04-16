@@ -4,11 +4,12 @@ import { product } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 
 import { todayDateString, safeISOString } from '../lib/date-utils';
+import type { CardCondition, OrderStatus } from '../schema/types.generated';
 
 interface InsufficientItemInfo {
   productId: number;
   productName: string;
-  condition: string;
+  condition: CardCondition;
   requested: number;
   available: number;
 }
@@ -17,7 +18,7 @@ interface OrderItemResult {
   id: number;
   productId: number;
   productName: string;
-  condition: string;
+  condition: CardCondition;
   quantity: number;
   unitPrice: number;
   costBasis: number | null;
@@ -31,7 +32,7 @@ interface OrderResult {
     organizationId: string;
     orderNumber: string;
     customerName: string;
-    status: string;
+    status: OrderStatus;
     totalAmount: number;
     totalCostBasis: number | null;
     totalProfit: number | null;
@@ -62,7 +63,7 @@ function mapOrderItems(
       id: oi.id,
       productId: oi.productId,
       productName: oi.productName,
-      condition: oi.condition,
+      condition: oi.condition as CardCondition,
       quantity: oi.quantity,
       unitPrice: oi.unitPrice,
       costBasis: oi.costBasis,
@@ -156,7 +157,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
       inventoryItemId: number;
       productId: number;
       productName: string;
-      condition: string;
+      condition: CardCondition;
       quantity: number;
       unitPrice: number;
     }[] = [];
@@ -168,7 +169,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
         insufficientItems.push({
           productId: ci.productId,
           productName: ci.productName,
-          condition: ci.invCondition,
+          condition: ci.invCondition as CardCondition,
           requested: ci.quantity,
           available: totalAvailable,
         });
@@ -179,7 +180,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
         inventoryItemId: ci.invId,
         productId: ci.productId,
         productName: ci.productName,
-        condition: ci.invCondition,
+        condition: ci.invCondition as CardCondition,
         quantity: ci.quantity,
         unitPrice: ci.invPrice,
       });
@@ -307,7 +308,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
         organizationId: insertedOrder.organizationId,
         orderNumber: insertedOrder.orderNumber,
         customerName: insertedOrder.customerName,
-        status: insertedOrder.status,
+        status: insertedOrder.status as OrderStatus,
         totalAmount: insertedOrder.totalAmount,
         totalCostBasis,
         totalProfit,
@@ -576,7 +577,7 @@ export async function updateOrderStatus(
       organizationId: existingOrder.organizationId,
       orderNumber: existingOrder.orderNumber,
       customerName: existingOrder.customerName,
-      status: newStatus,
+      status: newStatus as OrderStatus,
       totalAmount: existingOrder.totalAmount,
       totalCostBasis,
       totalProfit,
@@ -633,7 +634,7 @@ export async function getOrders(
         organizationId: o.organizationId,
         orderNumber: o.orderNumber,
         customerName: o.customerName,
-        status: o.status,
+        status: o.status as OrderStatus,
         totalAmount: o.totalAmount,
         totalCostBasis,
         totalProfit,

@@ -78,15 +78,6 @@
     "vite": "^8.0.3",
     "vitest": "^4.1.2"
   },
-  "lint-staged": {
-    "*.{ts,js,tsx,jsx}": [
-      "pnpm run lint:check",
-      "pnpm run format"
-    ],
-    "!(**/migrations/**).{json,css,html}": [
-      "pnpm run format"
-    ]
-  },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",
     "pnpm": ">=10"

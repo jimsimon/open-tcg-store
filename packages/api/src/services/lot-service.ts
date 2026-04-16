@@ -7,7 +7,7 @@ import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
 import { formatDate } from '../lib/date-utils';
 
-import type { PaginationInput } from '../schema/types.generated';
+import type { CardCondition, PaginationInput } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +48,7 @@ interface LotItemResult {
   rarity: string | null;
   isSingle: boolean;
   isSealed: boolean;
-  condition: string | null;
+  condition: CardCondition | null;
   quantity: number;
   costBasis: number;
   costOverridden: boolean;
@@ -181,7 +181,7 @@ async function buildLotItemResults(lotId: number): Promise<LotItemResult[]> {
       rarity: item.rarity ?? null,
       isSingle,
       isSealed: !isSingle,
-      condition: item.condition ?? null,
+      condition: (item.condition as CardCondition) ?? null,
       quantity: item.quantity,
       costBasis: item.costBasis,
       costOverridden: item.costOverridden,
@@ -311,7 +311,7 @@ async function buildLotResults(lotRows: (typeof lot.$inferSelect)[]): Promise<Lo
         rarity: item.rarity ?? null,
         isSingle,
         isSealed: !isSingle,
-        condition: item.condition ?? null,
+        condition: (item.condition as CardCondition) ?? null,
         quantity: item.quantity,
         costBasis: item.costBasis,
         costOverridden: item.costOverridden,

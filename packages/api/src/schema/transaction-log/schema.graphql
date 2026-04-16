@@ -1,7 +1,13 @@
+enum ResourceType {
+  order
+  lot
+  inventory
+}
+
 type TransactionLogEntry {
   id: Int!
   action: String!
-  resourceType: String!
+  resourceType: ResourceType!
   resourceId: String
   details: String!
   userName: String!
@@ -22,7 +28,7 @@ input TransactionLogFilters {
   year: Int
   searchTerm: String
   action: String
-  resourceType: String
+  resourceType: ResourceType
 }
 
 extend type Query {

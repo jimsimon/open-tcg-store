@@ -1,3 +1,8 @@
+enum BuyRateType {
+  fixed
+  percentage
+}
+
 type SupportedGame {
   categoryId: Int!
   name: String!
@@ -9,7 +14,7 @@ type BuyRateEntry {
   description: String!
   fixedRateCents: Int # cents — present when type='fixed'
   percentageRate: Float # 0.0–1.0 — present when type='percentage'
-  type: String!
+  type: BuyRateType!
   rarity: String
   hidden: Boolean!
   sortOrder: Int!
@@ -30,7 +35,7 @@ input BuyRateEntryInput {
   description: String!
   fixedRateCents: Int # cents — required when type='fixed'
   percentageRate: Float # 0.0–1.0 — required when type='percentage'
-  type: String!
+  type: BuyRateType!
   rarity: String
   hidden: Boolean
   sortOrder: Int!

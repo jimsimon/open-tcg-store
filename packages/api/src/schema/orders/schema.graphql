@@ -1,9 +1,15 @@
+enum OrderStatus {
+  open
+  completed
+  cancelled
+}
+
 type Order {
   id: Int!
   organizationId: String!
   orderNumber: String!
   customerName: String!
-  status: String!
+  status: OrderStatus!
   totalAmount: Int! # cents
   totalCostBasis: Int # cents
   totalProfit: Int # cents
@@ -15,7 +21,7 @@ type OrderItem {
   id: Int!
   productId: Int!
   productName: String!
-  condition: String!
+  condition: CardCondition!
   quantity: Int!
   unitPrice: Int! # cents
   costBasis: Int # cents
@@ -45,7 +51,7 @@ type SubmitOrderResult {
 type InsufficientItem {
   productId: Int!
   productName: String!
-  condition: String!
+  condition: CardCondition!
   requested: Int!
   available: Int!
 }
@@ -63,12 +69,12 @@ type UpdateOrderStatusResult {
 extend type Mutation {
   submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   cancelOrder(orderId: Int!): CancelOrderResult!
-  updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
+  updateOrderStatus(orderId: Int!, status: OrderStatus!): UpdateOrderStatusResult!
 }
 
 input OrderFilters {
   organizationId: String
-  status: String
+  status: OrderStatus
   searchTerm: String
 }
 

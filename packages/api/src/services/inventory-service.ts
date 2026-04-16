@@ -4,6 +4,7 @@ import { product, group, category, productExtendedData, price } from '../db/tcg-
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
 import { formatDate, todayDateString } from '../lib/date-utils';
+import type { CardCondition } from '../schema/types.generated';
 import type {
   InventoryItem,
   InventoryPage,
@@ -207,7 +208,7 @@ export async function getInventoryItems(
       rarity: r.rarity ?? null,
       isSingle,
       isSealed: !isSingle,
-      condition: r.condition,
+      condition: r.condition as CardCondition,
       price: r.price,
       totalQuantity: r.totalQuantity,
       entryCount: r.entryCount,
@@ -346,7 +347,7 @@ export async function getInventoryItemById(id: number, organizationId: string): 
     rarity: r.rarity ?? null,
     isSingle,
     isSealed: !isSingle,
-    condition: r.condition,
+    condition: r.condition as CardCondition,
     price: r.price,
     totalQuantity: r.totalQuantity,
     entryCount: r.entryCount,

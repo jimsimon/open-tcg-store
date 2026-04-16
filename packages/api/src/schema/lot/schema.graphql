@@ -24,7 +24,7 @@ type LotItem {
   rarity: String
   isSingle: Boolean!
   isSealed: Boolean!
-  condition: String
+  condition: CardCondition
   quantity: Int!
   costBasis: Int! # cents
   costOverridden: Boolean!
@@ -59,7 +59,7 @@ input UpdateLotInput {
 input LotItemInput {
   id: Int
   productId: Int!
-  condition: String
+  condition: CardCondition
   quantity: Int!
   costBasis: Int! # cents
   costOverridden: Boolean!

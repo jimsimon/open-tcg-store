@@ -62,7 +62,7 @@ type ProductListing {
 
 type ProductConditionPrice {
   inventoryItemId: Int!
-  condition: String!
+  condition: CardCondition!
   quantity: Int!
   price: Int! # cents
 }
@@ -71,7 +71,7 @@ input ProductListingFilters {
   searchTerm: String
   setCode: String
   gameName: String
-  condition: String
+  condition: CardCondition
   inStockOnly: Boolean
   includeSingles: Boolean
   includeSealed: Boolean
@@ -108,7 +108,7 @@ type ProductDetail {
 
 type ProductInventoryRecord {
   inventoryItemId: Int!
-  condition: String!
+  condition: CardCondition!
   quantity: Int!
   price: Int! # cents
 }

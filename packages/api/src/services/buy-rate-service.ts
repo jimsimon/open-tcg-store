@@ -3,6 +3,7 @@ import { otcgs } from '../db/otcgs/index';
 import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
 import { buyRate } from '../db/otcgs/buy-rate-schema';
 import { category } from '../db/tcg-data/schema';
+import type { BuyRateType } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,7 +20,7 @@ export interface BuyRateEntryResult {
   description: string;
   fixedRateCents: number | null;
   percentageRate: number | null;
-  type: string;
+  type: BuyRateType;
   rarity: string | null;
   hidden: boolean;
   sortOrder: number;
@@ -126,7 +127,7 @@ export async function getBuyRates(categoryId: number): Promise<BuyRateEntryResul
     description: row.description,
     fixedRateCents: row.fixedRateCents ?? null,
     percentageRate: row.percentageRate ?? null,
-    type: row.type ?? 'fixed',
+    type: (row.type ?? 'fixed') as BuyRateType,
     rarity: row.rarity ?? null,
     hidden: row.hidden ?? false,
     sortOrder: row.sortOrder,
@@ -174,7 +175,7 @@ export async function saveBuyRates(categoryId: number, entries: BuyRateEntryInpu
           description: entry.description,
           fixedRateCents: entry.type === 'fixed' ? (entry.fixedRateCents ?? 0) : null,
           percentageRate: entry.type === 'percentage' ? (entry.percentageRate ?? 0) : null,
-          type: entry.type || 'fixed',
+          type: (entry.type || 'fixed') as BuyRateType,
           rarity: entry.rarity || null,
           hidden: entry.hidden ?? false,
           sortOrder: entry.sortOrder,
@@ -236,7 +237,7 @@ export async function getPublicBuyRates(): Promise<PublicBuyRatesResult> {
       description: rate.description,
       fixedRateCents: rate.fixedRateCents ?? null,
       percentageRate: rate.percentageRate ?? null,
-      type: rate.type ?? 'fixed',
+      type: (rate.type ?? 'fixed') as BuyRateType,
       rarity: rate.rarity ?? null,
       hidden: false,
       sortOrder: rate.sortOrder,

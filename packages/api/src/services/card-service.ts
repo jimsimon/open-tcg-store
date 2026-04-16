@@ -5,7 +5,13 @@ import { inventoryItem } from '../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../db/otcgs/inventory-stock-schema';
 import { likeEscaped } from '../lib/sql-utils';
 
-import type { Card, InputMaybe, SingleCardFilters, ProductListingFilters } from '../schema/types.generated';
+import type {
+  Card,
+  CardCondition,
+  InputMaybe,
+  SingleCardFilters,
+  ProductListingFilters,
+} from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -193,7 +199,7 @@ export async function getProductById(productId: number, organizationId: string |
     images: buildImageUrls(result.tcgpProductId),
     inventoryRecords: inventoryRecords.map((r) => ({
       inventoryItemId: r.id,
-      condition: r.condition,
+      condition: r.condition as CardCondition,
       quantity: r.totalQuantity,
       price: r.price,
     })),
@@ -600,13 +606,18 @@ async function queryProductListings(
 
   const conditionPricesMap = new Map<
     number,
-    { inventoryItemId: number; condition: string; quantity: number; price: number }[]
+    { inventoryItemId: number; condition: CardCondition; quantity: number; price: number }[]
   >();
   for (const row of conditionPricesRaw) {
     const arr = conditionPricesMap.get(row.productId) ?? [];
     const key = `${row.productId}:${row.condition}`;
     const invItemId = lowestPriceItemMap.get(key) ?? 0;
-    arr.push({ inventoryItemId: invItemId, condition: row.condition, quantity: row.quantity, price: row.price });
+    arr.push({
+      inventoryItemId: invItemId,
+      condition: row.condition as CardCondition,
+      quantity: row.quantity,
+      price: row.price,
+    });
     conditionPricesMap.set(row.productId, arr);
   }
 

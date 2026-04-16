@@ -1,3 +1,14 @@
+enum Granularity {
+  hour
+  day
+  month
+}
+
+enum BestSellerSortBy {
+  quantity
+  revenue
+}
+
 input DashboardDateRange {
   startDate: String!
   endDate: String!
@@ -24,7 +35,7 @@ type SalesDataPoint {
 type SalesBreakdown {
   summary: SalesSummary!
   dataPoints: [SalesDataPoint!]!
-  granularity: String!
+  granularity: Granularity!
 }
 
 # --- Best Sellers ---
@@ -73,7 +84,7 @@ extend type Query {
   getDashboardBestSellers(
     organizationId: String!
     dateRange: DashboardDateRange!
-    sortBy: String!
+    sortBy: BestSellerSortBy!
     limit: Int
   ): [BestSeller!]!
 
