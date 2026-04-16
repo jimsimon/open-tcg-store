@@ -8,7 +8,7 @@ export const lot = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     organizationId: text('organization_id').notNull(),
     name: text('name').notNull(),
-    description: text('description', { length: 2000 }),
+    description: text('description'),
     amountPaid: integer('amount_paid').notNull(), // cents
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
     createdAt: integer('created_at', { mode: 'timestamp_ms' })

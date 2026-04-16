@@ -349,7 +349,7 @@ export class SettingsDashboardPage extends LitElement {
   }
 
   private _silentRefresh() {
-    if (this._fetching) return; // Skip if already fetching
+    if (this._fetching || document.hidden) return;
     this._fetchAllDataSilently();
   }
 

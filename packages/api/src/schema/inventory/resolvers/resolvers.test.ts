@@ -68,8 +68,7 @@ import { updateStock as _updateStock } from './Mutation/updateStock';
 import { deleteStock as _deleteStock } from './Mutation/deleteStock';
 import { bulkUpdateStock as _bulkUpdateStock } from './Mutation/bulkUpdateStock';
 import { bulkDeleteStock as _bulkDeleteStock } from './Mutation/bulkDeleteStock';
-import { bulkDeleteInventory as _bulkDeleteInventory } from './Mutation/bulkDeleteInventory';
-import { bulkUpdateInventory as _bulkUpdateInventory } from './Mutation/bulkUpdateInventory';
+
 import { getInventory as _getInventory } from './Query/getInventory';
 import { getInventoryItem as _getInventoryItem } from './Query/getInventoryItem';
 import { getInventoryItemDetails as _getInventoryItemDetails } from './Query/getInventoryItemDetails';
@@ -198,18 +197,6 @@ describe('inventory resolvers', () => {
 
       expect(mockAssertPermission).toHaveBeenCalledWith(expect.anything(), { inventory: ['delete'] });
       expect(mockBulkDeleteStock).toHaveBeenCalledWith([10, 11], 'org-1', 'user-1');
-    });
-  });
-
-  describe('bulkDeleteInventory (deprecated)', () => {
-    it('should throw deprecation error', async () => {
-      await expect(_bulkDeleteInventory()).rejects.toThrow('bulkDeleteInventory has been replaced by bulkDeleteStock');
-    });
-  });
-
-  describe('bulkUpdateInventory (deprecated)', () => {
-    it('should throw deprecation error', async () => {
-      await expect(_bulkUpdateInventory()).rejects.toThrow('bulkUpdateInventory has been replaced by bulkUpdateStock');
     });
   });
 

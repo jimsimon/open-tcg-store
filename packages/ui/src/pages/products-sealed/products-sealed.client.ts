@@ -30,6 +30,8 @@ import {
   loadingStateStyles,
   getQuantityBadgeClass,
 } from '../products/products-shared.ts';
+import { AddToCartMutation } from '../../lib/shared-queries';
+import { debounce } from '../../lib/debounce';
 
 // --- Types ---
 
@@ -60,37 +62,6 @@ interface SetOption {
 }
 
 // --- GraphQL ---
-
-const AddToCartMutation = new TypedDocumentString(`
-  mutation AddToCart($cartItem: CartItemInput!) {
-    addToCart(cartItem: $cartItem) {
-      items {
-        inventoryItemId
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        maxAvailable
-      }
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    addToCart: {
-      items: {
-        inventoryItemId: number;
-        productId: number;
-        productName: string;
-        condition: string;
-        quantity: number;
-        unitPrice: number;
-        maxAvailable: number;
-      }[];
-    };
-  },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
 
 const GetProductListingsQuery = new TypedDocumentString(`
   query GetProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
@@ -141,18 +112,6 @@ const GetSetsQuery = new TypedDocumentString(`
   { getSets: SetOption[] },
   { game: string; filters?: { searchTerm?: string | null } | null }
 >;
-
-// --- Debounce utility ---
-
-// biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  // biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-  return ((...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
-}
 
 // --- Component ---
 
@@ -529,17 +488,29 @@ export class OgsProductsSealedPage extends LitElement {
           <wa-option value="">All Sets</wa-option>
           ${this.sets.map((s) => html`<wa-option value="${s.code}">${s.name}</wa-option>`)}
         </wa-select>
-        <div
+        <label
           class="in-stock-toggle ${this.inStockOnly ? 'active' : ''}"
-          @click="${() => {
+          @click="${(e: Event) => {
+            e.preventDefault();
             this.inStockOnly = !this.inStockOnly;
             this.currentPage = 1;
             this.fetchProducts();
           }}"
+          @keydown="${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.inStockOnly = !this.inStockOnly;
+              this.currentPage = 1;
+              this.fetchProducts();
+            }
+          }}"
+          tabindex="0"
+          role="checkbox"
+          aria-checked="${this.inStockOnly}"
         >
-          <wa-checkbox ?checked="${this.inStockOnly}"></wa-checkbox>
+          <wa-checkbox ?checked="${this.inStockOnly}" tabindex="-1"></wa-checkbox>
           <span>In Stock Only</span>
-        </div>
+        </label>
       </div>
     `;
   }
@@ -573,13 +544,13 @@ export class OgsProductsSealedPage extends LitElement {
         <table class="wa-table">
           <thead>
             <tr>
-              <th class="wa-visually-hidden">Thumbnail</th>
-              <th>Name</th>
-              <th>Game</th>
-              <th>Set</th>
-              <th class="quantity-cell">Qty</th>
-              <th class="price-cell">Price</th>
-              <th class="wa-visually-hidden">Add to Cart</th>
+              <th scope="col" class="wa-visually-hidden">Thumbnail</th>
+              <th scope="col">Name</th>
+              <th scope="col">Game</th>
+              <th scope="col">Set</th>
+              <th scope="col" class="quantity-cell">Qty</th>
+              <th scope="col" class="price-cell">Price</th>
+              <th scope="col" class="wa-visually-hidden">Add to Cart</th>
             </tr>
           </thead>
           <tbody>

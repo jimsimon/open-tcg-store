@@ -590,10 +590,10 @@ export class OgsInventoryDetailPage extends LitElement {
                 <th style="width: 40px;">
                   <wa-checkbox .checked="${this.selectAll}" @change="${this.toggleSelectAll}"></wa-checkbox>
                 </th>
-                <th>Acquisition Date</th>
-                <th class="quantity-cell" style="width: 60px;">Qty</th>
-                <th class="price-cell" style="width: 90px;">Cost Basis</th>
-                <th>Notes</th>
+                <th scope="col">Acquisition Date</th>
+                <th scope="col" class="quantity-cell" style="width: 60px;">Qty</th>
+                <th scope="col" class="price-cell" style="width: 90px;">Cost Basis</th>
+                <th scope="col">Notes</th>
                 <th style="width: 100px;">Actions</th>
               </tr>
             </thead>

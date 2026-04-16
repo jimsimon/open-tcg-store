@@ -366,8 +366,8 @@ export class OgsBuyRatesPage extends LitElement {
       <table class="rate-table">
         <thead>
           <tr>
-            <th>Card Type</th>
-            <th>Cost/Unit</th>
+            <th scope="col">Card Type</th>
+            <th scope="col">Cost/Unit</th>
           </tr>
         </thead>
         <tbody>

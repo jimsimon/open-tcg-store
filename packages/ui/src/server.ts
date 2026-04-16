@@ -345,12 +345,26 @@ app
     console.log(`Server is listening on port ${port}`);
   });
 
+/**
+ * Render a page by loading its server template module.
+ *
+ * **SSR architecture note**: Full Lit SSR rendering (via `@lit-labs/ssr`)
+ * is intentionally disabled. The server-side `.server.ts` templates return
+ * raw HTML strings (with injected data attributes for client hydration)
+ * rather than Lit `TemplateResult` objects. The Lit SSR `ssrRender` path
+ * is commented out below — enabling it would require server templates to
+ * return `TemplateResult` and all components to support declarative shadow
+ * DOM. The current approach was chosen for simplicity and to avoid SSR
+ * hydration mismatch issues with Web Awesome components. Client-side `.client.ts`
+ * components fully render once hydrated and use GraphQL for data operations.
+ */
 async function renderPage(ctx: RouterContext, pageDirectory: string) {
   const { render: renderShellTemplate } = await vite.ssrLoadModule('/packages/ui/src/shell.ts');
   const { render: pageTemplate } = await vite.ssrLoadModule(
     `/packages/ui/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
   );
   ctx.type = 'html';
+  // Full Lit SSR (disabled — see note above):
   // ctx.body = new RenderResultReadable(
   //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
   // );

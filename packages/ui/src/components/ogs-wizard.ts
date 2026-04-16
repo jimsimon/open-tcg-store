@@ -51,7 +51,7 @@ export class OgsWizard extends LitElement {
         <section>
           <slot></slot>
         </section>
-        <nav slot="footer">
+        <nav slot="footer" aria-label="Wizard navigation">
           ${when(
             this.shouldShowPrevious(),
             () => html`

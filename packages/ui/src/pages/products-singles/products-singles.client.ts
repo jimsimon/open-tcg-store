@@ -31,6 +31,9 @@ import {
   getQuantityBadgeClass,
 } from '../products/products-shared.ts';
 import { formatCurrency } from '../../lib/currency.ts';
+import { AddToCartMutation } from '../../lib/shared-queries';
+import { debounce } from '../../lib/debounce';
+import { conditionLabel } from '../../lib/labels';
 
 // --- Types ---
 
@@ -68,37 +71,6 @@ interface SetOption {
 }
 
 // --- GraphQL ---
-
-const AddToCartMutation = new TypedDocumentString(`
-  mutation AddToCart($cartItem: CartItemInput!) {
-    addToCart(cartItem: $cartItem) {
-      items {
-        inventoryItemId
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        maxAvailable
-      }
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    addToCart: {
-      items: {
-        inventoryItemId: number;
-        productId: number;
-        productName: string;
-        condition: string;
-        quantity: number;
-        unitPrice: number;
-        maxAvailable: number;
-      }[];
-    };
-  },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
 
 const GetProductListingsQuery = new TypedDocumentString(`
   query GetProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {
@@ -156,18 +128,6 @@ const GetSetsQuery = new TypedDocumentString(`
   { getSets: SetOption[] },
   { game: string; filters?: { searchTerm?: string | null } | null }
 >;
-
-// --- Debounce utility ---
-
-// biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  // biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-  return ((...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
-}
 
 // --- Component ---
 
@@ -660,17 +620,29 @@ export class OgsProductsSinglesPage extends LitElement {
           <wa-option value="HP">Heavily Played</wa-option>
           <wa-option value="D">Damaged</wa-option>
         </wa-select>
-        <div
+        <label
           class="in-stock-toggle ${this.inStockOnly ? 'active' : ''}"
-          @click="${() => {
+          @click="${(e: Event) => {
+            e.preventDefault();
             this.inStockOnly = !this.inStockOnly;
             this.currentPage = 1;
             this.fetchProducts();
           }}"
+          @keydown="${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.inStockOnly = !this.inStockOnly;
+              this.currentPage = 1;
+              this.fetchProducts();
+            }
+          }}"
+          tabindex="0"
+          role="checkbox"
+          aria-checked="${this.inStockOnly}"
         >
-          <wa-checkbox ?checked="${this.inStockOnly}"></wa-checkbox>
+          <wa-checkbox ?checked="${this.inStockOnly}" tabindex="-1"></wa-checkbox>
           <span>In Stock Only</span>
-        </div>
+        </label>
       </div>
     `;
   }
@@ -704,15 +676,15 @@ export class OgsProductsSinglesPage extends LitElement {
         <table class="wa-table">
           <thead>
             <tr>
-              <th class="wa-visually-hidden">Thumbnail</th>
-              <th>Name</th>
-              <th>Game</th>
-              <th>Set</th>
-              <th>Rarity</th>
-              <th>Condition</th>
-              <th class="quantity-cell">Qty</th>
-              <th class="price-cell">Price</th>
-              <th class="wa-visually-hidden">Add to Cart</th>
+              <th scope="col" class="wa-visually-hidden">Thumbnail</th>
+              <th scope="col">Name</th>
+              <th scope="col">Game</th>
+              <th scope="col">Set</th>
+              <th scope="col">Rarity</th>
+              <th scope="col">Condition</th>
+              <th scope="col" class="quantity-cell">Qty</th>
+              <th scope="col" class="price-cell">Price</th>
+              <th scope="col" class="wa-visually-hidden">Add to Cart</th>
             </tr>
           </thead>
           <tbody>
@@ -859,17 +831,4 @@ export class OgsProductsSinglesPage extends LitElement {
       </div>
     `;
   }
-}
-
-// --- Helpers ---
-
-function conditionLabel(condition: string): string {
-  const labels: Record<string, string> = {
-    NM: 'Near Mint',
-    LP: 'Lightly Played',
-    MP: 'Mod. Played',
-    HP: 'Heavily Played',
-    D: 'Damaged',
-  };
-  return labels[condition] ?? condition;
 }

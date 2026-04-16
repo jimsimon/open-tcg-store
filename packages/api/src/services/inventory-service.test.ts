@@ -1,37 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ---------------------------------------------------------------------------
-// Mock the database layer.  The inventory-service imports `otcgs` (the Drizzle
-// instance) and several schema tables from sibling modules.  We replace the
-// entire `../db/otcgs/index` module with a lightweight mock that exposes the
-// chainable query-builder API Drizzle uses (select → from → where → limit …).
-// ---------------------------------------------------------------------------
-
-// Helper: build a chainable mock that resolves to `rows` at the end of the chain.
-function chainable(rows: unknown[] = []) {
-  const chain = Object.assign(Promise.resolve(rows), {} as Record<string, unknown>);
-  for (const method of [
-    'select',
-    'from',
-    'where',
-    'limit',
-    'offset',
-    'innerJoin',
-    'leftJoin',
-    'insert',
-    'update',
-    'delete',
-    'set',
-    'values',
-    'returning',
-    'orderBy',
-    'groupBy',
-    'having',
-  ]) {
-    chain[method] = vi.fn().mockReturnValue(chain);
-  }
-  return chain;
-}
+import { chainable } from '../test-utils';
 
 // We keep references so individual tests can override return values.
 let selectChain: ReturnType<typeof chainable>;

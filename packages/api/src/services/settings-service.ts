@@ -4,13 +4,7 @@ import { companySettings } from '../db/otcgs/company-settings-schema';
 import { encrypt, encryptIfPresent, decryptIfPresent } from '../lib/encryption';
 import SalesTax from 'sales-tax';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatDate(d: Date | null | undefined): string | null {
-  return d ? d.toISOString() : null;
-}
+import { formatDate } from '../lib/date-utils';
 
 /**
  * Ensure the single settings row exists. Returns the row.

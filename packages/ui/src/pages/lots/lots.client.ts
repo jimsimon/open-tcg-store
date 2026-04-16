@@ -16,6 +16,7 @@ import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { formatCurrency } from '../../lib/currency.ts';
+import { debounce } from '../../lib/debounce';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
@@ -111,18 +112,6 @@ interface LotSummary {
   projectedProfitMargin: number;
   createdAt: string;
   itemCount: number;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
 }
 
 // ---------------------------------------------------------------------------
@@ -756,13 +745,13 @@ export class OgsLotsPage extends LitElement {
           <table class="wa-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Items</th>
-                <th class="price-cell">Amount Paid</th>
-                <th class="price-cell">Market Value</th>
-                <th class="price-cell">Profit/Loss</th>
-                <th class="price-cell">Margin</th>
-                <th>Date</th>
+                <th scope="col">Name</th>
+                <th scope="col">Items</th>
+                <th scope="col" class="price-cell">Amount Paid</th>
+                <th scope="col" class="price-cell">Market Value</th>
+                <th scope="col" class="price-cell">Profit/Loss</th>
+                <th scope="col" class="price-cell">Margin</th>
+                <th scope="col">Date</th>
                 <th style="width: 100px;"></th>
               </tr>
             </thead>

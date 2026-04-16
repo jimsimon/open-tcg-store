@@ -2,7 +2,7 @@ import { defineConfig } from 'oxlint';
 
 export default defineConfig({
   categories: {
-    correctness: 'warn',
+    correctness: 'error',
   },
   rules: {
     'eslint/no-unused-vars': 'error',

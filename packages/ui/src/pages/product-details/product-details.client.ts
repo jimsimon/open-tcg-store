@@ -17,6 +17,8 @@ import { TypedDocumentString } from '../../graphql/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { cartState } from '../../lib/cart-state.ts';
 import { formatCurrency } from '../../lib/currency.ts';
+import { conditionLabel } from '../../lib/labels';
+import { AddToCartMutation } from '../../lib/shared-queries';
 
 // --- Types ---
 
@@ -44,37 +46,6 @@ interface ProductDetail {
 }
 
 // --- GraphQL ---
-
-const AddToCartMutation = new TypedDocumentString(`
-  mutation AddToCart($cartItem: CartItemInput!) {
-    addToCart(cartItem: $cartItem) {
-      items {
-        inventoryItemId
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        maxAvailable
-      }
-    }
-  }
-`) as unknown as TypedDocumentString<
-  {
-    addToCart: {
-      items: {
-        inventoryItemId: number;
-        productId: number;
-        productName: string;
-        condition: string;
-        quantity: number;
-        unitPrice: number;
-        maxAvailable: number;
-      }[];
-    };
-  },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
 
 const GetProductQuery = new TypedDocumentString(`
   query GetProduct($productId: String!) {
@@ -487,36 +458,36 @@ export class ProductDetailsPage extends LitElement {
       <wa-card appearance="outlined">
         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-            <img src="${p.images?.large}" alt="" />
+            <img src="${p.images?.large}" alt="${p.name}" />
           </div>
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <tbody>
               <tr>
-                <th>Set</th>
+                <th scope="row">Set</th>
                 <td>${p.setName}</td>
               </tr>
               <tr>
-                <th>Game</th>
+                <th scope="row">Game</th>
                 <td>${p.gameName}</td>
               </tr>
               <tr>
-                <th>Type</th>
+                <th scope="row">Type</th>
                 <td>${p.type ?? '—'}</td>
               </tr>
               <tr>
-                <th>Rarity</th>
+                <th scope="row">Rarity</th>
                 <td>${p.rarity ?? '—'}</td>
               </tr>
               <tr>
-                <th>Printings</th>
+                <th scope="row">Printings</th>
                 <td>${p.finishes?.map((f) => html` <wa-badge> ${f.toUpperCase()} </wa-badge> `)}</td>
               </tr>
               <tr>
-                <th>Text</th>
+                <th scope="row">Text</th>
                 <td>${p.text ? unsafeHTML(sanitizeHtml(p.text)) : '—'}</td>
               </tr>
               <tr>
-                <th>Flavor Text</th>
+                <th scope="row">Flavor Text</th>
                 <td>${p.flavorText ? unsafeHTML(sanitizeHtml(p.flavorText)) : '—'}</td>
               </tr>
             </tbody>
@@ -537,16 +508,16 @@ export class ProductDetailsPage extends LitElement {
       <wa-card appearance="outlined">
         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-            <img src="${p.images?.large}" alt="" />
+            <img src="${p.images?.large}" alt="${p.name}" />
           </div>
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <tbody>
               <tr>
-                <th>Set</th>
+                <th scope="row">Set</th>
                 <td>${p.setName}</td>
               </tr>
               <tr>
-                <th>Game</th>
+                <th scope="row">Game</th>
                 <td>${p.gameName}</td>
               </tr>
             </tbody>
@@ -625,13 +596,6 @@ export class ProductDetailsPage extends LitElement {
     }
 
     const conditionOrder = ['NM', 'LP', 'MP', 'HP', 'D'];
-    const conditionLabels: Record<string, string> = {
-      NM: 'Near Mint',
-      LP: 'Lightly Played',
-      MP: 'Moderately Played',
-      HP: 'Heavily Played',
-      D: 'Damaged',
-    };
 
     return html`
       <wa-card appearance="outlined">
@@ -642,10 +606,10 @@ export class ProductDetailsPage extends LitElement {
         <table class="wa-table wa-zebra-rows wa-hover-rows">
           <thead>
             <tr>
-              <th>Condition</th>
-              <th class="price-cell">Price</th>
-              <th class="quantity-cell">In Stock</th>
-              <th class="wa-visually-hidden">Add to Cart</th>
+              <th scope="col">Condition</th>
+              <th scope="col" class="price-cell">Price</th>
+              <th scope="col" class="quantity-cell">In Stock</th>
+              <th scope="col" class="wa-visually-hidden">Add to Cart</th>
             </tr>
           </thead>
           <tbody>
@@ -656,7 +620,7 @@ export class ProductDetailsPage extends LitElement {
                 const inStock = data.totalQuantity > 0;
                 return html`
                   <tr>
-                    <td>${conditionLabels[condition] ?? condition}</td>
+                    <td>${conditionLabel(condition)}</td>
                     <td class="price-cell">${formatCurrency(data.lowestPrice)}</td>
                     <td class="quantity-cell">
                       ${inStock ? data.totalQuantity : html`<span class="out-of-stock">0</span>`}
@@ -703,9 +667,9 @@ export class ProductDetailsPage extends LitElement {
         <table class="wa-table wa-zebra-rows wa-hover-rows">
           <thead>
             <tr>
-              <th class="price-cell">Price</th>
-              <th class="quantity-cell">Available</th>
-              <th class="wa-visually-hidden">Add to Cart</th>
+              <th scope="col" class="price-cell">Price</th>
+              <th scope="col" class="quantity-cell">Available</th>
+              <th scope="col" class="wa-visually-hidden">Add to Cart</th>
             </tr>
           </thead>
           <tbody>

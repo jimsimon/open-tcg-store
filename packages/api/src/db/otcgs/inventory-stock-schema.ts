@@ -12,7 +12,7 @@ export const inventoryItemStock = sqliteTable(
     quantity: integer('quantity').notNull().default(0),
     costBasis: integer('cost_basis').notNull().default(0), // cents
     acquisitionDate: text('acquisition_date').notNull(), // YYYY-MM-DD
-    notes: text('notes', { length: 1000 }),
+    notes: text('notes'),
     lotId: integer('lot_id'),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })

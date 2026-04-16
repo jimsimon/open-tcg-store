@@ -21,6 +21,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { execute } from '../../lib/graphql';
 import { TypedDocumentString } from '../../graphql/graphql';
 import { formatCurrency, centsToInputValue, inputValueToCents } from '../../lib/currency';
+import { debounce } from '../../lib/debounce';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -144,16 +145,6 @@ interface LotItemRow {
 let clientIdCounter = 0;
 function nextClientId(): string {
   return `lot-item-${++clientIdCounter}`;
-}
-
-function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T & { cancel(): void } {
-  let timer: ReturnType<typeof setTimeout>;
-  const debounced = ((...args: never[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  }) as unknown as T & { cancel(): void };
-  debounced.cancel = () => clearTimeout(timer);
-  return debounced;
 }
 
 function getTodayDateString(): string {
@@ -917,19 +908,19 @@ export class OgsLotPage extends LitElement {
       <table>
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Game</th>
-            <th>Set</th>
+            <th scope="col">Product</th>
+            <th scope="col">Game</th>
+            <th scope="col">Set</th>
             ${isSingle
-              ? html`<th>Rarity</th>
-                  <th class="condition-cell">Condition</th>`
+              ? html`<th scope="col">Rarity</th>
+                  <th scope="col" class="condition-cell">Condition</th>`
               : nothing}
-            <th class="quantity-cell">Qty</th>
-            <th class="cost-cell">Unit Cost</th>
-            <th class="total-cell">Cost Total</th>
-            <th class="market-cell">Unit Market</th>
-            <th class="total-cell">Market Total</th>
-            <th class="actions-cell-td"></th>
+            <th scope="col" class="quantity-cell">Qty</th>
+            <th scope="col" class="cost-cell">Unit Cost</th>
+            <th scope="col" class="total-cell">Cost Total</th>
+            <th scope="col" class="market-cell">Unit Market</th>
+            <th scope="col" class="total-cell">Market Total</th>
+            <th scope="col" class="actions-cell-td"></th>
           </tr>
         </thead>
         <tbody>
