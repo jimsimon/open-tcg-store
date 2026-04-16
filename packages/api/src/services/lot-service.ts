@@ -5,6 +5,7 @@ import { lotItem } from '../db/otcgs/lot-item-schema';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
+import { formatDate } from '../lib/date-utils';
 
 import type { PaginationInput } from '../schema/types.generated';
 
@@ -81,10 +82,6 @@ interface LotPageResult {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatDate(d: Date | null | undefined): string | null {
-  return d ? d.toISOString() : null;
-}
 
 function validateLotInput(input: CreateLotInput): void {
   if (!input.name || input.name.trim().length === 0) throw new Error('Lot name is required');
@@ -187,7 +184,7 @@ async function buildLotItemResults(lotId: number): Promise<LotItemResult[]> {
       condition: item.condition ?? null,
       quantity: item.quantity,
       costBasis: item.costBasis,
-      costOverridden: Boolean(item.costOverridden),
+      costOverridden: item.costOverridden,
       marketValue: unitMarketValue != null ? unitMarketValue * item.quantity : null,
     };
   });
@@ -317,7 +314,7 @@ async function buildLotResults(lotRows: (typeof lot.$inferSelect)[]): Promise<Lo
         condition: item.condition ?? null,
         quantity: item.quantity,
         costBasis: item.costBasis,
-        costOverridden: Boolean(item.costOverridden),
+        costOverridden: item.costOverridden,
         marketValue: unitMarketValue != null ? unitMarketValue * item.quantity : null,
       };
     });
@@ -506,7 +503,7 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
         condition: item.condition ?? null,
         quantity: item.quantity,
         costBasis: item.costBasis,
-        costOverridden: item.costOverridden ? 1 : 0,
+        costOverridden: item.costOverridden,
         inventoryItemStockId: stockId,
         createdAt: now,
         updatedAt: now,
@@ -606,7 +603,7 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
             condition: item.condition ?? null,
             quantity: item.quantity,
             costBasis: item.costBasis,
-            costOverridden: item.costOverridden ? 1 : 0,
+            costOverridden: item.costOverridden,
             updatedAt: now,
           })
           .where(eq(lotItem.id, item.id));
@@ -686,7 +683,7 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
           condition: item.condition ?? null,
           quantity: item.quantity,
           costBasis: item.costBasis,
-          costOverridden: item.costOverridden ? 1 : 0,
+          costOverridden: item.costOverridden,
           inventoryItemStockId: stockId,
           createdAt: now,
           updatedAt: now,

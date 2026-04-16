@@ -17,16 +17,8 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { roles, statement } from '../../../../api/src/lib/permissions';
-
-// Lazy-load authClient to avoid SSR issues
-let _authClient: typeof import('../../auth-client').authClient | undefined;
-async function getAuthClient() {
-  if (!_authClient) {
-    const mod = await import('../../auth-client');
-    _authClient = mod.authClient;
-  }
-  return _authClient;
-}
+import { getAuthClient } from '../../lib/auth';
+import { roleLabel } from '../../lib/labels';
 
 // --- Permission definitions ---
 
@@ -181,20 +173,6 @@ function matchesStandardRole(permissions: Record<string, string[]>): string | nu
     if (matches) return roleName;
   }
   return null;
-}
-
-/** Map a role value to a display label. */
-function roleLabel(role: string | null): string {
-  switch (role) {
-    case 'owner':
-      return 'Owner';
-    case 'manager':
-      return 'Store Manager';
-    case 'member':
-      return 'Employee';
-    default:
-      return 'Custom';
-  }
 }
 
 @customElement('ogs-settings-user-edit-page')
@@ -973,7 +951,7 @@ export class OgsSettingsUserEditPage extends LitElement {
                   base role.
                 </p>`
               : html`<p class="override-description">
-                  Using default permissions for the ${roleLabel(this.selectedBaseRole)} role.
+                  Using default permissions for the ${roleLabel(this.selectedBaseRole, 'Custom')} role.
                 </p>`}
           </div>
         </wa-card>

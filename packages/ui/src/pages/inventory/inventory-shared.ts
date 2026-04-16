@@ -8,6 +8,7 @@ import {
 } from '../../graphql/graphql.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 export { formatCurrency };
+export { debounce } from '../../lib/debounce';
 
 // --- GraphQL Operations ---
 
@@ -294,18 +295,6 @@ export interface BulkEditForm {
   costBasis: number | null;
   acquisitionDate: string;
   notes: string;
-}
-
-// --- Debounce utility ---
-
-// biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-export function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  // biome-ignore lint/suspicious/noExplicitAny: debounce needs flexible typing
-  return ((...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
 }
 
 // --- Shared CSS Styles ---

@@ -2,8 +2,7 @@ name: Daily Release Management - TCG Data Database
 
 on:
   schedule:
-    # Run daily at 6 AM Eastern Time (UTC-4)
-    # 9 PM Eastern = 21 PM UTC
+    # Run daily at 9 PM UTC (5 PM EDT / 4 PM EST)
     - cron: '0 21 * * *'
   workflow_dispatch: # Allow manual triggering
 
@@ -71,7 +70,7 @@ jobs:
             -o ./sqlite-data/tcg-data.sqlite
 
       - name: Run database migrations
-        run: pnpm run --filter=api db:migrate:tcg-data
+        run: pnpm --filter @open-tcgs/api db:migrate:tcg-data
 
       - name: Populate database
         run: ./scripts/populate-tcg-data.ts

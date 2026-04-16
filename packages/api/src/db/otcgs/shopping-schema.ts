@@ -23,7 +23,7 @@ export const cartItem = sqliteTable(
       name: 'cart_item_inventory_item_id_fkey',
     }),
     unique('cart_item_inventory_item_uniq').on(table.cartId, table.inventoryItemId),
-    index('cart_item_id_idx').on(table.id),
+    // Removed redundant index on primary key: index('cart_item_id_idx').on(table.id)
     index('cart_item_inventory_item_id_idx').on(table.inventoryItemId),
   ],
 );
@@ -51,7 +51,7 @@ export const cart = sqliteTable(
       name: 'cart_user_id_fkey',
     }).onDelete('cascade'),
     unique('cart_user_org_uniq').on(table.userId, table.organizationId),
-    index('cart_id_idx').on(table.id),
+    // Removed redundant index on primary key: index('cart_id_idx').on(table.id)
     index('cart_org_id_idx').on(table.organizationId),
     index('cart_user_id_idx').on(table.userId),
     index('cart_created_at_idx').on(table.createdAt),

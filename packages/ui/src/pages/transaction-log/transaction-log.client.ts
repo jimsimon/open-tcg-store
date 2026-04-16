@@ -17,6 +17,7 @@ import { execute } from '../../lib/graphql.ts';
 import { TypedDocumentString } from '../../graphql/graphql.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { debounce } from '../../lib/debounce';
 
 // --- Types ---
 
@@ -119,14 +120,6 @@ function formatDetails(detailsJson: string): string {
   } catch {
     return detailsJson;
   }
-}
-
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
 }
 
 @customElement('ogs-transaction-log-page')
@@ -608,11 +601,11 @@ export class OgsTransactionLogPage extends LitElement {
           <table class="wa-table">
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Resource Type</th>
-                <th>Details</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">User</th>
+                <th scope="col">Action</th>
+                <th scope="col">Resource Type</th>
+                <th scope="col">Details</th>
               </tr>
             </thead>
             <tbody>

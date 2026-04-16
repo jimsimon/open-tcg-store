@@ -3,6 +3,7 @@ import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
+import { formatDate, todayDateString } from '../lib/date-utils';
 import type {
   InventoryItem,
   InventoryPage,
@@ -21,15 +22,6 @@ import type {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatDate(d: Date | null | undefined): string | null {
-  return d ? d.toISOString() : null;
-}
-
-/** Return today's date as YYYY-MM-DD. */
-function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** Condition to filter out soft-deleted stock entries */
 function stockNotDeleted() {

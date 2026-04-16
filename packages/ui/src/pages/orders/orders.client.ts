@@ -22,6 +22,7 @@ import { TypedDocumentString } from '../../graphql/graphql.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { debounce } from '../../lib/debounce';
 
 // --- Types ---
 
@@ -165,16 +166,6 @@ const UpdateOrderStatusMutation = new TypedDocumentString(`
   },
   { orderId: number; status: string }
 >;
-
-// --- Helpers ---
-
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  }) as unknown as T;
-}
 
 @customElement('ogs-orders-page')
 export class OrdersPage extends LitElement {
@@ -925,15 +916,15 @@ export class OrdersPage extends LitElement {
             <thead>
               <tr>
                 <th style="width: 30px;"></th>
-                <th>Order #</th>
-                <th>Customer</th>
-                <th>Items</th>
-                <th class="price-cell">Total</th>
-                <th class="price-cell">Cost</th>
-                <th class="price-cell">Profit</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
+                <th scope="col">Order #</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Items</th>
+                <th scope="col" class="price-cell">Total</th>
+                <th scope="col" class="price-cell">Cost</th>
+                <th scope="col" class="price-cell">Profit</th>
+                <th scope="col">Status</th>
+                <th scope="col">Date</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1049,14 +1040,14 @@ export class OrdersPage extends LitElement {
                   <table class="order-items-table">
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Condition</th>
-                        <th class="price-cell">Unit Price</th>
-                        <th class="price-cell">Cost Basis</th>
-                        <th class="price-cell">Qty</th>
-                        <th class="price-cell">Subtotal</th>
-                        <th class="price-cell">Profit</th>
-                        <th>Lot</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Condition</th>
+                        <th scope="col" class="price-cell">Unit Price</th>
+                        <th scope="col" class="price-cell">Cost Basis</th>
+                        <th scope="col" class="price-cell">Qty</th>
+                        <th scope="col" class="price-cell">Subtotal</th>
+                        <th scope="col" class="price-cell">Profit</th>
+                        <th scope="col">Lot</th>
                       </tr>
                     </thead>
                     <tbody>

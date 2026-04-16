@@ -1,29 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ---------------------------------------------------------------------------
-// Mock helpers
-// ---------------------------------------------------------------------------
-
-function chainable(rows: unknown[] = []) {
-  const chain = Object.assign(Promise.resolve(rows), {} as Record<string, unknown>);
-  for (const method of [
-    'select',
-    'from',
-    'where',
-    'limit',
-    'offset',
-    'insert',
-    'update',
-    'delete',
-    'set',
-    'values',
-    'returning',
-    'onConflictDoUpdate',
-  ]) {
-    chain[method] = vi.fn().mockReturnValue(chain);
-  }
-  return chain;
-}
+import { chainable } from '../test-utils';
 
 // ---------------------------------------------------------------------------
 // Mocks

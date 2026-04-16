@@ -1,6 +1,7 @@
 import { and, eq, sql, like, or, desc } from 'drizzle-orm';
 import { otcgs, transactionLog } from '../db';
 import { user } from '../db/otcgs/auth-schema';
+import { safeISOString } from '../lib/date-utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,29 +41,6 @@ interface TransactionLogFilters {
   searchTerm?: string | null;
   action?: string | null;
   resourceType?: string | null;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function safeISOString(value: unknown): string {
-  if (!value) return new Date().toISOString();
-  if (value instanceof Date) {
-    try {
-      return value.toISOString();
-    } catch {
-      return new Date().toISOString();
-    }
-  }
-  if (typeof value === 'string') {
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-  }
-  if (typeof value === 'number') {
-    return new Date(value * 1000).toISOString();
-  }
-  return new Date().toISOString();
 }
 
 // ---------------------------------------------------------------------------

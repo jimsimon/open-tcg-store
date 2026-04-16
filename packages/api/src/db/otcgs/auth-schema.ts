@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
@@ -108,7 +108,8 @@ export const organization = sqliteTable(
     zip: text('zip').notNull(),
     phone: text('phone'),
   },
-  (table) => [uniqueIndex('organization_slug_uidx').on(table.slug)],
+  // Removed duplicate uniqueIndex — slug already has .unique() constraint inline
+  () => [],
 );
 
 export const organizationRole = sqliteTable(

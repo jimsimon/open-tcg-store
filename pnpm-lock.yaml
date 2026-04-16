@@ -86,9 +86,6 @@ importers:
       onedrive-api:
         specifier: ^1.1.1
         version: 1.1.1
-      pg:
-        specifier: 8.20.0
-        version: 8.20.0
       ruru:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@24.3.1)(@types/react@19.1.12)(graphile-config@0.0.1-beta.18)(graphql-ws@6.0.8(graphql@16.13.2)(ws@8.20.0))(graphql@16.13.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
@@ -138,9 +135,6 @@ importers:
       '@types/koa__router':
         specifier: ^12.0.5
         version: 12.0.5
-      '@types/pg':
-        specifier: 8.20.0
-        version: 8.20.0
       '@types/simple-oauth2':
         specifier: ^5.0.8
         version: 5.0.8

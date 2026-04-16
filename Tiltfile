@@ -12,6 +12,6 @@ local_resource(
 
 local_resource(
     "Nginx Proxy",
-    serve_cmd="docker rm -f otcgs-nginx 2>/dev/null; docker run --rm --name otcgs-nginx --add-host=host.docker.internal:host-gateway -v $PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -p 80:80 nginx:alpine",
+    serve_cmd="docker rm -f otcgs-nginx 2>/dev/null; docker run --rm --name otcgs-nginx --add-host=host.docker.internal:host-gateway -v $PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -p 80:80 nginx:1.27-alpine",
     resource_deps=['UI Server', 'API Server']
 )

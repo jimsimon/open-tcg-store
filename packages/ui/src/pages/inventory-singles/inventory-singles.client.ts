@@ -561,14 +561,14 @@ export class OgsInventorySinglesPage extends LitElement {
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Game</th>
-                <th>Set</th>
-                <th>Rarity</th>
-                <th>Condition</th>
-                <th class="quantity-cell" style="width: 60px;">Qty</th>
-                <th class="price-cell" style="width: 120px;">Price</th>
-                <th class="quantity-cell" style="width: 80px;">Entries</th>
+                <th scope="col">Product</th>
+                <th scope="col">Game</th>
+                <th scope="col">Set</th>
+                <th scope="col">Rarity</th>
+                <th scope="col">Condition</th>
+                <th scope="col" class="quantity-cell" style="width: 60px;">Qty</th>
+                <th scope="col" class="price-cell" style="width: 120px;">Price</th>
+                <th scope="col" class="quantity-cell" style="width: 80px;">Entries</th>
               </tr>
             </thead>
             <tbody>

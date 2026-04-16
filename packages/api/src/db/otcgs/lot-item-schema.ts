@@ -12,7 +12,7 @@ export const lotItem = sqliteTable(
     condition: text('condition'), // NM, LP, MP, HP, D — only for singles
     quantity: integer('quantity').notNull(),
     costBasis: integer('cost_basis').notNull(), // cents
-    costOverridden: integer('cost_overridden').notNull().default(0), // boolean
+    costOverridden: integer('cost_overridden', { mode: 'boolean' }).notNull().default(false),
     inventoryItemStockId: integer('inventory_item_stock_id'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

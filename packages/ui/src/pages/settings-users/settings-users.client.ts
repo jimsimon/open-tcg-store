@@ -15,19 +15,11 @@ import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { activeStoreId } from '../../lib/store-context';
+import { getAuthClient } from '../../lib/auth';
+import { roleLabel } from '../../lib/labels';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
-}
-
-// Lazy-load authClient to avoid SSR issues
-let _authClient: typeof import('../../auth-client').authClient | undefined;
-async function getAuthClient() {
-  if (!_authClient) {
-    const mod = await import('../../auth-client');
-    _authClient = mod.authClient;
-  }
-  return _authClient;
 }
 
 // --- Types ---
@@ -43,22 +35,6 @@ interface OrgMember {
     email: string;
     image: string | null;
   };
-}
-
-// --- Helpers ---
-
-/** Map a role value to a display label. */
-function roleLabel(role: string | null): string {
-  switch (role) {
-    case 'owner':
-      return 'Owner';
-    case 'manager':
-      return 'Store Manager';
-    case 'member':
-      return 'Employee';
-    default:
-      return role ?? 'Unknown';
-  }
 }
 
 /** Map a role value to a badge variant. */
@@ -713,10 +689,10 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
                 <table class="wa-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Actions</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Email</th>
+                      <th scope="col">Role</th>
+                      <th scope="col">Actions</th>
                     </tr>
                   </thead>
                   <tbody>

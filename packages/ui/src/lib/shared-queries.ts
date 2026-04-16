@@ -20,3 +20,36 @@ export const GetSupportedGamesQuery = new TypedDocumentString(`
   },
   Record<string, never>
 >;
+
+export interface CartItemResult {
+  inventoryItemId: number;
+  productId: number;
+  productName: string;
+  condition: string;
+  quantity: number;
+  unitPrice: number;
+  maxAvailable: number;
+}
+
+export const AddToCartMutation = new TypedDocumentString(`
+  mutation AddToCart($cartItem: CartItemInput!) {
+    addToCart(cartItem: $cartItem) {
+      items {
+        inventoryItemId
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        maxAvailable
+      }
+    }
+  }
+`) as unknown as TypedDocumentString<
+  {
+    addToCart: {
+      items: CartItemResult[];
+    };
+  },
+  { cartItem: { inventoryItemId: number; quantity: number } }
+>;

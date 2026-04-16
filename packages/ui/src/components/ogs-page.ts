@@ -39,16 +39,7 @@ import {
   setActiveStoreCookie,
   type StoreInfo,
 } from '../lib/store-context';
-
-// Lazy-load authClient to avoid potential SSR issues
-let _authClient: typeof import('../auth-client').authClient | undefined;
-async function getAuthClient() {
-  if (!_authClient) {
-    const mod = await import('../auth-client');
-    _authClient = mod.authClient;
-  }
-  return _authClient;
-}
+import { getAuthClient } from '../lib/auth';
 
 // --- GraphQL Mutations for Cart ---
 
@@ -751,7 +742,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         ${when(
           !this.hideNav,
           () => html`
-            <nav>
+            <nav aria-label="Main navigation">
               <div class="nav-section-label">Shop</div>
               ${this.renderNavLink('/products/singles', 'bag-shopping', 'Browse', 'products')}
               ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
@@ -1363,13 +1354,21 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
   private renderNavLink(href: string, icon: string, label: string, activationKey: string) {
     const isActive = this.activePage === activationKey || (this.activePage?.startsWith(activationKey + '/') ?? false);
-    return html`<a class="nav-link" href="${href}" ?current="${isActive}">
+    return html`<a class="nav-link" href="${href}" ?current="${isActive}" aria-current="${isActive ? 'page' : nothing}">
       <wa-icon name="${icon}" variant="solid"></wa-icon>
       ${label}
     </a>`;
   }
 
   private renderNavSubLink(href: string, label: string, activationKey: string) {
-    return html`<a class="nav-sub-link" href="${href}" ?current="${this.activePage === activationKey}"> ${label} </a>`;
+    const isActive = this.activePage === activationKey;
+    return html`<a
+      class="nav-sub-link"
+      href="${href}"
+      ?current="${isActive}"
+      aria-current="${isActive ? 'page' : nothing}"
+    >
+      ${label}
+    </a>`;
   }
 }
