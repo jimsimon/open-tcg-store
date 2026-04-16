@@ -19,7 +19,8 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
+import type { CreateLotInput, UpdateLotInput } from '../../graphql/graphql.ts';
 import { formatCurrency, centsToInputValue, inputValueToCents } from '../../lib/currency';
 import { debounce } from '../../lib/debounce';
 
@@ -27,84 +28,72 @@ import { debounce } from '../../lib/debounce';
 // GraphQL
 // ---------------------------------------------------------------------------
 
-const SearchProductsQuery = new TypedDocumentString(`
+const SearchProductsQuery = graphql(`
   query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {
     searchProducts(searchTerm: $searchTerm, isSingle: $isSingle, isSealed: $isSealed) {
-      id name gameName setName rarity imageUrl isSingle isSealed
-      prices { subTypeName marketPrice midPrice }
+      id
+      name
+      gameName
+      setName
+      rarity
+      imageUrl
+      isSingle
+      isSealed
+      prices {
+        subTypeName
+        marketPrice
+        midPrice
+      }
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    searchProducts: Array<{
-      id: number;
-      name: string;
-      gameName: string;
-      setName: string;
-      rarity: string | null;
-      imageUrl: string | null;
-      isSingle: boolean;
-      isSealed: boolean;
-      prices: Array<{ subTypeName: string; marketPrice: number | null; midPrice: number | null }>;
-    }>;
-  },
-  { searchTerm: string; isSingle?: boolean | null; isSealed?: boolean | null }
->;
+`);
 
-const GetLotQuery = new TypedDocumentString(`
+const GetLotQuery = graphql(`
   query GetLot($id: Int!) {
     getLot(id: $id) {
-      id name description amountPaid acquisitionDate
+      id
+      name
+      description
+      amountPaid
+      acquisitionDate
       items {
-        id productId productName gameName setName rarity isSingle isSealed
-        condition quantity costBasis costOverridden marketValue
+        id
+        productId
+        productName
+        gameName
+        setName
+        rarity
+        isSingle
+        isSealed
+        condition
+        quantity
+        costBasis
+        costOverridden
+        marketValue
       }
-      totalMarketValue totalCost projectedProfitLoss projectedProfitMargin
+      totalMarketValue
+      totalCost
+      projectedProfitLoss
+      projectedProfitMargin
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getLot: {
-      id: number;
-      name: string;
-      description: string | null;
-      amountPaid: number;
-      acquisitionDate: string;
-      items: Array<{
-        id: number;
-        productId: number;
-        productName: string;
-        gameName: string;
-        setName: string;
-        rarity: string | null;
-        isSingle: boolean;
-        isSealed: boolean;
-        condition: string | null;
-        quantity: number;
-        costBasis: number;
-        costOverridden: boolean;
-        marketValue: number | null;
-      }>;
-      totalMarketValue: number;
-      totalCost: number;
-      projectedProfitLoss: number;
-      projectedProfitMargin: number;
-    } | null;
-  },
-  { id: number }
->;
+`);
 
-const CreateLotMutation = new TypedDocumentString(`
+const CreateLotMutation = graphql(`
   mutation CreateLot($input: CreateLotInput!) {
-    createLot(input: $input) { id }
+    createLot(input: $input) {
+      id
+    }
   }
-`) as unknown as TypedDocumentString<{ createLot: { id: number } }, { input: unknown }>;
+`);
 
-const UpdateLotMutation = new TypedDocumentString(`
+const UpdateLotMutation = graphql(`
   mutation UpdateLot($input: UpdateLotInput!) {
-    updateLot(input: $input) { id }
+    updateLot(input: $input) {
+      id
+    }
   }
-`) as unknown as TypedDocumentString<{ updateLot: { id: number } }, { input: unknown }>;
+`);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -429,7 +418,7 @@ export class OgsLotPage extends LitElement {
           productName: item.productName,
           gameName: item.gameName,
           setName: item.setName,
-          rarity: item.rarity,
+          rarity: item.rarity as string | null,
           isSingle: item.isSingle,
           condition: item.condition ?? 'NM',
           quantity: item.quantity,
@@ -584,7 +573,11 @@ export class OgsLotPage extends LitElement {
       const latestItems = isSingle ? this.singlesItems : this.sealedItems;
       const latestIdx = latestItems.findIndex((i) => i.clientId === clientId);
       if (latestIdx !== -1) {
-        latestItems[latestIdx] = { ...latestItems[latestIdx], searching: false, searchResults: mapped };
+        latestItems[latestIdx] = {
+          ...latestItems[latestIdx],
+          searching: false,
+          searchResults: mapped as LotItemRow['searchResults'],
+        };
         if (isSingle) this.singlesItems = [...latestItems];
         else this.sealedItems = [...latestItems];
       }
@@ -710,9 +703,9 @@ export class OgsLotPage extends LitElement {
 
     try {
       if (this.isEditMode) {
-        await execute(UpdateLotMutation, { input });
+        await execute(UpdateLotMutation, { input: input as UpdateLotInput });
       } else {
-        await execute(CreateLotMutation, { input });
+        await execute(CreateLotMutation, { input: input as CreateLotInput });
       }
       window.location.href = '/lots';
     } catch (e) {

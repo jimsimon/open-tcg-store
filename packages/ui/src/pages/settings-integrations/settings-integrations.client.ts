@@ -13,42 +13,42 @@ import '@awesome.me/webawesome/dist/components/card/card.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
 
-const GetIntegrationSettingsQuery = new TypedDocumentString(`
+const GetIntegrationSettingsQuery = graphql(`
   query GetIntegrationSettings {
     getIntegrationSettings {
-      stripe { enabled hasApiKey }
-      shopify { enabled hasApiKey shopDomain }
+      stripe {
+        enabled
+        hasApiKey
+      }
+      shopify {
+        enabled
+        hasApiKey
+        shopDomain
+      }
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getIntegrationSettings: {
-      stripe: { enabled: boolean; hasApiKey: boolean };
-      shopify: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null };
-    };
-  },
-  Record<string, never>
->;
+`);
 
-const UpdateStripeMutation = new TypedDocumentString(`
+const UpdateStripeMutation = graphql(`
   mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {
-    updateStripeIntegration(input: $input) { enabled hasApiKey }
+    updateStripeIntegration(input: $input) {
+      enabled
+      hasApiKey
+    }
   }
-`) as unknown as TypedDocumentString<
-  { updateStripeIntegration: { enabled: boolean; hasApiKey: boolean } },
-  { input: { enabled?: boolean; apiKey?: string } }
->;
+`);
 
-const UpdateShopifyMutation = new TypedDocumentString(`
+const UpdateShopifyMutation = graphql(`
   mutation UpdateShopifyIntegration($input: UpdateShopifyIntegrationInput!) {
-    updateShopifyIntegration(input: $input) { enabled hasApiKey shopDomain }
+    updateShopifyIntegration(input: $input) {
+      enabled
+      hasApiKey
+      shopDomain
+    }
   }
-`) as unknown as TypedDocumentString<
-  { updateShopifyIntegration: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null } },
-  { input: { enabled?: boolean; apiKey?: string; shopDomain?: string } }
->;
+`);
 
 @customElement('ogs-settings-integrations-page')
 export class OgsSettingsIntegrationsPage extends LitElement {

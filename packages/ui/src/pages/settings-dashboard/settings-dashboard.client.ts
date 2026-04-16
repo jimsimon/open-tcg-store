@@ -13,7 +13,8 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import '../../components/ogs-page.ts';
 import '../../components/ogs-chart.ts';
 import { execute } from '../../lib/graphql.ts';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
+import { BestSellerSortBy } from '../../graphql/graphql.ts';
 import { activeStoreId } from '../../lib/store-context.ts';
 import type { ChartData } from 'chart.js';
 import { formatCurrency } from '../../lib/currency.ts';
@@ -71,7 +72,7 @@ interface OrderStatusBreakdown {
 // GraphQL Queries
 // ---------------------------------------------------------------------------
 
-const GetDashboardSalesQuery = new TypedDocumentString(`
+const GetDashboardSalesQuery = graphql(`
   query GetDashboardSales($organizationId: String!, $dateRange: DashboardDateRange!) {
     getDashboardSales(organizationId: $organizationId, dateRange: $dateRange) {
       summary {
@@ -91,13 +92,15 @@ const GetDashboardSalesQuery = new TypedDocumentString(`
       granularity
     }
   }
-`) as unknown as TypedDocumentString<
-  { getDashboardSales: SalesBreakdown },
-  { organizationId: string; dateRange: { startDate: string; endDate: string } }
->;
+`);
 
-const GetDashboardBestSellersQuery = new TypedDocumentString(`
-  query GetDashboardBestSellers($organizationId: String!, $dateRange: DashboardDateRange!, $sortBy: String!, $limit: Int) {
+const GetDashboardBestSellersQuery = graphql(`
+  query GetDashboardBestSellers(
+    $organizationId: String!
+    $dateRange: DashboardDateRange!
+    $sortBy: BestSellerSortBy!
+    $limit: Int
+  ) {
     getDashboardBestSellers(organizationId: $organizationId, dateRange: $dateRange, sortBy: $sortBy, limit: $limit) {
       productId
       productName
@@ -105,12 +108,9 @@ const GetDashboardBestSellersQuery = new TypedDocumentString(`
       totalRevenue
     }
   }
-`) as unknown as TypedDocumentString<
-  { getDashboardBestSellers: BestSeller[] },
-  { organizationId: string; dateRange: { startDate: string; endDate: string }; sortBy: string; limit?: number }
->;
+`);
 
-const GetDashboardInventorySummaryQuery = new TypedDocumentString(`
+const GetDashboardInventorySummaryQuery = graphql(`
   query GetDashboardInventorySummary($organizationId: String!) {
     getDashboardInventorySummary(organizationId: $organizationId) {
       totalSkus
@@ -119,9 +119,9 @@ const GetDashboardInventorySummaryQuery = new TypedDocumentString(`
       totalRetailValue
     }
   }
-`) as unknown as TypedDocumentString<{ getDashboardInventorySummary: InventorySummary }, { organizationId: string }>;
+`);
 
-const GetDashboardOrderStatusQuery = new TypedDocumentString(`
+const GetDashboardOrderStatusQuery = graphql(`
   query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {
     getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {
       open
@@ -130,10 +130,7 @@ const GetDashboardOrderStatusQuery = new TypedDocumentString(`
       total
     }
   }
-`) as unknown as TypedDocumentString<
-  { getDashboardOrderStatus: OrderStatusBreakdown },
-  { organizationId: string; dateRange: { startDate: string; endDate: string } }
->;
+`);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -258,7 +255,7 @@ export class SettingsDashboardPage extends LitElement {
         execute(GetDashboardBestSellersQuery, {
           organizationId: orgId,
           dateRange,
-          sortBy: this.bestSellerSort,
+          sortBy: this.bestSellerSort as BestSellerSortBy,
           limit: 10,
         }),
         execute(GetDashboardInventorySummaryQuery, { organizationId: orgId }),
@@ -308,7 +305,7 @@ export class SettingsDashboardPage extends LitElement {
         execute(GetDashboardBestSellersQuery, {
           organizationId: orgId,
           dateRange,
-          sortBy: this.bestSellerSort,
+          sortBy: this.bestSellerSort as BestSellerSortBy,
           limit: 10,
         }),
         execute(GetDashboardOrderStatusQuery, { organizationId: orgId, dateRange }),
@@ -337,7 +334,7 @@ export class SettingsDashboardPage extends LitElement {
       const result = await execute(GetDashboardBestSellersQuery, {
         organizationId: orgId,
         dateRange,
-        sortBy: this.bestSellerSort,
+        sortBy: this.bestSellerSort as BestSellerSortBy,
         limit: 10,
       });
       if (result.data) this.bestSellers = result.data.getDashboardBestSellers;
@@ -366,7 +363,7 @@ export class SettingsDashboardPage extends LitElement {
         execute(GetDashboardBestSellersQuery, {
           organizationId: orgId,
           dateRange,
-          sortBy: this.bestSellerSort,
+          sortBy: this.bestSellerSort as BestSellerSortBy,
           limit: 10,
         }),
         execute(GetDashboardInventorySummaryQuery, { organizationId: orgId }),

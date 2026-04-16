@@ -16,6 +16,7 @@ import { execute } from '../../lib/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { CardCondition } from '../../graphql/graphql.ts';
 import {
   type AddForm,
   type InventoryItem,
@@ -185,7 +186,7 @@ export class OgsInventorySealedPage extends LitElement {
         this.error = result.errors.map((e) => e.message).join(', ');
       } else {
         const data = result.data.getInventory;
-        this.inventoryItems = data.items;
+        this.inventoryItems = data.items as InventoryItem[];
         this.totalCount = data.totalCount;
         this.totalPages = data.totalPages;
         this.currentPage = data.page;
@@ -334,7 +335,7 @@ export class OgsInventorySealedPage extends LitElement {
         const result = await execute(AddInventoryItemMutation, {
           input: {
             productId: this.selectedProduct!.id,
-            condition: this.addForm.condition,
+            condition: this.addForm.condition as CardCondition,
             quantity: this.addForm.quantity,
             price: this.addForm.price,
             costBasis: this.addForm.costBasis,

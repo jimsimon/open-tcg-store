@@ -13,7 +13,7 @@ import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql.ts';
-import { TypedDocumentString } from '../../graphql/graphql.ts';
+import { graphql } from '../../graphql/index.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { formatCurrency } from '../../lib/currency.ts';
 import { debounce } from '../../lib/debounce';
@@ -22,7 +22,7 @@ import { debounce } from '../../lib/debounce';
 // GraphQL Operations
 // ---------------------------------------------------------------------------
 
-const GetLotsQuery = new TypedDocumentString(`
+const GetLotsQuery = graphql(`
   query GetLots($filters: LotFilters, $pagination: PaginationInput) {
     getLots(filters: $filters, pagination: $pagination) {
       items {
@@ -36,7 +36,9 @@ const GetLotsQuery = new TypedDocumentString(`
         projectedProfitLoss
         projectedProfitMargin
         createdAt
-        items { id }
+        items {
+          id
+        }
       }
       totalCount
       page
@@ -44,38 +46,15 @@ const GetLotsQuery = new TypedDocumentString(`
       totalPages
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getLots: {
-      items: Array<{
-        id: number;
-        name: string;
-        description: string | null;
-        amountPaid: number;
-        acquisitionDate: string;
-        totalMarketValue: number;
-        totalCost: number;
-        projectedProfitLoss: number;
-        projectedProfitMargin: number;
-        createdAt: string;
-        items: Array<{ id: number }>;
-      }>;
-      totalCount: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  },
-  { filters?: { searchTerm?: string } | null; pagination?: { page?: number; pageSize?: number } | null }
->;
+`);
 
-const DeleteLotMutation = new TypedDocumentString(`
+const DeleteLotMutation = graphql(`
   mutation DeleteLot($id: Int!) {
     deleteLot(id: $id)
   }
-`) as unknown as TypedDocumentString<{ deleteLot: boolean }, { id: number }>;
+`);
 
-const GetLotStatsQuery = new TypedDocumentString(`
+const GetLotStatsQuery = graphql(`
   query GetLotStats {
     getLotStats {
       totalLots
@@ -84,17 +63,7 @@ const GetLotStatsQuery = new TypedDocumentString(`
       totalProfitLoss
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getLotStats: {
-      totalLots: number;
-      totalInvested: number;
-      totalMarketValue: number;
-      totalProfitLoss: number;
-    };
-  },
-  Record<string, never>
->;
+`);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -546,7 +515,7 @@ export class OgsLotsPage extends LitElement {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else if (result?.data?.getLots) {
         const data = result.data.getLots;
-        this.lots = data.items.map((l) => ({ ...l, itemCount: l.items.length }));
+        this.lots = data.items.map((l) => ({ ...l, itemCount: l.items.length })) as LotSummary[];
         this.totalPages = data.totalPages;
         this.totalCount = data.totalCount;
         this.currentPage = data.page;

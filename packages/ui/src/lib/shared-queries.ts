@@ -1,12 +1,6 @@
-import { TypedDocumentString } from '../graphql/graphql';
+import { graphql } from '../graphql/index.ts';
 
-export interface SupportedGame {
-  categoryId: number;
-  name: string;
-  displayName: string;
-}
-
-export const GetSupportedGamesQuery = new TypedDocumentString(`
+export const GetSupportedGamesQuery = graphql(`
   query GetSupportedGames {
     getSupportedGames {
       categoryId
@@ -14,24 +8,9 @@ export const GetSupportedGamesQuery = new TypedDocumentString(`
       displayName
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getSupportedGames: Array<SupportedGame>;
-  },
-  Record<string, never>
->;
+`);
 
-export interface CartItemResult {
-  inventoryItemId: number;
-  productId: number;
-  productName: string;
-  condition: string;
-  quantity: number;
-  unitPrice: number;
-  maxAvailable: number;
-}
-
-export const AddToCartMutation = new TypedDocumentString(`
+export const AddToCartMutation = graphql(`
   mutation AddToCart($cartItem: CartItemInput!) {
     addToCart(cartItem: $cartItem) {
       items {
@@ -45,11 +24,4 @@ export const AddToCartMutation = new TypedDocumentString(`
       }
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    addToCart: {
-      items: CartItemResult[];
-    };
-  },
-  { cartItem: { inventoryItemId: number; quantity: number } }
->;
+`);

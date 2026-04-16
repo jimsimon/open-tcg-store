@@ -140,7 +140,7 @@ export class OgsInventoryDetailPage extends LitElement {
       if (parentResult?.errors?.length) {
         this.error = parentResult.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        this.parentItem = parentResult.data.getInventoryItem;
+        this.parentItem = parentResult.data.getInventoryItem as InventoryItem | null;
       }
 
       if (stockResult?.errors?.length) {

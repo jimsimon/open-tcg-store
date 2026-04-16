@@ -15,13 +15,14 @@ import '@awesome.me/webawesome/dist/components/details/details.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
-import { TypedDocumentString } from '../../graphql/graphql';
+import { graphql } from '../../graphql/index.ts';
+import { BackupProvider } from '../../graphql/graphql.ts';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
 }
 
-const GetBackupSettingsQuery = new TypedDocumentString(`
+const GetBackupSettingsQuery = graphql(`
   query GetBackupSettings {
     getBackupSettings {
       provider
@@ -32,21 +33,9 @@ const GetBackupSettingsQuery = new TypedDocumentString(`
       onedriveConnected
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    getBackupSettings: {
-      provider: string | null;
-      frequency: string | null;
-      lastBackupAt: string | null;
-      googleDriveConnected: boolean;
-      dropboxConnected: boolean;
-      onedriveConnected: boolean;
-    };
-  },
-  Record<string, never>
->;
+`);
 
-const UpdateBackupSettingsMutation = new TypedDocumentString(`
+const UpdateBackupSettingsMutation = graphql(`
   mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {
     updateBackupSettings(input: $input) {
       provider
@@ -57,21 +46,9 @@ const UpdateBackupSettingsMutation = new TypedDocumentString(`
       onedriveConnected
     }
   }
-`) as unknown as TypedDocumentString<
-  {
-    updateBackupSettings: {
-      provider: string | null;
-      frequency: string | null;
-      lastBackupAt: string | null;
-      googleDriveConnected: boolean;
-      dropboxConnected: boolean;
-      onedriveConnected: boolean;
-    };
-  },
-  { input: { provider?: string; frequency?: string } }
->;
+`);
 
-const TriggerBackupMutation = new TypedDocumentString(`
+const TriggerBackupMutation = graphql(`
   mutation TriggerBackup {
     triggerBackup {
       success
@@ -79,22 +56,16 @@ const TriggerBackupMutation = new TypedDocumentString(`
       timestamp
     }
   }
-`) as unknown as TypedDocumentString<
-  { triggerBackup: { success: boolean; message: string | null; timestamp: string | null } },
-  Record<string, never>
->;
+`);
 
-const TriggerRestoreMutation = new TypedDocumentString(`
-  mutation TriggerRestore($provider: String!) {
+const TriggerRestoreMutation = graphql(`
+  mutation TriggerRestore($provider: BackupProvider!) {
     triggerRestore(provider: $provider) {
       success
       message
     }
   }
-`) as unknown as TypedDocumentString<
-  { triggerRestore: { success: boolean; message: string | null } },
-  { provider: string }
->;
+`);
 
 interface ProviderConfig {
   name: string;
@@ -465,7 +436,7 @@ export class OgsSettingsBackupPage extends LitElement {
         const s = result.data.getBackupSettings;
         this.provider = s.provider ?? '';
         this.frequency = s.frequency ?? '';
-        this.lastBackupAt = s.lastBackupAt;
+        this.lastBackupAt = s.lastBackupAt as string | null;
         this.connectedProviders = {
           ...this.connectedProviders,
           ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
@@ -484,7 +455,7 @@ export class OgsSettingsBackupPage extends LitElement {
     this.errorMessage = '';
     try {
       const result = await execute(UpdateBackupSettingsMutation, {
-        input: { provider: this.provider, frequency: this.frequency },
+        input: { provider: this.provider as BackupProvider, frequency: this.frequency },
       });
       if (result?.errors?.length) {
         this.errorMessage = result.errors.map((e: { message: string }) => e.message).join(', ');
@@ -509,7 +480,7 @@ export class OgsSettingsBackupPage extends LitElement {
       const result = await execute(TriggerBackupMutation);
       if (result?.data?.triggerBackup?.success) {
         this.successMessage = result.data.triggerBackup.message ?? 'Backup completed';
-        this.lastBackupAt = result.data.triggerBackup.timestamp;
+        this.lastBackupAt = result.data.triggerBackup.timestamp as string | null;
       } else {
         this.errorMessage = result?.data?.triggerBackup?.message ?? 'Backup failed';
       }
@@ -526,7 +497,7 @@ export class OgsSettingsBackupPage extends LitElement {
     this.successMessage = '';
     this.errorMessage = '';
     try {
-      const result = await execute(TriggerRestoreMutation, { provider: this.provider });
+      const result = await execute(TriggerRestoreMutation, { provider: this.provider as BackupProvider });
       if (result?.data?.triggerRestore?.success) {
         this.successMessage =
           result.data.triggerRestore.message ?? 'Restore completed. Please restart the application.';
