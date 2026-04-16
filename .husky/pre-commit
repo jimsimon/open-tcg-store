@@ -1,5 +1,4 @@
 pnpm graphql:generate
-git add packages/api/src/schema/ packages/ui/src/graphql/
 
 # Auto-generate migrations if schema files changed
 if git diff --cached --name-only | grep -qE 'packages/api/src/db/otcgs/(.*-)?schema\.ts'; then
@@ -13,3 +12,7 @@ if git diff --cached --name-only | grep -qE 'packages/api/src/db/tcg-data/(.*-)?
 fi
 
 pnpm exec lint-staged
+
+# Stage generated files after lint-staged so they don't trip format/lint on
+# auto-generated code that is excluded by ignore rules.
+git add packages/api/src/schema/ packages/ui/src/graphql/

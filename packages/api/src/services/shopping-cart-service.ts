@@ -1,6 +1,6 @@
 import { and, sql, eq, isNull, inArray } from 'drizzle-orm';
 import { cart, cartItem, otcgs, inventoryItemStock } from '../db';
-import type { CartItemOutput } from '../schema/types.generated';
+import type { CardCondition, CartItemOutput } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Cart retrieval / creation
@@ -85,7 +85,7 @@ export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof g
       inventoryItemId: ci.inventoryItemId,
       productId: inv.product.id,
       productName: inv.product.name,
-      condition: inv.condition,
+      condition: inv.condition as CardCondition,
       quantity: ci.quantity,
       unitPrice: inv.price,
       maxAvailable: stockMap.get(inv.id) ?? 0,

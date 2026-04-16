@@ -1,5 +1,6 @@
 import { and, eq, sql, gte, lte, isNull, ne, count, sum, desc } from 'drizzle-orm';
 import { inventoryItem, inventoryItemStock, order, orderItem, otcgs } from '../db';
+import type { Granularity as GranularityType } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +25,7 @@ interface SalesDataPoint {
 interface SalesBreakdown {
   summary: SalesSummary;
   dataPoints: SalesDataPoint[];
-  granularity: string;
+  granularity: GranularityType;
 }
 
 interface BestSeller {

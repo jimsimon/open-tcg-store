@@ -1,6 +1,6 @@
 input AddInventoryItemInput {
   acquisitionDate: String!
-  condition: String!
+  condition: CardCondition!
   costBasis: Int!
   notes: String
   price: Int!
@@ -28,6 +28,12 @@ input AddStoreLocationInput {
   zip: String!
 }
 
+enum BackupProvider {
+  dropbox
+  google_drive
+  onedrive
+}
+
 type BackupResult {
   message: String
   success: Boolean!
@@ -40,7 +46,7 @@ type BackupSettings {
   googleDriveConnected: Boolean!
   lastBackupAt: String
   onedriveConnected: Boolean!
-  provider: String
+  provider: BackupProvider
 }
 
 type BestSeller {
@@ -48,6 +54,11 @@ type BestSeller {
   productName: String!
   totalQuantity: Int!
   totalRevenue: Int!
+}
+
+enum BestSellerSortBy {
+  quantity
+  revenue
 }
 
 input BulkDeleteStockInput {
@@ -70,7 +81,7 @@ type BuyRateEntry {
   percentageRate: Float
   rarity: String
   sortOrder: Int!
-  type: String!
+  type: BuyRateType!
 }
 
 input BuyRateEntryInput {
@@ -80,7 +91,7 @@ input BuyRateEntryInput {
   percentageRate: Float
   rarity: String
   sortOrder: Int!
-  type: String!
+  type: BuyRateType!
 }
 
 type BuyRateTable {
@@ -88,6 +99,11 @@ type BuyRateTable {
   entries: [BuyRateEntry!]!
   gameDisplayName: String!
   gameName: String!
+}
+
+enum BuyRateType {
+  fixed
+  percentage
 }
 
 type CancelOrderResult {
@@ -108,6 +124,14 @@ type Card {
   type: String
 }
 
+enum CardCondition {
+  D
+  HP
+  LP
+  MP
+  NM
+}
+
 type CardImages {
   large: String
   small: String
@@ -119,7 +143,7 @@ input CartItemInput {
 }
 
 type CartItemOutput {
-  condition: String!
+  condition: CardCondition!
   inventoryItemId: Int!
   maxAvailable: Int!
   productId: Int!
@@ -173,6 +197,12 @@ type DataUpdateStatus {
   updateAvailable: Boolean!
 }
 
+enum Granularity {
+  day
+  hour
+  month
+}
+
 input InitialStoreLocation {
   city: String!
   name: String!
@@ -186,7 +216,7 @@ input InitialStoreLocation {
 
 type InsufficientItem {
   available: Int!
-  condition: String!
+  condition: CardCondition!
   productId: Int!
   productName: String!
   requested: Int!
@@ -198,7 +228,7 @@ type IntegrationSettings {
 }
 
 input InventoryFilters {
-  condition: String
+  condition: CardCondition
   gameName: String
   includeSealed: Boolean
   includeSingles: Boolean
@@ -209,7 +239,7 @@ input InventoryFilters {
 }
 
 type InventoryItem {
-  condition: String!
+  condition: CardCondition!
   createdAt: String!
   entryCount: Int!
   gameName: String!
@@ -281,7 +311,7 @@ input LotFilters {
 }
 
 type LotItem {
-  condition: String
+  condition: CardCondition
   costBasis: Int!
   costOverridden: Boolean!
   gameName: String!
@@ -298,7 +328,7 @@ type LotItem {
 }
 
 input LotItemInput {
-  condition: String
+  condition: CardCondition
   costBasis: Int!
   costOverridden: Boolean!
   id: Int
@@ -356,12 +386,12 @@ type Mutation {
   submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
   triggerBackup: BackupResult!
   triggerDataUpdate: DataUpdateResult!
-  triggerRestore(provider: String!): RestoreResult!
+  triggerRestore(provider: BackupProvider!): RestoreResult!
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
   updateLot(input: UpdateLotInput!): Lot!
-  updateOrderStatus(orderId: Int!, status: String!): UpdateOrderStatusResult!
+  updateOrderStatus(orderId: Int!, status: OrderStatus!): UpdateOrderStatusResult!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   updateStock(input: UpdateStockInput!): InventoryItemStock!
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
@@ -385,7 +415,7 @@ type Order {
   items: [OrderItem!]!
   orderNumber: String!
   organizationId: String!
-  status: String!
+  status: OrderStatus!
   totalAmount: Int!
   totalCostBasis: Int
   totalProfit: Int
@@ -394,11 +424,11 @@ type Order {
 input OrderFilters {
   organizationId: String
   searchTerm: String
-  status: String
+  status: OrderStatus
 }
 
 type OrderItem {
-  condition: String!
+  condition: CardCondition!
   costBasis: Int
   id: Int!
   lotId: Int
@@ -417,6 +447,12 @@ type OrderPage {
   totalPages: Int!
 }
 
+enum OrderStatus {
+  cancelled
+  completed
+  open
+}
+
 type OrderStatusBreakdown {
   cancelled: Int!
   completed: Int!
@@ -430,7 +466,7 @@ input PaginationInput {
 }
 
 type ProductConditionPrice {
-  condition: String!
+  condition: CardCondition!
   inventoryItemId: Int!
   price: Int!
   quantity: Int!
@@ -453,7 +489,7 @@ type ProductDetail {
 }
 
 type ProductInventoryRecord {
-  condition: String!
+  condition: CardCondition!
   inventoryItemId: Int!
   price: Int!
   quantity: Int!
@@ -474,7 +510,7 @@ type ProductListing {
 }
 
 input ProductListingFilters {
-  condition: String
+  condition: CardCondition
   gameName: String
   inStockOnly: Boolean
   includeSealed: Boolean
@@ -539,7 +575,7 @@ type Query {
   """Admin query - returns buy rate entries for a specific game."""
   getBuyRates(categoryId: Int!): [BuyRateEntry!]!
   getCard(cardId: String!, game: String!): Card!
-  getDashboardBestSellers(dateRange: DashboardDateRange!, limit: Int, organizationId: String!, sortBy: String!): [BestSeller!]!
+  getDashboardBestSellers(dateRange: DashboardDateRange!, limit: Int, organizationId: String!, sortBy: BestSellerSortBy!): [BestSeller!]!
   getDashboardInventorySummary(organizationId: String!): InventorySummary!
   getDashboardOpenOrders(limit: Int, organizationId: String!): [OpenOrder!]!
   getDashboardOrderStatus(dateRange: DashboardDateRange!, organizationId: String!): OrderStatusBreakdown!
@@ -590,6 +626,12 @@ type Query {
   userPermissions: UserPermissions!
 }
 
+enum ResourceType {
+  inventory
+  lot
+  order
+}
+
 type RestoreResult {
   message: String
   success: Boolean!
@@ -597,7 +639,7 @@ type RestoreResult {
 
 type SalesBreakdown {
   dataPoints: [SalesDataPoint!]!
-  granularity: String!
+  granularity: Granularity!
   summary: SalesSummary!
 }
 
@@ -714,7 +756,7 @@ type TransactionLogEntry {
   details: String!
   id: Int!
   resourceId: String
-  resourceType: String!
+  resourceType: ResourceType!
   userEmail: String!
   userName: String!
 }
@@ -722,7 +764,7 @@ type TransactionLogEntry {
 input TransactionLogFilters {
   action: String
   month: Int
-  resourceType: String
+  resourceType: ResourceType
   searchTerm: String
   year: Int
 }
@@ -737,11 +779,11 @@ type TransactionLogPage {
 
 input UpdateBackupSettingsInput {
   frequency: String
-  provider: String
+  provider: BackupProvider
 }
 
 input UpdateInventoryItemInput {
-  condition: String
+  condition: CardCondition
   id: Int!
   price: Int
 }

@@ -7,7 +7,7 @@ type CartItemOutput {
   inventoryItemId: Int!
   productId: Int!
   productName: String!
-  condition: String!
+  condition: CardCondition!
   quantity: Int!
   unitPrice: Int! # cents
   maxAvailable: Int!

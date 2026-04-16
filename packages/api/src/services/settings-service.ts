@@ -5,6 +5,7 @@ import { encrypt, encryptIfPresent, decryptIfPresent } from '../lib/encryption';
 import SalesTax from 'sales-tax';
 
 import { formatDate } from '../lib/date-utils';
+import type { BackupProvider } from '../schema/types.generated';
 
 /**
  * Ensure the single settings row exists. Returns the row.
@@ -91,7 +92,7 @@ export async function lookupSalesTax(countryCode: string, stateCode: string): Pr
 // ---------------------------------------------------------------------------
 
 export interface BackupSettingsResult {
-  provider: string | null;
+  provider: BackupProvider | null;
   frequency: string | null;
   lastBackupAt: string | null;
   googleDriveConnected: boolean;
@@ -102,7 +103,7 @@ export interface BackupSettingsResult {
 export async function getBackupSettings(): Promise<BackupSettingsResult> {
   const row = await ensureSettingsRow();
   return {
-    provider: row.backupProvider,
+    provider: row.backupProvider as BackupProvider | null,
     frequency: row.backupFrequency,
     lastBackupAt: formatDate(row.lastBackupAt),
     googleDriveConnected: !!row.googleDriveRefreshToken,

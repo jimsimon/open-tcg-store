@@ -2,6 +2,7 @@ import { and, eq, sql, like, or, desc } from 'drizzle-orm';
 import { otcgs, transactionLog } from '../db';
 import { user } from '../db/otcgs/auth-schema';
 import { safeISOString } from '../lib/date-utils';
+import type { ResourceType } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -11,7 +12,7 @@ interface LogTransactionParams {
   organizationId: string;
   userId: string;
   action: string;
-  resourceType: string;
+  resourceType: ResourceType;
   resourceId?: string | number | null;
   details: Record<string, unknown>;
 }
@@ -19,7 +20,7 @@ interface LogTransactionParams {
 interface TransactionLogEntry {
   id: number;
   action: string;
-  resourceType: string;
+  resourceType: ResourceType;
   resourceId: string | null;
   details: string;
   userName: string;
@@ -133,7 +134,7 @@ export async function getTransactionLogs(
   const items: TransactionLogEntry[] = rows.map((r) => ({
     id: r.id,
     action: r.action,
-    resourceType: r.resourceType,
+    resourceType: r.resourceType as ResourceType,
     resourceId: r.resourceId,
     details: r.details,
     userName: r.userName ?? '',

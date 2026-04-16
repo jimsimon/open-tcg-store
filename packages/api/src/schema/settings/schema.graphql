@@ -1,10 +1,16 @@
+enum BackupProvider {
+  google_drive
+  dropbox
+  onedrive
+}
+
 type StoreSettings {
   companyName: String
   ein: String
 }
 
 type BackupSettings {
-  provider: String
+  provider: BackupProvider
   frequency: String
   lastBackupAt: String
   googleDriveConnected: Boolean!
@@ -64,7 +70,7 @@ input UpdateStoreSettingsInput {
 }
 
 input UpdateBackupSettingsInput {
-  provider: String
+  provider: BackupProvider
   frequency: String
 }
 
@@ -91,7 +97,7 @@ extend type Mutation {
   updateStoreSettings(input: UpdateStoreSettingsInput!): StoreSettings!
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
   triggerBackup: BackupResult!
-  triggerRestore(provider: String!): RestoreResult!
+  triggerRestore(provider: BackupProvider!): RestoreResult!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   triggerDataUpdate: DataUpdateResult!

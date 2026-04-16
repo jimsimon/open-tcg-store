@@ -1,3 +1,11 @@
+enum CardCondition {
+  NM
+  LP
+  MP
+  HP
+  D
+}
+
 type InventoryItem {
   id: Int!
   organizationId: String!
@@ -8,7 +16,7 @@ type InventoryItem {
   rarity: String
   isSingle: Boolean!
   isSealed: Boolean!
-  condition: String!
+  condition: CardCondition!
   price: Int! # cents
   totalQuantity: Int!
   entryCount: Int!
@@ -48,7 +56,7 @@ input InventoryFilters {
   gameName: String
   setName: String
   rarity: String
-  condition: String
+  condition: CardCondition
   searchTerm: String
   includeSingles: Boolean
   includeSealed: Boolean
@@ -61,7 +69,7 @@ input PaginationInput {
 
 input AddInventoryItemInput {
   productId: Int!
-  condition: String!
+  condition: CardCondition!
   price: Int! # cents
   quantity: Int!
   costBasis: Int! # cents
@@ -71,7 +79,7 @@ input AddInventoryItemInput {
 
 input UpdateInventoryItemInput {
   id: Int!
-  condition: String
+  condition: CardCondition
   price: Int # cents
 }
 

@@ -6,6 +6,8 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+export type EnumResolverSignature<T, AllowedValues = any> = { [key in keyof T]?: AllowedValues };
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
@@ -18,7 +20,7 @@ export type Scalars = {
 
 export type AddInventoryItemInput = {
   acquisitionDate: Scalars['String']['input'];
-  condition: Scalars['String']['input'];
+  condition: CardCondition;
   costBasis: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   price: Scalars['Int']['input'];
@@ -46,6 +48,11 @@ export type AddStoreLocationInput = {
   zip: Scalars['String']['input'];
 };
 
+export type BackupProvider =
+  | 'dropbox'
+  | 'google_drive'
+  | 'onedrive';
+
 export type BackupResult = {
   __typename?: 'BackupResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -60,7 +67,7 @@ export type BackupSettings = {
   googleDriveConnected: Scalars['Boolean']['output'];
   lastBackupAt?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
-  provider?: Maybe<Scalars['String']['output']>;
+  provider?: Maybe<BackupProvider>;
 };
 
 export type BestSeller = {
@@ -70,6 +77,10 @@ export type BestSeller = {
   totalQuantity: Scalars['Int']['output'];
   totalRevenue: Scalars['Int']['output'];
 };
+
+export type BestSellerSortBy =
+  | 'quantity'
+  | 'revenue';
 
 export type BulkDeleteStockInput = {
   ids: Array<Scalars['Int']['input']>;
@@ -92,7 +103,7 @@ export type BuyRateEntry = {
   percentageRate?: Maybe<Scalars['Float']['output']>;
   rarity?: Maybe<Scalars['String']['output']>;
   sortOrder: Scalars['Int']['output'];
-  type: Scalars['String']['output'];
+  type: BuyRateType;
 };
 
 export type BuyRateEntryInput = {
@@ -102,7 +113,7 @@ export type BuyRateEntryInput = {
   percentageRate?: InputMaybe<Scalars['Float']['input']>;
   rarity?: InputMaybe<Scalars['String']['input']>;
   sortOrder: Scalars['Int']['input'];
-  type: Scalars['String']['input'];
+  type: BuyRateType;
 };
 
 export type BuyRateTable = {
@@ -112,6 +123,10 @@ export type BuyRateTable = {
   gameDisplayName: Scalars['String']['output'];
   gameName: Scalars['String']['output'];
 };
+
+export type BuyRateType =
+  | 'fixed'
+  | 'percentage';
 
 export type CancelOrderResult = {
   __typename?: 'CancelOrderResult';
@@ -133,6 +148,13 @@ export type Card = {
   type?: Maybe<Scalars['String']['output']>;
 };
 
+export type CardCondition =
+  | 'D'
+  | 'HP'
+  | 'LP'
+  | 'MP'
+  | 'NM';
+
 export type CardImages = {
   __typename?: 'CardImages';
   large?: Maybe<Scalars['String']['output']>;
@@ -146,7 +168,7 @@ export type CartItemInput = {
 
 export type CartItemOutput = {
   __typename?: 'CartItemOutput';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   maxAvailable: Scalars['Int']['output'];
   productId: Scalars['Int']['output'];
@@ -204,6 +226,11 @@ export type DataUpdateStatus = {
   updateAvailable: Scalars['Boolean']['output'];
 };
 
+export type Granularity =
+  | 'day'
+  | 'hour'
+  | 'month';
+
 export type InitialStoreLocation = {
   city: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -218,7 +245,7 @@ export type InitialStoreLocation = {
 export type InsufficientItem = {
   __typename?: 'InsufficientItem';
   available: Scalars['Int']['output'];
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   productId: Scalars['Int']['output'];
   productName: Scalars['String']['output'];
   requested: Scalars['Int']['output'];
@@ -231,7 +258,7 @@ export type IntegrationSettings = {
 };
 
 export type InventoryFilters = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
   includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
@@ -243,7 +270,7 @@ export type InventoryFilters = {
 
 export type InventoryItem = {
   __typename?: 'InventoryItem';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   createdAt: Scalars['String']['output'];
   entryCount: Scalars['Int']['output'];
   gameName: Scalars['String']['output'];
@@ -321,7 +348,7 @@ export type LotFilters = {
 
 export type LotItem = {
   __typename?: 'LotItem';
-  condition?: Maybe<Scalars['String']['output']>;
+  condition?: Maybe<CardCondition>;
   costBasis: Scalars['Int']['output'];
   costOverridden: Scalars['Boolean']['output'];
   gameName: Scalars['String']['output'];
@@ -338,7 +365,7 @@ export type LotItem = {
 };
 
 export type LotItemInput = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   costBasis: Scalars['Int']['input'];
   costOverridden: Scalars['Boolean']['input'];
   id?: InputMaybe<Scalars['Int']['input']>;
@@ -507,7 +534,7 @@ export type MutationsubmitOrderArgs = {
 
 
 export type MutationtriggerRestoreArgs = {
-  provider: Scalars['String']['input'];
+  provider: BackupProvider;
 };
 
 
@@ -533,7 +560,7 @@ export type MutationupdateLotArgs = {
 
 export type MutationupdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
-  status: Scalars['String']['input'];
+  status: OrderStatus;
 };
 
 
@@ -579,7 +606,7 @@ export type Order = {
   items: Array<OrderItem>;
   orderNumber: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
-  status: Scalars['String']['output'];
+  status: OrderStatus;
   totalAmount: Scalars['Int']['output'];
   totalCostBasis?: Maybe<Scalars['Int']['output']>;
   totalProfit?: Maybe<Scalars['Int']['output']>;
@@ -588,12 +615,12 @@ export type Order = {
 export type OrderFilters = {
   organizationId?: InputMaybe<Scalars['String']['input']>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<OrderStatus>;
 };
 
 export type OrderItem = {
   __typename?: 'OrderItem';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   costBasis?: Maybe<Scalars['Int']['output']>;
   id: Scalars['Int']['output'];
   lotId?: Maybe<Scalars['Int']['output']>;
@@ -613,6 +640,11 @@ export type OrderPage = {
   totalPages: Scalars['Int']['output'];
 };
 
+export type OrderStatus =
+  | 'cancelled'
+  | 'completed'
+  | 'open';
+
 export type OrderStatusBreakdown = {
   __typename?: 'OrderStatusBreakdown';
   cancelled: Scalars['Int']['output'];
@@ -628,7 +660,7 @@ export type PaginationInput = {
 
 export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
@@ -653,7 +685,7 @@ export type ProductDetail = {
 
 export type ProductInventoryRecord = {
   __typename?: 'ProductInventoryRecord';
-  condition: Scalars['String']['output'];
+  condition: CardCondition;
   inventoryItemId: Scalars['Int']['output'];
   price: Scalars['Int']['output'];
   quantity: Scalars['Int']['output'];
@@ -675,7 +707,7 @@ export type ProductListing = {
 };
 
 export type ProductListingFilters = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   gameName?: InputMaybe<Scalars['String']['input']>;
   inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
   includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -801,7 +833,7 @@ export type QuerygetDashboardBestSellersArgs = {
   dateRange: DashboardDateRange;
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
-  sortBy: Scalars['String']['input'];
+  sortBy: BestSellerSortBy;
 };
 
 
@@ -916,6 +948,11 @@ export type QuerysearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
+export type ResourceType =
+  | 'inventory'
+  | 'lot'
+  | 'order';
+
 export type RestoreResult = {
   __typename?: 'RestoreResult';
   message?: Maybe<Scalars['String']['output']>;
@@ -925,7 +962,7 @@ export type RestoreResult = {
 export type SalesBreakdown = {
   __typename?: 'SalesBreakdown';
   dataPoints: Array<SalesDataPoint>;
-  granularity: Scalars['String']['output'];
+  granularity: Granularity;
   summary: SalesSummary;
 };
 
@@ -1055,7 +1092,7 @@ export type TransactionLogEntry = {
   details: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   resourceId?: Maybe<Scalars['String']['output']>;
-  resourceType: Scalars['String']['output'];
+  resourceType: ResourceType;
   userEmail: Scalars['String']['output'];
   userName: Scalars['String']['output'];
 };
@@ -1063,7 +1100,7 @@ export type TransactionLogEntry = {
 export type TransactionLogFilters = {
   action?: InputMaybe<Scalars['String']['input']>;
   month?: InputMaybe<Scalars['Int']['input']>;
-  resourceType?: InputMaybe<Scalars['String']['input']>;
+  resourceType?: InputMaybe<ResourceType>;
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   year?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -1079,11 +1116,11 @@ export type TransactionLogPage = {
 
 export type UpdateBackupSettingsInput = {
   frequency?: InputMaybe<Scalars['String']['input']>;
-  provider?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<BackupProvider>;
 };
 
 export type UpdateInventoryItemInput = {
-  condition?: InputMaybe<Scalars['String']['input']>;
+  condition?: InputMaybe<CardCondition>;
   id: Scalars['Int']['input'];
   price?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -1239,21 +1276,25 @@ export type ResolversTypes = {
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   AddStockInput: AddStockInput;
   AddStoreLocationInput: AddStoreLocationInput;
+  BackupProvider: ResolverTypeWrapper<'google_drive' | 'dropbox' | 'onedrive'>;
   BackupResult: ResolverTypeWrapper<BackupResult>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  BackupSettings: ResolverTypeWrapper<BackupSettings>;
+  BackupSettings: ResolverTypeWrapper<Omit<BackupSettings, 'provider'> & { provider?: Maybe<ResolversTypes['BackupProvider']> }>;
   BestSeller: ResolverTypeWrapper<BestSeller>;
+  BestSellerSortBy: ResolverTypeWrapper<'quantity' | 'revenue'>;
   BulkDeleteStockInput: BulkDeleteStockInput;
   BulkUpdateStockInput: BulkUpdateStockInput;
-  BuyRateEntry: ResolverTypeWrapper<BuyRateEntry>;
+  BuyRateEntry: ResolverTypeWrapper<Omit<BuyRateEntry, 'type'> & { type: ResolversTypes['BuyRateType'] }>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   BuyRateEntryInput: BuyRateEntryInput;
-  BuyRateTable: ResolverTypeWrapper<BuyRateTable>;
-  CancelOrderResult: ResolverTypeWrapper<CancelOrderResult>;
+  BuyRateTable: ResolverTypeWrapper<Omit<BuyRateTable, 'entries'> & { entries: Array<ResolversTypes['BuyRateEntry']> }>;
+  BuyRateType: ResolverTypeWrapper<'fixed' | 'percentage'>;
+  CancelOrderResult: ResolverTypeWrapper<Omit<CancelOrderResult, 'order'> & { order?: Maybe<ResolversTypes['Order']> }>;
   Card: ResolverTypeWrapper<Card>;
+  CardCondition: ResolverTypeWrapper<'NM' | 'LP' | 'MP' | 'HP' | 'D'>;
   CardImages: ResolverTypeWrapper<CardImages>;
   CartItemInput: CartItemInput;
-  CartItemOutput: ResolverTypeWrapper<CartItemOutput>;
+  CartItemOutput: ResolverTypeWrapper<Omit<CartItemOutput, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
   CompanySettings: CompanySettings;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
@@ -1261,42 +1302,45 @@ export type ResolversTypes = {
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
+  Granularity: ResolverTypeWrapper<'hour' | 'day' | 'month'>;
   InitialStoreLocation: InitialStoreLocation;
-  InsufficientItem: ResolverTypeWrapper<InsufficientItem>;
+  InsufficientItem: ResolverTypeWrapper<Omit<InsufficientItem, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
   InventoryFilters: InventoryFilters;
-  InventoryItem: ResolverTypeWrapper<InventoryItem>;
+  InventoryItem: ResolverTypeWrapper<Omit<InventoryItem, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
   InventoryItemStock: ResolverTypeWrapper<InventoryItemStock>;
-  InventoryPage: ResolverTypeWrapper<InventoryPage>;
+  InventoryPage: ResolverTypeWrapper<Omit<InventoryPage, 'items'> & { items: Array<ResolversTypes['InventoryItem']> }>;
   InventoryStockPage: ResolverTypeWrapper<InventoryStockPage>;
   InventorySummary: ResolverTypeWrapper<InventorySummary>;
-  Lot: ResolverTypeWrapper<Lot>;
+  Lot: ResolverTypeWrapper<Omit<Lot, 'items'> & { items: Array<ResolversTypes['LotItem']> }>;
   LotFilters: LotFilters;
-  LotItem: ResolverTypeWrapper<LotItem>;
+  LotItem: ResolverTypeWrapper<Omit<LotItem, 'condition'> & { condition?: Maybe<ResolversTypes['CardCondition']> }>;
   LotItemInput: LotItemInput;
-  LotPage: ResolverTypeWrapper<LotPage>;
+  LotPage: ResolverTypeWrapper<Omit<LotPage, 'items'> & { items: Array<ResolversTypes['Lot']> }>;
   LotStats: ResolverTypeWrapper<LotStats>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   OpenOrder: ResolverTypeWrapper<OpenOrder>;
-  Order: ResolverTypeWrapper<Order>;
+  Order: ResolverTypeWrapper<Omit<Order, 'items' | 'status'> & { items: Array<ResolversTypes['OrderItem']>, status: ResolversTypes['OrderStatus'] }>;
   OrderFilters: OrderFilters;
-  OrderItem: ResolverTypeWrapper<OrderItem>;
-  OrderPage: ResolverTypeWrapper<OrderPage>;
+  OrderItem: ResolverTypeWrapper<Omit<OrderItem, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
+  OrderPage: ResolverTypeWrapper<Omit<OrderPage, 'items'> & { items: Array<ResolversTypes['Order']> }>;
+  OrderStatus: ResolverTypeWrapper<'open' | 'completed' | 'cancelled'>;
   OrderStatusBreakdown: ResolverTypeWrapper<OrderStatusBreakdown>;
   PaginationInput: PaginationInput;
-  ProductConditionPrice: ResolverTypeWrapper<ProductConditionPrice>;
-  ProductDetail: ResolverTypeWrapper<ProductDetail>;
-  ProductInventoryRecord: ResolverTypeWrapper<ProductInventoryRecord>;
-  ProductListing: ResolverTypeWrapper<ProductListing>;
+  ProductConditionPrice: ResolverTypeWrapper<Omit<ProductConditionPrice, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
+  ProductDetail: ResolverTypeWrapper<Omit<ProductDetail, 'inventoryRecords'> & { inventoryRecords: Array<ResolversTypes['ProductInventoryRecord']> }>;
+  ProductInventoryRecord: ResolverTypeWrapper<Omit<ProductInventoryRecord, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
+  ProductListing: ResolverTypeWrapper<Omit<ProductListing, 'conditionPrices'> & { conditionPrices: Array<ResolversTypes['ProductConditionPrice']> }>;
   ProductListingFilters: ProductListingFilters;
-  ProductListingPage: ResolverTypeWrapper<ProductListingPage>;
+  ProductListingPage: ResolverTypeWrapper<Omit<ProductListingPage, 'items'> & { items: Array<ResolversTypes['ProductListing']> }>;
   ProductListingPagination: ProductListingPagination;
   ProductPrice: ResolverTypeWrapper<ProductPrice>;
   ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
-  PublicBuyRates: ResolverTypeWrapper<PublicBuyRates>;
+  PublicBuyRates: ResolverTypeWrapper<Omit<PublicBuyRates, 'games'> & { games: Array<ResolversTypes['BuyRateTable']> }>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  ResourceType: ResolverTypeWrapper<'order' | 'lot' | 'inventory'>;
   RestoreResult: ResolverTypeWrapper<RestoreResult>;
-  SalesBreakdown: ResolverTypeWrapper<SalesBreakdown>;
+  SalesBreakdown: ResolverTypeWrapper<Omit<SalesBreakdown, 'granularity'> & { granularity: ResolversTypes['Granularity'] }>;
   SalesDataPoint: ResolverTypeWrapper<SalesDataPoint>;
   SalesSummary: ResolverTypeWrapper<SalesSummary>;
   SalesTaxLookupResult: ResolverTypeWrapper<SalesTaxLookupResult>;
@@ -1304,7 +1348,7 @@ export type ResolversTypes = {
   Set: ResolverTypeWrapper<Set>;
   SetFilters: SetFilters;
   ShopifyIntegration: ResolverTypeWrapper<ShopifyIntegration>;
-  ShoppingCart: ResolverTypeWrapper<ShoppingCart>;
+  ShoppingCart: ResolverTypeWrapper<Omit<ShoppingCart, 'items'> & { items: Array<ResolversTypes['CartItemOutput']> }>;
   SingleCardFilters: SingleCardFilters;
   StoreHours: ResolverTypeWrapper<StoreHours>;
   StoreHoursInput: StoreHoursInput;
@@ -1312,15 +1356,15 @@ export type ResolversTypes = {
   StoreSettings: ResolverTypeWrapper<StoreSettings>;
   StripeIntegration: ResolverTypeWrapper<StripeIntegration>;
   SubmitOrderInput: SubmitOrderInput;
-  SubmitOrderResult: ResolverTypeWrapper<SubmitOrderResult>;
+  SubmitOrderResult: ResolverTypeWrapper<Omit<SubmitOrderResult, 'insufficientItems' | 'order'> & { insufficientItems?: Maybe<Array<ResolversTypes['InsufficientItem']>>, order?: Maybe<ResolversTypes['Order']> }>;
   SupportedGame: ResolverTypeWrapper<SupportedGame>;
-  TransactionLogEntry: ResolverTypeWrapper<TransactionLogEntry>;
+  TransactionLogEntry: ResolverTypeWrapper<Omit<TransactionLogEntry, 'resourceType'> & { resourceType: ResolversTypes['ResourceType'] }>;
   TransactionLogFilters: TransactionLogFilters;
-  TransactionLogPage: ResolverTypeWrapper<TransactionLogPage>;
+  TransactionLogPage: ResolverTypeWrapper<Omit<TransactionLogPage, 'items'> & { items: Array<ResolversTypes['TransactionLogEntry']> }>;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
-  UpdateOrderStatusResult: ResolverTypeWrapper<UpdateOrderStatusResult>;
+  UpdateOrderStatusResult: ResolverTypeWrapper<Omit<UpdateOrderStatusResult, 'order'> & { order?: Maybe<ResolversTypes['Order']> }>;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1346,8 +1390,8 @@ export type ResolversParentTypes = {
   BuyRateEntry: BuyRateEntry;
   Float: Scalars['Float']['output'];
   BuyRateEntryInput: BuyRateEntryInput;
-  BuyRateTable: BuyRateTable;
-  CancelOrderResult: CancelOrderResult;
+  BuyRateTable: Omit<BuyRateTable, 'entries'> & { entries: Array<ResolversParentTypes['BuyRateEntry']> };
+  CancelOrderResult: Omit<CancelOrderResult, 'order'> & { order?: Maybe<ResolversParentTypes['Order']> };
   Card: Card;
   CardImages: CardImages;
   CartItemInput: CartItemInput;
@@ -1365,33 +1409,33 @@ export type ResolversParentTypes = {
   InventoryFilters: InventoryFilters;
   InventoryItem: InventoryItem;
   InventoryItemStock: InventoryItemStock;
-  InventoryPage: InventoryPage;
+  InventoryPage: Omit<InventoryPage, 'items'> & { items: Array<ResolversParentTypes['InventoryItem']> };
   InventoryStockPage: InventoryStockPage;
   InventorySummary: InventorySummary;
-  Lot: Lot;
+  Lot: Omit<Lot, 'items'> & { items: Array<ResolversParentTypes['LotItem']> };
   LotFilters: LotFilters;
   LotItem: LotItem;
   LotItemInput: LotItemInput;
-  LotPage: LotPage;
+  LotPage: Omit<LotPage, 'items'> & { items: Array<ResolversParentTypes['Lot']> };
   LotStats: LotStats;
   Mutation: Record<PropertyKey, never>;
   OpenOrder: OpenOrder;
-  Order: Order;
+  Order: Omit<Order, 'items'> & { items: Array<ResolversParentTypes['OrderItem']> };
   OrderFilters: OrderFilters;
   OrderItem: OrderItem;
-  OrderPage: OrderPage;
+  OrderPage: Omit<OrderPage, 'items'> & { items: Array<ResolversParentTypes['Order']> };
   OrderStatusBreakdown: OrderStatusBreakdown;
   PaginationInput: PaginationInput;
   ProductConditionPrice: ProductConditionPrice;
-  ProductDetail: ProductDetail;
+  ProductDetail: Omit<ProductDetail, 'inventoryRecords'> & { inventoryRecords: Array<ResolversParentTypes['ProductInventoryRecord']> };
   ProductInventoryRecord: ProductInventoryRecord;
-  ProductListing: ProductListing;
+  ProductListing: Omit<ProductListing, 'conditionPrices'> & { conditionPrices: Array<ResolversParentTypes['ProductConditionPrice']> };
   ProductListingFilters: ProductListingFilters;
-  ProductListingPage: ProductListingPage;
+  ProductListingPage: Omit<ProductListingPage, 'items'> & { items: Array<ResolversParentTypes['ProductListing']> };
   ProductListingPagination: ProductListingPagination;
   ProductPrice: ProductPrice;
   ProductSearchResult: ProductSearchResult;
-  PublicBuyRates: PublicBuyRates;
+  PublicBuyRates: Omit<PublicBuyRates, 'games'> & { games: Array<ResolversParentTypes['BuyRateTable']> };
   Query: Record<PropertyKey, never>;
   RestoreResult: RestoreResult;
   SalesBreakdown: SalesBreakdown;
@@ -1402,7 +1446,7 @@ export type ResolversParentTypes = {
   Set: Set;
   SetFilters: SetFilters;
   ShopifyIntegration: ShopifyIntegration;
-  ShoppingCart: ShoppingCart;
+  ShoppingCart: Omit<ShoppingCart, 'items'> & { items: Array<ResolversParentTypes['CartItemOutput']> };
   SingleCardFilters: SingleCardFilters;
   StoreHours: StoreHours;
   StoreHoursInput: StoreHoursInput;
@@ -1410,15 +1454,15 @@ export type ResolversParentTypes = {
   StoreSettings: StoreSettings;
   StripeIntegration: StripeIntegration;
   SubmitOrderInput: SubmitOrderInput;
-  SubmitOrderResult: SubmitOrderResult;
+  SubmitOrderResult: Omit<SubmitOrderResult, 'insufficientItems' | 'order'> & { insufficientItems?: Maybe<Array<ResolversParentTypes['InsufficientItem']>>, order?: Maybe<ResolversParentTypes['Order']> };
   SupportedGame: SupportedGame;
   TransactionLogEntry: TransactionLogEntry;
   TransactionLogFilters: TransactionLogFilters;
-  TransactionLogPage: TransactionLogPage;
+  TransactionLogPage: Omit<TransactionLogPage, 'items'> & { items: Array<ResolversParentTypes['TransactionLogEntry']> };
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
-  UpdateOrderStatusResult: UpdateOrderStatusResult;
+  UpdateOrderStatusResult: Omit<UpdateOrderStatusResult, 'order'> & { order?: Maybe<ResolversParentTypes['Order']> };
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1427,6 +1471,8 @@ export type ResolversParentTypes = {
   UserDetails: UserDetails;
   UserPermissions: UserPermissions;
 };
+
+export type BackupProviderResolvers = EnumResolverSignature<{ dropbox?: any, google_drive?: any, onedrive?: any }, ResolversTypes['BackupProvider']>;
 
 export type BackupResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['BackupResult'] = ResolversParentTypes['BackupResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1440,7 +1486,7 @@ export type BackupSettingsResolvers<ContextType = any, ParentType extends Resolv
   googleDriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastBackupAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   onedriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  provider?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  provider?: Resolver<Maybe<ResolversTypes['BackupProvider']>, ParentType, ContextType>;
 };
 
 export type BestSellerResolvers<ContextType = any, ParentType extends ResolversParentTypes['BestSeller'] = ResolversParentTypes['BestSeller']> = {
@@ -1450,6 +1496,8 @@ export type BestSellerResolvers<ContextType = any, ParentType extends ResolversP
   totalRevenue?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type BestSellerSortByResolvers = EnumResolverSignature<{ quantity?: any, revenue?: any }, ResolversTypes['BestSellerSortBy']>;
+
 export type BuyRateEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateEntry'] = ResolversParentTypes['BuyRateEntry']> = {
   description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   fixedRateCents?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
@@ -1458,7 +1506,7 @@ export type BuyRateEntryResolvers<ContextType = any, ParentType extends Resolver
   percentageRate?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   rarity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   sortOrder?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['BuyRateType'], ParentType, ContextType>;
 };
 
 export type BuyRateTableResolvers<ContextType = any, ParentType extends ResolversParentTypes['BuyRateTable'] = ResolversParentTypes['BuyRateTable']> = {
@@ -1467,6 +1515,8 @@ export type BuyRateTableResolvers<ContextType = any, ParentType extends Resolver
   gameDisplayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
+
+export type BuyRateTypeResolvers = EnumResolverSignature<{ fixed?: any, percentage?: any }, ResolversTypes['BuyRateType']>;
 
 export type CancelOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult']> = {
   error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1486,13 +1536,15 @@ export type CardResolvers<ContextType = any, ParentType extends ResolversParentT
   type?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
+export type CardConditionResolvers = EnumResolverSignature<{ D?: any, HP?: any, LP?: any, MP?: any, NM?: any }, ResolversTypes['CardCondition']>;
+
 export type CardImagesResolvers<ContextType = any, ParentType extends ResolversParentTypes['CardImages'] = ResolversParentTypes['CardImages']> = {
   large?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   small?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
 export type CartItemOutputResolvers<ContextType = any, ParentType extends ResolversParentTypes['CartItemOutput'] = ResolversParentTypes['CartItemOutput']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   maxAvailable?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1528,9 +1580,11 @@ export type DataUpdateStatusResolvers<ContextType = any, ParentType extends Reso
   updateAvailable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
+export type GranularityResolvers = EnumResolverSignature<{ day?: any, hour?: any, month?: any }, ResolversTypes['Granularity']>;
+
 export type InsufficientItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem']> = {
   available?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   requested?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1542,7 +1596,7 @@ export type IntegrationSettingsResolvers<ContextType = any, ParentType extends R
 };
 
 export type InventoryItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InventoryItem'] = ResolversParentTypes['InventoryItem']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   entryCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1610,7 +1664,7 @@ export type LotResolvers<ContextType = any, ParentType extends ResolversParentTy
 };
 
 export type LotItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotItem'] = ResolversParentTypes['LotItem']> = {
-  condition?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  condition?: Resolver<Maybe<ResolversTypes['CardCondition']>, ParentType, ContextType>;
   costBasis?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   costOverridden?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   gameName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1694,14 +1748,14 @@ export type OrderResolvers<ContextType = any, ParentType extends ResolversParent
   items?: Resolver<Array<ResolversTypes['OrderItem']>, ParentType, ContextType>;
   orderNumber?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['OrderStatus'], ParentType, ContextType>;
   totalAmount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalCostBasis?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   totalProfit?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
 };
 
 export type OrderItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderItem'] = ResolversParentTypes['OrderItem']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   costBasis?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   lotId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
@@ -1720,6 +1774,8 @@ export type OrderPageResolvers<ContextType = any, ParentType extends ResolversPa
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type OrderStatusResolvers = EnumResolverSignature<{ cancelled?: any, completed?: any, open?: any }, ResolversTypes['OrderStatus']>;
+
 export type OrderStatusBreakdownResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderStatusBreakdown'] = ResolversParentTypes['OrderStatusBreakdown']> = {
   cancelled?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   completed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1728,7 +1784,7 @@ export type OrderStatusBreakdownResolvers<ContextType = any, ParentType extends 
 };
 
 export type ProductConditionPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1751,7 +1807,7 @@ export type ProductDetailResolvers<ContextType = any, ParentType extends Resolve
 };
 
 export type ProductInventoryRecordResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductInventoryRecord'] = ResolversParentTypes['ProductInventoryRecord']> = {
-  condition?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   price?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1843,6 +1899,8 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   userPermissions?: Resolver<ResolversTypes['UserPermissions'], ParentType, ContextType>;
 };
 
+export type ResourceTypeResolvers = EnumResolverSignature<{ inventory?: any, lot?: any, order?: any }, ResolversTypes['ResourceType']>;
+
 export type RestoreResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['RestoreResult'] = ResolversParentTypes['RestoreResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1850,7 +1908,7 @@ export type RestoreResultResolvers<ContextType = any, ParentType extends Resolve
 
 export type SalesBreakdownResolvers<ContextType = any, ParentType extends ResolversParentTypes['SalesBreakdown'] = ResolversParentTypes['SalesBreakdown']> = {
   dataPoints?: Resolver<Array<ResolversTypes['SalesDataPoint']>, ParentType, ContextType>;
-  granularity?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  granularity?: Resolver<ResolversTypes['Granularity'], ParentType, ContextType>;
   summary?: Resolver<ResolversTypes['SalesSummary'], ParentType, ContextType>;
 };
 
@@ -1940,7 +1998,7 @@ export type TransactionLogEntryResolvers<ContextType = any, ParentType extends R
   details?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   resourceId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  resourceType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  resourceType?: Resolver<ResolversTypes['ResourceType'], ParentType, ContextType>;
   userEmail?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   userName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 };
@@ -1969,19 +2027,24 @@ export type UserPermissionsResolvers<ContextType = any, ParentType extends Resol
 };
 
 export type Resolvers<ContextType = any> = {
+  BackupProvider?: BackupProviderResolvers;
   BackupResult?: BackupResultResolvers<ContextType>;
   BackupSettings?: BackupSettingsResolvers<ContextType>;
   BestSeller?: BestSellerResolvers<ContextType>;
+  BestSellerSortBy?: BestSellerSortByResolvers;
   BuyRateEntry?: BuyRateEntryResolvers<ContextType>;
   BuyRateTable?: BuyRateTableResolvers<ContextType>;
+  BuyRateType?: BuyRateTypeResolvers;
   CancelOrderResult?: CancelOrderResultResolvers<ContextType>;
   Card?: CardResolvers<ContextType>;
+  CardCondition?: CardConditionResolvers;
   CardImages?: CardImagesResolvers<ContextType>;
   CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
   DataUpdateResult?: DataUpdateResultResolvers<ContextType>;
   DataUpdateStatus?: DataUpdateStatusResolvers<ContextType>;
+  Granularity?: GranularityResolvers;
   InsufficientItem?: InsufficientItemResolvers<ContextType>;
   IntegrationSettings?: IntegrationSettingsResolvers<ContextType>;
   InventoryItem?: InventoryItemResolvers<ContextType>;
@@ -1998,6 +2061,7 @@ export type Resolvers<ContextType = any> = {
   Order?: OrderResolvers<ContextType>;
   OrderItem?: OrderItemResolvers<ContextType>;
   OrderPage?: OrderPageResolvers<ContextType>;
+  OrderStatus?: OrderStatusResolvers;
   OrderStatusBreakdown?: OrderStatusBreakdownResolvers<ContextType>;
   ProductConditionPrice?: ProductConditionPriceResolvers<ContextType>;
   ProductDetail?: ProductDetailResolvers<ContextType>;
@@ -2008,6 +2072,7 @@ export type Resolvers<ContextType = any> = {
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   PublicBuyRates?: PublicBuyRatesResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  ResourceType?: ResourceTypeResolvers;
   RestoreResult?: RestoreResultResolvers<ContextType>;
   SalesBreakdown?: SalesBreakdownResolvers<ContextType>;
   SalesDataPoint?: SalesDataPointResolvers<ContextType>;
