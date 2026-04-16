@@ -348,7 +348,7 @@ export type LotItemInput = {
 
 export type LotPage = {
   __typename?: 'LotPage';
-  lots: Array<Lot>;
+  items: Array<Lot>;
   page: Scalars['Int']['output'];
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
@@ -606,7 +606,7 @@ export type OrderItem = {
 
 export type OrderPage = {
   __typename?: 'OrderPage';
-  orders: Array<Order>;
+  items: Array<Order>;
   page: Scalars['Int']['output'];
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
@@ -1627,7 +1627,7 @@ export type LotItemResolvers<ContextType = any, ParentType extends ResolversPare
 };
 
 export type LotPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['LotPage'] = ResolversParentTypes['LotPage']> = {
-  lots?: Resolver<Array<ResolversTypes['Lot']>, ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['Lot']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1713,7 +1713,7 @@ export type OrderItemResolvers<ContextType = any, ParentType extends ResolversPa
 };
 
 export type OrderPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrderPage'] = ResolversParentTypes['OrderPage']> = {
-  orders?: Resolver<Array<ResolversTypes['Order']>, ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['Order']>, ParentType, ContextType>;
   page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

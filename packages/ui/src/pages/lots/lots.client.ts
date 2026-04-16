@@ -25,7 +25,7 @@ import { debounce } from '../../lib/debounce';
 const GetLotsQuery = new TypedDocumentString(`
   query GetLots($filters: LotFilters, $pagination: PaginationInput) {
     getLots(filters: $filters, pagination: $pagination) {
-      lots {
+      items {
         id
         name
         description
@@ -47,7 +47,7 @@ const GetLotsQuery = new TypedDocumentString(`
 `) as unknown as TypedDocumentString<
   {
     getLots: {
-      lots: Array<{
+      items: Array<{
         id: number;
         name: string;
         description: string | null;
@@ -546,7 +546,7 @@ export class OgsLotsPage extends LitElement {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else if (result?.data?.getLots) {
         const data = result.data.getLots;
-        this.lots = data.lots.map((l) => ({ ...l, itemCount: l.items.length }));
+        this.lots = data.items.map((l) => ({ ...l, itemCount: l.items.length }));
         this.totalPages = data.totalPages;
         this.totalCount = data.totalCount;
         this.currentPage = data.page;

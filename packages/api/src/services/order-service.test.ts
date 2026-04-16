@@ -652,8 +652,8 @@ describe('order-service', () => {
       expect(result.pageSize).toBe(25);
       expect(result.totalCount).toBe(2);
       expect(result.totalPages).toBe(1);
-      expect(result.orders).toHaveLength(2);
-      expect(result.orders[0].orderNumber).toBe('ORD-20260101-0001');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].orderNumber).toBe('ORD-20260101-0001');
     });
 
     it('should apply status filter', async () => {
@@ -675,8 +675,8 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1', null, { status: 'open' });
 
-      expect(result.orders).toHaveLength(1);
-      expect(result.orders[0].status).toBe('open');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].status).toBe('open');
     });
 
     it('should apply search filter', async () => {
@@ -698,7 +698,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1', null, { searchTerm: 'Alice' });
 
-      expect(result.orders).toHaveLength(1);
+      expect(result.items).toHaveLength(1);
     });
 
     it('should respect custom pagination', async () => {
@@ -742,7 +742,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1');
 
-      const order = result.orders[0];
+      const order = result.items[0];
       expect(order.items[0].profit).toBe(10.0); // (10 * 2) - (5 * 2) = 10
       expect(order.totalCostBasis).toBe(10.0); // 5 * 2
       expect(order.totalProfit).toBe(10.0);
@@ -767,7 +767,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1');
 
-      expect(result.orders[0].createdAt).toBe('2026-01-15T10:00:00.000Z');
+      expect(result.items[0].createdAt).toBe('2026-01-15T10:00:00.000Z');
     });
 
     it('should handle createdAt as unix timestamp number (safeISOString number branch)', async () => {
@@ -790,8 +790,8 @@ describe('order-service', () => {
       const result = await getOrders('org-1');
 
       // safeISOString converts number * 1000 to Date
-      expect(result.orders[0].createdAt).toBeDefined();
-      expect(typeof result.orders[0].createdAt).toBe('string');
+      expect(result.items[0].createdAt).toBeDefined();
+      expect(typeof result.items[0].createdAt).toBe('string');
     });
 
     it('should handle null/falsy createdAt (safeISOString falsy branch)', async () => {
@@ -814,7 +814,7 @@ describe('order-service', () => {
       const result = await getOrders('org-1');
 
       // safeISOString returns new Date().toISOString() for falsy values
-      expect(result.orders[0].createdAt).toBeDefined();
+      expect(result.items[0].createdAt).toBeDefined();
     });
 
     it('should handle mixed cost basis — some items with, some without', async () => {
@@ -855,7 +855,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1');
 
-      const order = result.orders[0];
+      const order = result.items[0];
       // Should have partial cost basis (only from item with costBasis)
       expect(order.totalCostBasis).toBe(5.0); // Only Card A has cost basis
     });
@@ -889,7 +889,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1');
 
-      const order = result.orders[0];
+      const order = result.items[0];
       expect(order.items[0].profit).toBeNull();
       expect(order.totalCostBasis).toBeNull();
       expect(order.totalProfit).toBeNull();

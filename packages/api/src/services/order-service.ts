@@ -625,7 +625,7 @@ export async function getOrders(
   });
 
   return {
-    orders: orders.map((o) => {
+    items: orders.map((o) => {
       const items = mapOrderItems(o.orderItems);
       const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
       return {

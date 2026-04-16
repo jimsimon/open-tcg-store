@@ -348,7 +348,7 @@ export type LotItemInput = {
 
 export type LotPage = {
   __typename?: 'LotPage';
-  lots: Array<Lot>;
+  items: Array<Lot>;
   page: Scalars['Int']['output'];
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
@@ -606,7 +606,7 @@ export type OrderItem = {
 
 export type OrderPage = {
   __typename?: 'OrderPage';
-  orders: Array<Order>;
+  items: Array<Order>;
   page: Scalars['Int']['output'];
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];

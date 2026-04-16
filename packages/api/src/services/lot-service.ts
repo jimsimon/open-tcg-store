@@ -72,7 +72,7 @@ interface LotResult {
 }
 
 interface LotPageResult {
-  lots: LotResult[];
+  items: LotResult[];
   totalCount: number;
   page: number;
   pageSize: number;
@@ -872,7 +872,7 @@ export async function getLots(
 
   const lots = await buildLotResults(rows);
 
-  return { lots, totalCount, page, pageSize, totalPages };
+  return { items: lots, totalCount, page, pageSize, totalPages };
 }
 
 // ---------------------------------------------------------------------------

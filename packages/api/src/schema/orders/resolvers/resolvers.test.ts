@@ -87,7 +87,7 @@ describe('orders resolvers', () => {
 
   describe('getOrders', () => {
     it('should check permissions and delegate with mapped args', async () => {
-      mockGetOrders.mockResolvedValue({ orders: [], totalCount: 0 });
+      mockGetOrders.mockResolvedValue({ items: [], totalCount: 0 });
 
       await getOrders(
         null,
@@ -104,7 +104,7 @@ describe('orders resolvers', () => {
     });
 
     it('should pass null pagination and filters when not provided', async () => {
-      mockGetOrders.mockResolvedValue({ orders: [], totalCount: 0 });
+      mockGetOrders.mockResolvedValue({ items: [], totalCount: 0 });
 
       await getOrders(null, { pagination: null, filters: null }, ctx());
 
@@ -112,7 +112,7 @@ describe('orders resolvers', () => {
     });
 
     it('should convert null page/pageSize to undefined in pagination', async () => {
-      mockGetOrders.mockResolvedValue({ orders: [], totalCount: 0 });
+      mockGetOrders.mockResolvedValue({ items: [], totalCount: 0 });
 
       await getOrders(
         null,
