@@ -111,7 +111,9 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const dialog = element.shadowRoot!.querySelector('wa-dialog');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const dialog = authDialogEl.shadowRoot!.querySelector('wa-dialog');
       expect(dialog).toBeTruthy();
       expect(dialog!.hasAttribute('open')).toBe(true);
       expect(dialog!.getAttribute('label')).toBe('Sign In');
@@ -123,7 +125,9 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const inputs = element.shadowRoot!.querySelectorAll('wa-dialog wa-input');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const inputs = authDialogEl.shadowRoot!.querySelectorAll('wa-dialog wa-input');
       const labels = Array.from(inputs).map((input) => input.getAttribute('label'));
 
       expect(labels).toContain('Email');
@@ -136,7 +140,9 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const inputs = element.shadowRoot!.querySelectorAll('wa-dialog wa-input');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const inputs = authDialogEl.shadowRoot!.querySelectorAll('wa-dialog wa-input');
       const labels = Array.from(inputs).map((input) => input.getAttribute('label'));
 
       expect(labels).not.toContain('Name');
@@ -149,7 +155,9 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const footerButtons = element.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const footerButtons = authDialogEl.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
       const submitButton = Array.from(footerButtons).find((btn) => btn.getAttribute('variant') === 'brand');
       expect(submitButton?.textContent?.trim()).toBe('Sign in');
     });
@@ -160,13 +168,15 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const toggleLink = element.shadowRoot!.querySelector('.auth-toggle a');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const toggleLink = authDialogEl.shadowRoot!.querySelector('.auth-toggle a');
       expect(toggleLink?.textContent?.trim()).toBe('Sign up');
 
       (toggleLink as HTMLElement).click();
-      await element.updateComplete;
+      await authDialogEl.updateComplete;
 
-      const dialog = element.shadowRoot!.querySelector('wa-dialog');
+      const dialog = authDialogEl.shadowRoot!.querySelector('wa-dialog');
       expect(dialog!.getAttribute('label')).toBe('Sign Up');
     });
 
@@ -177,11 +187,13 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const toggleLink = element.shadowRoot!.querySelector('.auth-toggle a');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const toggleLink = authDialogEl.shadowRoot!.querySelector('.auth-toggle a');
       (toggleLink as HTMLElement).click();
-      await element.updateComplete;
+      await authDialogEl.updateComplete;
 
-      const inputs = element.shadowRoot!.querySelectorAll('wa-dialog wa-input');
+      const inputs = authDialogEl.shadowRoot!.querySelectorAll('wa-dialog wa-input');
       const labels = Array.from(inputs).map((input) => input.getAttribute('label'));
 
       expect(labels).toContain('Name');
@@ -197,11 +209,13 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      const toggleLink = element.shadowRoot!.querySelector('.auth-toggle a');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      const toggleLink = authDialogEl.shadowRoot!.querySelector('.auth-toggle a');
       (toggleLink as HTMLElement).click();
-      await element.updateComplete;
+      await authDialogEl.updateComplete;
 
-      const footerButtons = element.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
+      const footerButtons = authDialogEl.shadowRoot!.querySelectorAll('wa-dialog wa-button[slot="footer"]');
       const submitButton = Array.from(footerButtons).find((btn) => btn.getAttribute('variant') === 'brand');
       expect(submitButton?.textContent?.trim()).toBe('Sign up');
     });
@@ -213,18 +227,20 @@ describe('ogs-page', () => {
       signInItem!.click();
       await element.updateComplete;
 
-      let toggleLink = element.shadowRoot!.querySelector('.auth-toggle a');
+      const authDialogEl = element.shadowRoot!.querySelector('ogs-auth-dialog')!;
+      await authDialogEl.updateComplete;
+      let toggleLink = authDialogEl.shadowRoot!.querySelector('.auth-toggle a');
       (toggleLink as HTMLElement).click();
-      await element.updateComplete;
+      await authDialogEl.updateComplete;
 
       // Now switch back to sign-in
-      toggleLink = element.shadowRoot!.querySelector('.auth-toggle a');
+      toggleLink = authDialogEl.shadowRoot!.querySelector('.auth-toggle a');
       expect(toggleLink?.textContent?.trim()).toBe('Sign in');
 
       (toggleLink as HTMLElement).click();
-      await element.updateComplete;
+      await authDialogEl.updateComplete;
 
-      const dialog = element.shadowRoot!.querySelector('wa-dialog');
+      const dialog = authDialogEl.shadowRoot!.querySelector('wa-dialog');
       expect(dialog!.getAttribute('label')).toBe('Sign In');
     });
   });
@@ -335,12 +351,17 @@ describe('ogs-page', () => {
       document.body.appendChild(el);
       await el.updateComplete;
 
-      // Cart drawer should still render with the default empty cart
-      const drawer = el.shadowRoot!.querySelector('wa-drawer');
+      // Cart drawer component should be rendered
+      const cartDrawer = el.shadowRoot!.querySelector('ogs-cart-drawer');
+      expect(cartDrawer).toBeTruthy();
+      await cartDrawer!.updateComplete;
+
+      // Cart drawer's wa-drawer should exist in its shadow root
+      const drawer = cartDrawer!.shadowRoot!.querySelector('wa-drawer');
       expect(drawer).toBeTruthy();
 
-      // The empty cart message should be present
-      const emptyMessage = el.shadowRoot!.querySelector('.cart-empty');
+      // The empty cart message should be present inside the cart drawer
+      const emptyMessage = cartDrawer!.shadowRoot!.querySelector('.cart-empty');
       expect(emptyMessage).toBeTruthy();
 
       el.remove();

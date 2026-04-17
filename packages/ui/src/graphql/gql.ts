@@ -18,9 +18,9 @@ type Documents = {
     "\n  mutation UpdateItemInCart($cartItem: CartItemInput!) {\n    updateItemInCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.UpdateItemInCartDocument,
     "\n  mutation RemoveFromCart($cartItem: CartItemInput!) {\n    removeFromCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.RemoveFromCartDocument,
     "\n  mutation SubmitOrder($input: SubmitOrderInput!) {\n    submitOrder(input: $input) {\n      id\n      orderNumber\n      customerName\n      totalAmount\n      createdAt\n    }\n  }\n": typeof types.SubmitOrderDocument,
+    "\n  query GetShoppingCartQuery {\n    getShoppingCart {\n      items {\n        inventoryItemId\n        quantity\n        productId\n        productName\n        condition\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.GetShoppingCartQueryDocument,
     "\n  query GetAllStoreLocations {\n    getAllStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": typeof types.GetAllStoreLocationsDocument,
     "\n  query GetEmployeeStoreLocations {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": typeof types.GetEmployeeStoreLocationsDocument,
-    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": typeof types.GetShoppingCartQueryDocument,
     "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": typeof types.UserPermissionsDocument,
     "\n  query GetSupportedGames {\n    getSupportedGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.GetSupportedGamesDocument,
     "\n  mutation AddToCart($cartItem: CartItemInput!) {\n    addToCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.AddToCartDocument,
@@ -85,9 +85,9 @@ const documents: Documents = {
     "\n  mutation UpdateItemInCart($cartItem: CartItemInput!) {\n    updateItemInCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.UpdateItemInCartDocument,
     "\n  mutation RemoveFromCart($cartItem: CartItemInput!) {\n    removeFromCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.RemoveFromCartDocument,
     "\n  mutation SubmitOrder($input: SubmitOrderInput!) {\n    submitOrder(input: $input) {\n      id\n      orderNumber\n      customerName\n      totalAmount\n      createdAt\n    }\n  }\n": types.SubmitOrderDocument,
+    "\n  query GetShoppingCartQuery {\n    getShoppingCart {\n      items {\n        inventoryItemId\n        quantity\n        productId\n        productName\n        condition\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.GetShoppingCartQueryDocument,
     "\n  query GetAllStoreLocations {\n    getAllStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": types.GetAllStoreLocationsDocument,
     "\n  query GetEmployeeStoreLocations {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": types.GetEmployeeStoreLocationsDocument,
-    "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    ": types.GetShoppingCartQueryDocument,
     "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": types.UserPermissionsDocument,
     "\n  query GetSupportedGames {\n    getSupportedGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.GetSupportedGamesDocument,
     "\n  mutation AddToCart($cartItem: CartItemInput!) {\n    addToCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.AddToCartDocument,
@@ -164,15 +164,15 @@ export function graphql(source: "\n  mutation SubmitOrder($input: SubmitOrderInp
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query GetShoppingCartQuery {\n    getShoppingCart {\n      items {\n        inventoryItemId\n        quantity\n        productId\n        productName\n        condition\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n"): typeof import('./graphql').GetShoppingCartQueryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query GetAllStoreLocations {\n    getAllStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n"): typeof import('./graphql').GetAllStoreLocationsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetEmployeeStoreLocations {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n"): typeof import('./graphql').GetEmployeeStoreLocationsDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n      query GetShoppingCartQuery {\n        getShoppingCart {\n          items {\n            inventoryItemId\n            quantity\n            productId\n            productName\n            condition\n            unitPrice\n            maxAvailable\n          }\n        }\n      }\n    "): typeof import('./graphql').GetShoppingCartQueryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

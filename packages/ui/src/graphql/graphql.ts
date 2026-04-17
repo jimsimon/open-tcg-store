@@ -1196,6 +1196,11 @@ export type SubmitOrderMutationVariables = Exact<{
 
 export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } };
 
+export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: CardCondition, unitPrice: number, maxAvailable: number }> } };
+
 export type GetAllStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1205,11 +1210,6 @@ export type GetEmployeeStoreLocationsQueryVariables = Exact<{ [key: string]: nev
 
 
 export type GetEmployeeStoreLocationsQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, city: string, state: string }> };
-
-export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: CardCondition, unitPrice: number, maxAvailable: number }> } };
 
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1677,6 +1677,21 @@ export const SubmitOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SubmitOrderMutation, SubmitOrderMutationVariables>;
+export const GetShoppingCartQueryDocument = new TypedDocumentString(`
+    query GetShoppingCartQuery {
+  getShoppingCart {
+    items {
+      inventoryItemId
+      quantity
+      productId
+      productName
+      condition
+      unitPrice
+      maxAvailable
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
 export const GetAllStoreLocationsDocument = new TypedDocumentString(`
     query GetAllStoreLocations {
   getAllStoreLocations {
@@ -1699,21 +1714,6 @@ export const GetEmployeeStoreLocationsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetEmployeeStoreLocationsQuery, GetEmployeeStoreLocationsQueryVariables>;
-export const GetShoppingCartQueryDocument = new TypedDocumentString(`
-    query GetShoppingCartQuery {
-  getShoppingCart {
-    items {
-      inventoryItemId
-      quantity
-      productId
-      productName
-      condition
-      unitPrice
-      maxAvailable
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GetShoppingCartQueryQuery, GetShoppingCartQueryQueryVariables>;
 export const UserPermissionsDocument = new TypedDocumentString(`
     query UserPermissions {
   userPermissions {
