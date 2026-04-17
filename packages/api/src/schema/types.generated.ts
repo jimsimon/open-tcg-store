@@ -128,12 +128,6 @@ export type BuyRateType =
   | 'fixed'
   | 'percentage';
 
-export type CancelOrderResult = {
-  __typename?: 'CancelOrderResult';
-  error?: Maybe<Scalars['String']['output']>;
-  order?: Maybe<Order>;
-};
-
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
@@ -240,15 +234,6 @@ export type InitialStoreLocation = {
   street1: Scalars['String']['input'];
   street2?: InputMaybe<Scalars['String']['input']>;
   zip: Scalars['String']['input'];
-};
-
-export type InsufficientItem = {
-  __typename?: 'InsufficientItem';
-  available: Scalars['Int']['output'];
-  condition: CardCondition;
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  requested: Scalars['Int']['output'];
 };
 
 export type IntegrationSettings = {
@@ -398,7 +383,7 @@ export type Mutation = {
   addToCart: ShoppingCart;
   bulkDeleteStock: Scalars['Boolean']['output'];
   bulkUpdateStock: Array<InventoryItemStock>;
-  cancelOrder: CancelOrderResult;
+  cancelOrder: Order;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
   createLot: Lot;
@@ -418,7 +403,7 @@ export type Mutation = {
    * Removing a game also deletes its buy rates.
    */
   setSupportedGames: Array<SupportedGame>;
-  submitOrder: SubmitOrderResult;
+  submitOrder: Order;
   triggerBackup: BackupResult;
   triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
@@ -426,7 +411,7 @@ export type Mutation = {
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
-  updateOrderStatus: UpdateOrderStatusResult;
+  updateOrderStatus: Order;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -1071,13 +1056,6 @@ export type SubmitOrderInput = {
   organizationId: Scalars['String']['input'];
 };
 
-export type SubmitOrderResult = {
-  __typename?: 'SubmitOrderResult';
-  error?: Maybe<Scalars['String']['output']>;
-  insufficientItems?: Maybe<Array<InsufficientItem>>;
-  order?: Maybe<Order>;
-};
-
 export type SupportedGame = {
   __typename?: 'SupportedGame';
   categoryId: Scalars['Int']['output'];
@@ -1132,12 +1110,6 @@ export type UpdateLotInput = {
   id: Scalars['Int']['input'];
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
-};
-
-export type UpdateOrderStatusResult = {
-  __typename?: 'UpdateOrderStatusResult';
-  error?: Maybe<Scalars['String']['output']>;
-  order?: Maybe<Order>;
 };
 
 export type UpdateShopifyIntegrationInput = {
@@ -1289,7 +1261,6 @@ export type ResolversTypes = {
   BuyRateEntryInput: BuyRateEntryInput;
   BuyRateTable: ResolverTypeWrapper<Omit<BuyRateTable, 'entries'> & { entries: Array<ResolversTypes['BuyRateEntry']> }>;
   BuyRateType: ResolverTypeWrapper<'fixed' | 'percentage'>;
-  CancelOrderResult: ResolverTypeWrapper<Omit<CancelOrderResult, 'order'> & { order?: Maybe<ResolversTypes['Order']> }>;
   Card: ResolverTypeWrapper<Card>;
   CardCondition: ResolverTypeWrapper<'NM' | 'LP' | 'MP' | 'HP' | 'D'>;
   CardImages: ResolverTypeWrapper<CardImages>;
@@ -1304,7 +1275,6 @@ export type ResolversTypes = {
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
   Granularity: ResolverTypeWrapper<'hour' | 'day' | 'month'>;
   InitialStoreLocation: InitialStoreLocation;
-  InsufficientItem: ResolverTypeWrapper<Omit<InsufficientItem, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
   InventoryFilters: InventoryFilters;
   InventoryItem: ResolverTypeWrapper<Omit<InventoryItem, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
@@ -1356,7 +1326,6 @@ export type ResolversTypes = {
   StoreSettings: ResolverTypeWrapper<StoreSettings>;
   StripeIntegration: ResolverTypeWrapper<StripeIntegration>;
   SubmitOrderInput: SubmitOrderInput;
-  SubmitOrderResult: ResolverTypeWrapper<Omit<SubmitOrderResult, 'insufficientItems' | 'order'> & { insufficientItems?: Maybe<Array<ResolversTypes['InsufficientItem']>>, order?: Maybe<ResolversTypes['Order']> }>;
   SupportedGame: ResolverTypeWrapper<SupportedGame>;
   TransactionLogEntry: ResolverTypeWrapper<Omit<TransactionLogEntry, 'resourceType'> & { resourceType: ResolversTypes['ResourceType'] }>;
   TransactionLogFilters: TransactionLogFilters;
@@ -1364,7 +1333,6 @@ export type ResolversTypes = {
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
-  UpdateOrderStatusResult: ResolverTypeWrapper<Omit<UpdateOrderStatusResult, 'order'> & { order?: Maybe<ResolversTypes['Order']> }>;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1391,7 +1359,6 @@ export type ResolversParentTypes = {
   Float: Scalars['Float']['output'];
   BuyRateEntryInput: BuyRateEntryInput;
   BuyRateTable: Omit<BuyRateTable, 'entries'> & { entries: Array<ResolversParentTypes['BuyRateEntry']> };
-  CancelOrderResult: Omit<CancelOrderResult, 'order'> & { order?: Maybe<ResolversParentTypes['Order']> };
   Card: Card;
   CardImages: CardImages;
   CartItemInput: CartItemInput;
@@ -1404,7 +1371,6 @@ export type ResolversParentTypes = {
   DataUpdateResult: DataUpdateResult;
   DataUpdateStatus: DataUpdateStatus;
   InitialStoreLocation: InitialStoreLocation;
-  InsufficientItem: InsufficientItem;
   IntegrationSettings: IntegrationSettings;
   InventoryFilters: InventoryFilters;
   InventoryItem: InventoryItem;
@@ -1454,7 +1420,6 @@ export type ResolversParentTypes = {
   StoreSettings: StoreSettings;
   StripeIntegration: StripeIntegration;
   SubmitOrderInput: SubmitOrderInput;
-  SubmitOrderResult: Omit<SubmitOrderResult, 'insufficientItems' | 'order'> & { insufficientItems?: Maybe<Array<ResolversParentTypes['InsufficientItem']>>, order?: Maybe<ResolversParentTypes['Order']> };
   SupportedGame: SupportedGame;
   TransactionLogEntry: TransactionLogEntry;
   TransactionLogFilters: TransactionLogFilters;
@@ -1462,7 +1427,6 @@ export type ResolversParentTypes = {
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
-  UpdateOrderStatusResult: Omit<UpdateOrderStatusResult, 'order'> & { order?: Maybe<ResolversParentTypes['Order']> };
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
   UpdateStockInput: UpdateStockInput;
   UpdateStoreLocationInput: UpdateStoreLocationInput;
@@ -1517,11 +1481,6 @@ export type BuyRateTableResolvers<ContextType = any, ParentType extends Resolver
 };
 
 export type BuyRateTypeResolvers = EnumResolverSignature<{ fixed?: any, percentage?: any }, ResolversTypes['BuyRateType']>;
-
-export type CancelOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CancelOrderResult'] = ResolversParentTypes['CancelOrderResult']> = {
-  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
-};
 
 export type CardResolvers<ContextType = any, ParentType extends ResolversParentTypes['Card'] = ResolversParentTypes['Card']> = {
   finishes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1581,14 +1540,6 @@ export type DataUpdateStatusResolvers<ContextType = any, ParentType extends Reso
 };
 
 export type GranularityResolvers = EnumResolverSignature<{ day?: any, hour?: any, month?: any }, ResolversTypes['Granularity']>;
-
-export type InsufficientItemResolvers<ContextType = any, ParentType extends ResolversParentTypes['InsufficientItem'] = ResolversParentTypes['InsufficientItem']> = {
-  available?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
-  productId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  productName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  requested?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-};
 
 export type IntegrationSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['IntegrationSettings'] = ResolversParentTypes['IntegrationSettings']> = {
   shopify?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType>;
@@ -1702,7 +1653,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
   bulkDeleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationbulkDeleteStockArgs, 'input'>>;
   bulkUpdateStock?: Resolver<Array<ResolversTypes['InventoryItemStock']>, ParentType, ContextType, RequireFields<MutationbulkUpdateStockArgs, 'input'>>;
-  cancelOrder?: Resolver<ResolversTypes['CancelOrderResult'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
+  cancelOrder?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   createLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationcreateLotArgs, 'input'>>;
@@ -1716,7 +1667,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   saveBuyRates?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType, RequireFields<MutationsaveBuyRatesArgs, 'input'>>;
   setActiveStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationsetActiveStoreLocationArgs, 'organizationId'>>;
   setSupportedGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType, RequireFields<MutationsetSupportedGamesArgs, 'categoryIds'>>;
-  submitOrder?: Resolver<ResolversTypes['SubmitOrderResult'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
+  submitOrder?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
   triggerDataUpdate?: Resolver<ResolversTypes['DataUpdateResult'], ParentType, ContextType>;
   triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
@@ -1724,7 +1675,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
   updateLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationupdateLotArgs, 'input'>>;
-  updateOrderStatus?: Resolver<ResolversTypes['UpdateOrderStatusResult'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
+  updateOrderStatus?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
   updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
   updateStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationupdateStockArgs, 'input'>>;
   updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;
@@ -1980,12 +1931,6 @@ export type StripeIntegrationResolvers<ContextType = any, ParentType extends Res
   hasApiKey?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
 
-export type SubmitOrderResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubmitOrderResult'] = ResolversParentTypes['SubmitOrderResult']> = {
-  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  insufficientItems?: Resolver<Maybe<Array<ResolversTypes['InsufficientItem']>>, ParentType, ContextType>;
-  order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
-};
-
 export type SupportedGameResolvers<ContextType = any, ParentType extends ResolversParentTypes['SupportedGame'] = ResolversParentTypes['SupportedGame']> = {
   categoryId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2011,11 +1956,6 @@ export type TransactionLogPageResolvers<ContextType = any, ParentType extends Re
   totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
-export type UpdateOrderStatusResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['UpdateOrderStatusResult'] = ResolversParentTypes['UpdateOrderStatusResult']> = {
-  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  order?: Resolver<Maybe<ResolversTypes['Order']>, ParentType, ContextType>;
-};
-
 export type UserPermissionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserPermissions'] = ResolversParentTypes['UserPermissions']> = {
   canAccessSettings?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -2035,7 +1975,6 @@ export type Resolvers<ContextType = any> = {
   BuyRateEntry?: BuyRateEntryResolvers<ContextType>;
   BuyRateTable?: BuyRateTableResolvers<ContextType>;
   BuyRateType?: BuyRateTypeResolvers;
-  CancelOrderResult?: CancelOrderResultResolvers<ContextType>;
   Card?: CardResolvers<ContextType>;
   CardCondition?: CardConditionResolvers;
   CardImages?: CardImagesResolvers<ContextType>;
@@ -2045,7 +1984,6 @@ export type Resolvers<ContextType = any> = {
   DataUpdateResult?: DataUpdateResultResolvers<ContextType>;
   DataUpdateStatus?: DataUpdateStatusResolvers<ContextType>;
   Granularity?: GranularityResolvers;
-  InsufficientItem?: InsufficientItemResolvers<ContextType>;
   IntegrationSettings?: IntegrationSettingsResolvers<ContextType>;
   InventoryItem?: InventoryItemResolvers<ContextType>;
   InventoryItemStock?: InventoryItemStockResolvers<ContextType>;
@@ -2085,11 +2023,9 @@ export type Resolvers<ContextType = any> = {
   StoreLocation?: StoreLocationResolvers<ContextType>;
   StoreSettings?: StoreSettingsResolvers<ContextType>;
   StripeIntegration?: StripeIntegrationResolvers<ContextType>;
-  SubmitOrderResult?: SubmitOrderResultResolvers<ContextType>;
   SupportedGame?: SupportedGameResolvers<ContextType>;
   TransactionLogEntry?: TransactionLogEntryResolvers<ContextType>;
   TransactionLogPage?: TransactionLogPageResolvers<ContextType>;
-  UpdateOrderStatusResult?: UpdateOrderStatusResultResolvers<ContextType>;
   UserPermissions?: UserPermissionsResolvers<ContextType>;
 };
 

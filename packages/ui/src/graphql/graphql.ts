@@ -129,12 +129,6 @@ export enum BuyRateType {
   Percentage = 'percentage'
 }
 
-export type CancelOrderResult = {
-  __typename?: 'CancelOrderResult';
-  error?: Maybe<Scalars['String']['output']>;
-  order?: Maybe<Order>;
-};
-
 export type Card = {
   __typename?: 'Card';
   finishes: Array<Scalars['String']['output']>;
@@ -243,15 +237,6 @@ export type InitialStoreLocation = {
   street1: Scalars['String']['input'];
   street2?: InputMaybe<Scalars['String']['input']>;
   zip: Scalars['String']['input'];
-};
-
-export type InsufficientItem = {
-  __typename?: 'InsufficientItem';
-  available: Scalars['Int']['output'];
-  condition: CardCondition;
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  requested: Scalars['Int']['output'];
 };
 
 export type IntegrationSettings = {
@@ -401,7 +386,7 @@ export type Mutation = {
   addToCart: ShoppingCart;
   bulkDeleteStock: Scalars['Boolean']['output'];
   bulkUpdateStock: Array<InventoryItemStock>;
-  cancelOrder: CancelOrderResult;
+  cancelOrder: Order;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
   createLot: Lot;
@@ -421,7 +406,7 @@ export type Mutation = {
    * Removing a game also deletes its buy rates.
    */
   setSupportedGames: Array<SupportedGame>;
-  submitOrder: SubmitOrderResult;
+  submitOrder: Order;
   triggerBackup: BackupResult;
   triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
@@ -429,7 +414,7 @@ export type Mutation = {
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
-  updateOrderStatus: UpdateOrderStatusResult;
+  updateOrderStatus: Order;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -1076,13 +1061,6 @@ export type SubmitOrderInput = {
   organizationId: Scalars['String']['input'];
 };
 
-export type SubmitOrderResult = {
-  __typename?: 'SubmitOrderResult';
-  error?: Maybe<Scalars['String']['output']>;
-  insufficientItems?: Maybe<Array<InsufficientItem>>;
-  order?: Maybe<Order>;
-};
-
 export type SupportedGame = {
   __typename?: 'SupportedGame';
   categoryId: Scalars['Int']['output'];
@@ -1137,12 +1115,6 @@ export type UpdateLotInput = {
   id: Scalars['Int']['input'];
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
-};
-
-export type UpdateOrderStatusResult = {
-  __typename?: 'UpdateOrderStatusResult';
-  error?: Maybe<Scalars['String']['output']>;
-  order?: Maybe<Order>;
 };
 
 export type UpdateShopifyIntegrationInput = {
@@ -1222,7 +1194,7 @@ export type SubmitOrderMutationVariables = Exact<{
 }>;
 
 
-export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder: { __typename?: 'SubmitOrderResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } | null, insufficientItems?: Array<{ __typename?: 'InsufficientItem', productId: number, productName: string, condition: CardCondition, requested: number, available: number }> | null } };
+export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } };
 
 export type GetAllStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1426,7 +1398,7 @@ export type CancelOrderMutationVariables = Exact<{
 }>;
 
 
-export type CancelOrderMutation = { __typename?: 'Mutation', cancelOrder: { __typename?: 'CancelOrderResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } | null } };
+export type CancelOrderMutation = { __typename?: 'Mutation', cancelOrder: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } };
 
 export type UpdateOrderStatusMutationVariables = Exact<{
   orderId: Scalars['Int']['input'];
@@ -1434,7 +1406,7 @@ export type UpdateOrderStatusMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrderStatusMutation = { __typename?: 'Mutation', updateOrderStatus: { __typename?: 'UpdateOrderStatusResult', error?: string | null, order?: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } | null } };
+export type UpdateOrderStatusMutation = { __typename?: 'Mutation', updateOrderStatus: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } };
 
 export type GetProductQueryVariables = Exact<{
   productId: Scalars['String']['input'];
@@ -1697,21 +1669,11 @@ export const RemoveFromCartDocument = new TypedDocumentString(`
 export const SubmitOrderDocument = new TypedDocumentString(`
     mutation SubmitOrder($input: SubmitOrderInput!) {
   submitOrder(input: $input) {
-    order {
-      id
-      orderNumber
-      customerName
-      totalAmount
-      createdAt
-    }
-    error
-    insufficientItems {
-      productId
-      productName
-      condition
-      requested
-      available
-    }
+    id
+    orderNumber
+    customerName
+    totalAmount
+    createdAt
   }
 }
     `) as unknown as TypedDocumentString<SubmitOrderMutation, SubmitOrderMutationVariables>;
@@ -2130,54 +2092,48 @@ export const GetOrdersDocument = new TypedDocumentString(`
 export const CancelOrderDocument = new TypedDocumentString(`
     mutation CancelOrder($orderId: Int!) {
   cancelOrder(orderId: $orderId) {
-    order {
+    id
+    orderNumber
+    customerName
+    status
+    totalAmount
+    totalCostBasis
+    totalProfit
+    createdAt
+    items {
       id
-      orderNumber
-      customerName
-      status
-      totalAmount
-      totalCostBasis
-      totalProfit
-      createdAt
-      items {
-        id
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        costBasis
-        profit
-      }
+      productId
+      productName
+      condition
+      quantity
+      unitPrice
+      costBasis
+      profit
     }
-    error
   }
 }
     `) as unknown as TypedDocumentString<CancelOrderMutation, CancelOrderMutationVariables>;
 export const UpdateOrderStatusDocument = new TypedDocumentString(`
     mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {
   updateOrderStatus(orderId: $orderId, status: $status) {
-    order {
+    id
+    orderNumber
+    customerName
+    status
+    totalAmount
+    totalCostBasis
+    totalProfit
+    createdAt
+    items {
       id
-      orderNumber
-      customerName
-      status
-      totalAmount
-      totalCostBasis
-      totalProfit
-      createdAt
-      items {
-        id
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        costBasis
-        profit
-      }
+      productId
+      productName
+      condition
+      quantity
+      unitPrice
+      costBasis
+      profit
     }
-    error
   }
 }
     `) as unknown as TypedDocumentString<UpdateOrderStatusMutation, UpdateOrderStatusMutationVariables>;

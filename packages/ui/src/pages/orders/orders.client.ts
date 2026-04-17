@@ -88,27 +88,24 @@ const GetOrdersQuery = graphql(`
 const CancelOrderMutation = graphql(`
   mutation CancelOrder($orderId: Int!) {
     cancelOrder(orderId: $orderId) {
-      order {
+      id
+      orderNumber
+      customerName
+      status
+      totalAmount
+      totalCostBasis
+      totalProfit
+      createdAt
+      items {
         id
-        orderNumber
-        customerName
-        status
-        totalAmount
-        totalCostBasis
-        totalProfit
-        createdAt
-        items {
-          id
-          productId
-          productName
-          condition
-          quantity
-          unitPrice
-          costBasis
-          profit
-        }
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        costBasis
+        profit
       }
-      error
     }
   }
 `);
@@ -116,27 +113,24 @@ const CancelOrderMutation = graphql(`
 const UpdateOrderStatusMutation = graphql(`
   mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {
     updateOrderStatus(orderId: $orderId, status: $status) {
-      order {
+      id
+      orderNumber
+      customerName
+      status
+      totalAmount
+      totalCostBasis
+      totalProfit
+      createdAt
+      items {
         id
-        orderNumber
-        customerName
-        status
-        totalAmount
-        totalCostBasis
-        totalProfit
-        createdAt
-        items {
-          id
-          productId
-          productName
-          condition
-          quantity
-          unitPrice
-          costBasis
-          profit
-        }
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+        costBasis
+        profit
       }
-      error
     }
   }
 `);
@@ -667,12 +661,8 @@ export class OrdersPage extends LitElement {
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        const data = result.data.cancelOrder;
-        if (data.error) {
-          this.error = data.error;
-        } else if (data.order) {
-          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o)) as Order[];
-        }
+        const updated = result.data.cancelOrder as Order;
+        this.orders = this.orders.map((o) => (o.id === updated.id ? updated : o));
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to cancel order';
@@ -693,12 +683,8 @@ export class OrdersPage extends LitElement {
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
-        const data = result.data.updateOrderStatus;
-        if (data.error) {
-          this.error = data.error;
-        } else if (data.order) {
-          this.orders = this.orders.map((o) => (o.id === data.order!.id ? data.order! : o)) as Order[];
-        }
+        const updated = result.data.updateOrderStatus as Order;
+        this.orders = this.orders.map((o) => (o.id === updated.id ? updated : o));
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to update order status';

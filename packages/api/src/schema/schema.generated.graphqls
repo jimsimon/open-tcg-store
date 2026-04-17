@@ -106,11 +106,6 @@ enum BuyRateType {
   percentage
 }
 
-type CancelOrderResult {
-  error: String
-  order: Order
-}
-
 type Card {
   finishes: [String!]!
   flavorText: String
@@ -212,14 +207,6 @@ input InitialStoreLocation {
   street1: String!
   street2: String
   zip: String!
-}
-
-type InsufficientItem {
-  available: Int!
-  condition: CardCondition!
-  productId: Int!
-  productName: String!
-  requested: Int!
 }
 
 type IntegrationSettings {
@@ -358,7 +345,7 @@ type Mutation {
   addToCart(cartItem: CartItemInput!): ShoppingCart!
   bulkDeleteStock(input: BulkDeleteStockInput!): Boolean!
   bulkUpdateStock(input: BulkUpdateStockInput!): [InventoryItemStock!]!
-  cancelOrder(orderId: Int!): CancelOrderResult!
+  cancelOrder(orderId: Int!): Order!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
   createLot(input: CreateLotInput!): Lot!
@@ -383,7 +370,7 @@ type Mutation {
   Removing a game also deletes its buy rates.
   """
   setSupportedGames(categoryIds: [Int!]!): [SupportedGame!]!
-  submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
+  submitOrder(input: SubmitOrderInput!): Order!
   triggerBackup: BackupResult!
   triggerDataUpdate: DataUpdateResult!
   triggerRestore(provider: BackupProvider!): RestoreResult!
@@ -391,7 +378,7 @@ type Mutation {
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
   updateLot(input: UpdateLotInput!): Lot!
-  updateOrderStatus(orderId: Int!, status: OrderStatus!): UpdateOrderStatusResult!
+  updateOrderStatus(orderId: Int!, status: OrderStatus!): Order!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   updateStock(input: UpdateStockInput!): InventoryItemStock!
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!
@@ -738,12 +725,6 @@ input SubmitOrderInput {
   organizationId: String!
 }
 
-type SubmitOrderResult {
-  error: String
-  insufficientItems: [InsufficientItem!]
-  order: Order
-}
-
 type SupportedGame {
   categoryId: Int!
   displayName: String!
@@ -795,11 +776,6 @@ input UpdateLotInput {
   id: Int!
   items: [LotItemInput!]!
   name: String!
-}
-
-type UpdateOrderStatusResult {
-  error: String
-  order: Order
 }
 
 input UpdateShopifyIntegrationInput {

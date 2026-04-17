@@ -6,14 +6,6 @@ import { logTransaction } from './transaction-log-service';
 import { todayDateString, safeISOString } from '../lib/date-utils';
 import type { CardCondition, OrderStatus } from '../schema/types.generated';
 
-interface InsufficientItemInfo {
-  productId: number;
-  productName: string;
-  condition: CardCondition;
-  requested: number;
-  available: number;
-}
-
 interface OrderItemResult {
   id: number;
   productId: number;
@@ -26,21 +18,17 @@ interface OrderItemResult {
   lotId: number | null;
 }
 
-interface OrderResult {
-  order?: {
-    id: number;
-    organizationId: string;
-    orderNumber: string;
-    customerName: string;
-    status: OrderStatus;
-    totalAmount: number;
-    totalCostBasis: number | null;
-    totalProfit: number | null;
-    createdAt: string;
-    items: OrderItemResult[];
-  };
-  error?: string;
-  insufficientItems?: InsufficientItemInfo[];
+interface OrderData {
+  id: number;
+  organizationId: string;
+  orderNumber: string;
+  customerName: string;
+  status: OrderStatus;
+  totalAmount: number;
+  totalCostBasis: number | null;
+  totalProfit: number | null;
+  createdAt: string;
+  items: OrderItemResult[];
 }
 
 function mapOrderItems(
@@ -101,7 +89,7 @@ function generateOrderNumber(): string {
   return `ORD-${datePart}-${randomPart}`;
 }
 
-export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderResult> {
+export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderData> {
   // Wrap the entire order submission — including the cart read — in a transaction
   // to prevent race conditions. This ensures the cart state is consistent with the
   // inventory checks and stock decrements (no stale data between fetch and delete).
@@ -115,7 +103,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
       .limit(1);
 
     if (!userCart) {
-      return { error: 'Cart is empty' };
+      throw new Error('Cart is empty');
     }
 
     const cartItems = await tx
@@ -135,7 +123,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
       .where(eq(cartItem.cartId, userCart.id));
 
     if (cartItems.length === 0) {
-      return { error: 'Cart is empty' };
+      throw new Error('Cart is empty');
     }
 
     // 2. Validate inventory availability — batch-check stock totals for all cart items in one query
@@ -151,7 +139,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
 
     const stockMap = new Map(stockTotals.map((s) => [s.inventoryItemId, s.total]));
 
-    const insufficientItems: InsufficientItemInfo[] = [];
+    const insufficientItems: { productName: string; condition: string; requested: number; available: number }[] = [];
     const cartItemsWithInventory: {
       cartItemId: number;
       inventoryItemId: number;
@@ -167,9 +155,8 @@ export async function submitOrder(organizationId: string, userId: string, custom
 
       if (totalAvailable < ci.quantity) {
         insufficientItems.push({
-          productId: ci.productId,
           productName: ci.productName,
-          condition: ci.invCondition as CardCondition,
+          condition: ci.invCondition,
           requested: ci.quantity,
           available: totalAvailable,
         });
@@ -187,10 +174,10 @@ export async function submitOrder(organizationId: string, userId: string, custom
     }
 
     if (insufficientItems.length > 0) {
-      return {
-        error: 'Insufficient inventory for one or more items',
-        insufficientItems,
-      };
+      const details = insufficientItems
+        .map((i) => `${i.productName} (${i.condition}): requested ${i.requested}, available ${i.available}`)
+        .join('; ');
+      throw new Error(`Insufficient inventory: ${details}`);
     }
 
     // 3. Create the order
@@ -303,46 +290,38 @@ export async function submitOrder(organizationId: string, userId: string, custom
     const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
 
     return {
-      order: {
-        id: insertedOrder.id,
-        organizationId: insertedOrder.organizationId,
-        orderNumber: insertedOrder.orderNumber,
-        customerName: insertedOrder.customerName,
-        status: insertedOrder.status as OrderStatus,
-        totalAmount: insertedOrder.totalAmount,
-        totalCostBasis,
-        totalProfit,
-        createdAt: safeISOString(insertedOrder.createdAt),
-        items,
-      },
+      id: insertedOrder.id,
+      organizationId: insertedOrder.organizationId,
+      orderNumber: insertedOrder.orderNumber,
+      customerName: insertedOrder.customerName,
+      status: insertedOrder.status as OrderStatus,
+      totalAmount: insertedOrder.totalAmount,
+      totalCostBasis,
+      totalProfit,
+      createdAt: safeISOString(insertedOrder.createdAt),
+      items,
     };
   });
 
   // Log after the transaction commits — best-effort, won't be rolled back with the order
-  if (result.order) {
-    await logTransaction({
-      organizationId,
-      userId,
-      action: 'order.created',
-      resourceType: 'order',
-      resourceId: result.order.id,
-      details: {
-        orderNumber: result.order.orderNumber,
-        customerName,
-        totalAmount: result.order.totalAmount,
-        itemCount: result.order.items.length,
-      },
-    });
-  }
+  await logTransaction({
+    organizationId,
+    userId,
+    action: 'order.created',
+    resourceType: 'order',
+    resourceId: result.id,
+    details: {
+      orderNumber: result.orderNumber,
+      customerName,
+      totalAmount: result.totalAmount,
+      itemCount: result.items.length,
+    },
+  });
 
   return result;
 }
 
-export async function cancelOrder(
-  orderId: number,
-  organizationId: string,
-  userId: string,
-): Promise<{ order?: OrderResult['order']; error?: string }> {
+export async function cancelOrder(orderId: number, organizationId: string, userId: string): Promise<OrderData> {
   // 1. Find the order — scoped to the caller's organization
   const existingOrder = await otcgs.query.order.findFirst({
     with: {
@@ -352,11 +331,11 @@ export async function cancelOrder(
   });
 
   if (!existingOrder) {
-    return { error: 'Order not found' };
+    throw new Error('Order not found');
   }
 
   if (existingOrder.status === 'cancelled') {
-    return { error: 'Order is already cancelled' };
+    throw new Error('Order is already cancelled');
   }
 
   // 2. Return items to inventory — batch-fetch all stock entries first, then process
@@ -418,18 +397,16 @@ export async function cancelOrder(
   });
 
   return {
-    order: {
-      id: existingOrder.id,
-      organizationId: existingOrder.organizationId,
-      orderNumber: existingOrder.orderNumber,
-      customerName: existingOrder.customerName,
-      status: 'cancelled',
-      totalAmount: existingOrder.totalAmount,
-      totalCostBasis,
-      totalProfit,
-      createdAt: safeISOString(existingOrder.createdAt),
-      items,
-    },
+    id: existingOrder.id,
+    organizationId: existingOrder.organizationId,
+    orderNumber: existingOrder.orderNumber,
+    customerName: existingOrder.customerName,
+    status: 'cancelled',
+    totalAmount: existingOrder.totalAmount,
+    totalCostBasis,
+    totalProfit,
+    createdAt: safeISOString(existingOrder.createdAt),
+    items,
   };
 }
 
@@ -528,10 +505,10 @@ export async function updateOrderStatus(
   newStatus: string,
   organizationId: string,
   userId: string,
-): Promise<{ order?: OrderResult['order']; error?: string }> {
+): Promise<OrderData> {
   const validStatuses = ['open', 'completed'];
   if (!validStatuses.includes(newStatus)) {
-    return { error: `Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(', ')}` };
+    throw new Error(`Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(', ')}`);
   }
 
   // Scope the lookup to the caller's organization
@@ -541,15 +518,15 @@ export async function updateOrderStatus(
   });
 
   if (!existingOrder) {
-    return { error: 'Order not found' };
+    throw new Error('Order not found');
   }
 
   if (existingOrder.status === 'cancelled') {
-    return { error: 'Cannot change status of a cancelled order' };
+    throw new Error('Cannot change status of a cancelled order');
   }
 
   if (existingOrder.status === newStatus) {
-    return { error: `Order is already ${newStatus}` };
+    throw new Error(`Order is already ${newStatus}`);
   }
 
   await otcgs.update(order).set({ status: newStatus }).where(eq(order.id, orderId));
@@ -572,18 +549,16 @@ export async function updateOrderStatus(
   });
 
   return {
-    order: {
-      id: existingOrder.id,
-      organizationId: existingOrder.organizationId,
-      orderNumber: existingOrder.orderNumber,
-      customerName: existingOrder.customerName,
-      status: newStatus as OrderStatus,
-      totalAmount: existingOrder.totalAmount,
-      totalCostBasis,
-      totalProfit,
-      createdAt: safeISOString(existingOrder.createdAt),
-      items,
-    },
+    id: existingOrder.id,
+    organizationId: existingOrder.organizationId,
+    orderNumber: existingOrder.orderNumber,
+    customerName: existingOrder.customerName,
+    status: newStatus as OrderStatus,
+    totalAmount: existingOrder.totalAmount,
+    totalCostBasis,
+    totalProfit,
+    createdAt: safeISOString(existingOrder.createdAt),
+    items,
   };
 }
 
