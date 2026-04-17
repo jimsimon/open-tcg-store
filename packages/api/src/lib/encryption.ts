@@ -50,6 +50,10 @@ export function encrypt(plaintext: string): string {
 /**
  * Decrypt an encrypted string produced by encrypt().
  * Expects the format: iv:authTag:ciphertext (all base64-encoded)
+ *
+ * Backwards-compatible: the IV is read from the stored ciphertext, so data
+ * encrypted with the previous 16-byte IV will still decrypt correctly.
+ * IV_LENGTH only affects new encrypt() calls.
  */
 export function decrypt(encrypted: string): string {
   const key = getEncryptionKey();
@@ -73,7 +77,9 @@ export function decrypt(encrypted: string): string {
 }
 
 /**
- * Encrypt a value if it's not null/undefined, otherwise return null.
+ * Encrypt a value if it's not null/undefined/whitespace-only, otherwise return null.
+ * Note: whitespace-only strings (e.g. "  ") are intentionally treated as empty
+ * to avoid storing meaningless encrypted values for blank form fields.
  */
 export function encryptIfPresent(value: string | null | undefined): string | null {
   if (value == null || value.trim() === '') return null;

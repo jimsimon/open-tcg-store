@@ -51,6 +51,8 @@ function validateAddInput(input: AddInventoryItemInput): void {
 function validateUpdateInput(input: UpdateInventoryItemInput): void {
   if (!input.id) throw new Error('id is required');
 
+  if (input.price != null && input.price < 0) throw new Error('price must be non-negative');
+
   if (input.condition != null) {
     const validConditions = ['NM', 'LP', 'MP', 'HP', 'D'];
     if (!validConditions.includes(input.condition)) {

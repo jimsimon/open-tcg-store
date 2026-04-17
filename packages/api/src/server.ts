@@ -115,12 +115,16 @@ app.use(async (ctx, next) => {
           return;
         }
       }
-      // Neither Origin nor Referer is present. Block the request to prevent
-      // CSRF attacks that strip both headers (e.g. via meta referrer policy).
-      // Same-origin requests from modern browsers always include at least one.
-      ctx.status = 403;
-      ctx.body = { error: 'Forbidden: Origin or Referer header required for state-changing requests' };
-      return;
+      // Neither Origin nor Referer is present. CSRF protection is only
+      // relevant for requests carrying ambient credentials (session cookies).
+      // Non-browser clients (curl, Postman, server-to-server) don't send
+      // these headers and shouldn't be blocked.
+      const hasCookie = ctx.get('Cookie')?.includes('better-auth.session_token');
+      if (hasCookie) {
+        ctx.status = 403;
+        ctx.body = { error: 'Forbidden: Origin or Referer header required for state-changing requests' };
+        return;
+      }
     }
   }
   return next();

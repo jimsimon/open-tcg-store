@@ -203,7 +203,10 @@ export async function performFirstTimeSetup(
       if (createdUserId) {
         await otcgs.delete(userTable).where(eq(userTable.id, createdUserId));
       }
-      // Delete all supported game records (they have no user scope)
+      // Delete all supported game records. This is an unscoped delete because
+      // storeSupportedGame records are only created during first-time setup and
+      // have no user/org scope. If a separate game-configuration feature is added
+      // in the future, this cleanup should be scoped to avoid data loss.
       await otcgs.delete(storeSupportedGame);
       // Delete the company settings singleton row. This is an unscoped delete,
       // which is safe because company_settings is a singleton table (at most one row).

@@ -59,6 +59,7 @@ export function rateLimit(options: RateLimitOptions): Middleware {
         }
         // If still over limit, reject the request to protect memory
         if (store.size >= MAX_STORE_SIZE) {
+          console.warn(`Rate limit store at max capacity (${MAX_STORE_SIZE}), rejecting new clients`);
           ctx.status = 429;
           ctx.set('Retry-After', String(Math.ceil(windowMs / 1000)));
           ctx.body = { error: message };
