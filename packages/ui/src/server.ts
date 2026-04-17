@@ -8,6 +8,7 @@ import viteConfig from '../../../vite.config.ts';
 import { execute } from './lib/graphql.ts';
 import { graphql } from './graphql/index.ts';
 import { authClient } from './auth-client.ts';
+import { RateLimitStore } from './lib/rate-limit-store.ts';
 
 // Hoisted to module scope to avoid re-parsing on every call
 const IsSetupPendingQuery = graphql(`
@@ -117,43 +118,16 @@ function requirePermission(resource: string, action: string) {
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
  */
-// Simple rate limit on anonymous session creation — max 30 per IP per minute
-const anonSessionCounts = new Map<string, { count: number; resetAt: number }>();
-const ANON_MAX = 30;
-const ANON_WINDOW_MS = 60_000;
-const ANON_MAX_STORE_SIZE = 100_000;
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of anonSessionCounts) {
-    if (now >= entry.resetAt) anonSessionCounts.delete(key);
-  }
-}, ANON_WINDOW_MS).unref();
+// Rate limit anonymous session creation — max 30 per IP per minute
+const anonSessionLimiter = new RateLimitStore({ max: 30, windowMs: 60_000 });
 
 async function ensureAnonymousSession(ctx: Context, next: Next) {
   // Already has a session from the global middleware
   if (ctx.state.auth) return next();
 
   // Rate limit anonymous session creation per IP
-  const ip = ctx.ip;
-  const now = Date.now();
-  let entry = anonSessionCounts.get(ip);
-  if (!entry || now >= entry.resetAt) {
-    // Guard against unbounded Map growth from DDoS with many unique IPs
-    if (anonSessionCounts.size >= ANON_MAX_STORE_SIZE) {
-      for (const [k, e] of anonSessionCounts) {
-        if (now >= e.resetAt) anonSessionCounts.delete(k);
-      }
-      if (anonSessionCounts.size >= ANON_MAX_STORE_SIZE) {
-        ctx.status = 429;
-        ctx.body = 'Too many requests. Please try again later.';
-        return;
-      }
-    }
-    entry = { count: 0, resetAt: now + ANON_WINDOW_MS };
-    anonSessionCounts.set(ip, entry);
-  }
-  entry.count++;
-  if (entry.count > ANON_MAX) {
+  const result = anonSessionLimiter.check(ctx.ip);
+  if (!result.allowed) {
     ctx.status = 429;
     ctx.body = 'Too many requests. Please try again later.';
     return;
