@@ -603,25 +603,29 @@ export async function updateInventoryItem(
 export async function deleteInventoryItem(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
 
-  // Verify the inventory item belongs to this organization
-  const [item] = await otcgs
-    .select({ id: inventoryItem.id })
-    .from(inventoryItem)
-    .where(and(eq(inventoryItem.id, id), eq(inventoryItem.organizationId, organizationId)))
-    .limit(1);
+  // Wrap in a transaction to prevent a TOCTOU race between the existence
+  // check and the soft-delete (consistent with all other mutation operations).
+  await otcgs.transaction(async (tx) => {
+    // Verify the inventory item belongs to this organization
+    const [item] = await tx
+      .select({ id: inventoryItem.id })
+      .from(inventoryItem)
+      .where(and(eq(inventoryItem.id, id), eq(inventoryItem.organizationId, organizationId)))
+      .limit(1);
 
-  if (!item) throw new Error('Inventory item not found');
+    if (!item) throw new Error('Inventory item not found');
 
-  // Soft-delete all non-deleted stock entries for this parent.
-  // The parent row itself is never deleted — it will be hidden from the
-  // list view automatically because the HAVING clause filters out items
-  // with zero total stock.
-  await otcgs
-    .update(inventoryItemStock)
-    .set({ deletedAt: now, quantity: 0, updatedAt: now })
-    .where(and(eq(inventoryItemStock.inventoryItemId, id), stockNotDeleted()));
+    // Soft-delete all non-deleted stock entries for this parent.
+    // The parent row itself is never deleted — it will be hidden from the
+    // list view automatically because the HAVING clause filters out items
+    // with zero total stock.
+    await tx
+      .update(inventoryItemStock)
+      .set({ deletedAt: now, quantity: 0, updatedAt: now })
+      .where(and(eq(inventoryItemStock.inventoryItemId, id), stockNotDeleted()));
+  });
 
-  // Log the transaction
+  // Log the transaction (outside DB transaction — best-effort)
   await logTransaction({
     organizationId,
     userId,
