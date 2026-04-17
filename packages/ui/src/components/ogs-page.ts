@@ -29,56 +29,11 @@ import { graphql } from '../graphql';
 import { execute } from '../lib/graphql';
 import logoSvg from '../assets/logo.svg?raw';
 import { cartState } from '../lib/cart-state';
-import type { CartItem } from '../lib/cart-state';
-import { formatCurrency } from '../lib/currency';
 import { storeList, activeStoreId, initActiveStoreFromCookie, setActiveStoreCookie } from '../lib/store-context';
 import { getAuthClient } from '../lib/auth';
-
-// --- GraphQL Mutations for Cart ---
-
-const UpdateItemInCartMutation = graphql(`
-  mutation UpdateItemInCart($cartItem: CartItemInput!) {
-    updateItemInCart(cartItem: $cartItem) {
-      items {
-        inventoryItemId
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        maxAvailable
-      }
-    }
-  }
-`);
-
-const RemoveFromCartMutation = graphql(`
-  mutation RemoveFromCart($cartItem: CartItemInput!) {
-    removeFromCart(cartItem: $cartItem) {
-      items {
-        inventoryItemId
-        productId
-        productName
-        condition
-        quantity
-        unitPrice
-        maxAvailable
-      }
-    }
-  }
-`);
-
-const SubmitOrderMutation = graphql(`
-  mutation SubmitOrder($input: SubmitOrderInput!) {
-    submitOrder(input: $input) {
-      id
-      orderNumber
-      customerName
-      totalAmount
-      createdAt
-    }
-  }
-`);
+import './ogs-cart-drawer.ts';
+import './ogs-auth-dialog.ts';
+import type { OgsCartDrawer } from './ogs-cart-drawer.ts';
 
 // --- GraphQL Queries for Store Locations ---
 
@@ -286,133 +241,11 @@ export class OgsPage extends SignalWatcher(LitElement) {
         border-radius: 100%;
       }
 
-      .auth-form {
-        display: flex;
-        flex-direction: column;
-        gap: var(--wa-space-m);
-      }
-
-      .auth-error {
-        color: var(--wa-color-danger-text);
-        margin: 0;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .auth-toggle {
-        margin-top: var(--wa-space-m);
-        text-align: center;
-        font-size: var(--wa-font-size-s);
-      }
-
-      .auth-toggle a {
-        color: var(--wa-color-text-link);
-        cursor: pointer;
-        text-decoration: underline;
-      }
-
       .dropdown-user-label {
         padding: var(--wa-space-xs) var(--wa-space-m);
         font-weight: bold;
         font-size: var(--wa-font-size-s);
         color: var(--wa-color-text-normal);
-      }
-
-      /* Cart Drawer Styles */
-      .cart-items {
-        display: flex;
-        flex-direction: column;
-        gap: var(--wa-space-m);
-      }
-
-      .cart-item {
-        display: flex;
-        flex-direction: column;
-        gap: var(--wa-space-xs);
-        padding: var(--wa-space-s);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-m);
-        background: var(--wa-color-surface-sunken);
-      }
-
-      .cart-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: var(--wa-space-xs);
-      }
-
-      .cart-item-name {
-        font-weight: 600;
-        font-size: var(--wa-font-size-s);
-        flex: 1;
-        word-break: break-word;
-      }
-
-      .cart-item-condition {
-        font-size: var(--wa-font-size-2xs);
-        color: var(--wa-color-text-muted);
-      }
-
-      .cart-item-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--wa-space-xs);
-      }
-
-      .cart-item-qty {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-2xs);
-      }
-
-      .cart-item-price {
-        font-weight: 600;
-        font-size: var(--wa-font-size-s);
-        white-space: nowrap;
-      }
-
-      .cart-total {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: var(--wa-space-s) 0;
-        border-top: 2px solid var(--wa-color-surface-border);
-        margin-top: var(--wa-space-s);
-        font-weight: 700;
-        font-size: var(--wa-font-size-m);
-      }
-
-      .cart-empty {
-        text-align: center;
-        padding: var(--wa-space-xl) var(--wa-space-m);
-        color: var(--wa-color-text-muted);
-      }
-
-      .cart-empty wa-icon {
-        font-size: 3rem;
-        margin-bottom: var(--wa-space-s);
-        opacity: 0.4;
-      }
-
-      .cart-form {
-        display: flex;
-        flex-direction: column;
-        gap: var(--wa-space-m);
-        margin-top: var(--wa-space-m);
-        padding-top: var(--wa-space-m);
-        border-top: 1px solid var(--wa-color-surface-border);
-      }
-
-      .cart-success {
-        text-align: center;
-        padding: var(--wa-space-l);
-      }
-
-      .cart-success wa-icon {
-        font-size: 3rem;
-        color: var(--wa-color-success-text);
-        margin-bottom: var(--wa-space-s);
       }
 
       .store-selector {
@@ -484,44 +317,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   showAuthDialog = false;
 
   @state()
-  authMode: 'signin' | 'signup' = 'signin';
-
-  @state()
-  authEmail = '';
-
-  @state()
-  authPassword = '';
-
-  @state()
-  authConfirmPassword = '';
-
-  @state()
-  authName = '';
-
-  @state()
-  authError = '';
-
-  @state()
-  authLoading = false;
-
-  // Cart drawer state
-  @state()
   showCartDrawer = false;
-
-  @state()
-  customerName = '';
-
-  @state()
-  submittingOrder = false;
-
-  @state()
-  orderError = '';
-
-  @state()
-  orderSuccess = '';
-
-  @state()
-  updatingCartItem = false;
 
   private lastScrollY = 0;
   private scrollThreshold = 10;
@@ -533,7 +329,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.fetchCart();
     this.initStoreContext();
     window.addEventListener('scroll', this.boundHandleScroll, { passive: true });
   }
@@ -582,34 +377,8 @@ export class OgsPage extends SignalWatcher(LitElement) {
     window.removeEventListener('scroll', this.boundHandleScroll);
   }
 
-  async fetchCart() {
-    const GetShoppingCartQuery = graphql(`
-      query GetShoppingCartQuery {
-        getShoppingCart {
-          items {
-            inventoryItemId
-            quantity
-            productId
-            productName
-            condition
-            unitPrice
-            maxAvailable
-          }
-        }
-      }
-    `);
-
-    try {
-      const result = await execute(GetShoppingCartQuery);
-
-      if (result?.errors?.length) {
-        console.log({ result });
-      } else if (result?.data?.getShoppingCart) {
-        cartState.set(result.data.getShoppingCart);
-      }
-    } catch {
-      // Fetch may fail if the API server is unavailable (e.g. during tests)
-    }
+  private get cartDrawer(): OgsCartDrawer | null {
+    return this.renderRoot.querySelector('ogs-cart-drawer');
   }
 
   private handleScroll() {
@@ -758,7 +527,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
           <slot></slot>
         </section>
       </div>
-      ${this.renderAuthDialog()} ${this.renderCartDrawer()}
+      <ogs-auth-dialog
+        ?open="${this.showAuthDialog}"
+        @closed="${() => (this.showAuthDialog = false)}"
+      ></ogs-auth-dialog>
+      <ogs-cart-drawer
+        ?open="${this.showCartDrawer}"
+        @wa-after-hide="${() => (this.showCartDrawer = false)}"
+      ></ogs-cart-drawer>
     `;
   }
 
@@ -785,7 +561,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
     }
 
     // Re-fetch cart for the new store
-    await this.fetchCart();
+    await this.cartDrawer?.fetchCart();
 
     // Dispatch event so page components can re-fetch their data
     this.dispatchEvent(
@@ -793,249 +569,8 @@ export class OgsPage extends SignalWatcher(LitElement) {
     );
   }
 
-  // --- Cart Drawer ---
-
   private openCartDrawer() {
-    this.orderError = '';
-    this.orderSuccess = '';
     this.showCartDrawer = true;
-  }
-
-  private closeCartDrawer() {
-    this.showCartDrawer = false;
-  }
-
-  private renderCartDrawer() {
-    const cart = cartState.get();
-    const cartTotal = cart.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-    const hasItems = cart.items.length > 0;
-
-    return html`
-      <wa-drawer
-        label="Shopping Cart"
-        placement="end"
-        ?open="${this.showCartDrawer}"
-        @wa-after-hide="${this.closeCartDrawer}"
-      >
-        ${this.orderSuccess
-          ? this.renderOrderSuccess()
-          : html`
-              ${hasItems
-                ? html`
-                    <div class="cart-items">${cart.items.map((item) => this.renderCartItem(item))}</div>
-                    <div class="cart-total">
-                      <span>Total</span>
-                      <span>${formatCurrency(cartTotal)}</span>
-                    </div>
-                    <div class="cart-form">
-                      <wa-input
-                        label="Customer Name"
-                        placeholder="Enter customer name"
-                        required
-                        .value="${this.customerName}"
-                        @input="${this.handleCustomerNameInput}"
-                      >
-                        <wa-icon slot="start" name="user"></wa-icon>
-                      </wa-input>
-                      ${this.orderError
-                        ? html`<wa-callout variant="danger">
-                            <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-                            ${this.orderError}
-                          </wa-callout>`
-                        : nothing}
-                    </div>
-                  `
-                : html`
-                    <div class="cart-empty">
-                      <wa-icon name="shopping-cart"></wa-icon>
-                      <p>Your cart is empty</p>
-                      <p style="font-size: var(--wa-font-size-s);">Browse products to add items to your cart.</p>
-                    </div>
-                  `}
-            `}
-        ${when(
-          hasItems && !this.orderSuccess,
-          () => html`
-            <wa-button
-              slot="footer"
-              variant="brand"
-              style="width: 100%;"
-              ?loading="${this.submittingOrder}"
-              ?disabled="${!this.customerName.trim() || this.updatingCartItem}"
-              @click="${this.handleSubmitOrder}"
-            >
-              <wa-icon slot="start" name="check"></wa-icon>
-              Submit Order
-            </wa-button>
-          `,
-        )}
-      </wa-drawer>
-    `;
-  }
-
-  private renderCartItem(item: CartItem) {
-    const lineTotal = item.unitPrice * item.quantity;
-    return html`
-      <div class="cart-item">
-        <div class="cart-item-header">
-          <div>
-            <div class="cart-item-name">${item.productName}</div>
-            <div class="cart-item-condition">${item.condition} · ${formatCurrency(item.unitPrice)} each</div>
-          </div>
-          <wa-button
-            size="small"
-            variant="danger"
-            appearance="plain"
-            aria-label="Remove ${item.productName}"
-            ?disabled="${this.updatingCartItem}"
-            @click="${() => this.handleRemoveFromCart(item)}"
-          >
-            <wa-icon name="trash"></wa-icon>
-          </wa-button>
-        </div>
-        <div class="cart-item-controls">
-          <div class="cart-item-qty">
-            <wa-button
-              size="small"
-              appearance="outlined"
-              ?disabled="${item.quantity <= 1 || this.updatingCartItem}"
-              @click="${() => this.handleUpdateQuantity(item, item.quantity - 1)}"
-            >
-              <wa-icon name="minus"></wa-icon>
-            </wa-button>
-            <wa-input
-              type="number"
-              min="1"
-              max="${item.maxAvailable}"
-              .value="${String(item.quantity)}"
-              style="width: 70px; text-align: center;"
-              ?disabled="${this.updatingCartItem}"
-              @change="${(e: Event) => {
-                const val = Number.parseInt((e.target as HTMLInputElement).value, 10);
-                if (val > 0 && val <= item.maxAvailable) {
-                  this.handleUpdateQuantity(item, val);
-                }
-              }}"
-            >
-              <span slot="label" class="wa-visually-hidden">Quantity</span>
-            </wa-input>
-            <wa-button
-              size="small"
-              appearance="outlined"
-              ?disabled="${item.quantity >= item.maxAvailable || this.updatingCartItem}"
-              @click="${() => this.handleUpdateQuantity(item, item.quantity + 1)}"
-            >
-              <wa-icon name="plus"></wa-icon>
-            </wa-button>
-            <span style="font-size: var(--wa-font-size-2xs); color: var(--wa-color-text-muted);">
-              of ${item.maxAvailable}
-            </span>
-          </div>
-          <div class="cart-item-price">${formatCurrency(lineTotal)}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  private renderOrderSuccess() {
-    return html`
-      <div class="cart-success">
-        <wa-icon name="circle-check"></wa-icon>
-        <h3 style="margin: 0 0 var(--wa-space-xs) 0;">Order Submitted!</h3>
-        <p style="color: var(--wa-color-text-muted); margin: 0;">${this.orderSuccess}</p>
-        <wa-button
-          variant="brand"
-          style="margin-top: var(--wa-space-l);"
-          @click="${() => {
-            this.orderSuccess = '';
-            this.closeCartDrawer();
-          }}"
-        >
-          Close
-        </wa-button>
-      </div>
-    `;
-  }
-
-  private handleCustomerNameInput(event: Event) {
-    this.customerName = (event.target as HTMLInputElement).value;
-  }
-
-  private async handleUpdateQuantity(item: CartItem, newQuantity: number) {
-    if (this.updatingCartItem) return;
-    this.updatingCartItem = true;
-
-    try {
-      const result = await execute(UpdateItemInCartMutation, {
-        cartItem: { inventoryItemId: item.inventoryItemId, quantity: newQuantity },
-      });
-
-      if (result?.errors?.length) {
-        console.error('Failed to update cart item:', result.errors);
-      } else {
-        cartState.set(result.data.updateItemInCart);
-      }
-    } catch (e) {
-      console.error('Failed to update cart item:', e);
-    } finally {
-      this.updatingCartItem = false;
-    }
-  }
-
-  private async handleRemoveFromCart(item: CartItem) {
-    if (this.updatingCartItem) return;
-    this.updatingCartItem = true;
-
-    try {
-      const result = await execute(RemoveFromCartMutation, {
-        cartItem: { inventoryItemId: item.inventoryItemId, quantity: item.quantity },
-      });
-
-      if (result?.errors?.length) {
-        console.error('Failed to remove cart item:', result.errors);
-      } else {
-        cartState.set(result.data.removeFromCart);
-      }
-    } catch (e) {
-      console.error('Failed to remove cart item:', e);
-    } finally {
-      this.updatingCartItem = false;
-    }
-  }
-
-  private async handleSubmitOrder() {
-    if (this.submittingOrder || !this.customerName.trim()) return;
-    this.submittingOrder = true;
-    this.orderError = '';
-
-    try {
-      const currentStoreId = activeStoreId.get();
-      if (!currentStoreId) {
-        this.orderError = 'Please select a store before submitting an order.';
-        this.submittingOrder = false;
-        return;
-      }
-      const result = await execute(SubmitOrderMutation, {
-        input: { organizationId: currentStoreId, customerName: this.customerName.trim() },
-      });
-
-      if (result?.errors?.length) {
-        this.orderError = result.errors.map((e: { message: string }) => e.message).join(', ');
-        // Refresh cart to get updated maxAvailable values on inventory errors
-        await this.fetchCart();
-      } else {
-        const order = result.data.submitOrder;
-        this.orderSuccess = `Order ${order.orderNumber} created for ${formatCurrency(order.totalAmount)}`;
-        cartState.set({ items: [] });
-        this.customerName = '';
-        // Notify product pages to refresh listings with updated inventory
-        this.dispatchEvent(new CustomEvent('order-submitted', { bubbles: true, composed: true }));
-      }
-    } catch (e) {
-      this.orderError = e instanceof Error ? e.message : 'Failed to submit order';
-    } finally {
-      this.submittingOrder = false;
-    }
   }
 
   // --- User Menu ---
@@ -1070,191 +605,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
     `;
   }
 
-  private renderAuthDialog() {
-    return html`
-      <wa-dialog
-        label="${this.authMode === 'signin' ? 'Sign In' : 'Sign Up'}"
-        ?open="${this.showAuthDialog}"
-        @wa-after-hide="${this.closeAuthDialog}"
-      >
-        <div class="auth-form" @keydown="${this.handleAuthKeydown}">
-          ${when(
-            this.authMode === 'signup',
-            () => html`
-              <wa-input
-                label="Name"
-                name="name"
-                autocomplete="name"
-                required
-                .value="${this.authName}"
-                @input="${this.handleAuthNameInput}"
-              >
-                <wa-icon slot="start" name="user"></wa-icon>
-                <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
-              </wa-input>
-            `,
-          )}
-
-          <wa-input
-            autofocus
-            type="email"
-            name="email"
-            autocomplete="email"
-            label="Email"
-            required
-            .value="${this.authEmail}"
-            @input="${this.handleAuthEmailInput}"
-          >
-            <wa-icon slot="start" name="envelope"></wa-icon>
-            <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
-          </wa-input>
-
-          <wa-input
-            type="password"
-            name="password"
-            autocomplete="${this.authMode === 'signin' ? 'current-password' : 'new-password'}"
-            label="Password"
-            required
-            password-toggle
-            .value="${this.authPassword}"
-            @input="${this.handleAuthPasswordInput}"
-          >
-            <wa-icon slot="start" name="lock"></wa-icon>
-            <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
-          </wa-input>
-
-          ${when(
-            this.authMode === 'signup',
-            () => html`
-              <wa-input
-                type="password"
-                name="confirm-password"
-                autocomplete="new-password"
-                label="Confirm Password"
-                required
-                password-toggle
-                .value="${this.authConfirmPassword}"
-                @input="${this.handleAuthConfirmPasswordInput}"
-              >
-                <wa-icon slot="start" name="lock"></wa-icon>
-                <wa-divider slot="start" orientation="vertical" style="--spacing: 0rem;"></wa-divider>
-              </wa-input>
-            `,
-          )}
-          ${this.authError ? html`<p class="auth-error">${this.authError}</p>` : nothing}
-
-          <div class="auth-toggle">
-            ${this.authMode === 'signin'
-              ? html`Don't have an account? <a @click="${this.switchToSignUp}">Sign up</a>`
-              : html`Already have an account? <a @click="${this.switchToSignIn}">Sign in</a>`}
-          </div>
-        </div>
-
-        <wa-button slot="footer" variant="neutral" @click="${this.closeAuthDialog}">Cancel</wa-button>
-        <wa-button slot="footer" variant="brand" ?loading="${this.authLoading}" @click="${this.handleAuthSubmit}">
-          ${this.authMode === 'signin' ? 'Sign in' : 'Sign up'}
-        </wa-button>
-      </wa-dialog>
-    `;
-  }
-
   private openAuthDialog() {
-    this.authMode = 'signin';
-    this.authEmail = '';
-    this.authPassword = '';
-    this.authConfirmPassword = '';
-    this.authName = '';
-    this.authError = '';
-    this.authLoading = false;
     this.showAuthDialog = true;
-  }
-
-  private closeAuthDialog() {
-    this.showAuthDialog = false;
-    this.authError = '';
-  }
-
-  private switchToSignUp(event: Event) {
-    event.preventDefault();
-    this.authMode = 'signup';
-    this.authError = '';
-  }
-
-  private switchToSignIn(event: Event) {
-    event.preventDefault();
-    this.authMode = 'signin';
-    this.authError = '';
-  }
-
-  private handleAuthNameInput(event: Event) {
-    this.authName = (event.target as HTMLInputElement).value;
-  }
-
-  private handleAuthEmailInput(event: Event) {
-    this.authEmail = (event.target as HTMLInputElement).value;
-  }
-
-  private handleAuthPasswordInput(event: Event) {
-    this.authPassword = (event.target as HTMLInputElement).value;
-  }
-
-  private handleAuthConfirmPasswordInput(event: Event) {
-    this.authConfirmPassword = (event.target as HTMLInputElement).value;
-  }
-
-  private handleAuthKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      this.handleAuthSubmit();
-    }
-  }
-
-  private async handleAuthSubmit() {
-    this.authError = '';
-    this.authLoading = true;
-
-    try {
-      const authClient = await getAuthClient();
-      if (this.authMode === 'signin') {
-        const result = await authClient.signIn.email({
-          email: this.authEmail,
-          password: this.authPassword,
-        });
-        if (result.error) {
-          this.authError = result.error.message ?? 'Sign in failed';
-        } else {
-          window.location.reload();
-        }
-      } else {
-        if (this.authPassword !== this.authConfirmPassword) {
-          this.authError = 'Passwords do not match';
-          this.authLoading = false;
-          return;
-        }
-        const signUpResult = await authClient.signUp.email({
-          email: this.authEmail,
-          password: this.authPassword,
-          name: this.authName,
-        });
-        if (signUpResult.error) {
-          this.authError = signUpResult.error.message ?? 'Sign up failed';
-        } else {
-          // Better Auth auto-signs in after sign-up by default (autoSignIn: true)
-          window.location.reload();
-        }
-      }
-    } catch (e) {
-      this.authError = e instanceof Error ? e.message : 'An unexpected error occurred';
-    } finally {
-      this.authLoading = false;
-    }
   }
 
   private async handleSignOut() {
     try {
       const authClient = await getAuthClient();
       await authClient.signOut();
-      // Clear session cookies to prevent stale session issues on next sign-in
       Cookies.remove('better-auth.session_token');
       Cookies.remove('better-auth.session_data');
       window.location.href = '/';
