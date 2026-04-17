@@ -9,13 +9,20 @@ import { ac, roles } from './lib/permissions';
 
 export { ac, roles } from './lib/permissions';
 
+// Require BETTER_AUTH_URL in production to prevent silent fallback to HTTP
+if (process.env.NODE_ENV === 'production' && !process.env.BETTER_AUTH_URL) {
+  throw new Error('BETTER_AUTH_URL environment variable is required in production');
+}
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost',
   database: drizzleAdapter(otcgs, {
     provider: 'sqlite',
     schema,
   }),
-  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost').split(','),
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? process.env.APP_URL ?? 'http://localhost')
+    .split(',')
+    .map((o) => o.trim()),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 12,
@@ -29,19 +36,25 @@ export const auth = betterAuth({
           // Find the user's first org membership and set it as active.
           // Uses raw SQL since the `member` table is managed by better-auth
           // and may not be in our Drizzle schema exports.
-          if (!(session as Record<string, unknown>).activeOrganizationId) {
-            const result = await otcgs.all<{ organizationId: string }>(
-              sql`SELECT organization_id as "organizationId" FROM member WHERE user_id = ${session.userId} LIMIT 1`,
-            );
+          try {
+            if (!(session as Record<string, unknown>).activeOrganizationId) {
+              const result = await otcgs.all<{ organizationId: string }>(
+                sql`SELECT organization_id as "organizationId" FROM member WHERE user_id = ${session.userId} LIMIT 1`,
+              );
 
-            if (result.length > 0) {
-              return {
-                data: {
-                  ...session,
-                  activeOrganizationId: result[0].organizationId,
-                },
-              };
+              if (result.length > 0) {
+                return {
+                  data: {
+                    ...session,
+                    activeOrganizationId: result[0].organizationId,
+                  },
+                };
+              }
             }
+          } catch (err) {
+            // Degrade gracefully — create session without active org rather than
+            // blocking login entirely on a DB error.
+            console.error('Failed to auto-set active organization on session creation:', err);
           }
           return { data: session };
         },

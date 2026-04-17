@@ -28,7 +28,8 @@ import { sql } from 'drizzle-orm';
 import { rateLimit } from './lib/rate-limit.ts';
 
 export type GraphqlContext = {
-  auth: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+  /** The authenticated session, or null if the request is unauthenticated */
+  auth: Awaited<ReturnType<typeof auth.api.getSession>> | null;
   /** The active organization (store) ID from the session, or null if not set */
   organizationId: string | null;
   req: IncomingMessage;
@@ -40,6 +41,23 @@ const app = new Koa();
 // returns the real client IP instead of the proxy's address. Required for
 // rate limiting to work correctly per-client.
 app.proxy = true;
+
+// Global error handler — catch unexpected errors and return a generic 500
+// instead of leaking stack traces or internal details.
+app.on('error', (err) => {
+  console.error('Unhandled server error:', err);
+});
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('Request error:', err);
+    ctx.status = 500;
+    ctx.body = { error: 'Internal server error' };
+  }
+});
+
 app.use(
   koaCors({
     credentials: true,
@@ -97,8 +115,16 @@ app.use(async (ctx, next) => {
           return;
         }
       }
-      // If neither Origin nor Referer is present, allow — this happens for
-      // same-origin requests in privacy-focused browsers and direct API calls.
+      // Neither Origin nor Referer is present. CSRF protection is only
+      // relevant for requests carrying ambient credentials (session cookies).
+      // Non-browser clients (curl, Postman, server-to-server) don't send
+      // these headers and shouldn't be blocked.
+      const hasCookie = ctx.get('Cookie')?.includes('better-auth.session_token');
+      if (hasCookie) {
+        ctx.status = 403;
+        ctx.body = { error: 'Forbidden: Origin or Referer header required for state-changing requests' };
+        return;
+      }
     }
   }
   return next();
@@ -175,12 +201,12 @@ app.use(
           headers: fromNodeHeaders(req.raw.headers),
         });
         return {
-          auth: session,
+          auth: session ?? null,
           organizationId:
             ((session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | null) ?? null,
           req: req.raw,
           res: req.context.res,
-        } as GraphqlContext;
+        } satisfies GraphqlContext;
       },
     }),
   ),
@@ -195,8 +221,8 @@ async function requireCompanySettingsUpdate(ctx: RouterContext): Promise<boolean
     headers: fromNodeHeaders(ctx.req.headers),
   });
   if (!session?.user) {
-    ctx.status = 403;
-    ctx.body = { error: 'Forbidden: Authentication required' };
+    ctx.status = 401;
+    ctx.body = { error: 'Unauthorized: Authentication required' };
     return false;
   }
   try {
@@ -232,8 +258,8 @@ async function requireUserManagementPermission(
     headers: fromNodeHeaders(ctx.req.headers),
   });
   if (!session?.user) {
-    ctx.status = 403;
-    ctx.body = { error: 'Forbidden: Authentication required' };
+    ctx.status = 401;
+    ctx.body = { error: 'Unauthorized: Authentication required' };
     return null;
   }
   try {
@@ -363,7 +389,8 @@ const router = new Router()
       ctx.body = rows;
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to fetch memberships' };
+      console.error('Failed to fetch memberships:', error);
+      ctx.body = { error: 'Failed to fetch memberships' };
     }
   })
   /**
@@ -386,9 +413,11 @@ const router = new Router()
       ctx.body = { error: 'userId, organizationId, and role are required' };
       return;
     }
-    if (role === 'owner') {
+    // Runtime role validation — only allow known non-owner roles
+    const allowedRoles = ['manager', 'member'];
+    if (!allowedRoles.includes(role)) {
       ctx.status = 400;
-      ctx.body = { error: 'Cannot assign owner role through this interface.' };
+      ctx.body = { error: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}` };
       return;
     }
     // Manager guard: verify the requesting user is a member of the target org
@@ -411,7 +440,8 @@ const router = new Router()
       ctx.body = result;
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to add member' };
+      console.error('Failed to add member:', error);
+      ctx.body = { error: 'Failed to add member' };
     }
   })
   /**
@@ -474,7 +504,8 @@ const router = new Router()
       ctx.body = { success: true };
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to remove member' };
+      console.error('Failed to remove member:', error);
+      ctx.body = { error: 'Failed to remove member' };
     }
   })
   /**
@@ -504,7 +535,8 @@ const router = new Router()
       ctx.body = rows[0];
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to look up user' };
+      console.error('Failed to look up user:', error);
+      ctx.body = { error: 'Failed to look up user' };
     }
   })
   /**
@@ -534,7 +566,8 @@ const router = new Router()
       ctx.body = rows[0];
     } catch (error) {
       ctx.status = 500;
-      ctx.body = { error: error instanceof Error ? error.message : 'Failed to fetch user' };
+      console.error('Failed to fetch user:', error);
+      ctx.body = { error: 'Failed to fetch user' };
     }
   });
 

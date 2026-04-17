@@ -82,19 +82,20 @@ export async function performFirstTimeSetup(
       throw new Error('Setup has already been completed. This operation cannot be performed again.');
     }
 
-    await tx
+    // Use onConflictDoNothing so a second concurrent request fails the guard.
+    // onConflictDoUpdate would silently succeed, allowing the race through.
+    const inserted = await tx
       .insert(companySettings)
       .values({
         companyName: company.companyName,
         ein: company.ein,
       })
-      .onConflictDoUpdate({
-        target: companySettings.id,
-        set: {
-          companyName: company.companyName,
-          ein: company.ein,
-        },
-      });
+      .onConflictDoNothing()
+      .returning();
+
+    if (inserted.length === 0) {
+      throw new Error('Setup has already been completed. This operation cannot be performed again.');
+    }
   });
 
   let createdUserId: string | undefined;
@@ -194,11 +195,21 @@ export async function performFirstTimeSetup(
 
     return signInData.token;
   } catch (error) {
-    // Rollback: clean up partially created data
+    // Rollback: clean up partially created data.
+    // Note: Better Auth organizations/members created via auth.api.createOrganization
+    // cannot be easily rolled back here, but the guard transaction prevents re-execution
+    // until company settings are cleaned up. A manual DB cleanup may be needed for orgs.
     try {
       if (createdUserId) {
         await otcgs.delete(userTable).where(eq(userTable.id, createdUserId));
       }
+      // Delete all supported game records. This is an unscoped delete because
+      // storeSupportedGame records are only created during first-time setup and
+      // have no user/org scope. If a separate game-configuration feature is added
+      // in the future, this cleanup should be scoped to avoid data loss.
+      await otcgs.delete(storeSupportedGame);
+      // Delete the company settings singleton row. This is an unscoped delete,
+      // which is safe because company_settings is a singleton table (at most one row).
       await otcgs.delete(companySettings);
       console.log('Rolled back setup data after failure.');
     } catch (cleanupError) {

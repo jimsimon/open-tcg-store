@@ -21,6 +21,9 @@ const APP_URL = globalThis.process?.env?.APP_URL || (typeof window === 'undefine
 const API_INTERNAL_URL =
   globalThis.process?.env?.API_INTERNAL_URL || (typeof window === 'undefined' ? 'http://localhost:5174' : '');
 
+/** Default request timeout in milliseconds (30 seconds) */
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 /**
  * Server-side variant of `execute` that forwards explicit headers (e.g. Cookie)
  * to the GraphQL endpoint. Used during SSR where `credentials: 'include'` has
@@ -38,10 +41,11 @@ export async function executeWithHeaders<TResult>(
       ...headers,
     },
     body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    throw new Error('Network response was not ok');
+    throw new Error(`GraphQL request failed with status ${response.status}`);
   }
 
   return response.json() as Promise<ExecutionResult<TResult>>;
@@ -66,10 +70,11 @@ export async function execute<TResult, TVariables>(
       query,
       variables,
     }),
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    throw new Error('Network response was not ok');
+    throw new Error(`GraphQL request failed with status ${response.status}`);
   }
 
   return response.json() as Promise<ExecutionResult<TResult>>;

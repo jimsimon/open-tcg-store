@@ -1,4 +1,8 @@
-import type { Middleware } from 'koa';
+/**
+ * Framework-agnostic in-memory rate limit store.
+ * Mirrors the RateLimitStore in packages/api/src/lib/rate-limit.ts — if
+ * a shared package is introduced later, consolidate there.
+ */
 
 interface RateLimitEntry {
   count: number;
@@ -14,11 +18,6 @@ interface RateLimitStoreOptions {
   maxStoreSize?: number;
 }
 
-/**
- * Framework-agnostic in-memory rate limit store.
- * Tracks request counts per key with automatic expiry and DDoS-safe size caps.
- * Not shared across processes — suitable for single-instance deployments.
- */
 export class RateLimitStore {
   private readonly store = new Map<string, RateLimitEntry>();
   private readonly max: number;
@@ -30,7 +29,6 @@ export class RateLimitStore {
     this.windowMs = options.windowMs;
     this.maxStoreSize = options.maxStoreSize ?? 100_000;
 
-    // Periodically clean up expired entries to prevent memory leaks
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
       for (const [key, entry] of this.store) {
@@ -50,9 +48,7 @@ export class RateLimitStore {
     let entry = this.store.get(key);
 
     if (!entry || now >= entry.resetAt) {
-      // Guard against unbounded Map growth from DDoS with many unique keys
       if (this.store.size >= this.maxStoreSize) {
-        // Evict expired entries first
         for (const [k, e] of this.store) {
           if (now >= e.resetAt) this.store.delete(k);
         }
@@ -73,41 +69,4 @@ export class RateLimitStore {
 
     return { allowed: true, count: entry.count, resetAt: entry.resetAt };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Koa middleware wrapper
-// ---------------------------------------------------------------------------
-
-interface RateLimitMiddlewareOptions extends RateLimitStoreOptions {
-  /** Key extractor — defaults to IP address */
-  keyFn?: (ctx: { ip: string; path: string }) => string;
-  /** Optional message for rate limit responses */
-  message?: string;
-}
-
-/** Koa rate-limiting middleware backed by a {@link RateLimitStore}. */
-export function rateLimit(options: RateLimitMiddlewareOptions): Middleware {
-  const { message = 'Too many requests, please try again later.' } = options;
-  const keyFn = options.keyFn ?? ((ctx) => ctx.ip);
-  const store = new RateLimitStore(options);
-
-  return async (ctx, next) => {
-    const key = keyFn(ctx);
-    const result = store.check(key);
-
-    if (!result.allowed) {
-      ctx.status = 429;
-      ctx.set('Retry-After', String(result.retryAfterSecs));
-      ctx.body = { error: message };
-      return;
-    }
-
-    // Set standard rate limit headers
-    ctx.set('RateLimit-Limit', String(options.max));
-    ctx.set('RateLimit-Remaining', String(Math.max(0, options.max - result.count)));
-    ctx.set('RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)));
-
-    await next();
-  };
 }

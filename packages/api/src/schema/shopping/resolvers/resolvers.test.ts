@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const {
   mockGetOrganizationId,
+  mockGetUserId,
   mockGetOrCreateShoppingCart,
   mockMapToGraphqlShoppingCart,
   mockAddItemToCart,
@@ -14,6 +15,7 @@ const {
   mockClearAllCartItems,
 } = vi.hoisted(() => ({
   mockGetOrganizationId: vi.fn().mockReturnValue('org-1'),
+  mockGetUserId: vi.fn().mockReturnValue('user-1'),
   mockGetOrCreateShoppingCart: vi.fn(),
   mockMapToGraphqlShoppingCart: vi.fn(),
   mockAddItemToCart: vi.fn(),
@@ -24,6 +26,7 @@ const {
 
 vi.mock('../../../lib/assert-permission', () => ({
   getOrganizationId: mockGetOrganizationId,
+  getUserId: mockGetUserId,
 }));
 
 vi.mock('../../../services/shopping-cart-service', () => ({

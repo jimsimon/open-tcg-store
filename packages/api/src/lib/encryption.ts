@@ -1,17 +1,31 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
+// Use 12-byte (96-bit) IV as recommended by NIST SP 800-38D for AES-GCM
+const IV_LENGTH = 12;
+
+// Cache the parsed encryption key to avoid re-parsing the hex env var on every call.
+// Tracks the raw env value so the cache auto-invalidates if the env var changes.
+let _cachedKey: Buffer | null = null;
+let _cachedKeySource: string | undefined = undefined;
 
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
+  if (_cachedKey && key === _cachedKeySource) return _cachedKey;
+
   if (!key) {
+    _cachedKey = null;
+    _cachedKeySource = undefined;
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
   const keyBuffer = Buffer.from(key, 'hex');
   if (keyBuffer.length !== 32) {
+    _cachedKey = null;
+    _cachedKeySource = undefined;
     throw new Error('ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
   }
+  _cachedKey = keyBuffer;
+  _cachedKeySource = key;
   return keyBuffer;
 }
 
@@ -36,6 +50,10 @@ export function encrypt(plaintext: string): string {
 /**
  * Decrypt an encrypted string produced by encrypt().
  * Expects the format: iv:authTag:ciphertext (all base64-encoded)
+ *
+ * Backwards-compatible: the IV is read from the stored ciphertext, so data
+ * encrypted with the previous 16-byte IV will still decrypt correctly.
+ * IV_LENGTH only affects new encrypt() calls.
  */
 export function decrypt(encrypted: string): string {
   const key = getEncryptionKey();
@@ -59,10 +77,12 @@ export function decrypt(encrypted: string): string {
 }
 
 /**
- * Encrypt a value if it's not null/undefined, otherwise return null.
+ * Encrypt a value if it's not null/undefined/whitespace-only, otherwise return null.
+ * Note: whitespace-only strings (e.g. "  ") are intentionally treated as empty
+ * to avoid storing meaningless encrypted values for blank form fields.
  */
 export function encryptIfPresent(value: string | null | undefined): string | null {
-  if (value == null || value === '') return null;
+  if (value == null || value.trim() === '') return null;
   return encrypt(value);
 }
 
@@ -70,6 +90,6 @@ export function encryptIfPresent(value: string | null | undefined): string | nul
  * Decrypt a value if it's not null/undefined, otherwise return null.
  */
 export function decryptIfPresent(value: string | null | undefined): string | null {
-  if (value == null || value === '') return null;
+  if (value == null || value.trim() === '') return null;
   return decrypt(value);
 }

@@ -90,6 +90,10 @@ function generateOrderNumber(): string {
 }
 
 export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderData> {
+  if (!customerName || customerName.trim().length === 0) {
+    throw new Error('Customer name is required');
+  }
+
   // Wrap the entire order submission — including the cart read — in a transaction
   // to prevent race conditions. This ensures the cart state is consistent with the
   // inventory checks and stock decrements (no stale data between fetch and delete).
@@ -322,67 +326,92 @@ export async function submitOrder(organizationId: string, userId: string, custom
 }
 
 export async function cancelOrder(orderId: number, organizationId: string, userId: string): Promise<OrderData> {
-  // 1. Find the order — scoped to the caller's organization
-  const existingOrder = await otcgs.query.order.findFirst({
-    with: {
-      orderItems: true,
-    },
-    where: (o, { eq, and }) => and(eq(o.id, orderId), eq(o.organizationId, organizationId)),
+  // Wrap the entire cancel flow in a transaction to prevent concurrent cancels
+  // from double-restoring inventory and to ensure atomicity of restock + status change.
+  const result = await otcgs.transaction(async (tx) => {
+    // 1. Find the order — scoped to the caller's organization.
+    //    Uses tx.select() (not otcgs.query) to ensure the read is part of the transaction.
+    const [existingOrder] = await tx
+      .select()
+      .from(order)
+      .where(and(eq(order.id, orderId), eq(order.organizationId, organizationId)))
+      .limit(1);
+
+    if (!existingOrder) {
+      throw new Error('Order not found');
+    }
+
+    // Only allow cancelling open orders — completed/shipped orders should not be restocked
+    if (existingOrder.status !== 'open') {
+      throw new Error(
+        existingOrder.status === 'cancelled'
+          ? 'Order is already cancelled'
+          : `Cannot cancel an order with status "${existingOrder.status}"`,
+      );
+    }
+
+    // Fetch order items within the transaction
+    const existingOrderItems = await tx.select().from(orderItem).where(eq(orderItem.orderId, orderId));
+
+    // 2. Return items to inventory — batch-fetch all stock entries first, then process
+    const stockIds = existingOrderItems
+      .filter((oi) => oi.inventoryItemStockId != null)
+      .map((oi) => oi.inventoryItemStockId!);
+
+    const stockEntries =
+      stockIds.length > 0
+        ? await tx
+            .select({ id: inventoryItemStock.id, deletedAt: inventoryItemStock.deletedAt })
+            .from(inventoryItemStock)
+            .where(inArray(inventoryItemStock.id, stockIds))
+        : [];
+
+    const stockEntryMap = new Map(stockEntries.map((s) => [s.id, s]));
+
+    for (const oi of existingOrderItems) {
+      if (oi.inventoryItemStockId) {
+        const stockEntry = stockEntryMap.get(oi.inventoryItemStockId);
+
+        if (stockEntry) {
+          const updateSet: Record<string, unknown> = {
+            quantity: sql`${inventoryItemStock.quantity} + ${oi.quantity}`,
+            updatedAt: new Date(),
+          };
+          if (stockEntry.deletedAt) {
+            updateSet.deletedAt = null;
+          }
+          await tx.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
+        } else {
+          await restockFallback(tx, existingOrder.organizationId, oi);
+        }
+      } else if (oi.inventoryItemId) {
+        await restockFallback(tx, existingOrder.organizationId, oi);
+      } else {
+        await restockFallbackByProduct(tx, existingOrder.organizationId, oi);
+      }
+    }
+
+    // 3. Update order status to cancelled
+    await tx.update(order).set({ status: 'cancelled' }).where(eq(order.id, orderId));
+
+    const items = mapOrderItems(existingOrderItems);
+    const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
+
+    return {
+      id: existingOrder.id,
+      organizationId: existingOrder.organizationId,
+      orderNumber: existingOrder.orderNumber,
+      customerName: existingOrder.customerName,
+      status: 'cancelled' as const,
+      totalAmount: existingOrder.totalAmount,
+      totalCostBasis,
+      totalProfit,
+      createdAt: safeISOString(existingOrder.createdAt),
+      items,
+    };
   });
 
-  if (!existingOrder) {
-    throw new Error('Order not found');
-  }
-
-  if (existingOrder.status === 'cancelled') {
-    throw new Error('Order is already cancelled');
-  }
-
-  // 2. Return items to inventory — batch-fetch all stock entries first, then process
-  const stockIds = existingOrder.orderItems
-    .filter((oi) => oi.inventoryItemStockId != null)
-    .map((oi) => oi.inventoryItemStockId!);
-
-  const stockEntries =
-    stockIds.length > 0
-      ? await otcgs
-          .select({ id: inventoryItemStock.id, deletedAt: inventoryItemStock.deletedAt })
-          .from(inventoryItemStock)
-          .where(inArray(inventoryItemStock.id, stockIds))
-      : [];
-
-  const stockEntryMap = new Map(stockEntries.map((s) => [s.id, s]));
-
-  for (const oi of existingOrder.orderItems) {
-    if (oi.inventoryItemStockId) {
-      const stockEntry = stockEntryMap.get(oi.inventoryItemStockId);
-
-      if (stockEntry) {
-        const updateSet: Record<string, unknown> = {
-          quantity: sql`${inventoryItemStock.quantity} + ${oi.quantity}`,
-          updatedAt: new Date(),
-        };
-        if (stockEntry.deletedAt) {
-          updateSet.deletedAt = null;
-        }
-        await otcgs.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
-      } else {
-        await restockFallback(existingOrder.organizationId, oi);
-      }
-    } else if (oi.inventoryItemId) {
-      await restockFallback(existingOrder.organizationId, oi);
-    } else {
-      await restockFallbackByProduct(existingOrder.organizationId, oi);
-    }
-  }
-
-  // 3. Update order status to cancelled
-  await otcgs.update(order).set({ status: 'cancelled' }).where(eq(order.id, orderId));
-
-  const items = mapOrderItems(existingOrder.orderItems);
-  const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
-
-  // Log the transaction
+  // Log the transaction (outside DB transaction — best-effort)
   await logTransaction({
     organizationId,
     userId,
@@ -390,30 +419,23 @@ export async function cancelOrder(orderId: number, organizationId: string, userI
     resourceType: 'order',
     resourceId: orderId,
     details: {
-      orderNumber: existingOrder.orderNumber,
-      customerName: existingOrder.customerName,
-      totalAmount: existingOrder.totalAmount,
+      orderNumber: result.orderNumber,
+      customerName: result.customerName,
+      totalAmount: result.totalAmount,
     },
   });
 
-  return {
-    id: existingOrder.id,
-    organizationId: existingOrder.organizationId,
-    orderNumber: existingOrder.orderNumber,
-    customerName: existingOrder.customerName,
-    status: 'cancelled',
-    totalAmount: existingOrder.totalAmount,
-    totalCostBasis,
-    totalProfit,
-    createdAt: safeISOString(existingOrder.createdAt),
-    items,
-  };
+  return result;
 }
+
+type TxHandle = Parameters<Parameters<typeof otcgs.transaction>[0]>[0];
 
 /**
  * Fallback restocking: find or create stock entry under the parent inventory item.
+ * Accepts a transaction handle to ensure atomicity with the caller.
  */
 async function restockFallback(
+  tx: TxHandle,
   organizationId: string,
   oi: {
     inventoryItemId: number | null;
@@ -430,7 +452,7 @@ async function restockFallback(
   let parentId = oi.inventoryItemId;
   if (!parentId) {
     // Look up by product+condition
-    const [parent] = await otcgs
+    const [parent] = await tx
       .select({ id: inventoryItem.id })
       .from(inventoryItem)
       .where(
@@ -445,7 +467,7 @@ async function restockFallback(
     if (parent) {
       parentId = parent.id;
     } else {
-      const [newParent] = await otcgs
+      const [newParent] = await tx
         .insert(inventoryItem)
         .values({
           organizationId,
@@ -460,12 +482,14 @@ async function restockFallback(
     }
   }
 
-  // Find matching stock entry or create new one
-  const costBasis = oi.costBasis ?? 0;
-  const [existingStock] = await otcgs
+  // Find matching stock entry or create new one — preserve null costBasis
+  const costBasis = oi.costBasis;
+  const costBasisCondition =
+    costBasis != null ? eq(inventoryItemStock.costBasis, costBasis) : isNull(inventoryItemStock.costBasis);
+  const [existingStock] = await tx
     .select()
     .from(inventoryItemStock)
-    .where(and(eq(inventoryItemStock.inventoryItemId, parentId), eq(inventoryItemStock.costBasis, costBasis)))
+    .where(and(eq(inventoryItemStock.inventoryItemId, parentId), costBasisCondition))
     .orderBy(asc(inventoryItemStock.createdAt))
     .limit(1);
 
@@ -477,12 +501,12 @@ async function restockFallback(
     if (existingStock.deletedAt) {
       updateSet.deletedAt = null;
     }
-    await otcgs.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, existingStock.id));
+    await tx.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, existingStock.id));
   } else {
-    await otcgs.insert(inventoryItemStock).values({
+    await tx.insert(inventoryItemStock).values({
       inventoryItemId: parentId,
       quantity: oi.quantity,
-      costBasis,
+      costBasis: costBasis ?? 0,
       acquisitionDate: todayDateString(),
       createdAt: now,
       updatedAt: now,
@@ -494,10 +518,11 @@ async function restockFallback(
  * Very legacy fallback: no inventoryItemId at all.
  */
 async function restockFallbackByProduct(
+  tx: TxHandle,
   organizationId: string,
   oi: { productId: number; condition: string; quantity: number; unitPrice: number; costBasis: number | null },
 ): Promise<void> {
-  await restockFallback(organizationId, { ...oi, inventoryItemId: null });
+  await restockFallback(tx, organizationId, { ...oi, inventoryItemId: null });
 }
 
 export async function updateOrderStatus(
@@ -511,30 +536,55 @@ export async function updateOrderStatus(
     throw new Error(`Invalid status "${newStatus}". Valid statuses: ${validStatuses.join(', ')}`);
   }
 
-  // Scope the lookup to the caller's organization
-  const existingOrder = await otcgs.query.order.findFirst({
-    with: { orderItems: true },
-    where: (o, { eq, and }) => and(eq(o.id, orderId), eq(o.organizationId, organizationId)),
+  // Wrap in a transaction to prevent concurrent status updates from racing
+  const result = await otcgs.transaction(async (tx) => {
+    // Scope the lookup to the caller's organization.
+    // Uses tx.select() (not otcgs.query) to ensure the read is part of the transaction.
+    const [existingOrder] = await tx
+      .select()
+      .from(order)
+      .where(and(eq(order.id, orderId), eq(order.organizationId, organizationId)))
+      .limit(1);
+
+    if (!existingOrder) {
+      throw new Error('Order not found');
+    }
+
+    if (existingOrder.status === 'cancelled') {
+      throw new Error('Cannot change status of a cancelled order');
+    }
+
+    if (existingOrder.status === newStatus) {
+      throw new Error(`Order is already ${newStatus}`);
+    }
+
+    // Use conditional WHERE with .returning() to ensure status hasn't changed since we read it.
+    // If the WHERE doesn't match (concurrent modification), returning() yields an empty array.
+    const [updated] = await tx
+      .update(order)
+      .set({ status: newStatus })
+      .where(and(eq(order.id, orderId), eq(order.status, existingOrder.status)))
+      .returning({ id: order.id });
+
+    if (!updated) {
+      throw new Error('Order status was changed by another request, please retry');
+    }
+
+    // Fetch order items within the transaction
+    const existingOrderItems = await tx.select().from(orderItem).where(eq(orderItem.orderId, orderId));
+
+    const items = mapOrderItems(existingOrderItems);
+    const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
+
+    return {
+      order: existingOrder,
+      items,
+      totalCostBasis,
+      totalProfit,
+    };
   });
 
-  if (!existingOrder) {
-    throw new Error('Order not found');
-  }
-
-  if (existingOrder.status === 'cancelled') {
-    throw new Error('Cannot change status of a cancelled order');
-  }
-
-  if (existingOrder.status === newStatus) {
-    throw new Error(`Order is already ${newStatus}`);
-  }
-
-  await otcgs.update(order).set({ status: newStatus }).where(eq(order.id, orderId));
-
-  const items = mapOrderItems(existingOrder.orderItems);
-  const { totalCostBasis, totalProfit } = calculateOrderTotals(items);
-
-  // Log the transaction
+  // Log the transaction (outside DB transaction — best-effort)
   await logTransaction({
     organizationId,
     userId,
@@ -542,23 +592,23 @@ export async function updateOrderStatus(
     resourceType: 'order',
     resourceId: orderId,
     details: {
-      orderNumber: existingOrder.orderNumber,
-      previousStatus: existingOrder.status,
+      orderNumber: result.order.orderNumber,
+      previousStatus: result.order.status,
       newStatus,
     },
   });
 
   return {
-    id: existingOrder.id,
-    organizationId: existingOrder.organizationId,
-    orderNumber: existingOrder.orderNumber,
-    customerName: existingOrder.customerName,
+    id: result.order.id,
+    organizationId: result.order.organizationId,
+    orderNumber: result.order.orderNumber,
+    customerName: result.order.customerName,
     status: newStatus as OrderStatus,
-    totalAmount: existingOrder.totalAmount,
-    totalCostBasis,
-    totalProfit,
-    createdAt: safeISOString(existingOrder.createdAt),
-    items,
+    totalAmount: result.order.totalAmount,
+    totalCostBasis: result.totalCostBasis,
+    totalProfit: result.totalProfit,
+    createdAt: safeISOString(result.order.createdAt),
+    items: result.items,
   };
 }
 

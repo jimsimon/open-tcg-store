@@ -1,5 +1,5 @@
 import { GraphqlContext } from '../../../../server';
-import { getOrganizationId } from '../../../../lib/assert-permission';
+import { getOrganizationId, getUserId } from '../../../../lib/assert-permission';
 import {
   getOrCreateShoppingCart as getOrCreateCart,
   mapToGraphqlShoppingCart,
@@ -12,6 +12,7 @@ export const getShoppingCart: NonNullable<QueryResolvers['getShoppingCart']> = a
   ctx: GraphqlContext,
 ) => {
   const organizationId = getOrganizationId(ctx);
-  const result = await getOrCreateCart(organizationId, ctx.auth.user.id);
+  const userId = getUserId(ctx);
+  const result = await getOrCreateCart(organizationId, userId);
   return await mapToGraphqlShoppingCart(result);
 };

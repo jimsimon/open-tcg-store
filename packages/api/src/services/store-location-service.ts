@@ -315,18 +315,33 @@ export async function updateStoreLocation(
 /**
  * Removes a store location (organization). Validates that at least one
  * organization remains before deleting.
+ *
+ * Note: There is an inherent TOCTOU window between the count check and the
+ * Better Auth API call since deleteOrganization is an external operation that
+ * can't participate in a SQLite transaction. SQLite's single-writer model
+ * partially mitigates this: the libsql transaction uses BEGIN IMMEDIATE which
+ * holds the write lock during the check, and any concurrent removeStoreLocation
+ * call will block on its own transaction until this one completes. However, the
+ * lock is released when the transaction ends (before the deleteOrganization
+ * call), so a narrow race window remains in theory.
  */
 export async function removeStoreLocation(id: string, headers: Record<string, string>): Promise<boolean> {
-  // Atomically check that at least one org remains before proceeding.
-  // This prevents a TOCTOU race where two concurrent deletions both see count > 1.
+  // Atomically check that more than one org exists before proceeding.
+  // This holds the SQLite write lock, preventing concurrent deletions from
+  // both seeing count > 1.
   await otcgs.transaction(async (tx) => {
     const countResult = await tx.all<{ count: number }>(sql`SELECT COUNT(*) as count FROM organization`);
     if (countResult[0].count <= 1) {
       throw new Error('Cannot remove the last store location. At least one must remain.');
     }
+    // Verify the target org exists
+    const orgResult = await tx.all<{ id: string }>(sql`SELECT id FROM organization WHERE id = ${id} LIMIT 1`);
+    if (orgResult.length === 0) {
+      throw new Error('Store location not found');
+    }
   });
 
-  // Delete the organization first (irreversible external call via better-auth).
+  // Delete the organization via better-auth (external API call).
   // If this fails, no data has been modified and the operation is safely retryable.
   await auth.api.deleteOrganization({
     body: { organizationId: id },

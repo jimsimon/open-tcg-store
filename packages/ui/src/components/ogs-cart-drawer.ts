@@ -216,7 +216,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
       const result = await execute(GetShoppingCartQuery);
 
       if (result?.errors?.length) {
-        console.log({ result });
+        console.error('Cart fetch errors:', result.errors);
       } else if (result?.data?.getShoppingCart) {
         cartState.set(result.data.getShoppingCart);
       }

@@ -8,12 +8,35 @@ import viteConfig from '../../../vite.config.ts';
 import { execute } from './lib/graphql.ts';
 import { graphql } from './graphql/index.ts';
 import { authClient } from './auth-client.ts';
+import { RateLimitStore } from './lib/rate-limit-store.ts';
+
+// Hoisted to module scope to avoid re-parsing on every call
+const IsSetupPendingQuery = graphql(`
+  query IsSetupPending {
+    isSetupPending
+  }
+`);
 
 type AppState = {
   auth: typeof authClient.$Infer.Session;
 };
 
 const app = new Koa<AppState>();
+
+// Global error handler — prevent stack traces from leaking to clients
+app.on('error', (err) => {
+  console.error('Unhandled UI server error:', err);
+});
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('UI request error:', err);
+    ctx.status = 500;
+    ctx.body = 'Internal server error';
+  }
+});
 
 // Create Vite server in middleware mode and configure the app type as
 // 'custom', disabling Vite's own HTML serving logic so parent server
@@ -95,9 +118,20 @@ function requirePermission(resource: string, action: string) {
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
  */
+// Rate limit anonymous session creation — max 30 per IP per minute
+const anonSessionLimiter = new RateLimitStore({ max: 30, windowMs: 60_000 });
+
 async function ensureAnonymousSession(ctx: Context, next: Next) {
   // Already has a session from the global middleware
   if (ctx.state.auth) return next();
+
+  // Rate limit anonymous session creation per IP
+  const result = anonSessionLimiter.check(ctx.ip);
+  if (!result.allowed) {
+    ctx.status = 429;
+    ctx.body = 'Too many requests. Please try again later.';
+    return;
+  }
 
   const origin = ctx.headers.origin || `${ctx.protocol}://${ctx.host}`;
   const signInResult = await authClient.signIn.anonymous({
@@ -407,12 +441,6 @@ async function isSetupPending() {
   }
 
   try {
-    const IsSetupPendingQuery = graphql(`
-      query IsSetupPending {
-        isSetupPending
-      }
-    `);
-
     const result = await execute(IsSetupPendingQuery);
 
     if (result?.errors?.length) {

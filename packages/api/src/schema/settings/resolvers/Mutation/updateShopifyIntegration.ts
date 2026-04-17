@@ -1,4 +1,4 @@
-import { assertPermission } from '../../../../lib/assert-permission';
+import { assertPermission, getUserId } from '../../../../lib/assert-permission';
 import type { GraphqlContext } from '../../../../server';
 import { updateShopifyIntegration as updateShopifyService } from '../../../../services/settings-service';
 import type { MutationResolvers } from './../../../types.generated';
@@ -9,6 +9,6 @@ export const updateShopifyIntegration: NonNullable<MutationResolvers['updateShop
   ctx: GraphqlContext,
 ) => {
   await assertPermission(ctx, { companySettings: ['update'] });
-  const userId = ctx.auth?.user?.id;
+  const userId = getUserId(ctx);
   return await updateShopifyService(args.input, userId);
 };
