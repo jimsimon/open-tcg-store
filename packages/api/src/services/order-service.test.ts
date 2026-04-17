@@ -372,7 +372,8 @@ describe('order-service', () => {
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
         if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
-        if (selectIdx === 2) return chainable([{ ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: 2.0, productName: 'Card A' }]);
+        if (selectIdx === 2)
+          return chainable([{ ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: 2.0, productName: 'Card A' }]);
         if (selectIdx === 3) return chainable([{ id: 10, deletedAt: new Date() }]); // soft-deleted stock
         return chainable([]);
       });
@@ -388,7 +389,10 @@ describe('order-service', () => {
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
         if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
-        if (selectIdx === 2) return chainable([{ ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: null, condition: 'LP', productName: 'Card B' }]);
+        if (selectIdx === 2)
+          return chainable([
+            { ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: null, condition: 'LP', productName: 'Card B' },
+          ]);
         if (selectIdx === 3) return chainable([]); // stock entry not found (hard-deleted)
         if (selectIdx === 4) return chainable([{ id: 50, deletedAt: null }]); // restockFallback: matching stock
         return chainable([]);
@@ -404,7 +408,17 @@ describe('order-service', () => {
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
         if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
-        if (selectIdx === 2) return chainable([{ ...baseOrderItem, inventoryItemStockId: null, quantity: 1, unitPrice: 5.0, costBasis: 2.0, productName: 'Legacy Card' }]);
+        if (selectIdx === 2)
+          return chainable([
+            {
+              ...baseOrderItem,
+              inventoryItemStockId: null,
+              quantity: 1,
+              unitPrice: 5.0,
+              costBasis: 2.0,
+              productName: 'Legacy Card',
+            },
+          ]);
         // restockFallback: matching stock entry by costBasis
         if (selectIdx === 3) return chainable([{ id: 50, deletedAt: null }]);
         return chainable([]);
@@ -420,7 +434,18 @@ describe('order-service', () => {
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
         if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
-        if (selectIdx === 2) return chainable([{ ...baseOrderItem, inventoryItemId: null, inventoryItemStockId: null, quantity: 1, unitPrice: 5.0, costBasis: null, productName: 'Very Old Card' }]);
+        if (selectIdx === 2)
+          return chainable([
+            {
+              ...baseOrderItem,
+              inventoryItemId: null,
+              inventoryItemStockId: null,
+              quantity: 1,
+              unitPrice: 5.0,
+              costBasis: null,
+              productName: 'Very Old Card',
+            },
+          ]);
         // restockFallbackByProduct → restockFallback with null inventoryItemId
         if (selectIdx === 3) return chainable([{ id: 100 }]); // parent lookup
         return chainable([]); // stock entry lookup (none → will insert)

@@ -1027,11 +1027,7 @@ type TxHandle = Parameters<Parameters<typeof otcgs.transaction>[0]>[0];
  * (same costBasis + acquisitionDate) within a single parent.
  * Accepts a transaction handle to run within the caller's transaction.
  */
-async function mergeStockDuplicates(
-  db: TxHandle | typeof otcgs,
-  parentId: number,
-  userId: string,
-): Promise<void> {
+async function mergeStockDuplicates(db: TxHandle | typeof otcgs, parentId: number, userId: string): Promise<void> {
   const now = new Date();
   // Fetch ALL stock entries (including soft-deleted) because the unique
   // index covers all rows regardless of deletedAt.

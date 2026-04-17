@@ -351,10 +351,7 @@ export async function cancelOrder(orderId: number, organizationId: string, userI
     }
 
     // Fetch order items within the transaction
-    const existingOrderItems = await tx
-      .select()
-      .from(orderItem)
-      .where(eq(orderItem.orderId, orderId));
+    const existingOrderItems = await tx.select().from(orderItem).where(eq(orderItem.orderId, orderId));
 
     // 2. Return items to inventory — batch-fetch all stock entries first, then process
     const stockIds = existingOrderItems
@@ -383,10 +380,7 @@ export async function cancelOrder(orderId: number, organizationId: string, userI
           if (stockEntry.deletedAt) {
             updateSet.deletedAt = null;
           }
-          await tx
-            .update(inventoryItemStock)
-            .set(updateSet)
-            .where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
+          await tx.update(inventoryItemStock).set(updateSet).where(eq(inventoryItemStock.id, oi.inventoryItemStockId));
         } else {
           await restockFallback(tx, existingOrder.organizationId, oi);
         }
@@ -491,9 +485,7 @@ async function restockFallback(
   // Find matching stock entry or create new one — preserve null costBasis
   const costBasis = oi.costBasis;
   const costBasisCondition =
-    costBasis != null
-      ? eq(inventoryItemStock.costBasis, costBasis)
-      : isNull(inventoryItemStock.costBasis);
+    costBasis != null ? eq(inventoryItemStock.costBasis, costBasis) : isNull(inventoryItemStock.costBasis);
   const [existingStock] = await tx
     .select()
     .from(inventoryItemStock)
@@ -514,7 +506,7 @@ async function restockFallback(
     await tx.insert(inventoryItemStock).values({
       inventoryItemId: parentId,
       quantity: oi.quantity,
-      costBasis,
+      costBasis: costBasis ?? 0,
       acquisitionDate: todayDateString(),
       createdAt: now,
       updatedAt: now,
@@ -579,10 +571,7 @@ export async function updateOrderStatus(
     }
 
     // Fetch order items within the transaction
-    const existingOrderItems = await tx
-      .select()
-      .from(orderItem)
-      .where(eq(orderItem.orderId, orderId));
+    const existingOrderItems = await tx.select().from(orderItem).where(eq(orderItem.orderId, orderId));
 
     const items = mapOrderItems(existingOrderItems);
     const { totalCostBasis, totalProfit } = calculateOrderTotals(items);

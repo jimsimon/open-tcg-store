@@ -79,7 +79,7 @@ type Documents = {
     "\n  mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {\n    updateStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": typeof types.UpdateStoreLocationDocument,
     "\n  mutation RemoveStoreLocation($id: String!) {\n    removeStoreLocation(id: $id)\n  }\n": typeof types.RemoveStoreLocationDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetTransactionLogsDocument,
-    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": typeof types.IsSetupPendingDocument,
+    "\n  query IsSetupPending {\n    isSetupPending\n  }\n": typeof types.IsSetupPendingDocument,
 };
 const documents: Documents = {
     "\n  mutation UpdateItemInCart($cartItem: CartItemInput!) {\n    updateItemInCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.UpdateItemInCartDocument,
@@ -146,7 +146,7 @@ const documents: Documents = {
     "\n  mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {\n    updateStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": types.UpdateStoreLocationDocument,
     "\n  mutation RemoveStoreLocation($id: String!) {\n    removeStoreLocation(id: $id)\n  }\n": types.RemoveStoreLocationDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetTransactionLogsDocument,
-    "\n      query IsSetupPending {\n        isSetupPending\n      }\n    ": types.IsSetupPendingDocument,
+    "\n  query IsSetupPending {\n    isSetupPending\n  }\n": types.IsSetupPendingDocument,
 };
 
 /**
@@ -408,7 +408,7 @@ export function graphql(source: "\n  query GetTransactionLogs($pagination: Pagin
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      query IsSetupPending {\n        isSetupPending\n      }\n    "): typeof import('./graphql').IsSetupPendingDocument;
+export function graphql(source: "\n  query IsSetupPending {\n    isSetupPending\n  }\n"): typeof import('./graphql').IsSetupPendingDocument;
 
 
 export function graphql(source: string) {
