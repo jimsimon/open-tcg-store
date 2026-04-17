@@ -124,14 +124,10 @@ describe('shopping resolvers', () => {
   });
 
   describe('checkoutWithCart', () => {
-    it('should return the mapped cart (placeholder)', async () => {
-      const mockCart = { id: 1, cartItems: [] };
-      mockGetOrCreateShoppingCart.mockResolvedValue(mockCart);
-      mockMapToGraphqlShoppingCart.mockResolvedValue({ items: [] });
-
-      const result = await checkoutWithCart(null, {}, ctx());
-
-      expect(result).toEqual({ items: [] });
+    it('should throw NotImplementedError', async () => {
+      await expect(checkoutWithCart(null, {}, ctx())).rejects.toThrow(
+        'Checkout is not yet implemented. Please check back later.',
+      );
     });
   });
 });

@@ -2,7 +2,7 @@ import { eq, and, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
-import { likeEscaped } from '../lib/sql-utils';
+import { likeEscaped, normalizePagination } from '../lib/sql-utils';
 import { formatDate, todayDateString, isValidDateString } from '../lib/date-utils';
 import type { CardCondition } from '../schema/types.generated';
 import type {
@@ -128,9 +128,7 @@ export async function getInventoryItems(
   filters?: InventoryFilters | null,
   pagination?: PaginationInput | null,
 ): Promise<InventoryPage> {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, offset } = normalizePagination(pagination);
 
   const conditions = buildFilterConditions(organizationId, filters);
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -236,9 +234,7 @@ export async function getInventoryItemDetails(
   inventoryItemId: number,
   pagination?: PaginationInput | null,
 ): Promise<InventoryStockPage> {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, offset } = normalizePagination(pagination);
 
   // Verify parent exists and belongs to org
   const [parent] = await otcgs

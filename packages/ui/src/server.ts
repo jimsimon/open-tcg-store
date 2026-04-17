@@ -3,12 +3,12 @@ import Router from '@koa/router';
 import type { RouterContext } from '@koa/router';
 import Koa, { Context, type Next } from 'koa';
 import koaConnect from 'koa-connect';
-import { createServer as createViteServer } from 'vite';
-import viteConfig from '../../../vite.config.ts';
 import { execute } from './lib/graphql.ts';
 import { graphql } from './graphql/index.ts';
 import { authClient } from './auth-client.ts';
 import { RateLimitStore } from './lib/rate-limit-store.ts';
+
+const isProd = process.env.NODE_ENV === 'production';
 
 // Hoisted to module scope to avoid re-parsing on every call
 const IsSetupPendingQuery = graphql(`
@@ -38,18 +38,28 @@ app.use(async (ctx, next) => {
   }
 });
 
-// Create Vite server in middleware mode and configure the app type as
-// 'custom', disabling Vite's own HTML serving logic so parent server
-// can take control
-const vite = await createViteServer(viteConfig);
+// ---------------------------------------------------------------------------
+// Dev vs. Production mode
+// ---------------------------------------------------------------------------
+// In development, Vite serves assets and provides HMR. In production, static
+// assets are served from the pre-built dist directory and SSR templates are
+// loaded directly via dynamic import instead of vite.ssrLoadModule().
 
-// Use vite's connect instance as middleware. If you use your own
-// express router (express.Router()), you should use router.use
-// When the server restarts (for example after the user modifies
-// vite.config.js), `vite.middlewares` is still going to be the same
-// reference (with a new internal stack of Vite and plugin-injected
-// middlewares). The following is valid even after restarts.
-app.use(koaConnect(vite.middlewares));
+let vite: Awaited<ReturnType<typeof import('vite').createServer>> | null = null;
+
+if (!isProd) {
+  const { createServer: createViteServer } = await import('vite');
+  const viteConfig = (await import('../../../vite.config.ts')).default;
+  // Create Vite server in middleware mode and configure the app type as
+  // 'custom', disabling Vite's own HTML serving logic so parent server
+  // can take control
+  vite = await createViteServer(viteConfig);
+  // Use vite's connect instance as middleware for HMR and asset serving.
+  app.use(koaConnect(vite.middlewares));
+} else {
+  // In production, static assets are served by a reverse proxy (nginx) or CDN.
+  // The Node server only handles SSR page rendering and API proxying.
+}
 app.use(bodyParser());
 app.use(async (ctx, next) => {
   // Check if the user already has a session
@@ -393,15 +403,25 @@ app
  * components fully render once hydrated and use GraphQL for data operations.
  */
 async function renderPage(ctx: RouterContext, pageDirectory: string) {
-  const { render: renderShellTemplate } = await vite.ssrLoadModule('/packages/ui/src/shell.ts');
-  const { render: pageTemplate } = await vite.ssrLoadModule(
-    `/packages/ui/src/pages/${pageDirectory}/${pageDirectory}.server.ts`,
-  );
+  let renderShellTemplate: (dir: string, content: unknown) => string;
+  let pageTemplate: (ctx: RouterContext) => Promise<string> | string;
+
+  if (vite) {
+    // Development: use Vite's module loader for HMR support
+    const shellModule = await vite.ssrLoadModule('/packages/ui/src/shell.ts');
+    renderShellTemplate = shellModule.render;
+    const pageModule = await vite.ssrLoadModule(`/packages/ui/src/pages/${pageDirectory}/${pageDirectory}.server.ts`);
+    pageTemplate = pageModule.render;
+  } else {
+    // Production: use standard dynamic import on pre-built modules
+    const shellModule = await import('./shell.ts');
+    renderShellTemplate = shellModule.render;
+    const pageModule = await import(`./pages/${pageDirectory}/${pageDirectory}.server.ts`);
+    pageTemplate = pageModule.render;
+  }
+
   ctx.type = 'html';
-  // Full Lit SSR (disabled — see note above):
-  // ctx.body = new RenderResultReadable(
-  //   ssrRender(renderShellTemplate(pageDirectory, pageTemplate(ctx))),
-  // );
+  // Full Lit SSR (disabled — see architecture note in git history):
   ctx.body = renderShellTemplate(pageDirectory, await pageTemplate(ctx));
 }
 

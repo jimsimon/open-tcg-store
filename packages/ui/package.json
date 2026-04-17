@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@lit-labs/signals": "^0.2.0",
+    "@open-tcgs/shared": "workspace:*",
     "chart.js": "^4.5.1"
   }
 }

@@ -1,11 +1,11 @@
 import { getOrganizationId, getUserId } from '../../../../lib/assert-permission';
-import { getOrCreateShoppingCart, mapToGraphqlShoppingCart } from '../../../../services/shopping-cart-service';
+import { NotImplementedError } from '../../../../lib/errors';
 import type { MutationResolvers } from './../../../types.generated';
 
 export const checkoutWithCart: NonNullable<MutationResolvers['checkoutWithCart']> = async (_parent, _arg, ctx) => {
-  const organizationId = getOrganizationId(ctx);
-  const userId = getUserId(ctx);
-  const cart = await getOrCreateShoppingCart(organizationId, userId);
-  /* TODO: Implement checkout logic */
-  return await mapToGraphqlShoppingCart(cart);
+  // Verify authentication before returning the error so unauthenticated users
+  // get a 401 rather than a misleading "not implemented" message.
+  getOrganizationId(ctx);
+  getUserId(ctx);
+  throw new NotImplementedError('Checkout is not yet implemented. Please check back later.');
 };

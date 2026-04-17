@@ -92,7 +92,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult | null> {
     throw new Error(`GitHub API responded with ${response.status}: ${response.statusText}`);
   }
 
-  const releases: GitHubRelease[] = await response.json();
+  const releases = (await response.json()) as GitHubRelease[];
 
   // Filter to releases with our prefix. The GitHub API returns releases in
   // reverse-chronological order, so the first match is the most recent.

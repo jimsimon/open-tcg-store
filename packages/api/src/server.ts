@@ -13,6 +13,8 @@ import { typeDefs } from './schema/typeDefs.generated.ts';
 import { ruruHTML } from 'ruru/server';
 import { auth } from './auth.ts';
 import type { IncomingMessage } from 'node:http';
+import { Kind, GraphQLError, type ASTVisitor, type ValidationContext } from 'graphql';
+import { AppError } from './lib/errors.ts';
 import {
   getGoogleDriveAuthUrl,
   handleGoogleDriveCallback,
@@ -74,6 +76,25 @@ app.use(async (ctx, next) => {
   ctx.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   ctx.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   ctx.set('X-XSS-Protection', '0'); // Disabled per OWASP — modern browsers use CSP instead
+  // Content-Security-Policy — restrict sources to same-origin by default.
+  // 'unsafe-inline' for styles is required by Web Awesome's runtime theming.
+  ctx.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "font-src 'self'",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
+  );
+  if (process.env.NODE_ENV === 'production') {
+    ctx.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   return next();
 });
 
@@ -155,6 +176,89 @@ const schema = makeExecutableSchema({
   resolvers: resolvers as Resolvers,
 });
 
+// ---------------------------------------------------------------------------
+// GraphQL query validation — depth limiting & introspection control
+// ---------------------------------------------------------------------------
+
+const MAX_QUERY_DEPTH = 10;
+
+/**
+ * GraphQL validation rule that rejects queries exceeding a maximum nesting depth.
+ * Prevents resource exhaustion from deeply nested queries.
+ *
+ * Handles all selection types: Field, InlineFragment, and FragmentSpread
+ * (resolving named fragments from the document to count their actual depth).
+ */
+function depthLimitRule(maxDepth: number) {
+  return function DepthLimit(context: ValidationContext): ASTVisitor {
+    return {
+      Document(node) {
+        // Build a map of fragment definitions so FragmentSpread can be resolved
+        const fragmentDefs = new Map<string, { selectionSet?: SelectionSetLike }>();
+        for (const def of node.definitions) {
+          if (def.kind === Kind.FRAGMENT_DEFINITION) {
+            fragmentDefs.set(def.name.value, def as { selectionSet?: SelectionSetLike });
+          }
+        }
+
+        type SelectionSetLike = {
+          selections: readonly { kind: string; name?: { value: string }; selectionSet?: SelectionSetLike }[];
+        };
+
+        function measureDepth(selectionSet: SelectionSetLike | undefined, depth: number, visited: Set<string>): number {
+          if (!selectionSet) return depth;
+          let maxChild = depth;
+          for (const selection of selectionSet.selections) {
+            let childDepth: number;
+            if (selection.kind === Kind.FRAGMENT_SPREAD) {
+              // Resolve named fragment — guard against circular references
+              const fragName = selection.name?.value;
+              if (fragName && !visited.has(fragName)) {
+                visited.add(fragName);
+                const frag = fragmentDefs.get(fragName);
+                childDepth = measureDepth(frag?.selectionSet, depth, visited);
+                visited.delete(fragName);
+              } else {
+                childDepth = depth;
+              }
+            } else {
+              // Field or InlineFragment — both have optional selectionSet
+              childDepth = measureDepth(selection.selectionSet, depth + 1, visited);
+            }
+            if (childDepth > maxChild) maxChild = childDepth;
+          }
+          return maxChild;
+        }
+
+        for (const def of node.definitions) {
+          if (def.kind === Kind.OPERATION_DEFINITION) {
+            const depth = measureDepth((def as { selectionSet?: SelectionSetLike }).selectionSet, 0, new Set());
+            if (depth > maxDepth) {
+              context.reportError(
+                new GraphQLError(`Query depth of ${depth} exceeds the maximum allowed depth of ${maxDepth}.`),
+              );
+            }
+          }
+        }
+      },
+    };
+  };
+}
+
+/**
+ * GraphQL validation rule that rejects introspection queries in production.
+ * Prevents schema discovery by unauthorized parties.
+ */
+function noIntrospectionRule(context: ValidationContext): ASTVisitor {
+  return {
+    Field(node) {
+      if (node.name.value === '__schema' || node.name.value === '__type') {
+        context.reportError(new GraphQLError('Introspection is disabled in production.'));
+      }
+    },
+  };
+}
+
 // Return 503 during database updates, except for the status endpoint.
 // This intentionally blocks ALL routes including /api/auth — the update
 // window is brief (~1s) and allowing auth requests during a database swap
@@ -207,6 +311,35 @@ app.use(
           req: req.raw,
           res: req.context.res,
         } satisfies GraphqlContext;
+      },
+      validationRules: (_req, _args, defaultRules) => {
+        const rules = [...defaultRules, depthLimitRule(MAX_QUERY_DEPTH)];
+        if (process.env.NODE_ENV === 'production') {
+          rules.push(noIntrospectionRule);
+        }
+        return rules;
+      },
+      formatError: (err) => {
+        // If the original error thrown by a resolver is a typed AppError,
+        // preserve its message and attach the machine-readable code as an
+        // extension. Otherwise, in production, replace the message with a
+        // generic string to prevent leaking internal details.
+        const original = err instanceof GraphQLError ? err.originalError : err;
+
+        if (original instanceof AppError) {
+          return new GraphQLError(original.message, {
+            extensions: { code: original.code },
+          });
+        }
+
+        if (process.env.NODE_ENV === 'production') {
+          return new GraphQLError('An unexpected error occurred', {
+            extensions: { code: 'INTERNAL_SERVER_ERROR' },
+          });
+        }
+
+        // Development: pass through for debugging
+        return err;
       },
     }),
   ),

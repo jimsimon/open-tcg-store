@@ -4,7 +4,7 @@ import { lot } from '../db/otcgs/lot-schema';
 import { lotItem } from '../db/otcgs/lot-item-schema';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
-import { likeEscaped } from '../lib/sql-utils';
+import { likeEscaped, normalizePagination } from '../lib/sql-utils';
 import { formatDate, isValidDateString } from '../lib/date-utils';
 
 import type { CardCondition, PaginationInput } from '../schema/types.generated';
@@ -875,9 +875,7 @@ export async function getLots(
   filters?: LotFilters | null,
   pagination?: PaginationInput | null,
 ): Promise<LotPageResult> {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, offset } = normalizePagination(pagination);
 
   const conditions: ReturnType<typeof eq>[] = [eq(lot.organizationId, organizationId)];
 

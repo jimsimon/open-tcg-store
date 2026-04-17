@@ -4,6 +4,7 @@ import { product } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 
 import { todayDateString, safeISOString } from '../lib/date-utils';
+import { normalizePagination } from '../lib/sql-utils';
 import type { CardCondition, OrderStatus } from '../schema/types.generated';
 
 interface OrderItemResult {
@@ -90,8 +91,12 @@ function generateOrderNumber(): string {
 }
 
 export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderData> {
-  if (!customerName || customerName.trim().length === 0) {
+  const trimmedName = customerName?.trim();
+  if (!trimmedName || trimmedName.length === 0) {
     throw new Error('Customer name is required');
+  }
+  if (trimmedName.length > 500) {
+    throw new Error('Customer name must be 500 characters or less');
   }
 
   // Wrap the entire order submission — including the cart read — in a transaction
@@ -252,17 +257,31 @@ export async function submitOrder(organizationId: string, userId: string, custom
         if (stockEntry.quantity <= 0) continue;
 
         const deduct = Math.min(remaining, stockEntry.quantity);
-        const newQuantity = stockEntry.quantity - deduct;
 
-        await tx
+        // Use atomic SQL decrement to prevent double-decrement race conditions.
+        // The WHERE guard ensures quantity can never go negative. We use
+        // returning() to verify the update actually matched a row — if another
+        // transaction already decremented the stock, 0 rows are returned and
+        // we must not create an order item for phantom inventory.
+        const [decremented] = await tx
           .update(inventoryItemStock)
-          .set({ quantity: newQuantity, updatedAt: new Date() })
-          .where(eq(inventoryItemStock.id, stockEntry.id));
+          .set({
+            quantity: sql`${inventoryItemStock.quantity} - ${deduct}`,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(inventoryItemStock.id, stockEntry.id), sql`${inventoryItemStock.quantity} >= ${deduct}`))
+          .returning({ id: inventoryItemStock.id });
+
+        if (!decremented) {
+          // Stock was concurrently modified — the quantity we read is stale.
+          // Abort the entire order so the caller can retry with fresh data.
+          throw new Error('Inventory changed while processing the order. Please try again.');
+        }
 
         // Keep in-memory state consistent with the DB update so that if
         // a future change allows the same stock entry to be visited by
         // multiple cart items, quantities won't be double-counted.
-        stockEntry.quantity = newQuantity;
+        stockEntry.quantity -= deduct;
 
         allOrderItemValues.push({
           orderId: insertedOrder.id,
@@ -302,7 +321,7 @@ export async function submitOrder(organizationId: string, userId: string, custom
       totalAmount: insertedOrder.totalAmount,
       totalCostBasis,
       totalProfit,
-      createdAt: safeISOString(insertedOrder.createdAt),
+      createdAt: safeISOString(insertedOrder.createdAt) ?? new Date().toISOString(),
       items,
     };
   });
@@ -406,7 +425,7 @@ export async function cancelOrder(orderId: number, organizationId: string, userI
       totalAmount: existingOrder.totalAmount,
       totalCostBasis,
       totalProfit,
-      createdAt: safeISOString(existingOrder.createdAt),
+      createdAt: safeISOString(existingOrder.createdAt) ?? new Date().toISOString(),
       items,
     };
   });
@@ -607,7 +626,7 @@ export async function updateOrderStatus(
     totalAmount: result.order.totalAmount,
     totalCostBasis: result.totalCostBasis,
     totalProfit: result.totalProfit,
-    createdAt: safeISOString(result.order.createdAt),
+    createdAt: safeISOString(result.order.createdAt) ?? new Date().toISOString(),
     items: result.items,
   };
 }
@@ -617,9 +636,7 @@ export async function getOrders(
   pagination?: { page?: number; pageSize?: number } | null,
   filters?: { status?: string | null; searchTerm?: string | null } | null,
 ) {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, offset } = normalizePagination(pagination);
 
   // Build where conditions (always scope by organization)
   const conditions = [eq(order.organizationId, organizationId)];
@@ -663,7 +680,7 @@ export async function getOrders(
         totalAmount: o.totalAmount,
         totalCostBasis,
         totalProfit,
-        createdAt: safeISOString(o.createdAt),
+        createdAt: safeISOString(o.createdAt) ?? new Date().toISOString(),
         items,
       };
     }),

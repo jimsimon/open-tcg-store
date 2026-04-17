@@ -101,6 +101,8 @@ export async function mapToGraphqlShoppingCart(cart: Awaited<ReturnType<typeof g
 
 /** Add an item to the cart. If the item already exists, increment the quantity. */
 export async function addItemToCart(organizationId: string, userId: string, inventoryItemId: number, quantity: number) {
+  if (quantity == null || quantity < 1) throw new Error('Quantity must be at least 1');
+  if (!inventoryItemId) throw new Error('inventoryItemId is required');
   const existingCart = await otcgs.query.cart.findFirst({
     columns: { id: true },
     where: (c, { eq, and }) => and(eq(c.organizationId, organizationId), eq(c.userId, userId)),
@@ -151,6 +153,7 @@ export async function updateCartItemQuantity(
   inventoryItemId: number,
   quantity: number,
 ) {
+  if (quantity == null || quantity < 1) throw new Error('Quantity must be at least 1');
   const existingCart = await getOrCreateShoppingCart(organizationId, userId);
   const item = existingCart.cartItems.find((ci) => ci.inventoryItemId === inventoryItemId);
   if (item) {

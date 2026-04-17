@@ -112,7 +112,7 @@ export async function performFirstTimeSetup(
       asResponse: true,
     });
 
-    const signUpData = await signUpResponse.json();
+    const signUpData = (await signUpResponse.json()) as { message?: string; user?: { id: string } };
 
     if (!signUpResponse.ok) {
       throw new Error(signUpData.message ?? 'Failed to create user account');
@@ -185,7 +185,7 @@ export async function performFirstTimeSetup(
       throw new Error('Setup completed but failed to create authenticated session. Please sign in manually.');
     }
 
-    const signInData = await signInResponse.json();
+    const signInData = (await signInResponse.json()) as { token: string };
 
     // Forward fresh session cookies to the browser
     const freshCookies = signInResponse.headers.getSetCookie();
