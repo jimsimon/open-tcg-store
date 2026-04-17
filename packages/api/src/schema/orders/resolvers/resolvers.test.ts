@@ -53,19 +53,19 @@ describe('orders resolvers', () => {
 
   describe('submitOrder', () => {
     it('should get organization and delegate to service', async () => {
-      mockSubmitOrder.mockResolvedValue({ order: { id: 1 } });
+      mockSubmitOrder.mockResolvedValue({ id: 1 });
 
       const result = await submitOrder(null, { input: { customerName: 'Alice' } }, ctx());
 
       expect(mockGetOrganizationId).toHaveBeenCalled();
       expect(mockSubmitOrder).toHaveBeenCalledWith('org-1', 'user-1', 'Alice');
-      expect(result).toEqual({ order: { id: 1 } });
+      expect(result).toEqual({ id: 1 });
     });
   });
 
   describe('cancelOrder', () => {
     it('should check permissions and delegate to service', async () => {
-      mockCancelOrder.mockResolvedValue({ order: { id: 1, status: 'cancelled' } });
+      mockCancelOrder.mockResolvedValue({ id: 1, status: 'cancelled' });
 
       await cancelOrder(null, { orderId: 1 }, ctx());
 
@@ -76,7 +76,7 @@ describe('orders resolvers', () => {
 
   describe('updateOrderStatus', () => {
     it('should check permissions and delegate to service', async () => {
-      mockUpdateOrderStatus.mockResolvedValue({ order: { id: 1, status: 'completed' } });
+      mockUpdateOrderStatus.mockResolvedValue({ id: 1, status: 'completed' });
 
       await updateOrderStatus(null, { orderId: 1, status: 'completed' }, ctx());
 

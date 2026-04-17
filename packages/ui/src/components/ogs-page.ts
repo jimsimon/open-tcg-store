@@ -71,21 +71,11 @@ const RemoveFromCartMutation = graphql(`
 const SubmitOrderMutation = graphql(`
   mutation SubmitOrder($input: SubmitOrderInput!) {
     submitOrder(input: $input) {
-      order {
-        id
-        orderNumber
-        customerName
-        totalAmount
-        createdAt
-      }
-      error
-      insufficientItems {
-        productId
-        productName
-        condition
-        requested
-        available
-      }
+      id
+      orderNumber
+      customerName
+      totalAmount
+      createdAt
     }
   }
 `);
@@ -1031,29 +1021,15 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
       if (result?.errors?.length) {
         this.orderError = result.errors.map((e: { message: string }) => e.message).join(', ');
+        // Refresh cart to get updated maxAvailable values on inventory errors
+        await this.fetchCart();
       } else {
-        const data = result.data.submitOrder;
-        if (data.error) {
-          if (data.insufficientItems && data.insufficientItems.length > 0) {
-            const details = data.insufficientItems
-              .map(
-                (i: { productName: string; condition: string; requested: number; available: number }) =>
-                  `${i.productName} (${i.condition}): requested ${i.requested}, only ${i.available} available`,
-              )
-              .join('; ');
-            this.orderError = `${data.error}: ${details}`;
-          } else {
-            this.orderError = data.error;
-          }
-          // Refresh cart to get updated maxAvailable values
-          await this.fetchCart();
-        } else if (data.order) {
-          this.orderSuccess = `Order ${data.order.orderNumber} created for ${formatCurrency(data.order.totalAmount)}`;
-          cartState.set({ items: [] });
-          this.customerName = '';
-          // Notify product pages to refresh listings with updated inventory
-          this.dispatchEvent(new CustomEvent('order-submitted', { bubbles: true, composed: true }));
-        }
+        const order = result.data.submitOrder;
+        this.orderSuccess = `Order ${order.orderNumber} created for ${formatCurrency(order.totalAmount)}`;
+        cartState.set({ items: [] });
+        this.customerName = '';
+        // Notify product pages to refresh listings with updated inventory
+        this.dispatchEvent(new CustomEvent('order-submitted', { bubbles: true, composed: true }));
       }
     } catch (e) {
       this.orderError = e instanceof Error ? e.message : 'Failed to submit order';

@@ -42,34 +42,10 @@ input SubmitOrderInput {
   customerName: String!
 }
 
-type SubmitOrderResult {
-  order: Order
-  error: String
-  insufficientItems: [InsufficientItem!]
-}
-
-type InsufficientItem {
-  productId: Int!
-  productName: String!
-  condition: CardCondition!
-  requested: Int!
-  available: Int!
-}
-
-type CancelOrderResult {
-  order: Order
-  error: String
-}
-
-type UpdateOrderStatusResult {
-  order: Order
-  error: String
-}
-
 extend type Mutation {
-  submitOrder(input: SubmitOrderInput!): SubmitOrderResult!
-  cancelOrder(orderId: Int!): CancelOrderResult!
-  updateOrderStatus(orderId: Int!, status: OrderStatus!): UpdateOrderStatusResult!
+  submitOrder(input: SubmitOrderInput!): Order!
+  cancelOrder(orderId: Int!): Order!
+  updateOrderStatus(orderId: Int!, status: OrderStatus!): Order!
 }
 
 input OrderFilters {

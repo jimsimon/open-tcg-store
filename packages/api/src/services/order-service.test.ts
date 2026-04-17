@@ -167,10 +167,7 @@ describe('order-service', () => {
       const noCartChain = chainable([]);
       mockOtcgs.select.mockImplementation(() => noCartChain);
 
-      const result = await submitOrder('org-1', 'user-1', 'Customer');
-
-      expect(result.error).toBe('Cart is empty');
-      expect(result.order).toBeUndefined();
+      await expect(submitOrder('org-1', 'user-1', 'Customer')).rejects.toThrow('Cart is empty');
     });
 
     it('should return error when cart has no items', async () => {
@@ -186,10 +183,7 @@ describe('order-service', () => {
         return emptyItemsChain;
       });
 
-      const result = await submitOrder('org-1', 'user-1', 'Customer');
-
-      expect(result.error).toBe('Cart is empty');
-      expect(result.order).toBeUndefined();
+      await expect(submitOrder('org-1', 'user-1', 'Customer')).rejects.toThrow('Cart is empty');
     });
 
     it('should return insufficient inventory error when stock is too low', async () => {
@@ -219,13 +213,9 @@ describe('order-service', () => {
         return stockCheckChain;
       });
 
-      const result = await submitOrder('org-1', 'user-1', 'Customer');
-
-      expect(result.error).toBe('Insufficient inventory for one or more items');
-      expect(result.insufficientItems).toHaveLength(1);
-      expect(result.insufficientItems![0].productName).toBe('Charizard');
-      expect(result.insufficientItems![0].requested).toBe(10);
-      expect(result.insufficientItems![0].available).toBe(3);
+      await expect(submitOrder('org-1', 'user-1', 'Customer')).rejects.toThrow(
+        'Insufficient inventory: Charizard (NM): requested 10, available 3',
+      );
     });
 
     it('should create order and decrement stock using FIFO', async () => {
@@ -305,11 +295,9 @@ describe('order-service', () => {
 
       const result = await submitOrder('org-1', 'user-1', 'Customer');
 
-      expect(result.error).toBeUndefined();
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('open');
-      expect(result.order!.totalAmount).toBe(30.0);
-      expect(result.order!.items).toHaveLength(2);
+      expect(result.status).toBe('open');
+      expect(result.totalAmount).toBe(30.0);
+      expect(result.items).toHaveLength(2);
       // Stock should have been updated
       expect(mockOtcgs.update).toHaveBeenCalled();
       // Cart should have been cleared
@@ -324,9 +312,7 @@ describe('order-service', () => {
     it('should return error when order not found', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue(null);
 
-      const result = await cancelOrder(999, 'org-1', 'user-1');
-
-      expect(result.error).toBe('Order not found');
+      await expect(cancelOrder(999, 'org-1', 'user-1')).rejects.toThrow('Order not found');
     });
 
     it('should return error when order is already cancelled', async () => {
@@ -336,9 +322,7 @@ describe('order-service', () => {
         orderItems: [],
       });
 
-      const result = await cancelOrder(1, 'org-1', 'user-1');
-
-      expect(result.error).toBe('Order is already cancelled');
+      await expect(cancelOrder(1, 'org-1', 'user-1')).rejects.toThrow('Order is already cancelled');
     });
 
     it('should cancel an open order and restock using stock entry ID', async () => {
@@ -371,10 +355,8 @@ describe('order-service', () => {
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
-      expect(result.error).toBeUndefined();
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('cancelled');
-      // Stock should be updated (restocked)
+      expect(result.status).toBe('cancelled');
+      // Verify stock was updated (restocked)
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
 
@@ -408,8 +390,7 @@ describe('order-service', () => {
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('cancelled');
+      expect(result.status).toBe('cancelled');
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
 
@@ -450,8 +431,7 @@ describe('order-service', () => {
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('cancelled');
+      expect(result.status).toBe('cancelled');
     });
 
     it('should use legacy fallback when no inventoryItemStockId but has inventoryItemId', async () => {
@@ -484,8 +464,7 @@ describe('order-service', () => {
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('cancelled');
+      expect(result.status).toBe('cancelled');
     });
 
     it('should use very legacy fallback when no inventoryItemId at all', async () => {
@@ -525,8 +504,7 @@ describe('order-service', () => {
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('cancelled');
+      expect(result.status).toBe('cancelled');
     });
   });
 
@@ -534,42 +512,38 @@ describe('order-service', () => {
   // updateOrderStatus
   // -----------------------------------------------------------------------
   describe('updateOrderStatus', () => {
-    it('should return error for invalid status', async () => {
-      const result = await updateOrderStatus(1, 'shipped', 'org-1', 'user-1');
-
-      expect(result.error).toBe('Invalid status "shipped". Valid statuses: open, completed');
+    it('should throw for invalid status', async () => {
+      await expect(updateOrderStatus(1, 'shipped', 'org-1', 'user-1')).rejects.toThrow(
+        'Invalid status "shipped". Valid statuses: open, completed',
+      );
     });
 
-    it('should return error when order not found', async () => {
+    it('should throw when order not found', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue(null);
 
-      const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
-
-      expect(result.error).toBe('Order not found');
+      await expect(updateOrderStatus(1, 'completed', 'org-1', 'user-1')).rejects.toThrow('Order not found');
     });
 
-    it('should return error when order is already cancelled', async () => {
+    it('should throw when order is already cancelled', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue({
         id: 1,
         status: 'cancelled',
         orderItems: [],
       });
 
-      const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
-
-      expect(result.error).toBe('Cannot change status of a cancelled order');
+      await expect(updateOrderStatus(1, 'completed', 'org-1', 'user-1')).rejects.toThrow(
+        'Cannot change status of a cancelled order',
+      );
     });
 
-    it('should return error when order already has the target status', async () => {
+    it('should throw when order already has the target status', async () => {
       mockOtcgs.query.order.findFirst.mockResolvedValue({
         id: 1,
         status: 'open',
         orderItems: [],
       });
 
-      const result = await updateOrderStatus(1, 'open', 'org-1', 'user-1');
-
-      expect(result.error).toBe('Order is already open');
+      await expect(updateOrderStatus(1, 'open', 'org-1', 'user-1')).rejects.toThrow('Order is already open');
     });
 
     it('should update status from open to completed', async () => {
@@ -596,9 +570,7 @@ describe('order-service', () => {
 
       const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');
 
-      expect(result.error).toBeUndefined();
-      expect(result.order).toBeDefined();
-      expect(result.order!.status).toBe('completed');
+      expect(result.status).toBe('completed');
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
   });
