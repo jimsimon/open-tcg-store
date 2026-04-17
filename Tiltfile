@@ -1,6 +1,7 @@
 local_resource(
     "API Server",
     serve_cmd="pnpm --filter @open-tcgs/api run dev",
+    deps=['packages/api/src'],
     resource_deps=[]
 )
 
