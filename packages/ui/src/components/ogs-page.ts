@@ -612,9 +612,10 @@ export class OgsPage extends SignalWatcher(LitElement) {
   private async handleSignOut() {
     try {
       const authClient = await getAuthClient();
+      // Server-side session invalidation via Better Auth handles cookie cleanup.
+      // Client-side Cookies.remove() for HttpOnly cookies is a no-op, so we
+      // rely on the server to clear them via the signOut response.
       await authClient.signOut();
-      Cookies.remove('better-auth.session_token');
-      Cookies.remove('better-auth.session_data');
       window.location.href = '/';
     } catch (e) {
       console.error('Sign out failed:', e);

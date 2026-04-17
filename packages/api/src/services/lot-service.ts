@@ -5,7 +5,7 @@ import { lotItem } from '../db/otcgs/lot-item-schema';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped } from '../lib/sql-utils';
-import { formatDate } from '../lib/date-utils';
+import { formatDate, isValidDateString } from '../lib/date-utils';
 
 import type { CardCondition, PaginationInput } from '../schema/types.generated';
 
@@ -87,6 +87,9 @@ function validateLotInput(input: CreateLotInput): void {
   if (!input.name || input.name.trim().length === 0) throw new Error('Lot name is required');
   if (input.amountPaid == null || input.amountPaid < 0) throw new Error('Amount paid must be non-negative');
   if (!input.acquisitionDate) throw new Error('Acquisition date is required');
+  if (!isValidDateString(input.acquisitionDate)) {
+    throw new Error('Acquisition date must be a valid date in YYYY-MM-DD format');
+  }
   if (!input.items || input.items.length === 0) throw new Error('At least one item is required');
 
   const validConditions = ['NM', 'LP', 'MP', 'HP', 'D'];
@@ -449,8 +452,11 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
         userId,
       );
 
-      // Create stock entry with lot reference
-      // Check for existing stock with same costBasis + acquisitionDate (unique index)
+      // Create stock entry with lot reference.
+      // Check for existing stock with same costBasis + acquisitionDate (unique index).
+      // If found AND already associated with another lot, create a separate entry to
+      // avoid overwriting the other lot's association. If found with no lot, or the
+      // same lot (shouldn't happen on create), reuse it.
       const [existingStock] = await tx
         .select()
         .from(inventoryItemStock)
@@ -465,13 +471,28 @@ export async function createLot(organizationId: string, input: CreateLotInput, u
 
       let stockId: number;
 
-      if (existingStock) {
+      if (existingStock && (existingStock.lotId == null || existingStock.lotId === newLot.id)) {
+        // Safe to reuse — no other lot owns this entry
         const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
         await tx
           .update(inventoryItemStock)
           .set({
             quantity: baseQty + item.quantity,
             lotId: newLot.id,
+            deletedAt: null,
+            updatedBy: userId,
+            updatedAt: now,
+          })
+          .where(eq(inventoryItemStock.id, existingStock.id));
+        stockId = existingStock.id;
+      } else if (existingStock) {
+        // Existing stock belongs to another lot — add to its quantity but don't change lotId.
+        // Create the lot item pointing to this stock entry (shared stock).
+        const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
+        await tx
+          .update(inventoryItemStock)
+          .set({
+            quantity: baseQty + item.quantity,
             deletedAt: null,
             updatedBy: userId,
             updatedAt: now,
@@ -539,16 +560,15 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 
   const now = new Date();
 
-  // Verify lot exists and belongs to org (outside transaction — read-only check)
-  const [existingLot] = await otcgs
-    .select()
-    .from(lot)
-    .where(and(eq(lot.id, input.id), eq(lot.organizationId, organizationId)))
-    .limit(1);
-
-  if (!existingLot) throw new Error('Lot not found');
-
   await otcgs.transaction(async (tx) => {
+    // Verify lot exists and belongs to org inside the transaction to prevent TOCTOU
+    const [existingLot] = await tx
+      .select()
+      .from(lot)
+      .where(and(eq(lot.id, input.id), eq(lot.organizationId, organizationId)))
+      .limit(1);
+
+    if (!existingLot) throw new Error('Lot not found');
     // Update lot metadata
     await tx
       .update(lot)
@@ -646,13 +666,27 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 
         let stockId: number;
 
-        if (existingStock) {
+        if (existingStock && (existingStock.lotId == null || existingStock.lotId === input.id)) {
+          // Safe to reuse — no other lot owns this entry
           const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
           await tx
             .update(inventoryItemStock)
             .set({
               quantity: baseQty + item.quantity,
               lotId: input.id,
+              deletedAt: null,
+              updatedBy: userId,
+              updatedAt: now,
+            })
+            .where(eq(inventoryItemStock.id, existingStock.id));
+          stockId = existingStock.id;
+        } else if (existingStock) {
+          // Existing stock belongs to another lot — add to its quantity but don't change lotId
+          const baseQty = existingStock.deletedAt ? 0 : existingStock.quantity;
+          await tx
+            .update(inventoryItemStock)
+            .set({
+              quantity: baseQty + item.quantity,
               deletedAt: null,
               updatedBy: userId,
               updatedAt: now,
@@ -717,16 +751,15 @@ export async function updateLot(input: UpdateLotInput, userId: string, organizat
 export async function deleteLot(id: number, organizationId: string, userId: string): Promise<boolean> {
   const now = new Date();
 
-  // Verify lot exists and belongs to org (outside transaction — read-only check)
-  const [existingLot] = await otcgs
-    .select()
-    .from(lot)
-    .where(and(eq(lot.id, id), eq(lot.organizationId, organizationId)))
-    .limit(1);
+  const existingLot = await otcgs.transaction(async (tx) => {
+    // Verify lot exists and belongs to org inside the transaction to prevent TOCTOU
+    const [existingLot] = await tx
+      .select()
+      .from(lot)
+      .where(and(eq(lot.id, id), eq(lot.organizationId, organizationId)))
+      .limit(1);
 
-  if (!existingLot) throw new Error('Lot not found');
-
-  await otcgs.transaction(async (tx) => {
+    if (!existingLot) throw new Error('Lot not found');
     // Soft-delete all stock entries associated with this lot
     await tx
       .update(inventoryItemStock)
@@ -738,6 +771,8 @@ export async function deleteLot(id: number, organizationId: string, userId: stri
 
     // Delete the lot
     await tx.delete(lot).where(eq(lot.id, id));
+
+    return existingLot;
   });
 
   // Log transaction (outside DB transaction — logging failure shouldn't roll back the delete)

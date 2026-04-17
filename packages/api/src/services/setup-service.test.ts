@@ -125,9 +125,11 @@ function mockSuccessfulSignIn() {
 describe('setup-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: guard transaction passes (0 users), insert succeeds
+    // Default: guard transaction passes (0 users), insert succeeds.
+    // The guard transaction inserts into companySettings with onConflictDoNothing().returning()
+    // — returning a row means the insert succeeded (setup is fresh).
     mockOtcgs.select.mockReturnValue(chainable([{ count: 0 }]));
-    mockOtcgs.insert.mockReturnValue(chainable([]));
+    mockOtcgs.insert.mockReturnValue(chainable([{ id: 1 }]));
     mockOtcgs.update.mockReturnValue(chainable([]));
     mockOtcgs.delete.mockReturnValue(chainable([]));
   });
@@ -269,11 +271,11 @@ describe('setup-service', () => {
       mockSuccessfulSignUp();
       mockAuth.api.createOrganization.mockRejectedValue(new Error('Org creation failed'));
       mockOtcgs.delete.mockReturnValue(chainable([]));
-      // Make the second delete call (company settings) throw
+      // Make the third delete call (company settings) throw
       let deleteCallCount = 0;
       mockOtcgs.delete.mockImplementation(() => {
         deleteCallCount++;
-        if (deleteCallCount === 2) {
+        if (deleteCallCount === 3) {
           throw new Error('Delete failed');
         }
         return chainable([]);

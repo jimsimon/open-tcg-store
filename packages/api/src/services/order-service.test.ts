@@ -309,84 +309,73 @@ describe('order-service', () => {
   // cancelOrder
   // -----------------------------------------------------------------------
   describe('cancelOrder', () => {
+    // Helper: mock order data for the new tx.select() pattern.
+    // cancelOrder now uses: tx.select().from(order) then tx.select().from(orderItem)
+    // instead of otcgs.query.order.findFirst({ with: { orderItems: true } }).
+    const baseOrder = {
+      id: 1,
+      organizationId: 'org-1',
+      orderNumber: 'ORD-20260101-0001',
+      customerName: 'Customer',
+      status: 'open',
+      totalAmount: 10.0,
+      userId: 'user-1',
+      createdAt: new Date('2026-01-01'),
+    };
+
+    const baseOrderItem = {
+      id: 1,
+      orderId: 1,
+      inventoryItemId: 100,
+      inventoryItemStockId: 10,
+      productId: 200,
+      productName: 'Sol Ring',
+      condition: 'NM',
+      quantity: 2,
+      unitPrice: 5.0,
+      costBasis: 3.0,
+      lotId: null,
+    };
+
     it('should return error when order not found', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue(null);
+      // select #1: order lookup returns empty
+      mockOtcgs.select.mockImplementation(() => chainable([]));
 
       await expect(cancelOrder(999, 'org-1', 'user-1')).rejects.toThrow('Order not found');
     });
 
     it('should return error when order is already cancelled', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        status: 'cancelled',
-        orderItems: [],
-      });
+      // select #1: order lookup returns cancelled order
+      mockOtcgs.select.mockImplementation(() => chainable([{ ...baseOrder, status: 'cancelled' }]));
 
       await expect(cancelOrder(1, 'org-1', 'user-1')).rejects.toThrow('Order is already cancelled');
     });
 
     it('should cancel an open order and restock using stock entry ID', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 10.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
-          {
-            id: 1,
-            inventoryItemId: 100,
-            inventoryItemStockId: 10,
-            productId: 200,
-            productName: 'Sol Ring',
-            condition: 'NM',
-            quantity: 2,
-            unitPrice: 5.0,
-            costBasis: 3.0,
-          },
-        ],
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return chainable([baseOrder]); // order lookup
+        if (selectIdx === 2) return chainable([baseOrderItem]); // order items
+        if (selectIdx === 3) return chainable([{ id: 10, deletedAt: null }]); // stock entry lookup
+        return chainable([]);
       });
-
-      // Stock entry lookup for restocking
-      const stockLookupChain = chainable([{ id: 10, deletedAt: null }]);
-      mockOtcgs.select.mockImplementation(() => stockLookupChain);
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
       expect(result.status).toBe('cancelled');
-      // Verify stock was updated (restocked)
       expect(mockOtcgs.update).toHaveBeenCalled();
     });
 
     it('should cancel and restock when stock entry was deleted (undelete)', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 5.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
-          {
-            id: 1,
-            inventoryItemId: 100,
-            inventoryItemStockId: 10,
-            productId: 200,
-            productName: 'Card A',
-            condition: 'NM',
-            quantity: 1,
-            unitPrice: 5.0,
-            costBasis: 2.0,
-          },
-        ],
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
+        if (selectIdx === 2) return chainable([{ ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: 2.0, productName: 'Card A' }]);
+        if (selectIdx === 3) return chainable([{ id: 10, deletedAt: new Date() }]); // soft-deleted stock
+        return chainable([]);
       });
-
-      // Stock entry lookup — the entry has a deletedAt (was soft-deleted)
-      const stockLookupChain = chainable([{ id: 10, deletedAt: new Date() }]);
-      mockOtcgs.select.mockImplementation(() => stockLookupChain);
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
@@ -395,37 +384,13 @@ describe('order-service', () => {
     });
 
     it('should fall back to restockFallback when stock entry is hard-deleted', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 5.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
-          {
-            id: 1,
-            inventoryItemId: 100,
-            inventoryItemStockId: 10,
-            productId: 200,
-            productName: 'Card B',
-            condition: 'LP',
-            quantity: 1,
-            unitPrice: 5.0,
-            costBasis: null,
-          },
-        ],
-      });
-
-      // Stock entry lookup — not found (hard-deleted), then restockFallback
       let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
-        // First: stock entry lookup (not found)
-        if (selectIdx === 1) return chainable([]);
-        // Second: matching stock entry by costBasis in restockFallback
-        if (selectIdx === 2) return chainable([{ id: 50, deletedAt: null }]);
+        if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
+        if (selectIdx === 2) return chainable([{ ...baseOrderItem, quantity: 1, unitPrice: 5.0, costBasis: null, condition: 'LP', productName: 'Card B' }]);
+        if (selectIdx === 3) return chainable([]); // stock entry not found (hard-deleted)
+        if (selectIdx === 4) return chainable([{ id: 50, deletedAt: null }]); // restockFallback: matching stock
         return chainable([]);
       });
 
@@ -435,32 +400,15 @@ describe('order-service', () => {
     });
 
     it('should use legacy fallback when no inventoryItemStockId but has inventoryItemId', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 5.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
-          {
-            id: 1,
-            inventoryItemId: 100,
-            inventoryItemStockId: null,
-            productId: 200,
-            productName: 'Legacy Card',
-            condition: 'NM',
-            quantity: 1,
-            unitPrice: 5.0,
-            costBasis: 2.0,
-          },
-        ],
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
+        if (selectIdx === 2) return chainable([{ ...baseOrderItem, inventoryItemStockId: null, quantity: 1, unitPrice: 5.0, costBasis: 2.0, productName: 'Legacy Card' }]);
+        // restockFallback: matching stock entry by costBasis
+        if (selectIdx === 3) return chainable([{ id: 50, deletedAt: null }]);
+        return chainable([]);
       });
-
-      // restockFallback: look for matching stock entry
-      const existingStockChain = chainable([{ id: 50, deletedAt: null }]);
-      mockOtcgs.select.mockImplementation(() => existingStockChain);
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
 
@@ -468,38 +416,14 @@ describe('order-service', () => {
     });
 
     it('should use very legacy fallback when no inventoryItemId at all', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 5.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
-          {
-            id: 1,
-            inventoryItemId: null,
-            inventoryItemStockId: null,
-            productId: 200,
-            productName: 'Very Old Card',
-            condition: 'NM',
-            quantity: 1,
-            unitPrice: 5.0,
-            costBasis: null,
-          },
-        ],
-      });
-
-      // restockFallbackByProduct → restockFallback with null inventoryItemId
-      // Will look up parent by product+condition, then look for matching stock entry
       let selectIdx = 0;
       mockOtcgs.select.mockImplementation(() => {
         selectIdx++;
-        // First: parent lookup by product+condition
-        if (selectIdx === 1) return chainable([{ id: 100 }]);
-        // Second: stock entry lookup (none found → will insert new)
-        return chainable([]);
+        if (selectIdx === 1) return chainable([{ ...baseOrder, totalAmount: 5.0 }]);
+        if (selectIdx === 2) return chainable([{ ...baseOrderItem, inventoryItemId: null, inventoryItemStockId: null, quantity: 1, unitPrice: 5.0, costBasis: null, productName: 'Very Old Card' }]);
+        // restockFallbackByProduct → restockFallback with null inventoryItemId
+        if (selectIdx === 3) return chainable([{ id: 100 }]); // parent lookup
+        return chainable([]); // stock entry lookup (none → will insert)
       });
 
       const result = await cancelOrder(1, 'org-1', 'user-1');
@@ -512,6 +436,19 @@ describe('order-service', () => {
   // updateOrderStatus
   // -----------------------------------------------------------------------
   describe('updateOrderStatus', () => {
+    // updateOrderStatus now uses: tx.select().from(order), tx.update(order),
+    // then tx.select().from(orderItem) — instead of otcgs.query.order.findFirst.
+    const baseOrder = {
+      id: 1,
+      organizationId: 'org-1',
+      orderNumber: 'ORD-20260101-0001',
+      customerName: 'Customer',
+      status: 'open',
+      totalAmount: 10.0,
+      userId: 'user-1',
+      createdAt: new Date('2026-01-01'),
+    };
+
     it('should throw for invalid status', async () => {
       await expect(updateOrderStatus(1, 'shipped', 'org-1', 'user-1')).rejects.toThrow(
         'Invalid status "shipped". Valid statuses: open, completed',
@@ -519,17 +456,13 @@ describe('order-service', () => {
     });
 
     it('should throw when order not found', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue(null);
+      mockOtcgs.select.mockImplementation(() => chainable([]));
 
       await expect(updateOrderStatus(1, 'completed', 'org-1', 'user-1')).rejects.toThrow('Order not found');
     });
 
     it('should throw when order is already cancelled', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        status: 'cancelled',
-        orderItems: [],
-      });
+      mockOtcgs.select.mockImplementation(() => chainable([{ ...baseOrder, status: 'cancelled' }]));
 
       await expect(updateOrderStatus(1, 'completed', 'org-1', 'user-1')).rejects.toThrow(
         'Cannot change status of a cancelled order',
@@ -537,35 +470,36 @@ describe('order-service', () => {
     });
 
     it('should throw when order already has the target status', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        status: 'open',
-        orderItems: [],
-      });
+      mockOtcgs.select.mockImplementation(() => chainable([baseOrder]));
 
       await expect(updateOrderStatus(1, 'open', 'org-1', 'user-1')).rejects.toThrow('Order is already open');
     });
 
     it('should update status from open to completed', async () => {
-      mockOtcgs.query.order.findFirst.mockResolvedValue({
-        id: 1,
-        organizationId: 'org-1',
-        orderNumber: 'ORD-20260101-0001',
-        customerName: 'Customer',
-        status: 'open',
-        totalAmount: 10.0,
-        createdAt: new Date('2026-01-01'),
-        orderItems: [
+      // update mock returns a row from .returning() to signal the conditional WHERE matched
+      updateChain = chainable([{ id: 1 }]);
+      mockOtcgs.update.mockImplementation(() => updateChain);
+
+      let selectIdx = 0;
+      mockOtcgs.select.mockImplementation(() => {
+        selectIdx++;
+        if (selectIdx === 1) return chainable([baseOrder]); // order lookup
+        // select #2: order items after update
+        return chainable([
           {
             id: 1,
+            orderId: 1,
             productId: 200,
             productName: 'Sol Ring',
             condition: 'NM',
             quantity: 1,
             unitPrice: 10.0,
             costBasis: 5.0,
+            lotId: null,
+            inventoryItemId: 100,
+            inventoryItemStockId: 10,
           },
-        ],
+        ]);
       });
 
       const result = await updateOrderStatus(1, 'completed', 'org-1', 'user-1');

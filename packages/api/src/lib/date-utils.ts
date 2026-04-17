@@ -13,6 +13,17 @@ export function todayDateString(): string {
 }
 
 /**
+ * Validates that a string is a valid YYYY-MM-DD date.
+ * Guards against JavaScript Date roll-over (e.g. Feb 30 → Mar 2) by
+ * comparing the parsed date back to the original string.
+ */
+export function isValidDateString(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return d.toISOString().startsWith(s);
+}
+
+/**
  * Safely convert an unknown value to an ISO date string.
  * Falls back to the current time if the value is invalid.
  */

@@ -9,11 +9,33 @@ import { execute } from './lib/graphql.ts';
 import { graphql } from './graphql/index.ts';
 import { authClient } from './auth-client.ts';
 
+// Hoisted to module scope to avoid re-parsing on every call
+const IsSetupPendingQuery = graphql(`
+  query IsSetupPending {
+    isSetupPending
+  }
+`);
+
 type AppState = {
   auth: typeof authClient.$Infer.Session;
 };
 
 const app = new Koa<AppState>();
+
+// Global error handler — prevent stack traces from leaking to clients
+app.on('error', (err) => {
+  console.error('Unhandled UI server error:', err);
+});
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('UI request error:', err);
+    ctx.status = 500;
+    ctx.body = 'Internal server error';
+  }
+});
 
 // Create Vite server in middleware mode and configure the app type as
 // 'custom', disabling Vite's own HTML serving logic so parent server
@@ -95,9 +117,47 @@ function requirePermission(resource: string, action: string) {
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
  */
+// Simple rate limit on anonymous session creation — max 30 per IP per minute
+const anonSessionCounts = new Map<string, { count: number; resetAt: number }>();
+const ANON_MAX = 30;
+const ANON_WINDOW_MS = 60_000;
+const ANON_MAX_STORE_SIZE = 100_000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of anonSessionCounts) {
+    if (now >= entry.resetAt) anonSessionCounts.delete(key);
+  }
+}, ANON_WINDOW_MS).unref();
+
 async function ensureAnonymousSession(ctx: Context, next: Next) {
   // Already has a session from the global middleware
   if (ctx.state.auth) return next();
+
+  // Rate limit anonymous session creation per IP
+  const ip = ctx.ip;
+  const now = Date.now();
+  let entry = anonSessionCounts.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    // Guard against unbounded Map growth from DDoS with many unique IPs
+    if (anonSessionCounts.size >= ANON_MAX_STORE_SIZE) {
+      for (const [k, e] of anonSessionCounts) {
+        if (now >= e.resetAt) anonSessionCounts.delete(k);
+      }
+      if (anonSessionCounts.size >= ANON_MAX_STORE_SIZE) {
+        ctx.status = 429;
+        ctx.body = 'Too many requests. Please try again later.';
+        return;
+      }
+    }
+    entry = { count: 0, resetAt: now + ANON_WINDOW_MS };
+    anonSessionCounts.set(ip, entry);
+  }
+  entry.count++;
+  if (entry.count > ANON_MAX) {
+    ctx.status = 429;
+    ctx.body = 'Too many requests. Please try again later.';
+    return;
+  }
 
   const origin = ctx.headers.origin || `${ctx.protocol}://${ctx.host}`;
   const signInResult = await authClient.signIn.anonymous({
@@ -407,12 +467,6 @@ async function isSetupPending() {
   }
 
   try {
-    const IsSetupPendingQuery = graphql(`
-      query IsSetupPending {
-        isSetupPending
-      }
-    `);
-
     const result = await execute(IsSetupPendingQuery);
 
     if (result?.errors?.length) {

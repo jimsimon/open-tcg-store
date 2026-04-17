@@ -25,6 +25,7 @@ export function chainable(rows: unknown[] = []) {
     'groupBy',
     'having',
     'onConflictDoUpdate',
+    'onConflictDoNothing',
   ]) {
     chain[method] = vi.fn().mockReturnValue(chain);
   }

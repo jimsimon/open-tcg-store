@@ -9,12 +9,25 @@ let updateChain: ReturnType<typeof chainable>;
 let deleteChain: ReturnType<typeof chainable>;
 
 // Use vi.hoisted so mockOtcgs is available when vi.mock factories are hoisted.
-const mockOtcgs = vi.hoisted(() => ({
-  select: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-  delete: vi.fn(),
-}));
+const mockOtcgs = vi.hoisted(() => {
+  const mock = {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+      // The transaction delegate passes through to the same mock methods
+      const tx = {
+        select: (...args: unknown[]) => mock.select(...args),
+        insert: (...args: unknown[]) => mock.insert(...args),
+        update: (...args: unknown[]) => mock.update(...args),
+        delete: (...args: unknown[]) => mock.delete(...args),
+      };
+      return fn(tx);
+    }),
+  };
+  return mock;
+});
 
 vi.mock('../db/otcgs/index', () => ({
   otcgs: mockOtcgs,

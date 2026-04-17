@@ -20,6 +20,11 @@ interface RateLimitEntry {
  * Simple in-memory rate limiter middleware for Koa.
  * Not shared across processes — suitable for single-instance deployments.
  */
+// Maximum number of keys in the rate limit store. If exceeded during a request,
+// oldest entries are not individually evicted — the periodic cleanup handles that.
+// This cap prevents unbounded memory growth under DDoS with many unique IPs.
+const MAX_STORE_SIZE = 100_000;
+
 export function rateLimit(options: RateLimitOptions): Middleware {
   const { max, windowMs, message = 'Too many requests, please try again later.' } = options;
   const keyFn = options.keyFn ?? ((ctx) => ctx.ip);
@@ -46,6 +51,20 @@ export function rateLimit(options: RateLimitOptions): Middleware {
 
     let entry = store.get(key);
     if (!entry || now >= entry.resetAt) {
+      // Guard against unbounded Map growth from DDoS with many unique keys
+      if (store.size >= MAX_STORE_SIZE) {
+        // Evict expired entries first
+        for (const [k, e] of store) {
+          if (now >= e.resetAt) store.delete(k);
+        }
+        // If still over limit, reject the request to protect memory
+        if (store.size >= MAX_STORE_SIZE) {
+          ctx.status = 429;
+          ctx.set('Retry-After', String(Math.ceil(windowMs / 1000)));
+          ctx.body = { error: message };
+          return;
+        }
+      }
       entry = { count: 0, resetAt: now + windowMs };
       store.set(key, entry);
     }
