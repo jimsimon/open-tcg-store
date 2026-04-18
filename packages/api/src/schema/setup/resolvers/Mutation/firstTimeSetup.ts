@@ -11,8 +11,14 @@ export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = 
   args,
   ctx: GraphqlContext,
 ) => {
-  // Rate-limit setup attempts per client IP
-  const clientIp = ctx.req.socket?.remoteAddress ?? 'unknown';
+  // Rate-limit setup attempts per client IP.
+  // Prefer X-Forwarded-For (set by reverse proxies like nginx) so the limiter
+  // keys on the real client IP rather than the proxy's address.
+  const forwarded = ctx.req.headers['x-forwarded-for'];
+  const clientIp =
+    (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) ??
+    ctx.req.socket?.remoteAddress ??
+    'unknown';
   const result = setupRateLimiter.check(`setup:${clientIp}`);
   if (!result.allowed) {
     throw new Error('Too many setup attempts. Please try again later.');

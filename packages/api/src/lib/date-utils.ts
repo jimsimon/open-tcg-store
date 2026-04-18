@@ -29,11 +29,10 @@ export function isValidDateString(s: string): boolean {
  * rather than silently falling back to the current time.
  */
 export function safeISOString(value: unknown): string | null {
-  if (!value) return null;
+  if (value == null) return null;
   if (value instanceof Date) {
     try {
-      const iso = value.toISOString();
-      return Number.isNaN(value.getTime()) ? null : iso;
+      return value.toISOString();
     } catch {
       return null;
     }

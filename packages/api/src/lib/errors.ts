@@ -58,30 +58,3 @@ export class NotImplementedError extends AppError {
     super(message, 'NOT_IMPLEMENTED');
   }
 }
-
-/**
- * Format an error for GraphQL responses. In production, strips stack traces
- * and internal details from non-AppError exceptions to prevent information leakage.
- */
-export function formatGraphQLError(error: unknown): { message: string; extensions?: { code: string } } {
-  if (error instanceof AppError) {
-    return {
-      message: error.message,
-      extensions: { code: error.code },
-    };
-  }
-
-  // In production, don't expose internal error messages or stack traces
-  if (process.env.NODE_ENV === 'production') {
-    return {
-      message: 'An unexpected error occurred',
-      extensions: { code: 'INTERNAL_SERVER_ERROR' },
-    };
-  }
-
-  // In development, pass through the original message for debugging
-  return {
-    message: error instanceof Error ? error.message : 'An unexpected error occurred',
-    extensions: { code: 'INTERNAL_SERVER_ERROR' },
-  };
-}

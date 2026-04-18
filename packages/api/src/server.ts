@@ -221,8 +221,12 @@ function depthLimitRule(maxDepth: number) {
               } else {
                 childDepth = depth;
               }
+            } else if (selection.kind === Kind.INLINE_FRAGMENT) {
+              // InlineFragment is a type-narrowing construct (e.g. `... on User { name }`)
+              // — it doesn't add nesting depth in the execution model.
+              childDepth = measureDepth(selection.selectionSet, depth, visited);
             } else {
-              // Field or InlineFragment — both have optional selectionSet
+              // Field — adds one level of nesting
               childDepth = measureDepth(selection.selectionSet, depth + 1, visited);
             }
             if (childDepth > maxChild) maxChild = childDepth;
