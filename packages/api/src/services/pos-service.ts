@@ -157,10 +157,8 @@ export async function submitPosOrder(
   },
   userId: string,
 ): Promise<OrderData> {
-  const trimmedName = input.customerName?.trim();
-  if (!trimmedName || trimmedName.length === 0) {
-    throw new Error('Customer name is required');
-  }
+  // Default to 'Walk-in' for POS walk-in customers who don't provide a name
+  const trimmedName = input.customerName?.trim() || 'Walk-in';
   if (trimmedName.length > 500) {
     throw new Error('Customer name must be 500 characters or less');
   }

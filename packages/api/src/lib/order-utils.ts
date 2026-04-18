@@ -1,15 +1,17 @@
+import { randomBytes } from 'node:crypto';
 import type { CardCondition } from '../schema/types.generated';
 
 /**
- * Generate a unique order number in the format ORD-YYYYMMDD-XXXX.
+ * Generate a unique order number in the format ORD-YYYYMMDD-XXXXXXXX.
+ * Uses 8 hex digits (4 bytes = ~4 billion values per day) to avoid
+ * birthday-problem collisions that the previous 4-decimal-digit scheme
+ * was susceptible to (~50% collision chance after only 118 orders/day).
  * Shared between the cart-based order service and POS service.
  */
 export function generateOrderNumber(): string {
   const now = new Date();
   const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const randomPart = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0');
+  const randomPart = randomBytes(4).toString('hex');
   return `ORD-${datePart}-${randomPart}`;
 }
 

@@ -198,26 +198,28 @@ export async function addBarcodes(
   const trimmedCodes = codes.map((c) => c.trim()).filter((c) => c.length > 0);
   if (trimmedCodes.length === 0) return [];
 
-  // Check for duplicates within org
-  const existing = await otcgs
-    .select({ code: barcode.code })
-    .from(barcode)
-    .where(and(eq(barcode.organizationId, organizationId), inArray(barcode.code, trimmedCodes)));
+  // Wrap duplicate check + insert in a transaction to prevent TOCTOU race conditions
+  const inserted = await otcgs.transaction(async (tx) => {
+    const existing = await tx
+      .select({ code: barcode.code })
+      .from(barcode)
+      .where(and(eq(barcode.organizationId, organizationId), inArray(barcode.code, trimmedCodes)));
 
-  if (existing.length > 0) {
-    const dupes = existing.map((e) => e.code).join(', ');
-    throw new Error(`Barcode(s) already in use: ${dupes}`);
-  }
+    if (existing.length > 0) {
+      const dupes = existing.map((e) => e.code).join(', ');
+      throw new Error(`Barcode(s) already in use: ${dupes}`);
+    }
 
-  const values = trimmedCodes.map((code) => ({
-    organizationId,
-    inventoryItemId,
-    code,
-    createdBy: userId,
-    updatedBy: userId,
-  }));
+    const values = trimmedCodes.map((code) => ({
+      organizationId,
+      inventoryItemId,
+      code,
+      createdBy: userId,
+      updatedBy: userId,
+    }));
 
-  const inserted = await otcgs.insert(barcode).values(values).returning();
+    return await tx.insert(barcode).values(values).returning();
+  });
 
   return inserted.map((r) => ({
     id: r.id,

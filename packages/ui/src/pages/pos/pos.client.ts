@@ -997,16 +997,13 @@ export class PosPage extends LitElement {
       }
 
       // Cash payment or order submission
-      const items = this.lineItems.map((li) => ({
-        inventoryItemId: li.inventoryItemId,
-        quantity: li.quantity,
-      }));
-
       let result: any;
       if (this.existingOrderId) {
-        // Determine which items are new (not from the pulled-in order)
-        const existingIds = new Set(this.existingOrderItems.map((oi: any) => oi.inventoryItemId));
-        const newItems = items.filter((i) => !existingIds.has(i.inventoryItemId));
+        // Only send genuinely new items (positive inventoryItemId = real inventory items,
+        // negative sentinel values are pulled-in order items whose stock was already decremented)
+        const newItems = this.lineItems
+          .filter((li) => li.inventoryItemId > 0)
+          .map((li) => ({ inventoryItemId: li.inventoryItemId, quantity: li.quantity }));
 
         result = await execute(CompletePosOrderMutation, {
           input: {
@@ -1023,9 +1020,14 @@ export class PosPage extends LitElement {
           this.success = { orderNumber: order.orderNumber, total: order.totalAmount };
         }
       } else {
+        const items = this.lineItems.map((li) => ({
+          inventoryItemId: li.inventoryItemId,
+          quantity: li.quantity,
+        }));
+
         result = await execute(SubmitPosOrderMutation, {
           input: {
-            customerName: this.customerName || '',
+            customerName: this.customerName || 'Walk-in',
             paymentMethod: this.paymentMethod,
             taxAmount: this.taxAmount,
             items,
