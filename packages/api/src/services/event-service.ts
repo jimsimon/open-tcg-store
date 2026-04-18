@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, count, desc, ne, isNotNull } from 'drizzle-orm';
+import { eq, and, gte, lte, count, desc, ne, isNotNull, inArray } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index.ts';
 import { event } from '../db/otcgs/event-schema.ts';
 import { eventRegistration } from '../db/otcgs/event-registration-schema.ts';
@@ -114,6 +114,68 @@ async function enrichEventWithGame(e: typeof event.$inferSelect) {
   };
 }
 
+/**
+ * Batch-enrich a list of events with game info and registration counts.
+ * Uses two bulk queries instead of 2N queries (N+1 problem).
+ */
+async function enrichEventsWithGame(rows: (typeof event.$inferSelect)[]) {
+  if (rows.length === 0) return [];
+
+  const eventIds = rows.map((e) => e.id);
+
+  // Batch-fetch registration counts for all events
+  const regCounts = await otcgs
+    .select({
+      eventId: eventRegistration.eventId,
+      count: count(),
+    })
+    .from(eventRegistration)
+    .where(and(inArray(eventRegistration.eventId, eventIds), eq(eventRegistration.status, 'registered')))
+    .groupBy(eventRegistration.eventId);
+
+  const regCountMap = new Map(regCounts.map((r) => [r.eventId, r.count]));
+
+  // Batch-fetch categories for all events that have a categoryId
+  const categoryIds = [...new Set(rows.map((e) => e.categoryId).filter((id): id is number => id !== null))];
+  const categoryMap = new Map<number, { name: string; displayName: string | null }>();
+
+  if (categoryIds.length > 0) {
+    const categories = await otcgs
+      .select({ id: category.id, name: category.name, displayName: category.displayName })
+      .from(category)
+      .where(inArray(category.id, categoryIds));
+
+    for (const cat of categories) {
+      categoryMap.set(cat.id, { name: cat.name, displayName: cat.displayName });
+    }
+  }
+
+  return rows.map((e) => {
+    const cat = e.categoryId ? categoryMap.get(e.categoryId) : null;
+    return {
+      id: e.id,
+      organizationId: e.organizationId,
+      name: e.name,
+      description: e.description,
+      eventType: (DB_TO_GQL_EVENT_TYPE[e.eventType] ?? e.eventType) as EventType,
+      categoryId: e.categoryId,
+      gameName: cat?.name ?? null,
+      gameDisplayName: cat?.displayName ?? null,
+      startTime: formatDate(e.startTime) ?? new Date().toISOString(),
+      endTime: formatDate(e.endTime),
+      capacity: e.capacity,
+      entryFeeInCents: e.entryFeeInCents,
+      status: e.status.toUpperCase() as EventStatus,
+      registrationCount: regCountMap.get(e.id) ?? 0,
+      recurrenceRule: e.recurrenceRule ? JSON.parse(e.recurrenceRule) : null,
+      recurrenceGroupId: e.recurrenceGroupId,
+      isRecurrenceTemplate: e.isRecurrenceTemplate ?? false,
+      createdAt: formatDate(e.createdAt) ?? new Date().toISOString(),
+      updatedAt: formatDate(e.updatedAt) ?? new Date().toISOString(),
+    };
+  });
+}
+
 function formatRegistration(r: typeof eventRegistration.$inferSelect) {
   return {
     id: r.id,
@@ -191,7 +253,7 @@ export async function getEvents(
   ]);
 
   const totalCount = countResult.count;
-  const items = await Promise.all(rows.map(enrichEventWithGame));
+  const items = await enrichEventsWithGame(rows);
 
   return {
     items,
@@ -217,7 +279,7 @@ export async function getPublicEvents(organizationId: string, dateFrom: string, 
     )
     .orderBy(event.startTime);
 
-  return Promise.all(rows.map(enrichEventWithGame));
+  return enrichEventsWithGame(rows);
 }
 
 export async function getEvent(eventId: number, organizationId?: string | null) {
@@ -228,6 +290,21 @@ export async function getEvent(eventId: number, organizationId?: string | null) 
     .select()
     .from(event)
     .where(and(...conditions))
+    .limit(1);
+
+  if (!row) return null;
+  return enrichEventWithGame(row);
+}
+
+/**
+ * Get a single event for public display. Only returns scheduled (non-cancelled,
+ * non-completed) events to prevent exposing internal state to anonymous users.
+ */
+export async function getPublicEvent(eventId: number) {
+  const [row] = await otcgs
+    .select()
+    .from(event)
+    .where(and(eq(event.id, eventId), eq(event.status, 'scheduled')))
     .limit(1);
 
   if (!row) return null;
@@ -298,7 +375,13 @@ export async function updateEvent(eventId: number, organizationId: string, input
     updates.startTime = st;
   }
   if (input.endTime !== undefined) updates.endTime = input.endTime ? new Date(input.endTime) : null;
+  if (input.capacity !== undefined && input.capacity !== null && input.capacity < 1) {
+    throw new Error('Capacity must be at least 1');
+  }
   if (input.capacity !== undefined) updates.capacity = input.capacity;
+  if (input.entryFeeInCents !== undefined && input.entryFeeInCents !== null && input.entryFeeInCents < 0) {
+    throw new Error('Entry fee cannot be negative');
+  }
   if (input.entryFeeInCents !== undefined) updates.entryFeeInCents = input.entryFeeInCents;
 
   const [updated] = await otcgs.update(event).set(updates).where(eq(event.id, eventId)).returning();
@@ -314,6 +397,7 @@ export async function cancelEvent(eventId: number, organizationId: string, _user
 
   if (!existing) throw new Error('Event not found');
   if (existing.status === 'cancelled') throw new Error('Event is already cancelled');
+  if (existing.status === 'completed') throw new Error('Cannot cancel a completed event');
 
   const [updated] = await otcgs
     .update(event)
@@ -549,7 +633,13 @@ const FREQUENCY_MS: Record<string, number> = {
 function advanceByFrequency(date: Date, frequency: string): Date {
   if (frequency === 'monthly') {
     const next = new Date(date);
-    next.setMonth(next.getMonth() + 1);
+    const targetMonth = next.getMonth() + 1;
+    next.setMonth(targetMonth);
+    // Clamp: if setMonth overflowed into the next month (e.g., Jan 31 → Mar 3),
+    // roll back to the last day of the target month
+    if (next.getMonth() !== targetMonth % 12) {
+      next.setDate(0); // Sets to last day of previous month
+    }
     return next;
   }
   const ms = FREQUENCY_MS[frequency];

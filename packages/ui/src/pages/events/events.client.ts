@@ -72,10 +72,9 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   TOURNAMENT: 'Tournament',
   CASUAL_PLAY: 'Casual Play',
   DRAFT: 'Draft',
-  SEALED: 'Sealed',
+  RELEASE_EVENT: 'Release Event',
   LEAGUE: 'League',
   PRERELEASE: 'Prerelease',
-  RELEASE: 'Release Event',
   OTHER: 'Other',
 };
 
