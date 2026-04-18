@@ -77,11 +77,23 @@ vi.mock('../db/tcg-data/schema', () => ({
     marketPrice: 'price.market_price',
     directLowPrice: 'price.direct_low_price',
   },
+  productPresaleInfo: {
+    id: 'product_presale_info.id',
+    productId: 'product_presale_info.product_id',
+    isPresale: 'product_presale_info.is_presale',
+    releasedOn: 'product_presale_info.released_on',
+    note: 'product_presale_info.note',
+  },
 }));
 
 // Mock the transaction log service so logging calls don't break tests
 vi.mock('./transaction-log-service', () => ({
   logTransaction: vi.fn(),
+}));
+
+// Mock the barcode service so barcode calls during addInventoryItem don't break tests
+vi.mock('./barcode-service', () => ({
+  addBarcodes: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock drizzle-orm operators so they don't throw
