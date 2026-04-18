@@ -38,10 +38,11 @@ export async function executeWithHeaders<TResult>(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/graphql-response+json',
+      ...headers,
       // Origin is required for the API's CSRF middleware to allow POST requests
       // that carry a session cookie (forwarded from the browser during SSR).
+      // Placed after ...headers so callers cannot accidentally override it.
       Origin: APP_URL || 'http://localhost',
-      ...headers,
     },
     body: JSON.stringify({ query }),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
