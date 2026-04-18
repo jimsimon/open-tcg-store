@@ -18,6 +18,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
+import type { EventType } from '../../graphql/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
@@ -882,20 +883,20 @@ export class OgsEventManagementPage extends LitElement {
         this.fetchEventDetail(this.editingEvent.id);
       } else {
         // Create
-        const input: Record<string, unknown> = {
+        const input = {
           name: this.formName.trim(),
           description: this.formDescription.trim() || null,
-          eventType: this.formEventType,
+          eventType: this.formEventType as EventType,
           categoryId: this.formCategoryId ? Number.parseInt(this.formCategoryId, 10) : null,
           startTime: new Date(this.formStartTime).toISOString(),
           endTime: this.formEndTime ? new Date(this.formEndTime).toISOString() : null,
           capacity: this.formCapacity ? Number.parseInt(this.formCapacity, 10) : null,
           entryFeeInCents: this.formEntryFee ? Math.round(Number.parseFloat(this.formEntryFee) * 100) : null,
+          recurrenceRule:
+            this.formRecurrenceFrequency && this.formRecurrenceFrequency !== 'NONE'
+              ? { frequency: this.formRecurrenceFrequency }
+              : null,
         };
-
-        if (this.formRecurrenceFrequency && this.formRecurrenceFrequency !== 'NONE') {
-          input.recurrenceRule = { frequency: this.formRecurrenceFrequency };
-        }
 
         const result = await execute(CreateEventMutation, { input });
 

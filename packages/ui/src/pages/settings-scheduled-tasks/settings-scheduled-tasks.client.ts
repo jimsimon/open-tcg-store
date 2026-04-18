@@ -120,14 +120,9 @@ const UpdateCronJobScheduleMutation = graphql(`
   }
 `);
 
-const _UpdateCronJobConfigMutation = graphql(`
-  mutation UpdateCronJobConfig($id: Int!, $config: String!) {
-    updateCronJobConfig(id: $id, config: $config) {
-      id
-      config
-    }
-  }
-`);
+// UpdateCronJobConfig mutation available at:
+// packages/api/src/schema/cron/schema.graphql
+// Will be wired up when config editing UI is added.
 
 @customElement('ogs-settings-scheduled-tasks-page')
 export class OgsSettingsScheduledTasksPage extends LitElement {

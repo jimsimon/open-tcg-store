@@ -2227,14 +2227,6 @@ export type UpdateCronJobScheduleMutationVariables = Exact<{
 
 export type UpdateCronJobScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
 
-export type UpdateCronJobConfigMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
-  config: Scalars['String']['input'];
-}>;
-
-
-export type UpdateCronJobConfigMutation = { __typename?: 'Mutation', updateCronJobConfig: { __typename?: 'CronJob', id: number, config?: string | null } };
-
 export type GetTransactionLogsQueryVariables = Exact<{
   pagination?: InputMaybe<PaginationInput>;
   filters?: InputMaybe<TransactionLogFilters>;
@@ -3494,14 +3486,6 @@ export const UpdateCronJobScheduleDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UpdateCronJobScheduleMutation, UpdateCronJobScheduleMutationVariables>;
-export const UpdateCronJobConfigDocument = new TypedDocumentString(`
-    mutation UpdateCronJobConfig($id: Int!, $config: String!) {
-  updateCronJobConfig(id: $id, config: $config) {
-    id
-    config
-  }
-}
-    `) as unknown as TypedDocumentString<UpdateCronJobConfigMutation, UpdateCronJobConfigMutationVariables>;
 export const GetTransactionLogsDocument = new TypedDocumentString(`
     query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {
   getTransactionLogs(pagination: $pagination, filters: $filters) {

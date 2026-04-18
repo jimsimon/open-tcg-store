@@ -21,7 +21,7 @@ import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js'
 // --- Types ---
 
 interface PublicEvent {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
   eventType: string;
@@ -559,8 +559,8 @@ export class EventsPage extends LitElement {
         eventId: this.selectedEvent.id,
         input: {
           registrantName: this.registrationName.trim(),
-          ...(this.registrationEmail.trim() ? { email: this.registrationEmail.trim() } : {}),
-          ...(this.registrationPhone.trim() ? { phone: this.registrationPhone.trim() } : {}),
+          ...(this.registrationEmail.trim() ? { registrantEmail: this.registrationEmail.trim() } : {}),
+          ...(this.registrationPhone.trim() ? { registrantPhone: this.registrationPhone.trim() } : {}),
         },
       });
 

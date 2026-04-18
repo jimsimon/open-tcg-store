@@ -106,7 +106,6 @@ type Documents = {
     "\n  mutation EnableCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.EnableCronJobDocument,
     "\n  mutation DisableCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.DisableCronJobDocument,
     "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": typeof types.UpdateCronJobScheduleDocument,
-    "\n  mutation UpdateCronJobConfig($id: Int!, $config: String!) {\n    updateCronJobConfig(id: $id, config: $config) {\n      id\n      config\n    }\n  }\n": typeof types.UpdateCronJobConfigDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetTransactionLogsDocument,
     "\n  query IsSetupPending {\n    isSetupPending\n  }\n": typeof types.IsSetupPendingDocument,
 };
@@ -202,7 +201,6 @@ const documents: Documents = {
     "\n  mutation EnableCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.EnableCronJobDocument,
     "\n  mutation DisableCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.DisableCronJobDocument,
     "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": types.UpdateCronJobScheduleDocument,
-    "\n  mutation UpdateCronJobConfig($id: Int!, $config: String!) {\n    updateCronJobConfig(id: $id, config: $config) {\n      id\n      config\n    }\n  }\n": types.UpdateCronJobConfigDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetTransactionLogsDocument,
     "\n  query IsSetupPending {\n    isSetupPending\n  }\n": types.IsSetupPendingDocument,
 };
@@ -571,10 +569,6 @@ export function graphql(source: "\n  mutation DisableCronJob($id: Int!) {\n    d
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n"): typeof import('./graphql').UpdateCronJobScheduleDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation UpdateCronJobConfig($id: Int!, $config: String!) {\n    updateCronJobConfig(id: $id, config: $config) {\n      id\n      config\n    }\n  }\n"): typeof import('./graphql').UpdateCronJobConfigDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
