@@ -141,7 +141,7 @@ export class OgsGamesPicker extends LitElement {
 
   private handleToggle(categoryId: number, checked: boolean) {
     const next = checked
-      ? [...this.selectedCategoryIds, categoryId]
+      ? [...new Set([...this.selectedCategoryIds, categoryId])]
       : this.selectedCategoryIds.filter((id) => id !== categoryId);
     this.emitChange(next);
   }
