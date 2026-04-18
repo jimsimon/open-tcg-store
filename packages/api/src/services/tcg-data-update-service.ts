@@ -17,7 +17,7 @@ const databaseFilePath = tcgDataFilePath;
 const sqliteDataDir = databaseFilePath.substring(0, databaseFilePath.lastIndexOf('/'));
 const tempDatabaseFilePath = `${sqliteDataDir}/tcg-data.sqlite.new`;
 
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+// Check interval was used by the old setInterval scheduler, now managed by cron-service.
 
 /** Tables that must exist in a valid tcg-data database. */
 const REQUIRED_TABLES = ['category', 'group', 'product', 'price'] as const;
@@ -426,34 +426,6 @@ export async function performUpdateCheck(): Promise<void> {
   }
 }
 
-let schedulerInterval: ReturnType<typeof setInterval> | null = null;
-
-/**
- * Start the update scheduler. Checks on startup and then every 24 hours.
- * Safe to call multiple times — subsequent calls are no-ops if already running.
- */
-export function startUpdateScheduler(): void {
-  if (schedulerInterval !== null) {
-    console.log('[tcg-data-update] Update scheduler already running, ignoring duplicate start');
-    return;
-  }
-
-  // Check immediately on startup (async, don't block server startup)
-  performUpdateCheck();
-
-  // Schedule daily checks
-  schedulerInterval = setInterval(performUpdateCheck, CHECK_INTERVAL_MS);
-
-  console.log('[tcg-data-update] Update scheduler started (checking every 24 hours)');
-}
-
-/**
- * Stop the update scheduler. Useful for graceful shutdown or testing.
- */
-export function stopUpdateScheduler(): void {
-  if (schedulerInterval) {
-    clearInterval(schedulerInterval);
-    schedulerInterval = null;
-    console.log('[tcg-data-update] Update scheduler stopped');
-  }
-}
+// NOTE: The old setInterval-based scheduler (startUpdateScheduler / stopUpdateScheduler)
+// has been removed. Scheduling is now managed by the cron system in cron-service.ts.
+// The tcg-data-update-handler.ts wraps performUpdateCheck() as a cron job handler.

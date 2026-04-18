@@ -34,6 +34,12 @@ input AddStoreLocationInput {
   zip: String!
 }
 
+input AdminEventRegistrationInput {
+  registrantEmail: String
+  registrantName: String!
+  registrantPhone: String
+}
+
 enum BackupProvider {
   dropbox
   google_drive
@@ -199,12 +205,61 @@ type ConditionInventory {
   quantity: Int!
 }
 
+input CreateEventInput {
+  capacity: Int
+  categoryId: Int
+  description: String
+  endTime: String
+  entryFeeInCents: Int
+  eventType: EventType!
+  name: String!
+  recurrenceRule: RecurrenceRuleInput
+  startTime: String!
+}
+
 input CreateLotInput {
   acquisitionDate: String!
   amountPaid: Int!
   description: String
   items: [LotItemInput!]!
   name: String!
+}
+
+type CronJob {
+  config: String
+  createdAt: String!
+  cronExpression: String!
+  description: String
+  displayName: String!
+  enabled: Boolean!
+  id: Int!
+  lastRunAt: String
+  lastRunDurationMs: Int
+  lastRunError: String
+  lastRunStatus: String
+  name: String!
+  nextRunAt: String
+  updatedAt: String!
+}
+
+type CronJobRun {
+  completedAt: String
+  createdAt: String!
+  cronJobId: Int!
+  durationMs: Int
+  error: String
+  id: Int!
+  startedAt: String!
+  status: String!
+  summary: String
+}
+
+type CronJobRunPage {
+  items: [CronJobRun!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
 }
 
 input DashboardDateRange {
@@ -223,6 +278,72 @@ type DataUpdateStatus {
   isUpdating: Boolean!
   latestVersion: String
   updateAvailable: Boolean!
+}
+
+type Event {
+  capacity: Int
+  categoryId: Int
+  createdAt: String!
+  description: String
+  endTime: String
+  entryFeeInCents: Int
+  eventType: EventType!
+  gameDisplayName: String
+  gameName: String
+  id: Int!
+  isRecurrenceTemplate: Boolean!
+  name: String!
+  organizationId: String!
+  recurrenceGroupId: String
+  recurrenceRule: RecurrenceRule
+  registrationCount: Int!
+  startTime: String!
+  status: EventStatus!
+  updatedAt: String!
+}
+
+input EventFilters {
+  categoryId: Int
+  dateFrom: String
+  dateTo: String
+  eventType: EventType
+  status: EventStatus
+}
+
+type EventPage {
+  items: [Event!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+type EventRegistration {
+  checkedIn: Boolean!
+  checkedInAt: String
+  createdAt: String!
+  eventId: Int!
+  id: Int!
+  registrantEmail: String
+  registrantName: String!
+  registrantPhone: String
+  status: RegistrationStatus!
+}
+
+enum EventStatus {
+  CANCELLED
+  COMPLETED
+  SCHEDULED
+}
+
+enum EventType {
+  CASUAL_PLAY
+  DRAFT
+  LEAGUE
+  OTHER
+  PRERELEASE
+  RELEASE_EVENT
+  TOURNAMENT
 }
 
 enum Granularity {
@@ -373,17 +494,23 @@ type LotStats {
 
 type Mutation {
   addBarcode(input: AddBarcodeInput!): Barcode!
+  addEventRegistration(eventId: Int!, input: AdminEventRegistrationInput!): EventRegistration!
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addStock(input: AddStockInput!): InventoryItemStock!
   addStoreLocation(input: AddStoreLocationInput!): StoreLocation!
   addToCart(cartItem: CartItemInput!): ShoppingCart!
   bulkDeleteStock(input: BulkDeleteStockInput!): Boolean!
   bulkUpdateStock(input: BulkUpdateStockInput!): [InventoryItemStock!]!
+  cancelEvent(id: Int!): Event!
+  cancelEventRegistration(registrationId: Int!): EventRegistration!
   cancelOrder(orderId: Int!): Order!
   cancelPosPaymentIntent(paymentIntentId: String!): Boolean!
+  cancelRecurringSeries(recurrenceGroupId: String!): Int!
+  checkInEventRegistration(registrationId: Int!): EventRegistration!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
   completePosOrder(input: CompletePosOrderInput!): Order!
+  createEvent(input: CreateEventInput!): Event!
   createLot(input: CreateLotInput!): Lot!
   createPosPaymentIntent(amount: Int!): PaymentIntentResult!
   createTerminalConnectionToken: TerminalConnectionToken!
@@ -393,7 +520,10 @@ type Mutation {
   deleteInventoryItem(id: Int!): Boolean!
   deleteLot(id: Int!): Boolean!
   deleteStock(id: Int!): Boolean!
+  disableCronJob(id: Int!): CronJob!
+  enableCronJob(id: Int!): CronJob!
   firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!, userDetails: UserDetails!): String!
+  registerForEvent(eventId: Int!, input: PublicEventRegistrationInput!): EventRegistration!
   removeBarcode(input: RemoveBarcodeInput!): Boolean!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
   removeStoreLocation(id: String!): Boolean!
@@ -412,9 +542,13 @@ type Mutation {
   submitOrder(input: SubmitOrderInput!): Order!
   submitPosOrder(input: SubmitPosOrderInput!): Order!
   triggerBackup: BackupResult!
+  triggerCronJob(id: Int!): CronJobRun!
   triggerDataUpdate: DataUpdateResult!
   triggerRestore(provider: BackupProvider!): RestoreResult!
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
+  updateCronJobConfig(config: String!, id: Int!): CronJob!
+  updateCronJobSchedule(cronExpression: String!, id: Int!): CronJob!
+  updateEvent(id: Int!, input: UpdateEventInput!): Event!
   updateInventoryItem(input: UpdateInventoryItemInput!): InventoryItem!
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
   updateLot(input: UpdateLotInput!): Lot!
@@ -602,6 +736,12 @@ type PublicBuyRates {
   games: [BuyRateTable!]!
 }
 
+input PublicEventRegistrationInput {
+  registrantEmail: String
+  registrantName: String!
+  registrantPhone: String
+}
+
 type Query {
   getActiveStoreLocation: StoreLocation
 
@@ -621,6 +761,9 @@ type Query {
   """Admin query - returns buy rate entries for a specific game."""
   getBuyRates(categoryId: Int!): [BuyRateEntry!]!
   getCard(cardId: String!, game: String!): Card!
+  getCronJob(id: Int!): CronJob
+  getCronJobRuns(cronJobId: Int!, pagination: PaginationInput): CronJobRunPage!
+  getCronJobs: [CronJob!]!
   getDashboardBestSellers(dateRange: DashboardDateRange!, limit: Int, organizationId: String!, sortBy: BestSellerSortBy!): [BestSeller!]!
   getDashboardInventorySummary(organizationId: String!): InventorySummary!
   getDashboardOpenOrders(limit: Int, organizationId: String!): [OpenOrder!]!
@@ -633,6 +776,9 @@ type Query {
   Stores the current user is assigned to (for authenticated employees/managers/owners)
   """
   getEmployeeStoreLocations: [StoreLocation!]!
+  getEvent(id: Int!): Event
+  getEventRegistrations(eventId: Int!): [EventRegistration!]!
+  getEvents(filters: EventFilters, pagination: PaginationInput): EventPage!
   getIntegrationSettings: IntegrationSettings!
   getInventory(filters: InventoryFilters, pagination: PaginationInput): InventoryPage!
   getInventoryItem(id: Int!): InventoryItem
@@ -650,6 +796,8 @@ type Query {
   No authentication required.
   """
   getPublicBuyRates: PublicBuyRates!
+  getPublicEvent(id: Int!): Event
+  getPublicEvents(dateFrom: String!, dateTo: String!, organizationId: String!): [Event!]!
   getSets(filters: SetFilters, game: String!): [Set!]!
   getShoppingCart: ShoppingCart!
   getSingleCardInventory(filters: SingleCardFilters, game: String!): [Card!]!
@@ -672,6 +820,19 @@ type Query {
   Used by the SSR server to render nav visibility without multiple hasPermission calls.
   """
   userPermissions: UserPermissions!
+}
+
+type RecurrenceRule {
+  frequency: String!
+}
+
+input RecurrenceRuleInput {
+  frequency: String!
+}
+
+enum RegistrationStatus {
+  CANCELLED
+  REGISTERED
 }
 
 input RemoveBarcodeInput {
@@ -841,6 +1002,17 @@ input UpdateBackupSettingsInput {
   provider: BackupProvider
 }
 
+input UpdateEventInput {
+  capacity: Int
+  categoryId: Int
+  description: String
+  endTime: String
+  entryFeeInCents: Int
+  eventType: EventType
+  name: String
+  startTime: String
+}
+
 input UpdateInventoryItemInput {
   condition: CardCondition
   id: Int!
@@ -906,6 +1078,7 @@ correctly reflect dynamic access control (DAC) overrides.
 """
 type UserPermissions {
   canAccessSettings: Boolean!
+  canManageEvents: Boolean!
   canManageInventory: Boolean!
   canManageLots: Boolean!
   canManageStoreLocations: Boolean!

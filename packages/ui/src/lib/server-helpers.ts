@@ -13,6 +13,8 @@ const UserPermissionsQuery = graphql(`
       canManageStoreLocations
       canManageUsers
       canViewTransactionLog
+      canUsePOS
+      canManageEvents
     }
   }
 `);
@@ -27,6 +29,8 @@ interface PageAttributes {
   canManageStoreLocations: boolean;
   canManageUsers: boolean;
   canViewTransactionLog: boolean;
+  canUsePOS: boolean;
+  canManageEvents: boolean;
   activeOrganizationId: string;
   showStoreSelector?: boolean;
 }
@@ -39,6 +43,8 @@ const NO_PERMISSIONS = {
   canManageStoreLocations: false,
   canManageUsers: false,
   canViewTransactionLog: false,
+  canUsePOS: false,
+  canManageEvents: false,
 };
 
 /**
@@ -89,6 +95,8 @@ export async function renderPageAttributes(
     attrs.canManageStoreLocations ? 'canManageStoreLocations' : '',
     attrs.canManageUsers ? 'canManageUsers' : '',
     attrs.canViewTransactionLog ? 'canViewTransactionLog' : '',
+    attrs.canUsePOS ? 'canUsePOS' : '',
+    attrs.canManageEvents ? 'canManageEvents' : '',
     attrs.activeOrganizationId ? `activeOrganizationId="${escapeHtml(attrs.activeOrganizationId)}"` : '',
   ];
 

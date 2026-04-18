@@ -21,10 +21,22 @@ type Documents = {
     "\n  query GetShoppingCartQuery {\n    getShoppingCart {\n      items {\n        inventoryItemId\n        quantity\n        productId\n        productName\n        condition\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.GetShoppingCartQueryDocument,
     "\n  query GetAllStoreLocations {\n    getAllStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": typeof types.GetAllStoreLocationsDocument,
     "\n  query GetEmployeeStoreLocations {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": typeof types.GetEmployeeStoreLocationsDocument,
-    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": typeof types.UserPermissionsDocument,
+    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n      canUsePOS\n      canManageEvents\n    }\n  }\n": typeof types.UserPermissionsDocument,
     "\n  query GetSupportedGames {\n    getSupportedGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.GetSupportedGamesDocument,
     "\n  mutation AddToCart($cartItem: CartItemInput!) {\n    addToCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": typeof types.AddToCartDocument,
     "\n  query GetPublicBuyRates {\n    getPublicBuyRates {\n      games {\n        categoryId\n        gameName\n        gameDisplayName\n        entries {\n          id\n          description\n          fixedRateCents\n          percentageRate\n          type\n          sortOrder\n        }\n      }\n    }\n  }\n": typeof types.GetPublicBuyRatesDocument,
+    "\n  query GetEvents($pagination: PaginationInput, $filters: EventFilters) {\n    getEvents(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        name\n        eventType\n        gameName\n        gameDisplayName\n        startTime\n        endTime\n        capacity\n        status\n        registrationCount\n        recurrenceGroupId\n        isRecurrenceTemplate\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetEventsDocument,
+    "\n  query GetEvent($id: Int!) {\n    getEvent(id: $id) {\n      id\n      organizationId\n      name\n      description\n      eventType\n      categoryId\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n      recurrenceRule {\n        frequency\n      }\n      recurrenceGroupId\n      isRecurrenceTemplate\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetEventDocument,
+    "\n  query GetEventRegistrations($eventId: Int!) {\n    getEventRegistrations(eventId: $eventId) {\n      id\n      registrantName\n      registrantEmail\n      registrantPhone\n      status\n      checkedIn\n      checkedInAt\n      createdAt\n    }\n  }\n": typeof types.GetEventRegistrationsDocument,
+    "\n  mutation CreateEvent($input: CreateEventInput!) {\n    createEvent(input: $input) {\n      id\n      name\n      status\n    }\n  }\n": typeof types.CreateEventDocument,
+    "\n  mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {\n    updateEvent(id: $id, input: $input) {\n      id\n      name\n      status\n    }\n  }\n": typeof types.UpdateEventDocument,
+    "\n  mutation CancelEvent($id: Int!) {\n    cancelEvent(id: $id) {\n      id\n      status\n    }\n  }\n": typeof types.CancelEventDocument,
+    "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n": typeof types.CancelRecurringSeriesDocument,
+    "\n  mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {\n    addEventRegistration(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": typeof types.AddEventRegistrationDocument,
+    "\n  mutation CancelEventRegistration($registrationId: Int!) {\n    cancelEventRegistration(registrationId: $registrationId) {\n      id\n      status\n    }\n  }\n": typeof types.CancelEventRegistrationDocument,
+    "\n  mutation CheckInEventRegistration($registrationId: Int!) {\n    checkInEventRegistration(registrationId: $registrationId) {\n      id\n      checkedIn\n      checkedInAt\n    }\n  }\n": typeof types.CheckInEventRegistrationDocument,
+    "\n  query GetPublicEvents($organizationId: String!, $dateFrom: String!, $dateTo: String!) {\n    getPublicEvents(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {\n      id\n      name\n      description\n      eventType\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n    }\n  }\n": typeof types.GetPublicEventsDocument,
+    "\n  mutation RegisterForEvent($eventId: Int!, $input: PublicEventRegistrationInput!) {\n    registerForEvent(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": typeof types.RegisterForEventDocument,
     "\n  query GetAvailableGames {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.GetAvailableGamesDocument,
     "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ": typeof types.FirstTimeSetupMutationDocument,
     "\n  query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        setName\n        rarity\n        isSingle\n        isSealed\n        condition\n        price\n        totalQuantity\n        entryCount\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetInventoryDocument,
@@ -88,6 +100,12 @@ type Documents = {
     "\n  mutation AddStoreLocation($input: AddStoreLocationInput!) {\n    addStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": typeof types.AddStoreLocationDocument,
     "\n  mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {\n    updateStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": typeof types.UpdateStoreLocationDocument,
     "\n  mutation RemoveStoreLocation($id: String!) {\n    removeStoreLocation(id: $id)\n  }\n": typeof types.RemoveStoreLocationDocument,
+    "\n  query GetCronJobs {\n    getCronJobs {\n      id\n      name\n      displayName\n      description\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n      config\n    }\n  }\n": typeof types.GetCronJobsDocument,
+    "\n  query GetCronJobRuns($cronJobId: Int!, $pagination: PaginationInput) {\n    getCronJobRuns(cronJobId: $cronJobId, pagination: $pagination) {\n      items {\n        id\n        startedAt\n        completedAt\n        durationMs\n        status\n        error\n        summary\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetCronJobRunsDocument,
+    "\n  mutation TriggerCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": typeof types.TriggerCronJobDocument,
+    "\n  mutation EnableCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.EnableCronJobDocument,
+    "\n  mutation DisableCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.DisableCronJobDocument,
+    "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": typeof types.UpdateCronJobScheduleDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetTransactionLogsDocument,
     "\n  query IsSetupPending {\n    isSetupPending\n  }\n": typeof types.IsSetupPendingDocument,
 };
@@ -98,10 +116,22 @@ const documents: Documents = {
     "\n  query GetShoppingCartQuery {\n    getShoppingCart {\n      items {\n        inventoryItemId\n        quantity\n        productId\n        productName\n        condition\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.GetShoppingCartQueryDocument,
     "\n  query GetAllStoreLocations {\n    getAllStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": types.GetAllStoreLocationsDocument,
     "\n  query GetEmployeeStoreLocations {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      city\n      state\n    }\n  }\n": types.GetEmployeeStoreLocationsDocument,
-    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n": types.UserPermissionsDocument,
+    "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n      canUsePOS\n      canManageEvents\n    }\n  }\n": types.UserPermissionsDocument,
     "\n  query GetSupportedGames {\n    getSupportedGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.GetSupportedGamesDocument,
     "\n  mutation AddToCart($cartItem: CartItemInput!) {\n    addToCart(cartItem: $cartItem) {\n      items {\n        inventoryItemId\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        maxAvailable\n      }\n    }\n  }\n": types.AddToCartDocument,
     "\n  query GetPublicBuyRates {\n    getPublicBuyRates {\n      games {\n        categoryId\n        gameName\n        gameDisplayName\n        entries {\n          id\n          description\n          fixedRateCents\n          percentageRate\n          type\n          sortOrder\n        }\n      }\n    }\n  }\n": types.GetPublicBuyRatesDocument,
+    "\n  query GetEvents($pagination: PaginationInput, $filters: EventFilters) {\n    getEvents(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        name\n        eventType\n        gameName\n        gameDisplayName\n        startTime\n        endTime\n        capacity\n        status\n        registrationCount\n        recurrenceGroupId\n        isRecurrenceTemplate\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetEventsDocument,
+    "\n  query GetEvent($id: Int!) {\n    getEvent(id: $id) {\n      id\n      organizationId\n      name\n      description\n      eventType\n      categoryId\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n      recurrenceRule {\n        frequency\n      }\n      recurrenceGroupId\n      isRecurrenceTemplate\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetEventDocument,
+    "\n  query GetEventRegistrations($eventId: Int!) {\n    getEventRegistrations(eventId: $eventId) {\n      id\n      registrantName\n      registrantEmail\n      registrantPhone\n      status\n      checkedIn\n      checkedInAt\n      createdAt\n    }\n  }\n": types.GetEventRegistrationsDocument,
+    "\n  mutation CreateEvent($input: CreateEventInput!) {\n    createEvent(input: $input) {\n      id\n      name\n      status\n    }\n  }\n": types.CreateEventDocument,
+    "\n  mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {\n    updateEvent(id: $id, input: $input) {\n      id\n      name\n      status\n    }\n  }\n": types.UpdateEventDocument,
+    "\n  mutation CancelEvent($id: Int!) {\n    cancelEvent(id: $id) {\n      id\n      status\n    }\n  }\n": types.CancelEventDocument,
+    "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n": types.CancelRecurringSeriesDocument,
+    "\n  mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {\n    addEventRegistration(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": types.AddEventRegistrationDocument,
+    "\n  mutation CancelEventRegistration($registrationId: Int!) {\n    cancelEventRegistration(registrationId: $registrationId) {\n      id\n      status\n    }\n  }\n": types.CancelEventRegistrationDocument,
+    "\n  mutation CheckInEventRegistration($registrationId: Int!) {\n    checkInEventRegistration(registrationId: $registrationId) {\n      id\n      checkedIn\n      checkedInAt\n    }\n  }\n": types.CheckInEventRegistrationDocument,
+    "\n  query GetPublicEvents($organizationId: String!, $dateFrom: String!, $dateTo: String!) {\n    getPublicEvents(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {\n      id\n      name\n      description\n      eventType\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n    }\n  }\n": types.GetPublicEventsDocument,
+    "\n  mutation RegisterForEvent($eventId: Int!, $input: PublicEventRegistrationInput!) {\n    registerForEvent(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": types.RegisterForEventDocument,
     "\n  query GetAvailableGames {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.GetAvailableGamesDocument,
     "\n      mutation FirstTimeSetupMutation(\n        $userDetails: UserDetails!\n        $company: CompanySettings!\n        $store: InitialStoreLocation!\n        $supportedGameCategoryIds: [Int!]!\n      ) {\n        firstTimeSetup(\n          userDetails: $userDetails\n          company: $company\n          store: $store\n          supportedGameCategoryIds: $supportedGameCategoryIds\n        )\n      }\n    ": types.FirstTimeSetupMutationDocument,
     "\n  query GetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        setName\n        rarity\n        isSingle\n        isSealed\n        condition\n        price\n        totalQuantity\n        entryCount\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetInventoryDocument,
@@ -165,6 +195,12 @@ const documents: Documents = {
     "\n  mutation AddStoreLocation($input: AddStoreLocationInput!) {\n    addStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": types.AddStoreLocationDocument,
     "\n  mutation UpdateStoreLocation($input: UpdateStoreLocationInput!) {\n    updateStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": types.UpdateStoreLocationDocument,
     "\n  mutation RemoveStoreLocation($id: String!) {\n    removeStoreLocation(id: $id)\n  }\n": types.RemoveStoreLocationDocument,
+    "\n  query GetCronJobs {\n    getCronJobs {\n      id\n      name\n      displayName\n      description\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n      config\n    }\n  }\n": types.GetCronJobsDocument,
+    "\n  query GetCronJobRuns($cronJobId: Int!, $pagination: PaginationInput) {\n    getCronJobRuns(cronJobId: $cronJobId, pagination: $pagination) {\n      items {\n        id\n        startedAt\n        completedAt\n        durationMs\n        status\n        error\n        summary\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetCronJobRunsDocument,
+    "\n  mutation TriggerCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": types.TriggerCronJobDocument,
+    "\n  mutation EnableCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.EnableCronJobDocument,
+    "\n  mutation DisableCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.DisableCronJobDocument,
+    "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": types.UpdateCronJobScheduleDocument,
     "\n  query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {\n    getTransactionLogs(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        action\n        resourceType\n        resourceId\n        details\n        userName\n        userEmail\n        createdAt\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetTransactionLogsDocument,
     "\n  query IsSetupPending {\n    isSetupPending\n  }\n": types.IsSetupPendingDocument,
 };
@@ -196,7 +232,7 @@ export function graphql(source: "\n  query GetEmployeeStoreLocations {\n    getE
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n    }\n  }\n"): typeof import('./graphql').UserPermissionsDocument;
+export function graphql(source: "\n  query UserPermissions {\n    userPermissions {\n      canManageInventory\n      canManageLots\n      canViewDashboard\n      canAccessSettings\n      canManageStoreLocations\n      canManageUsers\n      canViewTransactionLog\n      canUsePOS\n      canManageEvents\n    }\n  }\n"): typeof import('./graphql').UserPermissionsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -209,6 +245,54 @@ export function graphql(source: "\n  mutation AddToCart($cartItem: CartItemInput
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetPublicBuyRates {\n    getPublicBuyRates {\n      games {\n        categoryId\n        gameName\n        gameDisplayName\n        entries {\n          id\n          description\n          fixedRateCents\n          percentageRate\n          type\n          sortOrder\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetPublicBuyRatesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetEvents($pagination: PaginationInput, $filters: EventFilters) {\n    getEvents(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        name\n        eventType\n        gameName\n        gameDisplayName\n        startTime\n        endTime\n        capacity\n        status\n        registrationCount\n        recurrenceGroupId\n        isRecurrenceTemplate\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n"): typeof import('./graphql').GetEventsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetEvent($id: Int!) {\n    getEvent(id: $id) {\n      id\n      organizationId\n      name\n      description\n      eventType\n      categoryId\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n      recurrenceRule {\n        frequency\n      }\n      recurrenceGroupId\n      isRecurrenceTemplate\n      createdAt\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').GetEventDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetEventRegistrations($eventId: Int!) {\n    getEventRegistrations(eventId: $eventId) {\n      id\n      registrantName\n      registrantEmail\n      registrantPhone\n      status\n      checkedIn\n      checkedInAt\n      createdAt\n    }\n  }\n"): typeof import('./graphql').GetEventRegistrationsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateEvent($input: CreateEventInput!) {\n    createEvent(input: $input) {\n      id\n      name\n      status\n    }\n  }\n"): typeof import('./graphql').CreateEventDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {\n    updateEvent(id: $id, input: $input) {\n      id\n      name\n      status\n    }\n  }\n"): typeof import('./graphql').UpdateEventDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CancelEvent($id: Int!) {\n    cancelEvent(id: $id) {\n      id\n      status\n    }\n  }\n"): typeof import('./graphql').CancelEventDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n"): typeof import('./graphql').CancelRecurringSeriesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {\n    addEventRegistration(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n"): typeof import('./graphql').AddEventRegistrationDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CancelEventRegistration($registrationId: Int!) {\n    cancelEventRegistration(registrationId: $registrationId) {\n      id\n      status\n    }\n  }\n"): typeof import('./graphql').CancelEventRegistrationDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CheckInEventRegistration($registrationId: Int!) {\n    checkInEventRegistration(registrationId: $registrationId) {\n      id\n      checkedIn\n      checkedInAt\n    }\n  }\n"): typeof import('./graphql').CheckInEventRegistrationDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetPublicEvents($organizationId: String!, $dateFrom: String!, $dateTo: String!) {\n    getPublicEvents(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {\n      id\n      name\n      description\n      eventType\n      gameName\n      gameDisplayName\n      startTime\n      endTime\n      capacity\n      entryFeeInCents\n      status\n      registrationCount\n    }\n  }\n"): typeof import('./graphql').GetPublicEventsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RegisterForEvent($eventId: Int!, $input: PublicEventRegistrationInput!) {\n    registerForEvent(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n"): typeof import('./graphql').RegisterForEventDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -461,6 +545,30 @@ export function graphql(source: "\n  mutation UpdateStoreLocation($input: Update
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation RemoveStoreLocation($id: String!) {\n    removeStoreLocation(id: $id)\n  }\n"): typeof import('./graphql').RemoveStoreLocationDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetCronJobs {\n    getCronJobs {\n      id\n      name\n      displayName\n      description\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n      config\n    }\n  }\n"): typeof import('./graphql').GetCronJobsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetCronJobRuns($cronJobId: Int!, $pagination: PaginationInput) {\n    getCronJobRuns(cronJobId: $cronJobId, pagination: $pagination) {\n      items {\n        id\n        startedAt\n        completedAt\n        durationMs\n        status\n        error\n        summary\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n"): typeof import('./graphql').GetCronJobRunsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation TriggerCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n"): typeof import('./graphql').TriggerCronJobDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation EnableCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n"): typeof import('./graphql').EnableCronJobDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DisableCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n"): typeof import('./graphql').DisableCronJobDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n"): typeof import('./graphql').UpdateCronJobScheduleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -12,6 +12,7 @@ type UserPermissions {
   canManageUsers: Boolean!
   canViewTransactionLog: Boolean!
   canUsePOS: Boolean!
+  canManageEvents: Boolean!
 }
 
 extend type Query {

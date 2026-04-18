@@ -52,6 +52,12 @@ export type AddStoreLocationInput = {
   zip: Scalars['String']['input'];
 };
 
+export type AdminEventRegistrationInput = {
+  registrantEmail?: InputMaybe<Scalars['String']['input']>;
+  registrantName: Scalars['String']['input'];
+  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+};
+
 export enum BackupProvider {
   Dropbox = 'dropbox',
   GoogleDrive = 'google_drive',
@@ -229,12 +235,64 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type CreateEventInput = {
+  capacity?: InputMaybe<Scalars['Int']['input']>;
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endTime?: InputMaybe<Scalars['String']['input']>;
+  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
+  eventType: EventType;
+  name: Scalars['String']['input'];
+  recurrenceRule?: InputMaybe<RecurrenceRuleInput>;
+  startTime: Scalars['String']['input'];
+};
+
 export type CreateLotInput = {
   acquisitionDate: Scalars['String']['input'];
   amountPaid: Scalars['Int']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
+};
+
+export type CronJob = {
+  __typename?: 'CronJob';
+  config?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  cronExpression: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['Int']['output'];
+  lastRunAt?: Maybe<Scalars['String']['output']>;
+  lastRunDurationMs?: Maybe<Scalars['Int']['output']>;
+  lastRunError?: Maybe<Scalars['String']['output']>;
+  lastRunStatus?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  nextRunAt?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+};
+
+export type CronJobRun = {
+  __typename?: 'CronJobRun';
+  completedAt?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  cronJobId: Scalars['Int']['output'];
+  durationMs?: Maybe<Scalars['Int']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  startedAt: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  summary?: Maybe<Scalars['String']['output']>;
+};
+
+export type CronJobRunPage = {
+  __typename?: 'CronJobRunPage';
+  items: Array<CronJobRun>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type DashboardDateRange = {
@@ -256,6 +314,75 @@ export type DataUpdateStatus = {
   latestVersion?: Maybe<Scalars['String']['output']>;
   updateAvailable: Scalars['Boolean']['output'];
 };
+
+export type Event = {
+  __typename?: 'Event';
+  capacity?: Maybe<Scalars['Int']['output']>;
+  categoryId?: Maybe<Scalars['Int']['output']>;
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  endTime?: Maybe<Scalars['String']['output']>;
+  entryFeeInCents?: Maybe<Scalars['Int']['output']>;
+  eventType: EventType;
+  gameDisplayName?: Maybe<Scalars['String']['output']>;
+  gameName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  isRecurrenceTemplate: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
+  recurrenceGroupId?: Maybe<Scalars['String']['output']>;
+  recurrenceRule?: Maybe<RecurrenceRule>;
+  registrationCount: Scalars['Int']['output'];
+  startTime: Scalars['String']['output'];
+  status: EventStatus;
+  updatedAt: Scalars['String']['output'];
+};
+
+export type EventFilters = {
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  dateFrom?: InputMaybe<Scalars['String']['input']>;
+  dateTo?: InputMaybe<Scalars['String']['input']>;
+  eventType?: InputMaybe<EventType>;
+  status?: InputMaybe<EventStatus>;
+};
+
+export type EventPage = {
+  __typename?: 'EventPage';
+  items: Array<Event>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type EventRegistration = {
+  __typename?: 'EventRegistration';
+  checkedIn: Scalars['Boolean']['output'];
+  checkedInAt?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  eventId: Scalars['Int']['output'];
+  id: Scalars['Int']['output'];
+  registrantEmail?: Maybe<Scalars['String']['output']>;
+  registrantName: Scalars['String']['output'];
+  registrantPhone?: Maybe<Scalars['String']['output']>;
+  status: RegistrationStatus;
+};
+
+export enum EventStatus {
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED',
+  Scheduled = 'SCHEDULED'
+}
+
+export enum EventType {
+  CasualPlay = 'CASUAL_PLAY',
+  Draft = 'DRAFT',
+  League = 'LEAGUE',
+  Other = 'OTHER',
+  Prerelease = 'PRERELEASE',
+  ReleaseEvent = 'RELEASE_EVENT',
+  Tournament = 'TOURNAMENT'
+}
 
 export enum Granularity {
   Day = 'day',
@@ -416,17 +543,23 @@ export type LotStats = {
 export type Mutation = {
   __typename?: 'Mutation';
   addBarcode: Barcode;
+  addEventRegistration: EventRegistration;
   addInventoryItem: InventoryItem;
   addStock: InventoryItemStock;
   addStoreLocation: StoreLocation;
   addToCart: ShoppingCart;
   bulkDeleteStock: Scalars['Boolean']['output'];
   bulkUpdateStock: Array<InventoryItemStock>;
+  cancelEvent: Event;
+  cancelEventRegistration: EventRegistration;
   cancelOrder: Order;
   cancelPosPaymentIntent: Scalars['Boolean']['output'];
+  cancelRecurringSeries: Scalars['Int']['output'];
+  checkInEventRegistration: EventRegistration;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
   completePosOrder: Order;
+  createEvent: Event;
   createLot: Lot;
   createPosPaymentIntent: PaymentIntentResult;
   createTerminalConnectionToken: TerminalConnectionToken;
@@ -435,7 +568,10 @@ export type Mutation = {
   deleteInventoryItem: Scalars['Boolean']['output'];
   deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
+  disableCronJob: CronJob;
+  enableCronJob: CronJob;
   firstTimeSetup: Scalars['String']['output'];
+  registerForEvent: EventRegistration;
   removeBarcode: Scalars['Boolean']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
@@ -450,9 +586,13 @@ export type Mutation = {
   submitOrder: Order;
   submitPosOrder: Order;
   triggerBackup: BackupResult;
+  triggerCronJob: CronJobRun;
   triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
   updateBackupSettings: BackupSettings;
+  updateCronJobConfig: CronJob;
+  updateCronJobSchedule: CronJob;
+  updateEvent: Event;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
@@ -467,6 +607,12 @@ export type Mutation = {
 
 export type MutationAddBarcodeArgs = {
   input: AddBarcodeInput;
+};
+
+
+export type MutationAddEventRegistrationArgs = {
+  eventId: Scalars['Int']['input'];
+  input: AdminEventRegistrationInput;
 };
 
 
@@ -500,6 +646,16 @@ export type MutationBulkUpdateStockArgs = {
 };
 
 
+export type MutationCancelEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationCancelEventRegistrationArgs = {
+  registrationId: Scalars['Int']['input'];
+};
+
+
 export type MutationCancelOrderArgs = {
   orderId: Scalars['Int']['input'];
 };
@@ -510,8 +666,23 @@ export type MutationCancelPosPaymentIntentArgs = {
 };
 
 
+export type MutationCancelRecurringSeriesArgs = {
+  recurrenceGroupId: Scalars['String']['input'];
+};
+
+
+export type MutationCheckInEventRegistrationArgs = {
+  registrationId: Scalars['Int']['input'];
+};
+
+
 export type MutationCompletePosOrderArgs = {
   input: CompletePosOrderInput;
+};
+
+
+export type MutationCreateEventArgs = {
+  input: CreateEventInput;
 };
 
 
@@ -545,11 +716,27 @@ export type MutationDeleteStockArgs = {
 };
 
 
+export type MutationDisableCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationEnableCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationFirstTimeSetupArgs = {
   company: CompanySettings;
   store: InitialStoreLocation;
   supportedGameCategoryIds: Array<Scalars['Int']['input']>;
   userDetails: UserDetails;
+};
+
+
+export type MutationRegisterForEventArgs = {
+  eventId: Scalars['Int']['input'];
+  input: PublicEventRegistrationInput;
 };
 
 
@@ -593,6 +780,11 @@ export type MutationSubmitPosOrderArgs = {
 };
 
 
+export type MutationTriggerCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationTriggerRestoreArgs = {
   provider: BackupProvider;
 };
@@ -600,6 +792,24 @@ export type MutationTriggerRestoreArgs = {
 
 export type MutationUpdateBackupSettingsArgs = {
   input: UpdateBackupSettingsInput;
+};
+
+
+export type MutationUpdateCronJobConfigArgs = {
+  config: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationUpdateCronJobScheduleArgs = {
+  cronExpression: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationUpdateEventArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdateEventInput;
 };
 
 
@@ -839,6 +1049,12 @@ export type PublicBuyRates = {
   games: Array<BuyRateTable>;
 };
 
+export type PublicEventRegistrationInput = {
+  registrantEmail?: InputMaybe<Scalars['String']['input']>;
+  registrantName: Scalars['String']['input'];
+  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveStoreLocation?: Maybe<StoreLocation>;
@@ -854,6 +1070,9 @@ export type Query = {
   /** Admin query - returns buy rate entries for a specific game. */
   getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
+  getCronJob?: Maybe<CronJob>;
+  getCronJobRuns: CronJobRunPage;
+  getCronJobs: Array<CronJob>;
   getDashboardBestSellers: Array<BestSeller>;
   getDashboardInventorySummary: InventorySummary;
   getDashboardOpenOrders: Array<OpenOrder>;
@@ -863,6 +1082,9 @@ export type Query = {
   getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
+  getEvent?: Maybe<Event>;
+  getEventRegistrations: Array<EventRegistration>;
+  getEvents: EventPage;
   getIntegrationSettings: IntegrationSettings;
   getInventory: InventoryPage;
   getInventoryItem?: Maybe<InventoryItem>;
@@ -879,6 +1101,8 @@ export type Query = {
    * No authentication required.
    */
   getPublicBuyRates: PublicBuyRates;
+  getPublicEvent?: Maybe<Event>;
+  getPublicEvents: Array<Event>;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
@@ -918,6 +1142,17 @@ export type QueryGetCardArgs = {
 };
 
 
+export type QueryGetCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryGetCronJobRunsArgs = {
+  cronJobId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
 export type QueryGetDashboardBestSellersArgs = {
   dateRange: DashboardDateRange;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -951,6 +1186,22 @@ export type QueryGetDashboardSalesArgs = {
 
 export type QueryGetDistinctRaritiesArgs = {
   categoryId: Scalars['Int']['input'];
+};
+
+
+export type QueryGetEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryGetEventRegistrationsArgs = {
+  eventId: Scalars['Int']['input'];
+};
+
+
+export type QueryGetEventsArgs = {
+  filters?: InputMaybe<EventFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -1006,6 +1257,18 @@ export type QueryGetProductListingsArgs = {
 };
 
 
+export type QueryGetPublicEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryGetPublicEventsArgs = {
+  dateFrom: Scalars['String']['input'];
+  dateTo: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
+};
+
+
 export type QueryGetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
@@ -1046,6 +1309,20 @@ export type QuerySearchProductsArgs = {
   isSingle?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm: Scalars['String']['input'];
 };
+
+export type RecurrenceRule = {
+  __typename?: 'RecurrenceRule';
+  frequency: Scalars['String']['output'];
+};
+
+export type RecurrenceRuleInput = {
+  frequency: Scalars['String']['input'];
+};
+
+export enum RegistrationStatus {
+  Cancelled = 'CANCELLED',
+  Registered = 'REGISTERED'
+}
 
 export type RemoveBarcodeInput = {
   id: Scalars['Int']['input'];
@@ -1230,6 +1507,17 @@ export type UpdateBackupSettingsInput = {
   provider?: InputMaybe<BackupProvider>;
 };
 
+export type UpdateEventInput = {
+  capacity?: InputMaybe<Scalars['Int']['input']>;
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endTime?: InputMaybe<Scalars['String']['input']>;
+  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
+  eventType?: InputMaybe<EventType>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  startTime?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateInventoryItemInput = {
   condition?: InputMaybe<CardCondition>;
   id: Scalars['Int']['input'];
@@ -1296,6 +1584,7 @@ export type UserDetails = {
 export type UserPermissions = {
   __typename?: 'UserPermissions';
   canAccessSettings: Scalars['Boolean']['output'];
+  canManageEvents: Scalars['Boolean']['output'];
   canManageInventory: Scalars['Boolean']['output'];
   canManageLots: Scalars['Boolean']['output'];
   canManageStoreLocations: Scalars['Boolean']['output'];
@@ -1344,7 +1633,7 @@ export type GetEmployeeStoreLocationsQuery = { __typename?: 'Query', getEmployee
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean } };
+export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean, canUsePOS: boolean, canManageEvents: boolean } };
 
 export type GetSupportedGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1362,6 +1651,96 @@ export type GetPublicBuyRatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetPublicBuyRatesQuery = { __typename?: 'Query', getPublicBuyRates: { __typename?: 'PublicBuyRates', games: Array<{ __typename?: 'BuyRateTable', categoryId: number, gameName: string, gameDisplayName: string, entries: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, sortOrder: number }> }> } };
+
+export type GetEventsQueryVariables = Exact<{
+  pagination?: InputMaybe<PaginationInput>;
+  filters?: InputMaybe<EventFilters>;
+}>;
+
+
+export type GetEventsQuery = { __typename?: 'Query', getEvents: { __typename?: 'EventPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Event', id: number, name: string, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean }> } };
+
+export type GetEventQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetEventQuery = { __typename?: 'Query', getEvent?: { __typename?: 'Event', id: number, organizationId: string, name: string, description?: string | null, eventType: EventType, categoryId?: number | null, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean, createdAt: string, updatedAt: string, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: string } | null } | null };
+
+export type GetEventRegistrationsQueryVariables = Exact<{
+  eventId: Scalars['Int']['input'];
+}>;
+
+
+export type GetEventRegistrationsQuery = { __typename?: 'Query', getEventRegistrations: Array<{ __typename?: 'EventRegistration', id: number, registrantName: string, registrantEmail?: string | null, registrantPhone?: string | null, status: RegistrationStatus, checkedIn: boolean, checkedInAt?: string | null, createdAt: string }> };
+
+export type CreateEventMutationVariables = Exact<{
+  input: CreateEventInput;
+}>;
+
+
+export type CreateEventMutation = { __typename?: 'Mutation', createEvent: { __typename?: 'Event', id: number, name: string, status: EventStatus } };
+
+export type UpdateEventMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+  input: UpdateEventInput;
+}>;
+
+
+export type UpdateEventMutation = { __typename?: 'Mutation', updateEvent: { __typename?: 'Event', id: number, name: string, status: EventStatus } };
+
+export type CancelEventMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type CancelEventMutation = { __typename?: 'Mutation', cancelEvent: { __typename?: 'Event', id: number, status: EventStatus } };
+
+export type CancelRecurringSeriesMutationVariables = Exact<{
+  recurrenceGroupId: Scalars['String']['input'];
+}>;
+
+
+export type CancelRecurringSeriesMutation = { __typename?: 'Mutation', cancelRecurringSeries: number };
+
+export type AddEventRegistrationMutationVariables = Exact<{
+  eventId: Scalars['Int']['input'];
+  input: AdminEventRegistrationInput;
+}>;
+
+
+export type AddEventRegistrationMutation = { __typename?: 'Mutation', addEventRegistration: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
+
+export type CancelEventRegistrationMutationVariables = Exact<{
+  registrationId: Scalars['Int']['input'];
+}>;
+
+
+export type CancelEventRegistrationMutation = { __typename?: 'Mutation', cancelEventRegistration: { __typename?: 'EventRegistration', id: number, status: RegistrationStatus } };
+
+export type CheckInEventRegistrationMutationVariables = Exact<{
+  registrationId: Scalars['Int']['input'];
+}>;
+
+
+export type CheckInEventRegistrationMutation = { __typename?: 'Mutation', checkInEventRegistration: { __typename?: 'EventRegistration', id: number, checkedIn: boolean, checkedInAt?: string | null } };
+
+export type GetPublicEventsQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+  dateFrom: Scalars['String']['input'];
+  dateTo: Scalars['String']['input'];
+}>;
+
+
+export type GetPublicEventsQuery = { __typename?: 'Query', getPublicEvents: Array<{ __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number }> };
+
+export type RegisterForEventMutationVariables = Exact<{
+  eventId: Scalars['Int']['input'];
+  input: PublicEventRegistrationInput;
+}>;
+
+
+export type RegisterForEventMutation = { __typename?: 'Mutation', registerForEvent: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
 
 export type GetAvailableGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1806,6 +2185,48 @@ export type RemoveStoreLocationMutationVariables = Exact<{
 
 export type RemoveStoreLocationMutation = { __typename?: 'Mutation', removeStoreLocation: boolean };
 
+export type GetCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, displayName: string, description?: string | null, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null, config?: string | null }> };
+
+export type GetCronJobRunsQueryVariables = Exact<{
+  cronJobId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetCronJobRunsQuery = { __typename?: 'Query', getCronJobRuns: { __typename?: 'CronJobRunPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'CronJobRun', id: number, startedAt: string, completedAt?: string | null, durationMs?: number | null, status: string, error?: string | null, summary?: string | null }> } };
+
+export type TriggerCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type TriggerCronJobMutation = { __typename?: 'Mutation', triggerCronJob: { __typename?: 'CronJobRun', id: number, status: string, summary?: string | null, error?: string | null, durationMs?: number | null } };
+
+export type EnableCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type EnableCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
+export type DisableCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DisableCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
+export type UpdateCronJobScheduleMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+  cronExpression: Scalars['String']['input'];
+}>;
+
+
+export type UpdateCronJobScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
+
 export type GetTransactionLogsQueryVariables = Exact<{
   pagination?: InputMaybe<PaginationInput>;
   filters?: InputMaybe<TransactionLogFilters>;
@@ -1926,6 +2347,8 @@ export const UserPermissionsDocument = new TypedDocumentString(`
     canManageStoreLocations
     canManageUsers
     canViewTransactionLog
+    canUsePOS
+    canManageEvents
   }
 }
     `) as unknown as TypedDocumentString<UserPermissionsQuery, UserPermissionsQueryVariables>;
@@ -1972,6 +2395,159 @@ export const GetPublicBuyRatesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetPublicBuyRatesQuery, GetPublicBuyRatesQueryVariables>;
+export const GetEventsDocument = new TypedDocumentString(`
+    query GetEvents($pagination: PaginationInput, $filters: EventFilters) {
+  getEvents(pagination: $pagination, filters: $filters) {
+    items {
+      id
+      name
+      eventType
+      gameName
+      gameDisplayName
+      startTime
+      endTime
+      capacity
+      status
+      registrationCount
+      recurrenceGroupId
+      isRecurrenceTemplate
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetEventsQuery, GetEventsQueryVariables>;
+export const GetEventDocument = new TypedDocumentString(`
+    query GetEvent($id: Int!) {
+  getEvent(id: $id) {
+    id
+    organizationId
+    name
+    description
+    eventType
+    categoryId
+    gameName
+    gameDisplayName
+    startTime
+    endTime
+    capacity
+    entryFeeInCents
+    status
+    registrationCount
+    recurrenceRule {
+      frequency
+    }
+    recurrenceGroupId
+    isRecurrenceTemplate
+    createdAt
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<GetEventQuery, GetEventQueryVariables>;
+export const GetEventRegistrationsDocument = new TypedDocumentString(`
+    query GetEventRegistrations($eventId: Int!) {
+  getEventRegistrations(eventId: $eventId) {
+    id
+    registrantName
+    registrantEmail
+    registrantPhone
+    status
+    checkedIn
+    checkedInAt
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<GetEventRegistrationsQuery, GetEventRegistrationsQueryVariables>;
+export const CreateEventDocument = new TypedDocumentString(`
+    mutation CreateEvent($input: CreateEventInput!) {
+  createEvent(input: $input) {
+    id
+    name
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<CreateEventMutation, CreateEventMutationVariables>;
+export const UpdateEventDocument = new TypedDocumentString(`
+    mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {
+  updateEvent(id: $id, input: $input) {
+    id
+    name
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateEventMutation, UpdateEventMutationVariables>;
+export const CancelEventDocument = new TypedDocumentString(`
+    mutation CancelEvent($id: Int!) {
+  cancelEvent(id: $id) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<CancelEventMutation, CancelEventMutationVariables>;
+export const CancelRecurringSeriesDocument = new TypedDocumentString(`
+    mutation CancelRecurringSeries($recurrenceGroupId: String!) {
+  cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)
+}
+    `) as unknown as TypedDocumentString<CancelRecurringSeriesMutation, CancelRecurringSeriesMutationVariables>;
+export const AddEventRegistrationDocument = new TypedDocumentString(`
+    mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {
+  addEventRegistration(eventId: $eventId, input: $input) {
+    id
+    registrantName
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AddEventRegistrationMutation, AddEventRegistrationMutationVariables>;
+export const CancelEventRegistrationDocument = new TypedDocumentString(`
+    mutation CancelEventRegistration($registrationId: Int!) {
+  cancelEventRegistration(registrationId: $registrationId) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<CancelEventRegistrationMutation, CancelEventRegistrationMutationVariables>;
+export const CheckInEventRegistrationDocument = new TypedDocumentString(`
+    mutation CheckInEventRegistration($registrationId: Int!) {
+  checkInEventRegistration(registrationId: $registrationId) {
+    id
+    checkedIn
+    checkedInAt
+  }
+}
+    `) as unknown as TypedDocumentString<CheckInEventRegistrationMutation, CheckInEventRegistrationMutationVariables>;
+export const GetPublicEventsDocument = new TypedDocumentString(`
+    query GetPublicEvents($organizationId: String!, $dateFrom: String!, $dateTo: String!) {
+  getPublicEvents(
+    organizationId: $organizationId
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+  ) {
+    id
+    name
+    description
+    eventType
+    gameName
+    gameDisplayName
+    startTime
+    endTime
+    capacity
+    entryFeeInCents
+    status
+    registrationCount
+  }
+}
+    `) as unknown as TypedDocumentString<GetPublicEventsQuery, GetPublicEventsQueryVariables>;
+export const RegisterForEventDocument = new TypedDocumentString(`
+    mutation RegisterForEvent($eventId: Int!, $input: PublicEventRegistrationInput!) {
+  registerForEvent(eventId: $eventId, input: $input) {
+    id
+    registrantName
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<RegisterForEventMutation, RegisterForEventMutationVariables>;
 export const GetAvailableGamesDocument = new TypedDocumentString(`
     query GetAvailableGames {
   getAvailableGames {
@@ -2837,6 +3413,79 @@ export const RemoveStoreLocationDocument = new TypedDocumentString(`
   removeStoreLocation(id: $id)
 }
     `) as unknown as TypedDocumentString<RemoveStoreLocationMutation, RemoveStoreLocationMutationVariables>;
+export const GetCronJobsDocument = new TypedDocumentString(`
+    query GetCronJobs {
+  getCronJobs {
+    id
+    name
+    displayName
+    description
+    cronExpression
+    enabled
+    lastRunAt
+    lastRunStatus
+    lastRunDurationMs
+    lastRunError
+    nextRunAt
+    config
+  }
+}
+    `) as unknown as TypedDocumentString<GetCronJobsQuery, GetCronJobsQueryVariables>;
+export const GetCronJobRunsDocument = new TypedDocumentString(`
+    query GetCronJobRuns($cronJobId: Int!, $pagination: PaginationInput) {
+  getCronJobRuns(cronJobId: $cronJobId, pagination: $pagination) {
+    items {
+      id
+      startedAt
+      completedAt
+      durationMs
+      status
+      error
+      summary
+    }
+    totalCount
+    page
+    pageSize
+    totalPages
+  }
+}
+    `) as unknown as TypedDocumentString<GetCronJobRunsQuery, GetCronJobRunsQueryVariables>;
+export const TriggerCronJobDocument = new TypedDocumentString(`
+    mutation TriggerCronJob($id: Int!) {
+  triggerCronJob(id: $id) {
+    id
+    status
+    summary
+    error
+    durationMs
+  }
+}
+    `) as unknown as TypedDocumentString<TriggerCronJobMutation, TriggerCronJobMutationVariables>;
+export const EnableCronJobDocument = new TypedDocumentString(`
+    mutation EnableCronJob($id: Int!) {
+  enableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<EnableCronJobMutation, EnableCronJobMutationVariables>;
+export const DisableCronJobDocument = new TypedDocumentString(`
+    mutation DisableCronJob($id: Int!) {
+  disableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<DisableCronJobMutation, DisableCronJobMutationVariables>;
+export const UpdateCronJobScheduleDocument = new TypedDocumentString(`
+    mutation UpdateCronJobSchedule($id: Int!, $cronExpression: String!) {
+  updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {
+    id
+    cronExpression
+    nextRunAt
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateCronJobScheduleMutation, UpdateCronJobScheduleMutationVariables>;
 export const GetTransactionLogsDocument = new TypedDocumentString(`
     query GetTransactionLogs($pagination: PaginationInput, $filters: TransactionLogFilters) {
   getTransactionLogs(pagination: $pagination, filters: $filters) {

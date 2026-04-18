@@ -279,6 +279,11 @@ const router = new Router()
   .get('buy-rates', '/buy-rates', async (ctx) => {
     return renderPage(ctx, 'buy-rates');
   })
+  // Public events page (anonymous access)
+  .use('/events', ensureAnonymousSession)
+  .get('events', '/events', async (ctx) => {
+    return renderPage(ctx, 'events');
+  })
   // Backward-compatible redirects from old card URLs
   .get('cards-redirect', '/games/:game/cards', async (ctx) => {
     const game = ctx.params.game;
@@ -296,6 +301,12 @@ const router = new Router()
     await requirePermission('order', 'create')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'pos');
+  })
+  // Event management (admin - requires event:read permission)
+  .get('event-management', '/event-management', async (ctx) => {
+    await requirePermission('event', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'event-management');
   })
   .get('transaction-log', '/transaction-log', async (ctx) => {
     await requirePermission('transactionLog', 'read')(ctx, async () => {});
@@ -382,6 +393,9 @@ const router = new Router()
   })
   .get('settings-locations', '/settings/locations', async (ctx) => {
     return renderPage(ctx, 'settings-locations');
+  })
+  .get('settings-scheduled-tasks', '/settings/scheduled-tasks', async (ctx) => {
+    return renderPage(ctx, 'settings-scheduled-tasks');
   });
 
 const port = 5173;

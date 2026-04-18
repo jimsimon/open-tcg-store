@@ -25,7 +25,10 @@ import {
   validateOAuthState,
 } from './services/backup-service.ts';
 import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
-import { startUpdateScheduler } from './services/tcg-data-update-service.ts';
+import { registerJobHandler, seedDefaultJobs, startScheduler } from './services/cron-service.ts';
+import { tcgDataUpdateHandler } from './services/cron-handlers/tcg-data-update-handler.ts';
+import { backupHandler } from './services/cron-handlers/backup-handler.ts';
+import { eventRecurrenceHandler } from './services/cron-handlers/event-recurrence-handler.ts';
 import { sql } from 'drizzle-orm';
 import { rateLimit } from './lib/rate-limit.ts';
 
@@ -717,6 +720,13 @@ app
     console.log(router.stack.map((i) => i.path));
     console.log(`Server is listening on port ${port}`);
 
-    // Start the tcg-data database update scheduler
-    startUpdateScheduler();
+    // Register cron job handlers
+    registerJobHandler('tcg-data-update', tcgDataUpdateHandler);
+    registerJobHandler('backup', backupHandler);
+    registerJobHandler('event-recurrence-generator', eventRecurrenceHandler);
+
+    // Seed default job definitions and start the cron scheduler (fire-and-forget)
+    seedDefaultJobs()
+      .then(() => startScheduler())
+      .catch((err) => console.error('[cron] Failed to start scheduler:', err));
   });

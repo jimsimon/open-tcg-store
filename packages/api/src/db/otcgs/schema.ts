@@ -11,3 +11,7 @@ export * from './buy-rate-schema';
 export * from './lot-schema';
 export * from './lot-item-schema';
 export * from './barcode-schema';
+export * from './cron-job-schema';
+export * from './cron-job-run-schema';
+export * from './event-schema';
+export * from './event-registration-schema';

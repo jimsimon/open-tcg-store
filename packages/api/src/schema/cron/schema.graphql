@@ -1,0 +1,50 @@
+type CronJob {
+  id: Int!
+  name: String!
+  displayName: String!
+  description: String
+  cronExpression: String!
+  enabled: Boolean!
+  lastRunAt: String
+  lastRunStatus: String
+  lastRunDurationMs: Int
+  lastRunError: String
+  nextRunAt: String
+  config: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CronJobRun {
+  id: Int!
+  cronJobId: Int!
+  startedAt: String!
+  completedAt: String
+  durationMs: Int
+  status: String!
+  error: String
+  summary: String
+  createdAt: String!
+}
+
+type CronJobRunPage {
+  items: [CronJobRun!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+extend type Query {
+  getCronJobs: [CronJob!]!
+  getCronJob(id: Int!): CronJob
+  getCronJobRuns(cronJobId: Int!, pagination: PaginationInput): CronJobRunPage!
+}
+
+extend type Mutation {
+  updateCronJobSchedule(id: Int!, cronExpression: String!): CronJob!
+  enableCronJob(id: Int!): CronJob!
+  disableCronJob(id: Int!): CronJob!
+  updateCronJobConfig(id: Int!, config: String!): CronJob!
+  triggerCronJob(id: Int!): CronJobRun!
+}
