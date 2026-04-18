@@ -50,8 +50,9 @@ describe('userPermissions resolver', () => {
       canManageStoreLocations: true,
       canManageUsers: true,
       canViewTransactionLog: true,
+      canUsePOS: true,
     });
-    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(6);
+    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(7);
   });
 
   it('returns only inventory/dashboard false for member role (no transactionLog/settings/locations/users)', async () => {
@@ -69,6 +70,7 @@ describe('userPermissions resolver', () => {
     expect(result.canAccessSettings).toBe(false);
     expect(result.canManageStoreLocations).toBe(false);
     expect(result.canManageUsers).toBe(false);
+    expect(result.canUsePOS).toBe(false); // mock only returns true for 'inventory'
   });
 
   it('runs all checks in parallel (all 5 calls are made)', async () => {
@@ -85,7 +87,8 @@ describe('userPermissions resolver', () => {
     expect(calledResources).toContain('companySettings');
     expect(calledResources).toContain('storeLocations');
     expect(calledResources).toContain('userManagement');
-    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(6);
+    expect(calledResources).toContain('order');
+    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(7);
   });
 
   it('returns false for a permission when hasPermission throws', async () => {
