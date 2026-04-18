@@ -10,7 +10,9 @@ type Order {
   orderNumber: String!
   customerName: String!
   status: OrderStatus!
-  totalAmount: Int! # cents
+  totalAmount: Int! # cents (subtotal before tax)
+  taxAmount: Int # cents
+  paymentMethod: String # 'cash' | 'card' | null
   totalCostBasis: Int # cents
   totalProfit: Int # cents
   createdAt: String!

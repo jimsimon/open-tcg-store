@@ -28,6 +28,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     canAccessSettings,
     canManageStoreLocations,
     canManageUsers,
+    canUsePOS,
   ] = await Promise.all([
     checkPerm(ctx, { inventory: ['read'] }),
     checkPerm(ctx, { lot: ['read'] }),
@@ -35,6 +36,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     checkPerm(ctx, { companySettings: ['read'] }),
     checkPerm(ctx, { storeLocations: ['read'] }),
     checkPerm(ctx, { userManagement: ['read'] }),
+    checkPerm(ctx, { order: ['create'] }),
   ]);
 
   // Dashboard is visible to anyone who can view the transaction log (manager+)
@@ -48,5 +50,6 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     canManageStoreLocations,
     canManageUsers,
     canViewTransactionLog,
+    canUsePOS,
   };
 };

@@ -26,6 +26,7 @@ type IntegrationSettings {
 type StripeIntegration {
   enabled: Boolean!
   hasApiKey: Boolean!
+  hasPublishableKey: Boolean!
 }
 
 type ShopifyIntegration {
@@ -77,6 +78,7 @@ input UpdateBackupSettingsInput {
 input UpdateStripeIntegrationInput {
   enabled: Boolean
   apiKey: String
+  publishableKey: String
 }
 
 input UpdateShopifyIntegrationInput {

@@ -16,6 +16,7 @@ export const companySettings = sqliteTable('company_settings', {
   // Integration: Stripe
   stripeEnabled: integer('stripe_enabled', { mode: 'boolean' }).default(false),
   stripeApiKey: text('stripe_api_key'),
+  stripePublishableKey: text('stripe_publishable_key'),
 
   // Integration: Shopify
   shopifyEnabled: integer('shopify_enabled', { mode: 'boolean' }).default(false),

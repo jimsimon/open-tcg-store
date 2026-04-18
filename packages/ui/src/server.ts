@@ -292,6 +292,11 @@ const router = new Router()
     if (ctx.status === 403) return;
     return renderPage(ctx, 'orders');
   })
+  .get('pos', '/pos', async (ctx) => {
+    await requirePermission('order', 'create')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'pos');
+  })
   .get('transaction-log', '/transaction-log', async (ctx) => {
     await requirePermission('transactionLog', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;

@@ -2,6 +2,7 @@ import { eq, and, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
+import { addBarcodes } from './barcode-service';
 import { likeEscaped, normalizePagination } from '../lib/sql-utils';
 import { formatDate, todayDateString, isValidDateString } from '../lib/date-utils';
 import type { CardCondition } from '../schema/types.generated';
@@ -461,6 +462,11 @@ export async function addInventoryItem(
     return parentId;
   });
 
+  // Add barcodes if provided (outside the inventory transaction — separate operation)
+  if (input.barcodes && input.barcodes.length > 0) {
+    await addBarcodes(organizationId, parentId, input.barcodes, userId);
+  }
+
   // Log the transaction (outside DB transaction — best-effort)
   await logTransaction({
     organizationId,
@@ -474,6 +480,7 @@ export async function addInventoryItem(
       price: input.price,
       quantity: input.quantity,
       costBasis: input.costBasis,
+      barcodeCount: input.barcodes?.length ?? 0,
     },
   });
 
