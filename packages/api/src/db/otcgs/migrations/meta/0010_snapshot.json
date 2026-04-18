@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "37823661-f9e1-4a5e-a0b5-61425aa5f42c",
-  "prevId": "bc664bf2-b579-4dd9-a4e6-ff7ef8746599",
+  "id": "fbc4c2e7-653e-4957-a49e-29d99e08589b",
+  "prevId": "37823661-f9e1-4a5e-a0b5-61425aa5f42c",
   "tables": {
     "account": {
       "name": "account",
@@ -1407,6 +1407,28 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+        },
+        "tax_amount": {
+          "name": "tax_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stripe_payment_intent_id": {
+          "name": "stripe_payment_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1443,6 +1465,13 @@
           "name": "order_status_idx",
           "columns": [
             "status"
+          ],
+          "isUnique": false
+        },
+        "order_payment_method_idx": {
+          "name": "order_payment_method_idx",
+          "columns": [
+            "payment_method"
           ],
           "isUnique": false
         }
