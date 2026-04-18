@@ -303,6 +303,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
   @property({ type: Boolean })
   canViewTransactionLog = false;
 
+  @property({ type: Boolean })
+  canManageEvents = false;
+
   /** The active organization ID, passed from server-side or session */
   @property({ type: String })
   activeOrganizationId = '';
@@ -479,6 +482,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
               ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
               ${this.renderNavSubLink('/products/sealed', 'Sealed', 'products/sealed')}
               ${this.renderNavLink('/buy-rates', 'hand-holding-dollar', 'Buy Rates', 'buy-rates')}
+              ${this.renderNavLink('/events', 'calendar-days', 'Events', 'events')}
               ${when(
                 this.canManageInventory,
                 () => html`
@@ -499,6 +503,9 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${when(this.canManageUsers, () =>
                     this.renderNavLink('/users', 'users-gear', 'User Accounts', 'users'),
                   )}
+                  ${when(this.canManageEvents, () =>
+                    this.renderNavLink('/event-management', 'calendar-pen', 'Events', 'event-management'),
+                  )}
                 `,
               )}
               ${when(
@@ -517,6 +524,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavSubLink('/settings/buyrates', 'Buy Rates', 'settings/buyrates')}
                   ${this.renderNavSubLink('/settings/data-updates', 'Card Data', 'settings/data-updates')}
                   ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
+                  ${this.renderNavSubLink('/settings/scheduled-tasks', 'Scheduled Tasks', 'settings/scheduled-tasks')}
                 `,
               )}
             </nav>

@@ -90,8 +90,6 @@ import {
   verifyDownloadHash,
   applyUpdate,
   performUpdateCheck,
-  startUpdateScheduler,
-  stopUpdateScheduler,
   getDataUpdateStatus,
   getCreatedAt,
   refreshUpdateStatus,
@@ -224,7 +222,6 @@ describe('tcg-data-update-service', () => {
   });
 
   afterEach(() => {
-    stopUpdateScheduler();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -700,68 +697,8 @@ describe('tcg-data-update-service', () => {
     });
   });
 
-  // -----------------------------------------------------------------------
-  // startUpdateScheduler / stopUpdateScheduler
-  // -----------------------------------------------------------------------
-  describe('startUpdateScheduler / stopUpdateScheduler', () => {
-    it('should call performUpdateCheck immediately on start', () => {
-      // Mock to return "no matching releases" so checkForUpdate resolves quickly
-      mockFetch.mockResolvedValue(mockFetchResponse([]));
-
-      startUpdateScheduler();
-
-      // The immediate check should have triggered a fetch
-      expect(mockFetch).toHaveBeenCalled();
-    });
-
-    it('should schedule periodic checks', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse([]));
-
-      startUpdateScheduler();
-
-      // Flush the initial async check so the _isCheckRunning guard clears
-      await vi.advanceTimersByTimeAsync(0);
-      vi.clearAllMocks();
-
-      // Re-mock fetch for the periodic check
-      mockFetch.mockResolvedValue(mockFetchResponse([]));
-
-      // Advance 24 hours
-      await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
-
-      expect(mockFetch).toHaveBeenCalled();
-    });
-
-    it('should stop the scheduler when stopUpdateScheduler is called', () => {
-      mockFetch.mockResolvedValue(mockFetchResponse([]));
-
-      startUpdateScheduler();
-      stopUpdateScheduler();
-      vi.clearAllMocks();
-
-      // Advance 24 hours — should NOT trigger another check
-      vi.advanceTimersByTime(24 * 60 * 60 * 1000);
-
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it('stopUpdateScheduler should be safe to call when not started', () => {
-      expect(() => stopUpdateScheduler()).not.toThrow();
-    });
-
-    it('should not leak intervals when startUpdateScheduler is called multiple times', () => {
-      mockFetch.mockResolvedValue(mockFetchResponse([]));
-
-      startUpdateScheduler();
-      const firstFetchCount = mockFetch.mock.calls.length;
-
-      // Second call should be a no-op
-      startUpdateScheduler();
-
-      // Should not have triggered another immediate check
-      expect(mockFetch.mock.calls.length).toBe(firstFetchCount);
-    });
-  });
+  // NOTE: startUpdateScheduler / stopUpdateScheduler tests removed —
+  // scheduling is now managed by the cron system (cron-service.ts).
 
   // -----------------------------------------------------------------------
   // getDataUpdateStatus

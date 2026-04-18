@@ -50,8 +50,9 @@ describe('userPermissions resolver', () => {
       canManageStoreLocations: true,
       canManageUsers: true,
       canViewTransactionLog: true,
+      canManageEvents: true,
     });
-    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(6);
+    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(7);
   });
 
   it('returns only inventory/dashboard false for member role (no transactionLog/settings/locations/users)', async () => {
@@ -85,7 +86,8 @@ describe('userPermissions resolver', () => {
     expect(calledResources).toContain('companySettings');
     expect(calledResources).toContain('storeLocations');
     expect(calledResources).toContain('userManagement');
-    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(6);
+    expect(calledResources).toContain('event');
+    expect(mockAuth.api.hasPermission).toHaveBeenCalledTimes(7);
   });
 
   it('returns false for a permission when hasPermission throws', async () => {

@@ -10,3 +10,7 @@ export * from './store-supported-game-schema';
 export * from './buy-rate-schema';
 export * from './lot-schema';
 export * from './lot-item-schema';
+export * from './cron-job-schema';
+export * from './cron-job-run-schema';
+export * from './event-schema';
+export * from './event-registration-schema';

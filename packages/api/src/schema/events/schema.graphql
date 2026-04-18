@@ -1,0 +1,132 @@
+enum EventType {
+  TOURNAMENT
+  CASUAL_PLAY
+  RELEASE_EVENT
+  DRAFT
+  PRERELEASE
+  LEAGUE
+  OTHER
+}
+
+enum EventStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+}
+
+type Event {
+  id: Int!
+  organizationId: String!
+  name: String!
+  description: String
+  eventType: EventType!
+  categoryId: Int
+  gameName: String
+  gameDisplayName: String
+  startTime: String!
+  endTime: String
+  capacity: Int
+  entryFeeInCents: Int
+  status: EventStatus!
+  registrationCount: Int!
+  recurrenceRule: RecurrenceRule
+  recurrenceGroupId: String
+  isRecurrenceTemplate: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type RecurrenceRule {
+  frequency: String!
+}
+
+type EventRegistration {
+  id: Int!
+  eventId: Int!
+  registrantName: String!
+  registrantEmail: String
+  registrantPhone: String
+  status: RegistrationStatus!
+  checkedIn: Boolean!
+  checkedInAt: String
+  createdAt: String!
+}
+
+type EventPage {
+  items: [Event!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+input CreateEventInput {
+  name: String!
+  description: String
+  eventType: EventType!
+  categoryId: Int
+  startTime: String!
+  endTime: String
+  capacity: Int
+  entryFeeInCents: Int
+  recurrenceRule: RecurrenceRuleInput
+}
+
+input RecurrenceRuleInput {
+  frequency: String!
+}
+
+input UpdateEventInput {
+  name: String
+  description: String
+  eventType: EventType
+  categoryId: Int
+  startTime: String
+  endTime: String
+  capacity: Int
+  entryFeeInCents: Int
+}
+
+input EventFilters {
+  dateFrom: String
+  dateTo: String
+  eventType: EventType
+  status: EventStatus
+  categoryId: Int
+}
+
+input PublicEventRegistrationInput {
+  registrantName: String!
+  registrantEmail: String
+  registrantPhone: String
+}
+
+input AdminEventRegistrationInput {
+  registrantName: String!
+  registrantEmail: String
+  registrantPhone: String
+}
+
+extend type Query {
+  getEvents(pagination: PaginationInput, filters: EventFilters): EventPage!
+  getEvent(id: Int!): Event
+  getEventRegistrations(eventId: Int!): [EventRegistration!]!
+  getPublicEvents(organizationId: String!, dateFrom: String!, dateTo: String!): [Event!]!
+  getPublicEvent(id: Int!): Event
+}
+
+extend type Mutation {
+  createEvent(input: CreateEventInput!): Event!
+  updateEvent(id: Int!, input: UpdateEventInput!): Event!
+  cancelEvent(id: Int!): Event!
+  cancelRecurringSeries(recurrenceGroupId: String!): Int!
+  addEventRegistration(eventId: Int!, input: AdminEventRegistrationInput!): EventRegistration!
+  cancelEventRegistration(registrationId: Int!): EventRegistration!
+  checkInEventRegistration(registrationId: Int!): EventRegistration!
+  registerForEvent(eventId: Int!, input: PublicEventRegistrationInput!): EventRegistration!
+}

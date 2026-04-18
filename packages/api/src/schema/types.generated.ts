@@ -48,6 +48,12 @@ export type AddStoreLocationInput = {
   zip: Scalars['String']['input'];
 };
 
+export type AdminEventRegistrationInput = {
+  registrantEmail?: InputMaybe<Scalars['String']['input']>;
+  registrantName: Scalars['String']['input'];
+  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type BackupProvider =
   | 'dropbox'
   | 'google_drive'
@@ -192,12 +198,64 @@ export type ConditionInventory = {
   quantity: Scalars['Int']['output'];
 };
 
+export type CreateEventInput = {
+  capacity?: InputMaybe<Scalars['Int']['input']>;
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endTime?: InputMaybe<Scalars['String']['input']>;
+  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
+  eventType: EventType;
+  name: Scalars['String']['input'];
+  recurrenceRule?: InputMaybe<RecurrenceRuleInput>;
+  startTime: Scalars['String']['input'];
+};
+
 export type CreateLotInput = {
   acquisitionDate: Scalars['String']['input'];
   amountPaid: Scalars['Int']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   items: Array<LotItemInput>;
   name: Scalars['String']['input'];
+};
+
+export type CronJob = {
+  __typename?: 'CronJob';
+  config?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  cronExpression: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['Int']['output'];
+  lastRunAt?: Maybe<Scalars['String']['output']>;
+  lastRunDurationMs?: Maybe<Scalars['Int']['output']>;
+  lastRunError?: Maybe<Scalars['String']['output']>;
+  lastRunStatus?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  nextRunAt?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+};
+
+export type CronJobRun = {
+  __typename?: 'CronJobRun';
+  completedAt?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  cronJobId: Scalars['Int']['output'];
+  durationMs?: Maybe<Scalars['Int']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  startedAt: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  summary?: Maybe<Scalars['String']['output']>;
+};
+
+export type CronJobRunPage = {
+  __typename?: 'CronJobRunPage';
+  items: Array<CronJobRun>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type DashboardDateRange = {
@@ -219,6 +277,73 @@ export type DataUpdateStatus = {
   latestVersion?: Maybe<Scalars['String']['output']>;
   updateAvailable: Scalars['Boolean']['output'];
 };
+
+export type Event = {
+  __typename?: 'Event';
+  capacity?: Maybe<Scalars['Int']['output']>;
+  categoryId?: Maybe<Scalars['Int']['output']>;
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  endTime?: Maybe<Scalars['String']['output']>;
+  entryFeeInCents?: Maybe<Scalars['Int']['output']>;
+  eventType: EventType;
+  gameDisplayName?: Maybe<Scalars['String']['output']>;
+  gameName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  isRecurrenceTemplate: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
+  recurrenceGroupId?: Maybe<Scalars['String']['output']>;
+  recurrenceRule?: Maybe<RecurrenceRule>;
+  registrationCount: Scalars['Int']['output'];
+  startTime: Scalars['String']['output'];
+  status: EventStatus;
+  updatedAt: Scalars['String']['output'];
+};
+
+export type EventFilters = {
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  dateFrom?: InputMaybe<Scalars['String']['input']>;
+  dateTo?: InputMaybe<Scalars['String']['input']>;
+  eventType?: InputMaybe<EventType>;
+  status?: InputMaybe<EventStatus>;
+};
+
+export type EventPage = {
+  __typename?: 'EventPage';
+  items: Array<Event>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type EventRegistration = {
+  __typename?: 'EventRegistration';
+  checkedIn: Scalars['Boolean']['output'];
+  checkedInAt?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  eventId: Scalars['Int']['output'];
+  id: Scalars['Int']['output'];
+  registrantEmail?: Maybe<Scalars['String']['output']>;
+  registrantName: Scalars['String']['output'];
+  registrantPhone?: Maybe<Scalars['String']['output']>;
+  status: RegistrationStatus;
+};
+
+export type EventStatus =
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'SCHEDULED';
+
+export type EventType =
+  | 'CASUAL_PLAY'
+  | 'DRAFT'
+  | 'LEAGUE'
+  | 'OTHER'
+  | 'PRERELEASE'
+  | 'RELEASE_EVENT'
+  | 'TOURNAMENT';
 
 export type Granularity =
   | 'day'
@@ -377,22 +502,31 @@ export type LotStats = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  addEventRegistration: EventRegistration;
   addInventoryItem: InventoryItem;
   addStock: InventoryItemStock;
   addStoreLocation: StoreLocation;
   addToCart: ShoppingCart;
   bulkDeleteStock: Scalars['Boolean']['output'];
   bulkUpdateStock: Array<InventoryItemStock>;
+  cancelEvent: Event;
+  cancelEventRegistration: EventRegistration;
   cancelOrder: Order;
+  cancelRecurringSeries: Scalars['Int']['output'];
+  checkInEventRegistration: EventRegistration;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  createEvent: Event;
   createLot: Lot;
   /** Admin mutation - delete all buy rates for a game. */
   deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
   deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
+  disableCronJob: CronJob;
+  enableCronJob: CronJob;
   firstTimeSetup: Scalars['String']['output'];
+  registerForEvent: EventRegistration;
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
   /** Admin mutation - save the buy rate table for a game (replaces all entries). */
@@ -405,9 +539,13 @@ export type Mutation = {
   setSupportedGames: Array<SupportedGame>;
   submitOrder: Order;
   triggerBackup: BackupResult;
+  triggerCronJob: CronJobRun;
   triggerDataUpdate: DataUpdateResult;
   triggerRestore: RestoreResult;
   updateBackupSettings: BackupSettings;
+  updateCronJobConfig: CronJob;
+  updateCronJobSchedule: CronJob;
+  updateEvent: Event;
   updateInventoryItem: InventoryItem;
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
@@ -417,6 +555,12 @@ export type Mutation = {
   updateStoreLocation: StoreLocation;
   updateStoreSettings: StoreSettings;
   updateStripeIntegration: StripeIntegration;
+};
+
+
+export type MutationaddEventRegistrationArgs = {
+  eventId: Scalars['Int']['input'];
+  input: AdminEventRegistrationInput;
 };
 
 
@@ -450,8 +594,33 @@ export type MutationbulkUpdateStockArgs = {
 };
 
 
+export type MutationcancelEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationcancelEventRegistrationArgs = {
+  registrationId: Scalars['Int']['input'];
+};
+
+
 export type MutationcancelOrderArgs = {
   orderId: Scalars['Int']['input'];
+};
+
+
+export type MutationcancelRecurringSeriesArgs = {
+  recurrenceGroupId: Scalars['String']['input'];
+};
+
+
+export type MutationcheckInEventRegistrationArgs = {
+  registrationId: Scalars['Int']['input'];
+};
+
+
+export type MutationcreateEventArgs = {
+  input: CreateEventInput;
 };
 
 
@@ -480,11 +649,27 @@ export type MutationdeleteStockArgs = {
 };
 
 
+export type MutationdisableCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationenableCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationfirstTimeSetupArgs = {
   company: CompanySettings;
   store: InitialStoreLocation;
   supportedGameCategoryIds: Array<Scalars['Int']['input']>;
   userDetails: UserDetails;
+};
+
+
+export type MutationregisterForEventArgs = {
+  eventId: Scalars['Int']['input'];
+  input: PublicEventRegistrationInput;
 };
 
 
@@ -518,6 +703,11 @@ export type MutationsubmitOrderArgs = {
 };
 
 
+export type MutationtriggerCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationtriggerRestoreArgs = {
   provider: BackupProvider;
 };
@@ -525,6 +715,24 @@ export type MutationtriggerRestoreArgs = {
 
 export type MutationupdateBackupSettingsArgs = {
   input: UpdateBackupSettingsInput;
+};
+
+
+export type MutationupdateCronJobConfigArgs = {
+  config: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationupdateCronJobScheduleArgs = {
+  cronExpression: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationupdateEventArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdateEventInput;
 };
 
 
@@ -743,6 +951,12 @@ export type PublicBuyRates = {
   games: Array<BuyRateTable>;
 };
 
+export type PublicEventRegistrationInput = {
+  registrantEmail?: InputMaybe<Scalars['String']['input']>;
+  registrantName: Scalars['String']['input'];
+  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getActiveStoreLocation?: Maybe<StoreLocation>;
@@ -757,6 +971,9 @@ export type Query = {
   /** Admin query - returns buy rate entries for a specific game. */
   getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
+  getCronJob?: Maybe<CronJob>;
+  getCronJobRuns: CronJobRunPage;
+  getCronJobs: Array<CronJob>;
   getDashboardBestSellers: Array<BestSeller>;
   getDashboardInventorySummary: InventorySummary;
   getDashboardOpenOrders: Array<OpenOrder>;
@@ -766,6 +983,9 @@ export type Query = {
   getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
+  getEvent?: Maybe<Event>;
+  getEventRegistrations: Array<EventRegistration>;
+  getEvents: EventPage;
   getIntegrationSettings: IntegrationSettings;
   getInventory: InventoryPage;
   getInventoryItem?: Maybe<InventoryItem>;
@@ -781,6 +1001,8 @@ export type Query = {
    * No authentication required.
    */
   getPublicBuyRates: PublicBuyRates;
+  getPublicEvent?: Maybe<Event>;
+  getPublicEvents: Array<Event>;
   getSets: Array<Set>;
   getShoppingCart: ShoppingCart;
   getSingleCardInventory: Array<Card>;
@@ -811,6 +1033,17 @@ export type QuerygetBuyRatesArgs = {
 export type QuerygetCardArgs = {
   cardId: Scalars['String']['input'];
   game: Scalars['String']['input'];
+};
+
+
+export type QuerygetCronJobArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QuerygetCronJobRunsArgs = {
+  cronJobId: Scalars['Int']['input'];
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -847,6 +1080,22 @@ export type QuerygetDashboardSalesArgs = {
 
 export type QuerygetDistinctRaritiesArgs = {
   categoryId: Scalars['Int']['input'];
+};
+
+
+export type QuerygetEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QuerygetEventRegistrationsArgs = {
+  eventId: Scalars['Int']['input'];
+};
+
+
+export type QuerygetEventsArgs = {
+  filters?: InputMaybe<EventFilters>;
+  pagination?: InputMaybe<PaginationInput>;
 };
 
 
@@ -897,6 +1146,18 @@ export type QuerygetProductListingsArgs = {
 };
 
 
+export type QuerygetPublicEventArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QuerygetPublicEventsArgs = {
+  dateFrom: Scalars['String']['input'];
+  dateTo: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
+};
+
+
 export type QuerygetSetsArgs = {
   filters?: InputMaybe<SetFilters>;
   game: Scalars['String']['input'];
@@ -932,6 +1193,19 @@ export type QuerysearchProductsArgs = {
   isSingle?: InputMaybe<Scalars['Boolean']['input']>;
   searchTerm: Scalars['String']['input'];
 };
+
+export type RecurrenceRule = {
+  __typename?: 'RecurrenceRule';
+  frequency: Scalars['String']['output'];
+};
+
+export type RecurrenceRuleInput = {
+  frequency: Scalars['String']['input'];
+};
+
+export type RegistrationStatus =
+  | 'CANCELLED'
+  | 'REGISTERED';
 
 export type ResourceType =
   | 'inventory'
@@ -1097,6 +1371,17 @@ export type UpdateBackupSettingsInput = {
   provider?: InputMaybe<BackupProvider>;
 };
 
+export type UpdateEventInput = {
+  capacity?: InputMaybe<Scalars['Int']['input']>;
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endTime?: InputMaybe<Scalars['String']['input']>;
+  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
+  eventType?: InputMaybe<EventType>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  startTime?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateInventoryItemInput = {
   condition?: InputMaybe<CardCondition>;
   id: Scalars['Int']['input'];
@@ -1162,6 +1447,7 @@ export type UserDetails = {
 export type UserPermissions = {
   __typename?: 'UserPermissions';
   canAccessSettings: Scalars['Boolean']['output'];
+  canManageEvents: Scalars['Boolean']['output'];
   canManageInventory: Scalars['Boolean']['output'];
   canManageLots: Scalars['Boolean']['output'];
   canManageStoreLocations: Scalars['Boolean']['output'];
@@ -1248,6 +1534,7 @@ export type ResolversTypes = {
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   AddStockInput: AddStockInput;
   AddStoreLocationInput: AddStoreLocationInput;
+  AdminEventRegistrationInput: AdminEventRegistrationInput;
   BackupProvider: ResolverTypeWrapper<'google_drive' | 'dropbox' | 'onedrive'>;
   BackupResult: ResolverTypeWrapper<BackupResult>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -1269,10 +1556,20 @@ export type ResolversTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ResolverTypeWrapper<ConditionInventories>;
   ConditionInventory: ResolverTypeWrapper<ConditionInventory>;
+  CreateEventInput: CreateEventInput;
   CreateLotInput: CreateLotInput;
+  CronJob: ResolverTypeWrapper<CronJob>;
+  CronJobRun: ResolverTypeWrapper<CronJobRun>;
+  CronJobRunPage: ResolverTypeWrapper<CronJobRunPage>;
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
+  Event: ResolverTypeWrapper<Omit<Event, 'eventType' | 'status'> & { eventType: ResolversTypes['EventType'], status: ResolversTypes['EventStatus'] }>;
+  EventFilters: EventFilters;
+  EventPage: ResolverTypeWrapper<Omit<EventPage, 'items'> & { items: Array<ResolversTypes['Event']> }>;
+  EventRegistration: ResolverTypeWrapper<Omit<EventRegistration, 'status'> & { status: ResolversTypes['RegistrationStatus'] }>;
+  EventStatus: ResolverTypeWrapper<'SCHEDULED' | 'CANCELLED' | 'COMPLETED'>;
+  EventType: ResolverTypeWrapper<'TOURNAMENT' | 'CASUAL_PLAY' | 'RELEASE_EVENT' | 'DRAFT' | 'PRERELEASE' | 'LEAGUE' | 'OTHER'>;
   Granularity: ResolverTypeWrapper<'hour' | 'day' | 'month'>;
   InitialStoreLocation: InitialStoreLocation;
   IntegrationSettings: ResolverTypeWrapper<IntegrationSettings>;
@@ -1307,7 +1604,11 @@ export type ResolversTypes = {
   ProductPrice: ResolverTypeWrapper<ProductPrice>;
   ProductSearchResult: ResolverTypeWrapper<ProductSearchResult>;
   PublicBuyRates: ResolverTypeWrapper<Omit<PublicBuyRates, 'games'> & { games: Array<ResolversTypes['BuyRateTable']> }>;
+  PublicEventRegistrationInput: PublicEventRegistrationInput;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  RecurrenceRule: ResolverTypeWrapper<RecurrenceRule>;
+  RecurrenceRuleInput: RecurrenceRuleInput;
+  RegistrationStatus: ResolverTypeWrapper<'REGISTERED' | 'CANCELLED'>;
   ResourceType: ResolverTypeWrapper<'order' | 'lot' | 'inventory'>;
   RestoreResult: ResolverTypeWrapper<RestoreResult>;
   SalesBreakdown: ResolverTypeWrapper<Omit<SalesBreakdown, 'granularity'> & { granularity: ResolversTypes['Granularity'] }>;
@@ -1331,6 +1632,7 @@ export type ResolversTypes = {
   TransactionLogFilters: TransactionLogFilters;
   TransactionLogPage: ResolverTypeWrapper<Omit<TransactionLogPage, 'items'> & { items: Array<ResolversTypes['TransactionLogEntry']> }>;
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
+  UpdateEventInput: UpdateEventInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
@@ -1349,6 +1651,7 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   AddStockInput: AddStockInput;
   AddStoreLocationInput: AddStoreLocationInput;
+  AdminEventRegistrationInput: AdminEventRegistrationInput;
   BackupResult: BackupResult;
   Boolean: Scalars['Boolean']['output'];
   BackupSettings: BackupSettings;
@@ -1366,10 +1669,18 @@ export type ResolversParentTypes = {
   CompanySettings: CompanySettings;
   ConditionInventories: ConditionInventories;
   ConditionInventory: ConditionInventory;
+  CreateEventInput: CreateEventInput;
   CreateLotInput: CreateLotInput;
+  CronJob: CronJob;
+  CronJobRun: CronJobRun;
+  CronJobRunPage: CronJobRunPage;
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: DataUpdateResult;
   DataUpdateStatus: DataUpdateStatus;
+  Event: Event;
+  EventFilters: EventFilters;
+  EventPage: Omit<EventPage, 'items'> & { items: Array<ResolversParentTypes['Event']> };
+  EventRegistration: EventRegistration;
   InitialStoreLocation: InitialStoreLocation;
   IntegrationSettings: IntegrationSettings;
   InventoryFilters: InventoryFilters;
@@ -1402,7 +1713,10 @@ export type ResolversParentTypes = {
   ProductPrice: ProductPrice;
   ProductSearchResult: ProductSearchResult;
   PublicBuyRates: Omit<PublicBuyRates, 'games'> & { games: Array<ResolversParentTypes['BuyRateTable']> };
+  PublicEventRegistrationInput: PublicEventRegistrationInput;
   Query: Record<PropertyKey, never>;
+  RecurrenceRule: RecurrenceRule;
+  RecurrenceRuleInput: RecurrenceRuleInput;
   RestoreResult: RestoreResult;
   SalesBreakdown: SalesBreakdown;
   SalesDataPoint: SalesDataPoint;
@@ -1425,6 +1739,7 @@ export type ResolversParentTypes = {
   TransactionLogFilters: TransactionLogFilters;
   TransactionLogPage: Omit<TransactionLogPage, 'items'> & { items: Array<ResolversParentTypes['TransactionLogEntry']> };
   UpdateBackupSettingsInput: UpdateBackupSettingsInput;
+  UpdateEventInput: UpdateEventInput;
   UpdateInventoryItemInput: UpdateInventoryItemInput;
   UpdateLotInput: UpdateLotInput;
   UpdateShopifyIntegrationInput: UpdateShopifyIntegrationInput;
@@ -1526,6 +1841,43 @@ export type ConditionInventoryResolvers<ContextType = any, ParentType extends Re
   quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 };
 
+export type CronJobResolvers<ContextType = any, ParentType extends ResolversParentTypes['CronJob'] = ResolversParentTypes['CronJob']> = {
+  config?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  cronExpression?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  displayName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  lastRunAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastRunDurationMs?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  lastRunError?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastRunStatus?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nextRunAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type CronJobRunResolvers<ContextType = any, ParentType extends ResolversParentTypes['CronJobRun'] = ResolversParentTypes['CronJobRun']> = {
+  completedAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  cronJobId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  durationMs?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  startedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  summary?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+};
+
+export type CronJobRunPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['CronJobRunPage'] = ResolversParentTypes['CronJobRunPage']> = {
+  items?: Resolver<Array<ResolversTypes['CronJobRun']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
 export type DataUpdateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['DataUpdateResult'] = ResolversParentTypes['DataUpdateResult']> = {
   message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   newVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1538,6 +1890,52 @@ export type DataUpdateStatusResolvers<ContextType = any, ParentType extends Reso
   latestVersion?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   updateAvailable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 };
+
+export type EventResolvers<ContextType = any, ParentType extends ResolversParentTypes['Event'] = ResolversParentTypes['Event']> = {
+  capacity?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  categoryId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  endTime?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  entryFeeInCents?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  eventType?: Resolver<ResolversTypes['EventType'], ParentType, ContextType>;
+  gameDisplayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  gameName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  isRecurrenceTemplate?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  recurrenceGroupId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  recurrenceRule?: Resolver<Maybe<ResolversTypes['RecurrenceRule']>, ParentType, ContextType>;
+  registrationCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  startTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['EventStatus'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type EventPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['EventPage'] = ResolversParentTypes['EventPage']> = {
+  items?: Resolver<Array<ResolversTypes['Event']>, ParentType, ContextType>;
+  page?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  pageSize?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPages?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+};
+
+export type EventRegistrationResolvers<ContextType = any, ParentType extends ResolversParentTypes['EventRegistration'] = ResolversParentTypes['EventRegistration']> = {
+  checkedIn?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  checkedInAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  eventId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  registrantEmail?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  registrantName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  registrantPhone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['RegistrationStatus'], ParentType, ContextType>;
+};
+
+export type EventStatusResolvers = EnumResolverSignature<{ CANCELLED?: any, COMPLETED?: any, SCHEDULED?: any }, ResolversTypes['EventStatus']>;
+
+export type EventTypeResolvers = EnumResolverSignature<{ CASUAL_PLAY?: any, DRAFT?: any, LEAGUE?: any, OTHER?: any, PRERELEASE?: any, RELEASE_EVENT?: any, TOURNAMENT?: any }, ResolversTypes['EventType']>;
 
 export type GranularityResolvers = EnumResolverSignature<{ day?: any, hour?: any, month?: any }, ResolversTypes['Granularity']>;
 
@@ -1647,21 +2045,30 @@ export type LotStatsResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addEventRegistration?: Resolver<ResolversTypes['EventRegistration'], ParentType, ContextType, RequireFields<MutationaddEventRegistrationArgs, 'eventId' | 'input'>>;
   addInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationaddInventoryItemArgs, 'input'>>;
   addStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationaddStockArgs, 'input'>>;
   addStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationaddStoreLocationArgs, 'input'>>;
   addToCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationaddToCartArgs, 'cartItem'>>;
   bulkDeleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationbulkDeleteStockArgs, 'input'>>;
   bulkUpdateStock?: Resolver<Array<ResolversTypes['InventoryItemStock']>, ParentType, ContextType, RequireFields<MutationbulkUpdateStockArgs, 'input'>>;
+  cancelEvent?: Resolver<ResolversTypes['Event'], ParentType, ContextType, RequireFields<MutationcancelEventArgs, 'id'>>;
+  cancelEventRegistration?: Resolver<ResolversTypes['EventRegistration'], ParentType, ContextType, RequireFields<MutationcancelEventRegistrationArgs, 'registrationId'>>;
   cancelOrder?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationcancelOrderArgs, 'orderId'>>;
+  cancelRecurringSeries?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<MutationcancelRecurringSeriesArgs, 'recurrenceGroupId'>>;
+  checkInEventRegistration?: Resolver<ResolversTypes['EventRegistration'], ParentType, ContextType, RequireFields<MutationcheckInEventRegistrationArgs, 'registrationId'>>;
   checkoutWithCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   clearCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
+  createEvent?: Resolver<ResolversTypes['Event'], ParentType, ContextType, RequireFields<MutationcreateEventArgs, 'input'>>;
   createLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationcreateLotArgs, 'input'>>;
   deleteBuyRates?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteBuyRatesArgs, 'categoryId'>>;
   deleteInventoryItem?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteInventoryItemArgs, 'id'>>;
   deleteLot?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteLotArgs, 'id'>>;
   deleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteStockArgs, 'id'>>;
+  disableCronJob?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationdisableCronJobArgs, 'id'>>;
+  enableCronJob?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationenableCronJobArgs, 'id'>>;
   firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'supportedGameCategoryIds' | 'userDetails'>>;
+  registerForEvent?: Resolver<ResolversTypes['EventRegistration'], ParentType, ContextType, RequireFields<MutationregisterForEventArgs, 'eventId' | 'input'>>;
   removeFromCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationremoveFromCartArgs, 'cartItem'>>;
   removeStoreLocation?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationremoveStoreLocationArgs, 'id'>>;
   saveBuyRates?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType, RequireFields<MutationsaveBuyRatesArgs, 'input'>>;
@@ -1669,9 +2076,13 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   setSupportedGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType, RequireFields<MutationsetSupportedGamesArgs, 'categoryIds'>>;
   submitOrder?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationsubmitOrderArgs, 'input'>>;
   triggerBackup?: Resolver<ResolversTypes['BackupResult'], ParentType, ContextType>;
+  triggerCronJob?: Resolver<ResolversTypes['CronJobRun'], ParentType, ContextType, RequireFields<MutationtriggerCronJobArgs, 'id'>>;
   triggerDataUpdate?: Resolver<ResolversTypes['DataUpdateResult'], ParentType, ContextType>;
   triggerRestore?: Resolver<ResolversTypes['RestoreResult'], ParentType, ContextType, RequireFields<MutationtriggerRestoreArgs, 'provider'>>;
   updateBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType, RequireFields<MutationupdateBackupSettingsArgs, 'input'>>;
+  updateCronJobConfig?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationupdateCronJobConfigArgs, 'config' | 'id'>>;
+  updateCronJobSchedule?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationupdateCronJobScheduleArgs, 'cronExpression' | 'id'>>;
+  updateEvent?: Resolver<ResolversTypes['Event'], ParentType, ContextType, RequireFields<MutationupdateEventArgs, 'id' | 'input'>>;
   updateInventoryItem?: Resolver<ResolversTypes['InventoryItem'], ParentType, ContextType, RequireFields<MutationupdateInventoryItemArgs, 'input'>>;
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
   updateLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationupdateLotArgs, 'input'>>;
@@ -1818,6 +2229,9 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getBackupSettings?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType>;
   getBuyRates?: Resolver<Array<ResolversTypes['BuyRateEntry']>, ParentType, ContextType, RequireFields<QuerygetBuyRatesArgs, 'categoryId'>>;
   getCard?: Resolver<ResolversTypes['Card'], ParentType, ContextType, RequireFields<QuerygetCardArgs, 'cardId' | 'game'>>;
+  getCronJob?: Resolver<Maybe<ResolversTypes['CronJob']>, ParentType, ContextType, RequireFields<QuerygetCronJobArgs, 'id'>>;
+  getCronJobRuns?: Resolver<ResolversTypes['CronJobRunPage'], ParentType, ContextType, RequireFields<QuerygetCronJobRunsArgs, 'cronJobId'>>;
+  getCronJobs?: Resolver<Array<ResolversTypes['CronJob']>, ParentType, ContextType>;
   getDashboardBestSellers?: Resolver<Array<ResolversTypes['BestSeller']>, ParentType, ContextType, RequireFields<QuerygetDashboardBestSellersArgs, 'dateRange' | 'organizationId' | 'sortBy'>>;
   getDashboardInventorySummary?: Resolver<ResolversTypes['InventorySummary'], ParentType, ContextType, RequireFields<QuerygetDashboardInventorySummaryArgs, 'organizationId'>>;
   getDashboardOpenOrders?: Resolver<Array<ResolversTypes['OpenOrder']>, ParentType, ContextType, RequireFields<QuerygetDashboardOpenOrdersArgs, 'organizationId'>>;
@@ -1826,6 +2240,9 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getDataUpdateStatus?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
   getDistinctRarities?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType, RequireFields<QuerygetDistinctRaritiesArgs, 'categoryId'>>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
+  getEvent?: Resolver<Maybe<ResolversTypes['Event']>, ParentType, ContextType, RequireFields<QuerygetEventArgs, 'id'>>;
+  getEventRegistrations?: Resolver<Array<ResolversTypes['EventRegistration']>, ParentType, ContextType, RequireFields<QuerygetEventRegistrationsArgs, 'eventId'>>;
+  getEvents?: Resolver<ResolversTypes['EventPage'], ParentType, ContextType, Partial<QuerygetEventsArgs>>;
   getIntegrationSettings?: Resolver<ResolversTypes['IntegrationSettings'], ParentType, ContextType>;
   getInventory?: Resolver<ResolversTypes['InventoryPage'], ParentType, ContextType, Partial<QuerygetInventoryArgs>>;
   getInventoryItem?: Resolver<Maybe<ResolversTypes['InventoryItem']>, ParentType, ContextType, RequireFields<QuerygetInventoryItemArgs, 'id'>>;
@@ -1837,6 +2254,8 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
   getPublicBuyRates?: Resolver<ResolversTypes['PublicBuyRates'], ParentType, ContextType>;
+  getPublicEvent?: Resolver<Maybe<ResolversTypes['Event']>, ParentType, ContextType, RequireFields<QuerygetPublicEventArgs, 'id'>>;
+  getPublicEvents?: Resolver<Array<ResolversTypes['Event']>, ParentType, ContextType, RequireFields<QuerygetPublicEventsArgs, 'dateFrom' | 'dateTo' | 'organizationId'>>;
   getSets?: Resolver<Array<ResolversTypes['Set']>, ParentType, ContextType, RequireFields<QuerygetSetsArgs, 'game'>>;
   getShoppingCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType>;
   getSingleCardInventory?: Resolver<Array<ResolversTypes['Card']>, ParentType, ContextType, RequireFields<QuerygetSingleCardInventoryArgs, 'game'>>;
@@ -1849,6 +2268,12 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   searchProducts?: Resolver<Array<ResolversTypes['ProductSearchResult']>, ParentType, ContextType, RequireFields<QuerysearchProductsArgs, 'searchTerm'>>;
   userPermissions?: Resolver<ResolversTypes['UserPermissions'], ParentType, ContextType>;
 };
+
+export type RecurrenceRuleResolvers<ContextType = any, ParentType extends ResolversParentTypes['RecurrenceRule'] = ResolversParentTypes['RecurrenceRule']> = {
+  frequency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
+export type RegistrationStatusResolvers = EnumResolverSignature<{ CANCELLED?: any, REGISTERED?: any }, ResolversTypes['RegistrationStatus']>;
 
 export type ResourceTypeResolvers = EnumResolverSignature<{ inventory?: any, lot?: any, order?: any }, ResolversTypes['ResourceType']>;
 
@@ -1958,6 +2383,7 @@ export type TransactionLogPageResolvers<ContextType = any, ParentType extends Re
 
 export type UserPermissionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserPermissions'] = ResolversParentTypes['UserPermissions']> = {
   canAccessSettings?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  canManageEvents?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageInventory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageLots?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   canManageStoreLocations?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -1981,8 +2407,16 @@ export type Resolvers<ContextType = any> = {
   CartItemOutput?: CartItemOutputResolvers<ContextType>;
   ConditionInventories?: ConditionInventoriesResolvers<ContextType>;
   ConditionInventory?: ConditionInventoryResolvers<ContextType>;
+  CronJob?: CronJobResolvers<ContextType>;
+  CronJobRun?: CronJobRunResolvers<ContextType>;
+  CronJobRunPage?: CronJobRunPageResolvers<ContextType>;
   DataUpdateResult?: DataUpdateResultResolvers<ContextType>;
   DataUpdateStatus?: DataUpdateStatusResolvers<ContextType>;
+  Event?: EventResolvers<ContextType>;
+  EventPage?: EventPageResolvers<ContextType>;
+  EventRegistration?: EventRegistrationResolvers<ContextType>;
+  EventStatus?: EventStatusResolvers;
+  EventType?: EventTypeResolvers;
   Granularity?: GranularityResolvers;
   IntegrationSettings?: IntegrationSettingsResolvers<ContextType>;
   InventoryItem?: InventoryItemResolvers<ContextType>;
@@ -2010,6 +2444,8 @@ export type Resolvers<ContextType = any> = {
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   PublicBuyRates?: PublicBuyRatesResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  RecurrenceRule?: RecurrenceRuleResolvers<ContextType>;
+  RegistrationStatus?: RegistrationStatusResolvers;
   ResourceType?: ResourceTypeResolvers;
   RestoreResult?: RestoreResultResolvers<ContextType>;
   SalesBreakdown?: SalesBreakdownResolvers<ContextType>;

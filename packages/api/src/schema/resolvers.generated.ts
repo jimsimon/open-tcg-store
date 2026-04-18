@@ -6,6 +6,9 @@ import    { getAvailableGames as Query_getAvailableGames } from './buy-rates/res
 import    { getBackupSettings as Query_getBackupSettings } from './settings/resolvers/Query/getBackupSettings';
 import    { getBuyRates as Query_getBuyRates } from './buy-rates/resolvers/Query/getBuyRates';
 import    { getCard as Query_getCard } from './cards/resolvers/Query/getCard';
+import    { getCronJob as Query_getCronJob } from './cron/resolvers/Query/getCronJob';
+import    { getCronJobRuns as Query_getCronJobRuns } from './cron/resolvers/Query/getCronJobRuns';
+import    { getCronJobs as Query_getCronJobs } from './cron/resolvers/Query/getCronJobs';
 import    { getDashboardBestSellers as Query_getDashboardBestSellers } from './dashboard/resolvers/Query/getDashboardBestSellers';
 import    { getDashboardInventorySummary as Query_getDashboardInventorySummary } from './dashboard/resolvers/Query/getDashboardInventorySummary';
 import    { getDashboardOpenOrders as Query_getDashboardOpenOrders } from './dashboard/resolvers/Query/getDashboardOpenOrders';
@@ -14,6 +17,9 @@ import    { getDashboardSales as Query_getDashboardSales } from './dashboard/res
 import    { getDataUpdateStatus as Query_getDataUpdateStatus } from './settings/resolvers/Query/getDataUpdateStatus';
 import    { getDistinctRarities as Query_getDistinctRarities } from './lot/resolvers/Query/getDistinctRarities';
 import    { getEmployeeStoreLocations as Query_getEmployeeStoreLocations } from './store-locations/resolvers/Query/getEmployeeStoreLocations';
+import    { getEvent as Query_getEvent } from './events/resolvers/Query/getEvent';
+import    { getEventRegistrations as Query_getEventRegistrations } from './events/resolvers/Query/getEventRegistrations';
+import    { getEvents as Query_getEvents } from './events/resolvers/Query/getEvents';
 import    { getIntegrationSettings as Query_getIntegrationSettings } from './settings/resolvers/Query/getIntegrationSettings';
 import    { getInventory as Query_getInventory } from './inventory/resolvers/Query/getInventory';
 import    { getInventoryItem as Query_getInventoryItem } from './inventory/resolvers/Query/getInventoryItem';
@@ -25,6 +31,8 @@ import    { getOrders as Query_getOrders } from './orders/resolvers/Query/getOrd
 import    { getProduct as Query_getProduct } from './cards/resolvers/Query/getProduct';
 import    { getProductListings as Query_getProductListings } from './cards/resolvers/Query/getProductListings';
 import    { getPublicBuyRates as Query_getPublicBuyRates } from './buy-rates/resolvers/Query/getPublicBuyRates';
+import    { getPublicEvent as Query_getPublicEvent } from './events/resolvers/Query/getPublicEvent';
+import    { getPublicEvents as Query_getPublicEvents } from './events/resolvers/Query/getPublicEvents';
 import    { getSets as Query_getSets } from './cards/resolvers/Query/getSets';
 import    { getShoppingCart as Query_getShoppingCart } from './shopping/resolvers/Query/getShoppingCart';
 import    { getSingleCardInventory as Query_getSingleCardInventory } from './cards/resolvers/Query/getSingleCardInventory';
@@ -36,21 +44,30 @@ import    { isSetupPending as Query_isSetupPending } from './setup/resolvers/Que
 import    { lookupSalesTax as Query_lookupSalesTax } from './settings/resolvers/Query/lookupSalesTax';
 import    { searchProducts as Query_searchProducts } from './inventory/resolvers/Query/searchProducts';
 import    { userPermissions as Query_userPermissions } from './auth/resolvers/Query/userPermissions';
+import    { addEventRegistration as Mutation_addEventRegistration } from './events/resolvers/Mutation/addEventRegistration';
 import    { addInventoryItem as Mutation_addInventoryItem } from './inventory/resolvers/Mutation/addInventoryItem';
 import    { addStock as Mutation_addStock } from './inventory/resolvers/Mutation/addStock';
 import    { addStoreLocation as Mutation_addStoreLocation } from './store-locations/resolvers/Mutation/addStoreLocation';
 import    { addToCart as Mutation_addToCart } from './shopping/resolvers/Mutation/addToCart';
 import    { bulkDeleteStock as Mutation_bulkDeleteStock } from './inventory/resolvers/Mutation/bulkDeleteStock';
 import    { bulkUpdateStock as Mutation_bulkUpdateStock } from './inventory/resolvers/Mutation/bulkUpdateStock';
+import    { cancelEvent as Mutation_cancelEvent } from './events/resolvers/Mutation/cancelEvent';
+import    { cancelEventRegistration as Mutation_cancelEventRegistration } from './events/resolvers/Mutation/cancelEventRegistration';
 import    { cancelOrder as Mutation_cancelOrder } from './orders/resolvers/Mutation/cancelOrder';
+import    { cancelRecurringSeries as Mutation_cancelRecurringSeries } from './events/resolvers/Mutation/cancelRecurringSeries';
+import    { checkInEventRegistration as Mutation_checkInEventRegistration } from './events/resolvers/Mutation/checkInEventRegistration';
 import    { checkoutWithCart as Mutation_checkoutWithCart } from './shopping/resolvers/Mutation/checkoutWithCart';
 import    { clearCart as Mutation_clearCart } from './shopping/resolvers/Mutation/clearCart';
+import    { createEvent as Mutation_createEvent } from './events/resolvers/Mutation/createEvent';
 import    { createLot as Mutation_createLot } from './lot/resolvers/Mutation/createLot';
 import    { deleteBuyRates as Mutation_deleteBuyRates } from './buy-rates/resolvers/Mutation/deleteBuyRates';
 import    { deleteInventoryItem as Mutation_deleteInventoryItem } from './inventory/resolvers/Mutation/deleteInventoryItem';
 import    { deleteLot as Mutation_deleteLot } from './lot/resolvers/Mutation/deleteLot';
 import    { deleteStock as Mutation_deleteStock } from './inventory/resolvers/Mutation/deleteStock';
+import    { disableCronJob as Mutation_disableCronJob } from './cron/resolvers/Mutation/disableCronJob';
+import    { enableCronJob as Mutation_enableCronJob } from './cron/resolvers/Mutation/enableCronJob';
 import    { firstTimeSetup as Mutation_firstTimeSetup } from './setup/resolvers/Mutation/firstTimeSetup';
+import    { registerForEvent as Mutation_registerForEvent } from './events/resolvers/Mutation/registerForEvent';
 import    { removeFromCart as Mutation_removeFromCart } from './shopping/resolvers/Mutation/removeFromCart';
 import    { removeStoreLocation as Mutation_removeStoreLocation } from './store-locations/resolvers/Mutation/removeStoreLocation';
 import    { saveBuyRates as Mutation_saveBuyRates } from './buy-rates/resolvers/Mutation/saveBuyRates';
@@ -58,9 +75,13 @@ import    { setActiveStoreLocation as Mutation_setActiveStoreLocation } from './
 import    { setSupportedGames as Mutation_setSupportedGames } from './buy-rates/resolvers/Mutation/setSupportedGames';
 import    { submitOrder as Mutation_submitOrder } from './orders/resolvers/Mutation/submitOrder';
 import    { triggerBackup as Mutation_triggerBackup } from './settings/resolvers/Mutation/triggerBackup';
+import    { triggerCronJob as Mutation_triggerCronJob } from './cron/resolvers/Mutation/triggerCronJob';
 import    { triggerDataUpdate as Mutation_triggerDataUpdate } from './settings/resolvers/Mutation/triggerDataUpdate';
 import    { triggerRestore as Mutation_triggerRestore } from './settings/resolvers/Mutation/triggerRestore';
 import    { updateBackupSettings as Mutation_updateBackupSettings } from './settings/resolvers/Mutation/updateBackupSettings';
+import    { updateCronJobConfig as Mutation_updateCronJobConfig } from './cron/resolvers/Mutation/updateCronJobConfig';
+import    { updateCronJobSchedule as Mutation_updateCronJobSchedule } from './cron/resolvers/Mutation/updateCronJobSchedule';
+import    { updateEvent as Mutation_updateEvent } from './events/resolvers/Mutation/updateEvent';
 import    { updateInventoryItem as Mutation_updateInventoryItem } from './inventory/resolvers/Mutation/updateInventoryItem';
 import    { updateItemInCart as Mutation_updateItemInCart } from './shopping/resolvers/Mutation/updateItemInCart';
 import    { updateLot as Mutation_updateLot } from './lot/resolvers/Mutation/updateLot';
@@ -71,8 +92,8 @@ import    { updateStoreLocation as Mutation_updateStoreLocation } from './store-
 import    { updateStoreSettings as Mutation_updateStoreSettings } from './settings/resolvers/Mutation/updateStoreSettings';
 import    { updateStripeIntegration as Mutation_updateStripeIntegration } from './settings/resolvers/Mutation/updateStripeIntegration';
     export const resolvers: Resolvers = {
-      Query: { getActiveStoreLocation: Query_getActiveStoreLocation,getAllStoreLocations: Query_getAllStoreLocations,getAvailableGames: Query_getAvailableGames,getBackupSettings: Query_getBackupSettings,getBuyRates: Query_getBuyRates,getCard: Query_getCard,getDashboardBestSellers: Query_getDashboardBestSellers,getDashboardInventorySummary: Query_getDashboardInventorySummary,getDashboardOpenOrders: Query_getDashboardOpenOrders,getDashboardOrderStatus: Query_getDashboardOrderStatus,getDashboardSales: Query_getDashboardSales,getDataUpdateStatus: Query_getDataUpdateStatus,getDistinctRarities: Query_getDistinctRarities,getEmployeeStoreLocations: Query_getEmployeeStoreLocations,getIntegrationSettings: Query_getIntegrationSettings,getInventory: Query_getInventory,getInventoryItem: Query_getInventoryItem,getInventoryItemDetails: Query_getInventoryItemDetails,getLot: Query_getLot,getLotStats: Query_getLotStats,getLots: Query_getLots,getOrders: Query_getOrders,getProduct: Query_getProduct,getProductListings: Query_getProductListings,getPublicBuyRates: Query_getPublicBuyRates,getSets: Query_getSets,getShoppingCart: Query_getShoppingCart,getSingleCardInventory: Query_getSingleCardInventory,getStoreLocation: Query_getStoreLocation,getStoreSettings: Query_getStoreSettings,getSupportedGames: Query_getSupportedGames,getTransactionLogs: Query_getTransactionLogs,isSetupPending: Query_isSetupPending,lookupSalesTax: Query_lookupSalesTax,searchProducts: Query_searchProducts,userPermissions: Query_userPermissions },
-      Mutation: { addInventoryItem: Mutation_addInventoryItem,addStock: Mutation_addStock,addStoreLocation: Mutation_addStoreLocation,addToCart: Mutation_addToCart,bulkDeleteStock: Mutation_bulkDeleteStock,bulkUpdateStock: Mutation_bulkUpdateStock,cancelOrder: Mutation_cancelOrder,checkoutWithCart: Mutation_checkoutWithCart,clearCart: Mutation_clearCart,createLot: Mutation_createLot,deleteBuyRates: Mutation_deleteBuyRates,deleteInventoryItem: Mutation_deleteInventoryItem,deleteLot: Mutation_deleteLot,deleteStock: Mutation_deleteStock,firstTimeSetup: Mutation_firstTimeSetup,removeFromCart: Mutation_removeFromCart,removeStoreLocation: Mutation_removeStoreLocation,saveBuyRates: Mutation_saveBuyRates,setActiveStoreLocation: Mutation_setActiveStoreLocation,setSupportedGames: Mutation_setSupportedGames,submitOrder: Mutation_submitOrder,triggerBackup: Mutation_triggerBackup,triggerDataUpdate: Mutation_triggerDataUpdate,triggerRestore: Mutation_triggerRestore,updateBackupSettings: Mutation_updateBackupSettings,updateInventoryItem: Mutation_updateInventoryItem,updateItemInCart: Mutation_updateItemInCart,updateLot: Mutation_updateLot,updateOrderStatus: Mutation_updateOrderStatus,updateShopifyIntegration: Mutation_updateShopifyIntegration,updateStock: Mutation_updateStock,updateStoreLocation: Mutation_updateStoreLocation,updateStoreSettings: Mutation_updateStoreSettings,updateStripeIntegration: Mutation_updateStripeIntegration },
+      Query: { getActiveStoreLocation: Query_getActiveStoreLocation,getAllStoreLocations: Query_getAllStoreLocations,getAvailableGames: Query_getAvailableGames,getBackupSettings: Query_getBackupSettings,getBuyRates: Query_getBuyRates,getCard: Query_getCard,getCronJob: Query_getCronJob,getCronJobRuns: Query_getCronJobRuns,getCronJobs: Query_getCronJobs,getDashboardBestSellers: Query_getDashboardBestSellers,getDashboardInventorySummary: Query_getDashboardInventorySummary,getDashboardOpenOrders: Query_getDashboardOpenOrders,getDashboardOrderStatus: Query_getDashboardOrderStatus,getDashboardSales: Query_getDashboardSales,getDataUpdateStatus: Query_getDataUpdateStatus,getDistinctRarities: Query_getDistinctRarities,getEmployeeStoreLocations: Query_getEmployeeStoreLocations,getEvent: Query_getEvent,getEventRegistrations: Query_getEventRegistrations,getEvents: Query_getEvents,getIntegrationSettings: Query_getIntegrationSettings,getInventory: Query_getInventory,getInventoryItem: Query_getInventoryItem,getInventoryItemDetails: Query_getInventoryItemDetails,getLot: Query_getLot,getLotStats: Query_getLotStats,getLots: Query_getLots,getOrders: Query_getOrders,getProduct: Query_getProduct,getProductListings: Query_getProductListings,getPublicBuyRates: Query_getPublicBuyRates,getPublicEvent: Query_getPublicEvent,getPublicEvents: Query_getPublicEvents,getSets: Query_getSets,getShoppingCart: Query_getShoppingCart,getSingleCardInventory: Query_getSingleCardInventory,getStoreLocation: Query_getStoreLocation,getStoreSettings: Query_getStoreSettings,getSupportedGames: Query_getSupportedGames,getTransactionLogs: Query_getTransactionLogs,isSetupPending: Query_isSetupPending,lookupSalesTax: Query_lookupSalesTax,searchProducts: Query_searchProducts,userPermissions: Query_userPermissions },
+      Mutation: { addEventRegistration: Mutation_addEventRegistration,addInventoryItem: Mutation_addInventoryItem,addStock: Mutation_addStock,addStoreLocation: Mutation_addStoreLocation,addToCart: Mutation_addToCart,bulkDeleteStock: Mutation_bulkDeleteStock,bulkUpdateStock: Mutation_bulkUpdateStock,cancelEvent: Mutation_cancelEvent,cancelEventRegistration: Mutation_cancelEventRegistration,cancelOrder: Mutation_cancelOrder,cancelRecurringSeries: Mutation_cancelRecurringSeries,checkInEventRegistration: Mutation_checkInEventRegistration,checkoutWithCart: Mutation_checkoutWithCart,clearCart: Mutation_clearCart,createEvent: Mutation_createEvent,createLot: Mutation_createLot,deleteBuyRates: Mutation_deleteBuyRates,deleteInventoryItem: Mutation_deleteInventoryItem,deleteLot: Mutation_deleteLot,deleteStock: Mutation_deleteStock,disableCronJob: Mutation_disableCronJob,enableCronJob: Mutation_enableCronJob,firstTimeSetup: Mutation_firstTimeSetup,registerForEvent: Mutation_registerForEvent,removeFromCart: Mutation_removeFromCart,removeStoreLocation: Mutation_removeStoreLocation,saveBuyRates: Mutation_saveBuyRates,setActiveStoreLocation: Mutation_setActiveStoreLocation,setSupportedGames: Mutation_setSupportedGames,submitOrder: Mutation_submitOrder,triggerBackup: Mutation_triggerBackup,triggerCronJob: Mutation_triggerCronJob,triggerDataUpdate: Mutation_triggerDataUpdate,triggerRestore: Mutation_triggerRestore,updateBackupSettings: Mutation_updateBackupSettings,updateCronJobConfig: Mutation_updateCronJobConfig,updateCronJobSchedule: Mutation_updateCronJobSchedule,updateEvent: Mutation_updateEvent,updateInventoryItem: Mutation_updateInventoryItem,updateItemInCart: Mutation_updateItemInCart,updateLot: Mutation_updateLot,updateOrderStatus: Mutation_updateOrderStatus,updateShopifyIntegration: Mutation_updateShopifyIntegration,updateStock: Mutation_updateStock,updateStoreLocation: Mutation_updateStoreLocation,updateStoreSettings: Mutation_updateStoreSettings,updateStripeIntegration: Mutation_updateStripeIntegration },
       
       
     }
