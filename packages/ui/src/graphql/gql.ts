@@ -39,6 +39,9 @@ type Documents = {
     "\n  mutation DeleteStock($id: Int!) {\n    deleteStock(id: $id)\n  }\n": typeof types.DeleteStockDocument,
     "\n  mutation BulkUpdateStock($input: BulkUpdateStockInput!) {\n    bulkUpdateStock(input: $input) {\n      id\n    }\n  }\n": typeof types.BulkUpdateStockDocument,
     "\n  mutation BulkDeleteStock($input: BulkDeleteStockInput!) {\n    bulkDeleteStock(input: $input)\n  }\n": typeof types.BulkDeleteStockDocument,
+    "\n  query GetBarcodesForInventoryItem($inventoryItemId: Int!) {\n    getBarcodesForInventoryItem(inventoryItemId: $inventoryItemId) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n": typeof types.GetBarcodesForInventoryItemDocument,
+    "\n  mutation AddBarcode($input: AddBarcodeInput!) {\n    addBarcode(input: $input) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n": typeof types.AddBarcodeDocument,
+    "\n  mutation RemoveBarcode($input: RemoveBarcodeInput!) {\n    removeBarcode(input: $input)\n  }\n": typeof types.RemoveBarcodeDocument,
     "\n  query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {\n    searchProducts(searchTerm: $searchTerm, isSingle: $isSingle, isSealed: $isSealed) {\n      id\n      name\n      gameName\n      setName\n      rarity\n      imageUrl\n      isSingle\n      isSealed\n      prices {\n        subTypeName\n        marketPrice\n        midPrice\n      }\n    }\n  }\n": typeof types.SearchProductsForLotDocument,
     "\n  query GetLot($id: Int!) {\n    getLot(id: $id) {\n      id\n      name\n      description\n      amountPaid\n      acquisitionDate\n      items {\n        id\n        productId\n        productName\n        gameName\n        setName\n        rarity\n        isSingle\n        isSealed\n        condition\n        quantity\n        costBasis\n        costOverridden\n        marketValue\n      }\n      totalMarketValue\n      totalCost\n      projectedProfitLoss\n      projectedProfitMargin\n    }\n  }\n": typeof types.GetLotDocument,
     "\n  mutation CreateLot($input: CreateLotInput!) {\n    createLot(input: $input) {\n      id\n    }\n  }\n": typeof types.CreateLotDocument,
@@ -49,6 +52,13 @@ type Documents = {
     "\n  query GetOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        status\n        totalAmount\n        totalCostBasis\n        totalProfit\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n          costBasis\n          profit\n          lotId\n        }\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetOrdersDocument,
     "\n  mutation CancelOrder($orderId: Int!) {\n    cancelOrder(orderId: $orderId) {\n      id\n      orderNumber\n      customerName\n      status\n      totalAmount\n      totalCostBasis\n      totalProfit\n      createdAt\n      items {\n        id\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        costBasis\n        profit\n      }\n    }\n  }\n": typeof types.CancelOrderDocument,
     "\n  mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {\n    updateOrderStatus(orderId: $orderId, status: $status) {\n      id\n      orderNumber\n      customerName\n      status\n      totalAmount\n      totalCostBasis\n      totalProfit\n      createdAt\n      items {\n        id\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        costBasis\n        profit\n      }\n    }\n  }\n": typeof types.UpdateOrderStatusDocument,
+    "\n  query LookupBarcode($code: String!) {\n    lookupBarcode(code: $code) {\n      inventoryItemId\n      productName\n      gameName\n      setName\n      condition\n      price\n      availableQuantity\n      imageUrl\n    }\n  }\n": typeof types.LookupBarcodeDocument,
+    "\n  query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        condition\n        price\n        totalQuantity\n      }\n    }\n  }\n": typeof types.PosGetInventoryDocument,
+    "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n": typeof types.GetOpenOrdersDocument,
+    "\n  query GetPosConfig($stateCode: String) {\n    getPosConfig(stateCode: $stateCode) {\n      taxRate\n      stripeEnabled\n      stripePublishableKey\n    }\n  }\n": typeof types.GetPosConfigDocument,
+    "\n  mutation SubmitPosOrder($input: SubmitPosOrderInput!) {\n    submitPosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": typeof types.SubmitPosOrderDocument,
+    "\n  mutation CompletePosOrder($input: CompletePosOrderInput!) {\n    completePosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": typeof types.CompletePosOrderDocument,
+    "\n  mutation CreatePosPaymentIntent($amount: Int!) {\n    createPosPaymentIntent(amount: $amount) {\n      clientSecret\n      paymentIntentId\n    }\n  }\n": typeof types.CreatePosPaymentIntentDocument,
     "\n  query GetProduct($productId: String!) {\n    getProduct(productId: $productId) {\n      id\n      name\n      setName\n      gameName\n      rarity\n      type\n      text\n      flavorText\n      finishes\n      isSingle\n      isSealed\n      images {\n        small\n        large\n      }\n      inventoryRecords {\n        inventoryItemId\n        condition\n        quantity\n        price\n      }\n    }\n  }\n": typeof types.GetProductDocument,
     "\n  query GetSealedProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {\n    getProductListings(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        name\n        setName\n        gameName\n        finishes\n        images {\n          small\n          large\n        }\n        totalQuantity\n        lowestPrice\n        lowestPriceInventoryItemId\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetSealedProductListingsDocument,
     "\n  query GetSealedSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": typeof types.GetSealedSetsDocument,
@@ -71,8 +81,8 @@ type Documents = {
     "\n  mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {\n    updateStoreSettings(input: $input) {\n      companyName\n      ein\n    }\n  }\n": typeof types.UpdateStoreSettingsDocument,
     "\n  query GetAvailableGamesForSettings {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.GetAvailableGamesForSettingsDocument,
     "\n  mutation SetSupportedGames($categoryIds: [Int!]!) {\n    setSupportedGames(categoryIds: $categoryIds) {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.SetSupportedGamesDocument,
-    "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n": typeof types.GetIntegrationSettingsDocument,
-    "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n    }\n  }\n": typeof types.UpdateStripeIntegrationDocument,
+    "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n        hasPublishableKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n": typeof types.GetIntegrationSettingsDocument,
+    "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n      hasPublishableKey\n    }\n  }\n": typeof types.UpdateStripeIntegrationDocument,
     "\n  mutation UpdateShopifyIntegration($input: UpdateShopifyIntegrationInput!) {\n    updateShopifyIntegration(input: $input) {\n      enabled\n      hasApiKey\n      shopDomain\n    }\n  }\n": typeof types.UpdateShopifyIntegrationDocument,
     "\n  query GetAllStoreLocationsAdmin {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": typeof types.GetAllStoreLocationsAdminDocument,
     "\n  mutation AddStoreLocation($input: AddStoreLocationInput!) {\n    addStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": typeof types.AddStoreLocationDocument,
@@ -106,6 +116,9 @@ const documents: Documents = {
     "\n  mutation DeleteStock($id: Int!) {\n    deleteStock(id: $id)\n  }\n": types.DeleteStockDocument,
     "\n  mutation BulkUpdateStock($input: BulkUpdateStockInput!) {\n    bulkUpdateStock(input: $input) {\n      id\n    }\n  }\n": types.BulkUpdateStockDocument,
     "\n  mutation BulkDeleteStock($input: BulkDeleteStockInput!) {\n    bulkDeleteStock(input: $input)\n  }\n": types.BulkDeleteStockDocument,
+    "\n  query GetBarcodesForInventoryItem($inventoryItemId: Int!) {\n    getBarcodesForInventoryItem(inventoryItemId: $inventoryItemId) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n": types.GetBarcodesForInventoryItemDocument,
+    "\n  mutation AddBarcode($input: AddBarcodeInput!) {\n    addBarcode(input: $input) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n": types.AddBarcodeDocument,
+    "\n  mutation RemoveBarcode($input: RemoveBarcodeInput!) {\n    removeBarcode(input: $input)\n  }\n": types.RemoveBarcodeDocument,
     "\n  query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {\n    searchProducts(searchTerm: $searchTerm, isSingle: $isSingle, isSealed: $isSealed) {\n      id\n      name\n      gameName\n      setName\n      rarity\n      imageUrl\n      isSingle\n      isSealed\n      prices {\n        subTypeName\n        marketPrice\n        midPrice\n      }\n    }\n  }\n": types.SearchProductsForLotDocument,
     "\n  query GetLot($id: Int!) {\n    getLot(id: $id) {\n      id\n      name\n      description\n      amountPaid\n      acquisitionDate\n      items {\n        id\n        productId\n        productName\n        gameName\n        setName\n        rarity\n        isSingle\n        isSealed\n        condition\n        quantity\n        costBasis\n        costOverridden\n        marketValue\n      }\n      totalMarketValue\n      totalCost\n      projectedProfitLoss\n      projectedProfitMargin\n    }\n  }\n": types.GetLotDocument,
     "\n  mutation CreateLot($input: CreateLotInput!) {\n    createLot(input: $input) {\n      id\n    }\n  }\n": types.CreateLotDocument,
@@ -116,6 +129,13 @@ const documents: Documents = {
     "\n  query GetOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        status\n        totalAmount\n        totalCostBasis\n        totalProfit\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n          costBasis\n          profit\n          lotId\n        }\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetOrdersDocument,
     "\n  mutation CancelOrder($orderId: Int!) {\n    cancelOrder(orderId: $orderId) {\n      id\n      orderNumber\n      customerName\n      status\n      totalAmount\n      totalCostBasis\n      totalProfit\n      createdAt\n      items {\n        id\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        costBasis\n        profit\n      }\n    }\n  }\n": types.CancelOrderDocument,
     "\n  mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {\n    updateOrderStatus(orderId: $orderId, status: $status) {\n      id\n      orderNumber\n      customerName\n      status\n      totalAmount\n      totalCostBasis\n      totalProfit\n      createdAt\n      items {\n        id\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        costBasis\n        profit\n      }\n    }\n  }\n": types.UpdateOrderStatusDocument,
+    "\n  query LookupBarcode($code: String!) {\n    lookupBarcode(code: $code) {\n      inventoryItemId\n      productName\n      gameName\n      setName\n      condition\n      price\n      availableQuantity\n      imageUrl\n    }\n  }\n": types.LookupBarcodeDocument,
+    "\n  query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        condition\n        price\n        totalQuantity\n      }\n    }\n  }\n": types.PosGetInventoryDocument,
+    "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n": types.GetOpenOrdersDocument,
+    "\n  query GetPosConfig($stateCode: String) {\n    getPosConfig(stateCode: $stateCode) {\n      taxRate\n      stripeEnabled\n      stripePublishableKey\n    }\n  }\n": types.GetPosConfigDocument,
+    "\n  mutation SubmitPosOrder($input: SubmitPosOrderInput!) {\n    submitPosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": types.SubmitPosOrderDocument,
+    "\n  mutation CompletePosOrder($input: CompletePosOrderInput!) {\n    completePosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": types.CompletePosOrderDocument,
+    "\n  mutation CreatePosPaymentIntent($amount: Int!) {\n    createPosPaymentIntent(amount: $amount) {\n      clientSecret\n      paymentIntentId\n    }\n  }\n": types.CreatePosPaymentIntentDocument,
     "\n  query GetProduct($productId: String!) {\n    getProduct(productId: $productId) {\n      id\n      name\n      setName\n      gameName\n      rarity\n      type\n      text\n      flavorText\n      finishes\n      isSingle\n      isSealed\n      images {\n        small\n        large\n      }\n      inventoryRecords {\n        inventoryItemId\n        condition\n        quantity\n        price\n      }\n    }\n  }\n": types.GetProductDocument,
     "\n  query GetSealedProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {\n    getProductListings(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        name\n        setName\n        gameName\n        finishes\n        images {\n          small\n          large\n        }\n        totalQuantity\n        lowestPrice\n        lowestPriceInventoryItemId\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetSealedProductListingsDocument,
     "\n  query GetSealedSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": types.GetSealedSetsDocument,
@@ -138,8 +158,8 @@ const documents: Documents = {
     "\n  mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {\n    updateStoreSettings(input: $input) {\n      companyName\n      ein\n    }\n  }\n": types.UpdateStoreSettingsDocument,
     "\n  query GetAvailableGamesForSettings {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.GetAvailableGamesForSettingsDocument,
     "\n  mutation SetSupportedGames($categoryIds: [Int!]!) {\n    setSupportedGames(categoryIds: $categoryIds) {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.SetSupportedGamesDocument,
-    "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n": types.GetIntegrationSettingsDocument,
-    "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n    }\n  }\n": types.UpdateStripeIntegrationDocument,
+    "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n        hasPublishableKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n": types.GetIntegrationSettingsDocument,
+    "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n      hasPublishableKey\n    }\n  }\n": types.UpdateStripeIntegrationDocument,
     "\n  mutation UpdateShopifyIntegration($input: UpdateShopifyIntegrationInput!) {\n    updateShopifyIntegration(input: $input) {\n      enabled\n      hasApiKey\n      shopDomain\n    }\n  }\n": types.UpdateShopifyIntegrationDocument,
     "\n  query GetAllStoreLocationsAdmin {\n    getEmployeeStoreLocations {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": types.GetAllStoreLocationsAdminDocument,
     "\n  mutation AddStoreLocation($input: AddStoreLocationInput!) {\n    addStoreLocation(input: $input) {\n      id\n      name\n      slug\n      street1\n      street2\n      city\n      state\n      zip\n      phone\n      hours {\n        dayOfWeek\n        openTime\n        closeTime\n      }\n      createdAt\n    }\n  }\n": types.AddStoreLocationDocument,
@@ -248,6 +268,18 @@ export function graphql(source: "\n  mutation BulkDeleteStock($input: BulkDelete
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query GetBarcodesForInventoryItem($inventoryItemId: Int!) {\n    getBarcodesForInventoryItem(inventoryItemId: $inventoryItemId) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n"): typeof import('./graphql').GetBarcodesForInventoryItemDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AddBarcode($input: AddBarcodeInput!) {\n    addBarcode(input: $input) {\n      id\n      code\n      inventoryItemId\n      createdAt\n    }\n  }\n"): typeof import('./graphql').AddBarcodeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RemoveBarcode($input: RemoveBarcodeInput!) {\n    removeBarcode(input: $input)\n  }\n"): typeof import('./graphql').RemoveBarcodeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {\n    searchProducts(searchTerm: $searchTerm, isSingle: $isSingle, isSealed: $isSealed) {\n      id\n      name\n      gameName\n      setName\n      rarity\n      imageUrl\n      isSingle\n      isSealed\n      prices {\n        subTypeName\n        marketPrice\n        midPrice\n      }\n    }\n  }\n"): typeof import('./graphql').SearchProductsForLotDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -285,6 +317,34 @@ export function graphql(source: "\n  mutation CancelOrder($orderId: Int!) {\n   
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UpdateOrderStatus($orderId: Int!, $status: OrderStatus!) {\n    updateOrderStatus(orderId: $orderId, status: $status) {\n      id\n      orderNumber\n      customerName\n      status\n      totalAmount\n      totalCostBasis\n      totalProfit\n      createdAt\n      items {\n        id\n        productId\n        productName\n        condition\n        quantity\n        unitPrice\n        costBasis\n        profit\n      }\n    }\n  }\n"): typeof import('./graphql').UpdateOrderStatusDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query LookupBarcode($code: String!) {\n    lookupBarcode(code: $code) {\n      inventoryItemId\n      productName\n      gameName\n      setName\n      condition\n      price\n      availableQuantity\n      imageUrl\n    }\n  }\n"): typeof import('./graphql').LookupBarcodeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        condition\n        price\n        totalQuantity\n      }\n    }\n  }\n"): typeof import('./graphql').PosGetInventoryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetOpenOrdersDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetPosConfig($stateCode: String) {\n    getPosConfig(stateCode: $stateCode) {\n      taxRate\n      stripeEnabled\n      stripePublishableKey\n    }\n  }\n"): typeof import('./graphql').GetPosConfigDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SubmitPosOrder($input: SubmitPosOrderInput!) {\n    submitPosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n"): typeof import('./graphql').SubmitPosOrderDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CompletePosOrder($input: CompletePosOrderInput!) {\n    completePosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n"): typeof import('./graphql').CompletePosOrderDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreatePosPaymentIntent($amount: Int!) {\n    createPosPaymentIntent(amount: $amount) {\n      clientSecret\n      paymentIntentId\n    }\n  }\n"): typeof import('./graphql').CreatePosPaymentIntentDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -376,11 +436,11 @@ export function graphql(source: "\n  mutation SetSupportedGames($categoryIds: [I
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n"): typeof import('./graphql').GetIntegrationSettingsDocument;
+export function graphql(source: "\n  query GetIntegrationSettings {\n    getIntegrationSettings {\n      stripe {\n        enabled\n        hasApiKey\n        hasPublishableKey\n      }\n      shopify {\n        enabled\n        hasApiKey\n        shopDomain\n      }\n    }\n  }\n"): typeof import('./graphql').GetIntegrationSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n    }\n  }\n"): typeof import('./graphql').UpdateStripeIntegrationDocument;
+export function graphql(source: "\n  mutation UpdateStripeIntegration($input: UpdateStripeIntegrationInput!) {\n    updateStripeIntegration(input: $input) {\n      enabled\n      hasApiKey\n      hasPublishableKey\n    }\n  }\n"): typeof import('./graphql').UpdateStripeIntegrationDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -5,19 +5,8 @@ import { logTransaction } from './transaction-log-service';
 
 import { todayDateString, safeISOString } from '../lib/date-utils';
 import { normalizePagination } from '../lib/sql-utils';
+import { generateOrderNumber, mapOrderItems, calculateOrderTotals } from '../lib/order-utils';
 import type { CardCondition, OrderStatus } from '../schema/types.generated';
-
-interface OrderItemResult {
-  id: number;
-  productId: number;
-  productName: string;
-  condition: CardCondition;
-  quantity: number;
-  unitPrice: number;
-  costBasis: number | null;
-  profit: number | null;
-  lotId: number | null;
-}
 
 interface OrderData {
   id: number;
@@ -29,65 +18,7 @@ interface OrderData {
   totalCostBasis: number | null;
   totalProfit: number | null;
   createdAt: string;
-  items: OrderItemResult[];
-}
-
-function mapOrderItems(
-  orderItems: {
-    id: number;
-    productId: number;
-    productName: string;
-    condition: string;
-    quantity: number;
-    unitPrice: number;
-    costBasis: number | null;
-    lotId?: number | null;
-  }[],
-): OrderItemResult[] {
-  return orderItems.map((oi) => {
-    const revenue = oi.unitPrice * oi.quantity;
-    const cost = oi.costBasis != null ? oi.costBasis * oi.quantity : null;
-    const profit = cost != null ? revenue - cost : null;
-    return {
-      id: oi.id,
-      productId: oi.productId,
-      productName: oi.productName,
-      condition: oi.condition as CardCondition,
-      quantity: oi.quantity,
-      unitPrice: oi.unitPrice,
-      costBasis: oi.costBasis,
-      profit,
-      lotId: oi.lotId ?? null,
-    };
-  });
-}
-
-function calculateOrderTotals(items: OrderItemResult[]) {
-  let totalCostBasis: number | null = 0;
-  let totalProfit: number | null = 0;
-  let hasAnyCostBasis = false;
-
-  for (const item of items) {
-    if (item.costBasis != null) {
-      hasAnyCostBasis = true;
-      totalCostBasis = (totalCostBasis ?? 0) + item.costBasis * item.quantity;
-      totalProfit = (totalProfit ?? 0) + (item.profit ?? 0);
-    }
-  }
-
-  return {
-    totalCostBasis: hasAnyCostBasis ? totalCostBasis : null,
-    totalProfit: hasAnyCostBasis ? totalProfit : null,
-  };
-}
-
-function generateOrderNumber(): string {
-  const now = new Date();
-  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const randomPart = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0');
-  return `ORD-${datePart}-${randomPart}`;
+  items: ReturnType<typeof mapOrderItems>;
 }
 
 export async function submitOrder(organizationId: string, userId: string, customerName: string): Promise<OrderData> {

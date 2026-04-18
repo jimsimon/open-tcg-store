@@ -185,6 +185,36 @@ export const BulkDeleteStockMutation = graphql(`
   }
 `);
 
+// --- Barcode operations ---
+
+export const GetBarcodesQuery = graphql(`
+  query GetBarcodesForInventoryItem($inventoryItemId: Int!) {
+    getBarcodesForInventoryItem(inventoryItemId: $inventoryItemId) {
+      id
+      code
+      inventoryItemId
+      createdAt
+    }
+  }
+`);
+
+export const AddBarcodeMutation = graphql(`
+  mutation AddBarcode($input: AddBarcodeInput!) {
+    addBarcode(input: $input) {
+      id
+      code
+      inventoryItemId
+      createdAt
+    }
+  }
+`);
+
+export const RemoveBarcodeMutation = graphql(`
+  mutation RemoveBarcode($input: RemoveBarcodeInput!) {
+    removeBarcode(input: $input)
+  }
+`);
+
 // --- Interfaces ---
 
 export interface AddForm {

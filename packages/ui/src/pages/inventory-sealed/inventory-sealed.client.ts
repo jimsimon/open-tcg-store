@@ -11,6 +11,7 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
 import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
+import '@awesome.me/webawesome/dist/components/tag/tag.js';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
@@ -87,6 +88,8 @@ export class OgsInventorySealedPage extends LitElement {
     notes: '',
   };
   @state() private addValidationErrors: string[] = [];
+  @state() private addFormBarcodes: string[] = [];
+  @state() private addFormBarcodeInput = '';
 
   // Cost basis warning dialog
   @state() private showCostBasisWarning = false;
@@ -250,6 +253,8 @@ export class OgsInventorySealedPage extends LitElement {
     this.selectedProduct = null;
     this.productSearchTerm = '';
     this.addValidationErrors = [];
+    this.addFormBarcodes = [];
+    this.addFormBarcodeInput = '';
     this.addForm = {
       quantity: 1,
       condition: 'NM',
@@ -283,6 +288,20 @@ export class OgsInventorySealedPage extends LitElement {
     } else if (firstPrice?.midPrice) {
       this.addForm = { ...this.addForm, price: firstPrice.midPrice };
     }
+  }
+
+  // --- Barcode helpers ---
+
+  private addBarcodeToForm() {
+    const value = this.addFormBarcodeInput.trim();
+    if (value && !this.addFormBarcodes.includes(value)) {
+      this.addFormBarcodes = [...this.addFormBarcodes, value];
+    }
+    this.addFormBarcodeInput = '';
+  }
+
+  private removeBarcodeFromForm(index: number) {
+    this.addFormBarcodes = this.addFormBarcodes.filter((_, i) => i !== index);
   }
 
   // --- Validation ---
@@ -341,6 +360,7 @@ export class OgsInventorySealedPage extends LitElement {
             costBasis: this.addForm.costBasis,
             acquisitionDate: this.addForm.acquisitionDate,
             notes: this.addForm.notes || null,
+            barcodes: this.addFormBarcodes.length > 0 ? this.addFormBarcodes : undefined,
           },
         });
         if (result?.errors?.length) {
@@ -793,6 +813,42 @@ export class OgsInventorySealedPage extends LitElement {
               >
                 <span slot="help-text">${this.addForm.notes.length}/1000</span>
               </wa-textarea>
+
+              <div>
+                <label
+                  style="font-size: var(--wa-font-size-s); font-weight: 500; display: block; margin-bottom: 0.25rem;"
+                  >Barcodes (optional)</label
+                >
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                  <wa-input
+                    placeholder="Enter barcode..."
+                    .value="${this.addFormBarcodeInput}"
+                    @input="${(e: Event) => {
+                      this.addFormBarcodeInput = (e.target as WaInput).value as string;
+                    }}"
+                    @keydown="${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.addBarcodeToForm();
+                      }
+                    }}"
+                    style="flex: 1;"
+                  ></wa-input>
+                  <wa-button variant="neutral" @click="${this.addBarcodeToForm}">Add</wa-button>
+                </div>
+                ${when(
+                  this.addFormBarcodes.length > 0,
+                  () => html`
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem;">
+                      ${this.addFormBarcodes.map(
+                        (barcode, index) => html`
+                          <wa-tag removable @wa-remove="${() => this.removeBarcodeFromForm(index)}">${barcode}</wa-tag>
+                        `,
+                      )}
+                    </div>
+                  `,
+                )}
+              </div>
 
               ${renderProfitSummary(this.addForm.price, this.addForm.costBasis, this.addForm.quantity)}
             </div>

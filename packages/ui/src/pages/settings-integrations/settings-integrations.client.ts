@@ -21,6 +21,7 @@ const GetIntegrationSettingsQuery = graphql(`
       stripe {
         enabled
         hasApiKey
+        hasPublishableKey
       }
       shopify {
         enabled
@@ -36,6 +37,7 @@ const UpdateStripeMutation = graphql(`
     updateStripeIntegration(input: $input) {
       enabled
       hasApiKey
+      hasPublishableKey
     }
   }
 `);
@@ -215,6 +217,8 @@ export class OgsSettingsIntegrationsPage extends LitElement {
   @state() stripeEnabled = false;
   @state() stripeHasApiKey = false;
   @state() stripeApiKey = '';
+  @state() stripeHasPublishableKey = false;
+  @state() stripePublishableKey = '';
   @state() shopifyEnabled = false;
   @state() shopifyHasApiKey = false;
   @state() shopifyApiKey = '';
@@ -237,6 +241,7 @@ export class OgsSettingsIntegrationsPage extends LitElement {
         const s = result.data.getIntegrationSettings;
         this.stripeEnabled = s.stripe.enabled;
         this.stripeHasApiKey = s.stripe.hasApiKey;
+        this.stripeHasPublishableKey = s.stripe.hasPublishableKey;
         this.shopifyEnabled = s.shopify.enabled;
         this.shopifyHasApiKey = s.shopify.hasApiKey;
         this.shopifyShopDomain = s.shopify.shopDomain ?? '';
@@ -253,14 +258,17 @@ export class OgsSettingsIntegrationsPage extends LitElement {
     this.successMessage = '';
     this.errorMessage = '';
     try {
-      const input: { enabled?: boolean; apiKey?: string } = { enabled: this.stripeEnabled };
+      const input: { enabled?: boolean; apiKey?: string; publishableKey?: string } = { enabled: this.stripeEnabled };
       if (this.stripeApiKey) input.apiKey = this.stripeApiKey;
+      if (this.stripePublishableKey) input.publishableKey = this.stripePublishableKey;
       const result = await execute(UpdateStripeMutation, { input });
       if (result?.errors?.length) {
         this.errorMessage = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
         this.stripeHasApiKey = result.data.updateStripeIntegration.hasApiKey;
+        this.stripeHasPublishableKey = result.data.updateStripeIntegration.hasPublishableKey;
         this.stripeApiKey = '';
+        this.stripePublishableKey = '';
         this.successMessage = 'Stripe settings saved';
         setTimeout(() => {
           this.successMessage = '';
@@ -415,6 +423,21 @@ export class OgsSettingsIntegrationsPage extends LitElement {
               <wa-icon slot="prefix" name="key"></wa-icon>
             </wa-input>
             ${this.renderKeyStatus(this.stripeHasApiKey, 'API key')}
+          </div>
+          <div>
+            <wa-input
+              type="password"
+              label="Publishable Key"
+              placeholder="${this.stripeHasPublishableKey ? '••••••••••••••••' : 'Enter Stripe publishable key'}"
+              .value="${this.stripePublishableKey}"
+              @input="${(e: Event) => {
+                this.stripePublishableKey = (e.target as HTMLInputElement).value;
+              }}"
+              password-toggle
+            >
+              <wa-icon slot="prefix" name="key"></wa-icon>
+            </wa-input>
+            ${this.renderKeyStatus(this.stripeHasPublishableKey, 'Publishable key')}
           </div>
           <div class="integration-save">
             <wa-button variant="brand" size="small" ?loading="${this.savingStripe}" @click="${this.saveStripe}">

@@ -1,0 +1,47 @@
+input PosLineItemInput {
+  inventoryItemId: Int!
+  quantity: Int!
+}
+
+input SubmitPosOrderInput {
+  customerName: String!
+  items: [PosLineItemInput!]!
+  taxAmount: Int!
+  paymentMethod: String!
+  stripePaymentIntentId: String
+}
+
+input CompletePosOrderInput {
+  orderId: Int!
+  newItems: [PosLineItemInput!]
+  taxAmount: Int!
+  paymentMethod: String!
+  stripePaymentIntentId: String
+}
+
+type PaymentIntentResult {
+  clientSecret: String!
+  paymentIntentId: String!
+}
+
+type TerminalConnectionToken {
+  secret: String!
+}
+
+type PosConfig {
+  taxRate: Float!
+  stripeEnabled: Boolean!
+  stripePublishableKey: String
+}
+
+extend type Query {
+  getPosConfig(stateCode: String): PosConfig!
+}
+
+extend type Mutation {
+  submitPosOrder(input: SubmitPosOrderInput!): Order!
+  completePosOrder(input: CompletePosOrderInput!): Order!
+  createPosPaymentIntent(amount: Int!): PaymentIntentResult!
+  createTerminalConnectionToken: TerminalConnectionToken!
+  cancelPosPaymentIntent(paymentIntentId: String!): Boolean!
+}
