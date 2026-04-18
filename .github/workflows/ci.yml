@@ -17,13 +17,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24.x'
           cache: 'pnpm'
@@ -52,13 +52,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24.x'
           cache: 'pnpm'
@@ -76,13 +76,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24.x'
           cache: 'pnpm'
@@ -103,13 +103,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24.x'
           cache: 'pnpm'
@@ -117,7 +117,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type-check
+      - name: Type-check (API — no DOM types)
+        run: npx tsc -p packages/api/tsconfig.json --noEmit
+
+      - name: Type-check (UI — with DOM types)
+        run: npx tsc -p packages/ui/tsconfig.json --noEmit
+
+      - name: Type-check (root — scripts & shared)
         run: npx tsc --noEmit
 
   check-migrations:
@@ -127,13 +133,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24.x'
           cache: 'pnpm'

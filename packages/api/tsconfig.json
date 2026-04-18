@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    /* API runs on Node.js — exclude DOM types to catch accidental browser API usage */
+    "lib": ["ES2022"],
+    "types": ["vitest/globals"]
+  },
+  "include": ["src"]
+}

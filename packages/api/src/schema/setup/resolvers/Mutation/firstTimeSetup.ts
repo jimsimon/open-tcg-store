@@ -1,12 +1,29 @@
 import type { MutationResolvers } from '../../../types.generated.ts';
 import { performFirstTimeSetup } from '../../../../services/setup-service.ts';
 import type { GraphqlContext } from '../../../../server.ts';
+import { RateLimitStore } from '../../../../lib/rate-limit.ts';
+
+// Strict rate limit for setup attempts — 5 per IP per hour
+const setupRateLimiter = new RateLimitStore({ max: 5, windowMs: 60 * 60 * 1000 });
 
 export const firstTimeSetup: NonNullable<MutationResolvers['firstTimeSetup']> = async (
   _parent,
   args,
   ctx: GraphqlContext,
 ) => {
+  // Rate-limit setup attempts per client IP.
+  // Prefer X-Forwarded-For (set by reverse proxies like nginx) so the limiter
+  // keys on the real client IP rather than the proxy's address.
+  const forwarded = ctx.req.headers['x-forwarded-for'];
+  const clientIp =
+    (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) ??
+    ctx.req.socket?.remoteAddress ??
+    'unknown';
+  const result = setupRateLimiter.check(`setup:${clientIp}`);
+  if (!result.allowed) {
+    throw new Error('Too many setup attempts. Please try again later.');
+  }
+
   return await performFirstTimeSetup(
     {
       email: args.userDetails.email,

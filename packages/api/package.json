@@ -16,6 +16,8 @@
     "db:check:tcg-data": "drizzle-kit check --config ./src/db/tcg-data/drizzle.config.ts",
     "db:migrate:tcg-data": "drizzle-kit migrate --config ./src/db/tcg-data/drizzle.config.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@open-tcgs/shared": "workspace:*"
+  },
   "devDependencies": {}
 }

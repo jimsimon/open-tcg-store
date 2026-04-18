@@ -19,16 +19,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    "types": ["vitest/browser"],
-    // plugins
-    "plugins": [
-      {
-        "name": "@0no-co/graphqlsp",
-        "schema": "./src/graphql/schema.graphql"
-      }
-    ]
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src", "packages", "vite-env.d.ts"]
 }

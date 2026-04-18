@@ -2,6 +2,7 @@ import { and, eq, sql, like, or, desc } from 'drizzle-orm';
 import { otcgs, transactionLog } from '../db';
 import { user } from '../db/otcgs/auth-schema';
 import { safeISOString } from '../lib/date-utils';
+import { normalizePagination } from '../lib/sql-utils';
 import type { ResourceType } from '../schema/types.generated';
 
 // ---------------------------------------------------------------------------
@@ -74,9 +75,7 @@ export async function getTransactionLogs(
   filters?: TransactionLogFilters | null,
   pagination?: { page?: number; pageSize?: number } | null,
 ): Promise<TransactionLogPage> {
-  const page = pagination?.page ?? 1;
-  const pageSize = pagination?.pageSize ?? 25;
-  const offset = (page - 1) * pageSize;
+  const { page, pageSize, offset } = normalizePagination(pagination);
 
   // Build where conditions
   const conditions: ReturnType<typeof eq>[] = [eq(transactionLog.organizationId, organizationId)];
@@ -139,7 +138,7 @@ export async function getTransactionLogs(
     details: r.details,
     userName: r.userName ?? '',
     userEmail: r.userEmail ?? '',
-    createdAt: safeISOString(r.createdAt),
+    createdAt: safeISOString(r.createdAt) ?? new Date().toISOString(),
   }));
 
   return { items, totalCount, page, pageSize, totalPages };

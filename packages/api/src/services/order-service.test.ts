@@ -286,6 +286,10 @@ describe('order-service', () => {
         },
       ]);
 
+      // Update stock: returning() must yield a row so the decrement-guard passes
+      const stockUpdateChain = chainable([{ id: 1 }]);
+      mockOtcgs.update.mockImplementation(() => stockUpdateChain);
+
       let insertIdx = 0;
       mockOtcgs.insert.mockImplementation(() => {
         insertIdx++;
@@ -744,7 +748,7 @@ describe('order-service', () => {
 
       const result = await getOrders('org-1');
 
-      // safeISOString returns new Date().toISOString() for falsy values
+      // safeISOString returns null for falsy values; the service falls back to new Date().toISOString()
       expect(result.items[0].createdAt).toBeDefined();
     });
 

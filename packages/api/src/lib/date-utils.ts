@@ -25,23 +25,29 @@ export function isValidDateString(s: string): boolean {
 
 /**
  * Safely convert an unknown value to an ISO date string.
- * Falls back to the current time if the value is invalid.
+ * Returns null if the value is falsy or cannot be parsed as a valid date,
+ * rather than silently falling back to the current time.
  */
-export function safeISOString(value: unknown): string {
-  if (!value) return new Date().toISOString();
+export function safeISOString(value: unknown): string | null {
+  if (value == null) return null;
   if (value instanceof Date) {
     try {
       return value.toISOString();
     } catch {
-      return new Date().toISOString();
+      return null;
     }
   }
   if (typeof value === 'string') {
     const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
   }
   if (typeof value === 'number') {
-    return new Date(value * 1000).toISOString();
+    // Detect whether the value is seconds or milliseconds.
+    // Timestamps above 1e12 (~2001 in ms) are treated as milliseconds;
+    // below that threshold they're treated as Unix seconds.
+    const ms = value > 1e12 ? value : value * 1000;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
   }
-  return new Date().toISOString();
+  return null;
 }
