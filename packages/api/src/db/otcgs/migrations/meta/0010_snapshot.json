@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "fbc4c2e7-653e-4957-a49e-29d99e08589b",
-  "prevId": "37823661-f9e1-4a5e-a0b5-61425aa5f42c",
+  "id": "31d6443d-a3d4-427b-88fd-5f464b692d20",
+  "prevId": "dc7621b0-0ab6-4927-a8c5-8f187dd135c9",
   "tables": {
     "account": {
       "name": "account",
@@ -417,13 +417,6 @@
       "indexes": {
         "organization_slug_unique": {
           "name": "organization_slug_unique",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": true
-        },
-        "organization_slug_uidx": {
-          "name": "organization_slug_uidx",
           "columns": [
             "slug"
           ],
@@ -846,13 +839,6 @@
         }
       },
       "indexes": {
-        "cart_id_idx": {
-          "name": "cart_id_idx",
-          "columns": [
-            "id"
-          ],
-          "isUnique": false
-        },
         "cart_org_id_idx": {
           "name": "cart_org_id_idx",
           "columns": [
@@ -942,13 +928,6 @@
         }
       },
       "indexes": {
-        "cart_item_id_idx": {
-          "name": "cart_item_id_idx",
-          "columns": [
-            "id"
-          ],
-          "isUnique": false
-        },
         "cart_item_inventory_item_id_idx": {
           "name": "cart_item_inventory_item_id_idx",
           "columns": [
@@ -1186,7 +1165,7 @@
         },
         "notes": {
           "name": "notes",
-          "type": "text(1000)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1400,14 +1379,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
-        },
         "tax_amount": {
           "name": "tax_amount",
           "type": "integer",
@@ -1429,6 +1400,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
         }
       },
       "indexes": {
@@ -1719,6 +1698,13 @@
         },
         "stripe_api_key": {
           "name": "stripe_api_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stripe_publishable_key": {
+          "name": "stripe_publishable_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -2052,6 +2038,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "fixed_rate_cents": {
+          "name": "fixed_rate_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "percentage_rate": {
+          "name": "percentage_rate",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "type": {
           "name": "type",
           "type": "text",
@@ -2098,20 +2098,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
-        },
-        "fixed_rate_cents": {
-          "name": "fixed_rate_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "percentage_rate": {
-          "name": "percentage_rate",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -2161,7 +2147,7 @@
         },
         "description": {
           "name": "description",
-          "type": "text(2000)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -2310,7 +2296,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": 0
+          "default": false
         },
         "inventory_item_stock_id": {
           "name": "inventory_item_stock_id",
@@ -2372,6 +2358,137 @@
           "tableTo": "inventory_item_stock",
           "columnsFrom": [
             "inventory_item_stock_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "barcode": {
+      "name": "barcode",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "inventory_item_id": {
+          "name": "inventory_item_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "barcode_org_code_uniq": {
+          "name": "barcode_org_code_uniq",
+          "columns": [
+            "organization_id",
+            "code"
+          ],
+          "isUnique": true
+        },
+        "barcode_org_id_idx": {
+          "name": "barcode_org_id_idx",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "barcode_inventory_item_idx": {
+          "name": "barcode_inventory_item_idx",
+          "columns": [
+            "inventory_item_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "barcode_inventory_item_id_fkey": {
+          "name": "barcode_inventory_item_id_fkey",
+          "tableFrom": "barcode",
+          "tableTo": "inventory_item",
+          "columnsFrom": [
+            "inventory_item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "barcode_created_by_fkey": {
+          "name": "barcode_created_by_fkey",
+          "tableFrom": "barcode",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "barcode_updated_by_fkey": {
+          "name": "barcode_updated_by_fkey",
+          "tableFrom": "barcode",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
           ],
           "columnsTo": [
             "id"
@@ -2588,8 +2705,8 @@
         }
       },
       "foreignKeys": {
-        "cron_job_run_cron_job_id_cron_job_id_fk": {
-          "name": "cron_job_run_cron_job_id_cron_job_id_fk",
+        "cron_job_run_cron_job_id_fkey": {
+          "name": "cron_job_run_cron_job_id_fkey",
           "tableFrom": "cron_job_run",
           "tableTo": "cron_job",
           "columnsFrom": [
@@ -2855,8 +2972,8 @@
         }
       },
       "foreignKeys": {
-        "event_registration_event_id_event_id_fk": {
-          "name": "event_registration_event_id_event_id_fk",
+        "event_registration_event_id_fkey": {
+          "name": "event_registration_event_id_fkey",
           "tableFrom": "event_registration",
           "tableTo": "event",
           "columnsFrom": [
