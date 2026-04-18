@@ -124,7 +124,6 @@ function getMonthDateRange(year: number, month: number): { dateFrom: string; dat
 @customElement('ogs-events-page')
 export class EventsPage extends OgsPageBase {
   @property({ type: Boolean }) showStoreSelector = false;
-  @property({ type: Boolean }) showUserMenu = false;
 
   // --- Page state ---
   @state() events: PublicEvent[] = [];

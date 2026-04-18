@@ -1,5 +1,5 @@
 import { css, html, nothing, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -126,8 +126,6 @@ const UpdateCronJobScheduleMutation = graphql(`
 
 @customElement('ogs-settings-scheduled-tasks-page')
 export class OgsSettingsScheduledTasksPage extends OgsPageBase {
-  @property({ type: Boolean }) showUserMenu = false;
-
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}

@@ -78,8 +78,8 @@ export class OgsPageBase extends LitElement {
         activeOrganizationId="${this.activeOrganizationId}"
         ?showStoreSelector="${config.showStoreSelector ?? false}"
         ?showCartButton="${config.showCartButton ?? false}"
-        @store-changed="${ifDefined(config.onStoreChanged)}"
-        @order-submitted="${ifDefined(config.onOrderSubmitted)}"
+        @store-changed="${config.onStoreChanged}"
+        @order-submitted="${config.onOrderSubmitted}"
       >
         ${content}
       </ogs-page>
