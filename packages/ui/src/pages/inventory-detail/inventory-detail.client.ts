@@ -1,4 +1,4 @@
-import { html, LitElement, nothing } from 'lit';
+import { html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -14,7 +14,7 @@ import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '@awesome.me/webawesome/dist/components/tag/tag.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
@@ -40,20 +40,9 @@ import {
 } from '../inventory/inventory-shared.ts';
 
 @customElement('ogs-inventory-detail-page')
-export class OgsInventoryDetailPage extends LitElement {
+export class OgsInventoryDetailPage extends OgsPageBase {
   static styles = sharedInventoryStyles;
 
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
   @property({ type: String }) inventoryItemId = '';
   @property({ type: String }) inventoryType = 'singles';
@@ -495,23 +484,8 @@ export class OgsInventoryDetailPage extends LitElement {
     const productName = this.parentItem?.productName ?? 'Inventory Item';
     const activePage = this.inventoryType === 'sealed' ? 'inventory/sealed' : 'inventory/singles';
 
-    return html`
-      <ogs-page
-        activePage="${activePage}"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.fetchDetails()}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderBreadcrumb()} ${this.renderPageHeader(productName)} ${this.renderStatsBar()}
         ${this.renderActionBar()}
         ${when(
@@ -536,8 +510,14 @@ export class OgsInventoryDetailPage extends LitElement {
         ${this.renderPagination()} ${this.renderBarcodesSection()} ${this.renderAddDialog()} ${this.renderEditDialog()}
         ${this.renderDeleteDialog()} ${this.renderBulkEditDialog()} ${this.renderBulkDeleteDialog()}
         ${this.renderCostBasisWarningDialog()}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage,
+        showUserMenu: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this.fetchDetails(),
+      },
+    );
   }
 
   private renderBreadcrumb() {

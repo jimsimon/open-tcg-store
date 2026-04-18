@@ -1,7 +1,7 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
@@ -132,19 +132,8 @@ function toKebabCase(str: string): string {
 // --- Component ---
 
 @customElement('ogs-settings-locations-page')
-export class SettingsLocationsPage extends LitElement {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
+export class SettingsLocationsPage extends OgsPageBase {
   @property({ type: String }) activePage = '';
-  @property({ type: String }) activeOrganizationId = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
 
   static styles = [
     css`
@@ -695,21 +684,8 @@ export class SettingsLocationsPage extends LitElement {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="${this.activePage}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        showUserMenu
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()}
         ${when(
           this.loading,
@@ -722,8 +698,9 @@ export class SettingsLocationsPage extends LitElement {
           () => this.renderContent(),
         )}
         ${this.renderAddDialog()} ${this.renderEditDialog()} ${this.renderRemoveDialog()}
-      </ogs-page>
-    `;
+      `,
+      { activePage: this.activePage, showUserMenu: true },
+    );
   }
 
   private renderPageHeader() {

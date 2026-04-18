@@ -1,25 +1,13 @@
-import { LitElement, css, html, unsafeCSS } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import '../../components/ogs-page.ts';
+import { css, html, unsafeCSS } from 'lit';
+import { customElement } from 'lit/decorators.js';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 
 @customElement('ogs-settings-autoprice-page')
-export class OgsSettingsAutopricePage extends LitElement {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
-
+export class OgsSettingsAutopricePage extends OgsPageBase {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -139,21 +127,8 @@ export class OgsSettingsAutopricePage extends LitElement {
   ];
 
   render() {
-    return html`
-      <ogs-page
-        activePage="settings/autoprice"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-      >
+    return this.renderPage(
+      html`
         <div class="page-header">
           <div class="page-header-icon">
             <wa-icon name="wand-magic-sparkles" style="font-size: 1.5rem;"></wa-icon>
@@ -191,7 +166,8 @@ export class OgsSettingsAutopricePage extends LitElement {
             </div>
           </div>
         </div>
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'settings/autoprice', showUserMenu: true },
+    );
   }
 }

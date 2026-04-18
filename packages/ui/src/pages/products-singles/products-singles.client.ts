@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS, type PropertyValues } from 'lit';
+import { css, html, nothing, unsafeCSS, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -12,7 +12,7 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
@@ -107,7 +107,7 @@ const GetSetsQuery = graphql(`
 // --- Component ---
 
 @customElement('ogs-products-singles-page')
-export class OgsProductsSinglesPage extends LitElement {
+export class OgsProductsSinglesPage extends OgsPageBase {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -178,17 +178,6 @@ export class OgsProductsSinglesPage extends LitElement {
 
   // --- Properties ---
 
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
 
   // Supported games
@@ -488,25 +477,8 @@ export class OgsProductsSinglesPage extends LitElement {
   // --- Render ---
 
   render() {
-    return html`
-      <ogs-page
-        activePage="products/singles"
-        ?showUserMenu="${true}"
-        ?showCartButton="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.fetchProducts()}"
-        @order-submitted="${() => this.fetchProducts()}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()} ${this.renderFilterBar()}
         ${this.cartMessage
           ? html`<wa-callout variant="success" style="margin-bottom: 1rem;">
@@ -535,8 +507,16 @@ export class OgsProductsSinglesPage extends LitElement {
           () => this.renderProductTable(),
         )}
         ${this.renderPagination()}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'products/singles',
+        showUserMenu: true,
+        showCartButton: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this.fetchProducts(),
+        onOrderSubmitted: () => this.fetchProducts(),
+      },
+    );
   }
 
   // --- Page Header ---

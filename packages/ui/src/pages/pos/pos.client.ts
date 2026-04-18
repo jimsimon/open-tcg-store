@@ -1,5 +1,5 @@
-import { css, html, LitElement, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { css, html, unsafeCSS } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -17,7 +17,7 @@ if (typeof globalThis.document !== 'undefined') {
 }
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import { formatCurrency } from '../../lib/currency.ts';
@@ -138,20 +138,7 @@ const CreatePaymentIntentMutation = graphql(`
 // --- Component ---
 
 @customElement('ogs-pos-page')
-export class PosPage extends LitElement {
-  // --- SSR Properties ---
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean }) canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: Boolean }) canUsePOS = false;
-  @property({ type: String }) activeOrganizationId = '';
-
+export class PosPage extends OgsPageBase {
   // --- Line Items ---
   @state() lineItems: PosLineItem[] = [];
   @state() customerName = '';
@@ -1069,22 +1056,8 @@ export class PosPage extends LitElement {
   // --- Render ---
 
   render() {
-    return html`
-      <ogs-page
-        activePage="POS"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        ?canUsePOS="${this.canUsePOS}"
-        activeOrganizationId="${this.activeOrganizationId}"
-      >
+    return this.renderPage(
+      html`
         ${when(
           this.success,
           () => this.renderSuccessScreen(),
@@ -1111,8 +1084,9 @@ export class PosPage extends LitElement {
             ${this.renderOrderSearchDialog()}
           `,
         )}
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'POS', showUserMenu: true },
+    );
   }
 
   private renderPageHeader() {

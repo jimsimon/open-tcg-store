@@ -1,4 +1,4 @@
-import { html, LitElement, nothing, type PropertyValues } from 'lit';
+import { html, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -12,7 +12,7 @@ import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
 import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '@awesome.me/webawesome/dist/components/tag/tag.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
@@ -37,22 +37,11 @@ import {
 // --- Component ---
 
 @customElement('ogs-inventory-sealed-page')
-export class OgsInventorySealedPage extends LitElement {
+export class OgsInventorySealedPage extends OgsPageBase {
   static styles = sharedInventoryStyles;
 
   // --- Properties ---
 
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
 
   // Supported games
@@ -395,23 +384,8 @@ export class OgsInventorySealedPage extends LitElement {
   // --- Render ---
 
   render() {
-    return html`
-      <ogs-page
-        activePage="inventory/sealed"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.fetchInventory()}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()} ${this.renderStatsBar()} ${this.renderFilterBar()} ${this.renderActionBar()}
         ${when(
           this.error,
@@ -433,8 +407,14 @@ export class OgsInventorySealedPage extends LitElement {
           () => this.renderInventoryTable(),
         )}
         ${this.renderPagination()} ${this.renderAddDialog()} ${this.renderCostBasisWarningDialog()}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'inventory/sealed',
+        showUserMenu: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this.fetchInventory(),
+      },
+    );
   }
 
   // --- Page Header ---

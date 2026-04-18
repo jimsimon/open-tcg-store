@@ -1,7 +1,7 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '../../components/ogs-two-pane-panel.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -145,17 +145,7 @@ function getTodayDateString(): string {
 // ---------------------------------------------------------------------------
 
 @customElement('ogs-lot-page')
-export class OgsLotPage extends LitElement {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean }) canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class OgsLotPage extends OgsPageBase {
   @property({ type: Boolean }) showStoreSelector = false;
   @property({ type: String }) lotId = '';
 
@@ -718,22 +708,8 @@ export class OgsLotPage extends LitElement {
   // --- Render ---
 
   render() {
-    return html`
-      <ogs-page
-        activePage="lots"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-      >
+    return this.renderPage(
+      html`
         <div class="page-header">
           <div class="page-header-icon">
             <wa-icon name="layer-group" style="font-size: 1.5rem;"></wa-icon>
@@ -776,8 +752,9 @@ export class OgsLotPage extends LitElement {
             </div>
           `,
         )}
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'lots', showUserMenu: true, showStoreSelector: this.showStoreSelector },
+    );
   }
 
   private renderLotDetails() {

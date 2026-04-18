@@ -1,8 +1,8 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { SignalWatcher } from '@lit-labs/signals';
 import { when } from 'lit/directives/when.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
@@ -52,17 +52,7 @@ function roleBadgeVariant(role: string | null): string {
 }
 
 @customElement('ogs-settings-users-page')
-export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean }) canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
   @property({ type: Boolean }) showStoreSelector = false;
 
   static styles = [
@@ -539,22 +529,8 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="users"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        showUserMenu
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()}
         ${when(
           !this.effectiveStoreId,
@@ -572,8 +548,9 @@ export class OgsSettingsUsersPage extends SignalWatcher(LitElement) {
             ),
         )}
         ${this.renderRemoveConfirmDialog()}
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'users', showUserMenu: true, showStoreSelector: this.showStoreSelector },
+    );
   }
 
   private renderRemoveConfirmDialog() {

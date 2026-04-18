@@ -1,7 +1,7 @@
-import { LitElement, css, html, nothing, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { css, html, nothing, unsafeCSS } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
@@ -53,19 +53,7 @@ const UpdateShopifyMutation = graphql(`
 `);
 
 @customElement('ogs-settings-integrations-page')
-export class OgsSettingsIntegrationsPage extends LitElement {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
-
+export class OgsSettingsIntegrationsPage extends OgsPageBase {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -310,21 +298,8 @@ export class OgsSettingsIntegrationsPage extends LitElement {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="settings/integrations"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()}
         ${when(
           this.loading,
@@ -336,8 +311,9 @@ export class OgsSettingsIntegrationsPage extends LitElement {
           `,
           () => this.renderContent(),
         )}
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'settings/integrations', showUserMenu: true },
+    );
   }
 
   private renderPageHeader() {
