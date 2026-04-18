@@ -4,13 +4,13 @@ import { when } from 'lit/directives/when.js';
 import '../../components/ogs-page.ts';
 import '../../components/ogs-wizard.ts';
 import '../../components/ogs-two-pane-panel.ts';
+import '../../components/ogs-games-picker.ts';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
-import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import { graphql } from '../../graphql/index.ts';
 import { execute } from '../../lib/graphql.ts';
@@ -103,12 +103,8 @@ export class FirstTimeSetupPage extends LitElement {
     }
   }
 
-  private handleGameToggle(categoryId: number, checked: boolean) {
-    if (checked) {
-      this.selectedGameCategoryIds = [...this.selectedGameCategoryIds, categoryId];
-    } else {
-      this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => id !== categoryId);
-    }
+  private handleGamesChange(e: CustomEvent<{ categoryIds: number[] }>) {
+    this.selectedGameCategoryIds = e.detail.categoryIds;
   }
 
   render() {
@@ -234,29 +230,18 @@ export class FirstTimeSetupPage extends LitElement {
                         <span>Loading available games...</span>
                       </div>
                     `
-                  : this.availableGames.length === 0
-                    ? html`
-                        <wa-callout variant="warning">
+                  : html`
+                      <ogs-games-picker
+                        .games="${this.availableGames}"
+                        .selectedCategoryIds="${this.selectedGameCategoryIds}"
+                        @ogs-games-change="${this.handleGamesChange}"
+                      >
+                        <wa-callout slot="empty" variant="warning">
                           <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
                           No game categories found. Please populate your TCG data catalog first.
                         </wa-callout>
-                      `
-                    : html`
-                        <div style="display: flex; flex-direction: column; gap: var(--wa-space-s);">
-                          ${this.availableGames.map(
-                            (game) => html`
-                              <wa-checkbox
-                                ?checked="${this.selectedGameCategoryIds.includes(game.categoryId)}"
-                                @change="${(e: Event) => {
-                                  this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
-                                }}"
-                              >
-                                ${game.displayName}
-                              </wa-checkbox>
-                            `,
-                          )}
-                        </div>
-                      `}
+                      </ogs-games-picker>
+                    `}
               </div>
             </ogs-two-pane-panel>
           </ogs-wizard-item>
