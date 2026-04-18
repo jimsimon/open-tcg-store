@@ -67,55 +67,6 @@ async function createLocalBackup(db: LibSQLDatabase<Record<string, unknown>>): P
 }
 
 // ---------------------------------------------------------------------------
-// Cloud Backup (Best-Effort)
-// ---------------------------------------------------------------------------
-
-async function attemptCloudBackup(db: LibSQLDatabase<Record<string, unknown>>): Promise<void> {
-  try {
-    // Skip cloud backup on fresh databases — no migrations table means this is the
-    // first run, there's nothing to back up, and importing settings-service would
-    // deadlock due to the top-level await in index.ts.
-    const tables = await db.values<[string]>(
-      sql`SELECT name FROM sqlite_master WHERE type='table' AND name=${MIGRATIONS_TABLE}`,
-    );
-    if (tables.length === 0) {
-      return;
-    }
-
-    // Dynamically import to avoid circular dependency issues at module load time
-    const { getBackupSettings } = await import('../../services/settings-service');
-    const settings = await getBackupSettings();
-
-    if (!settings.provider) {
-      return;
-    }
-
-    // Check if the configured provider is actually connected
-    const providerConnected =
-      (settings.provider === 'google_drive' && settings.googleDriveConnected) ||
-      (settings.provider === 'dropbox' && settings.dropboxConnected) ||
-      (settings.provider === 'onedrive' && settings.onedriveConnected);
-
-    if (!providerConnected) {
-      return;
-    }
-
-    console.log(`[migrator] Triggering cloud backup to ${settings.provider} before migration...`);
-    const { performBackup } = await import('../../services/backup-service');
-    const result = await performBackup(settings.provider as 'google_drive' | 'dropbox' | 'onedrive');
-
-    if (result.success) {
-      console.log(`[migrator] Cloud backup completed: ${result.message}`);
-    } else {
-      console.warn(`[migrator] Cloud backup failed (non-blocking): ${result.message}`);
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.warn(`[migrator] Cloud backup failed (non-blocking): ${message}`);
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Migration Failure Handling
 // ---------------------------------------------------------------------------
 
@@ -182,9 +133,8 @@ async function handleMigrationFailure(
  * Flow:
  * 1. Check for pending migrations (return early if none)
  * 2. Create local backup via VACUUM INTO
- * 3. Attempt cloud backup if configured (non-blocking)
- * 4. Run drizzle migrations
- * 5. On failure: verify integrity, restore from backup if needed
+ * 3. Run drizzle migrations
+ * 4. On failure: verify integrity, restore from backup if needed
  */
 export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>>, client: Client): Promise<void> {
   // 1. Check for pending migrations
@@ -199,10 +149,12 @@ export async function applyMigrations(db: LibSQLDatabase<Record<string, unknown>
   // 2. Local backup via VACUUM INTO (always)
   const backupPath = await createLocalBackup(db);
 
-  // 3. Cloud backup (best-effort, non-blocking)
-  await attemptCloudBackup(db);
+  // NOTE: Cloud backup is intentionally NOT attempted here. This function runs
+  // inside the top-level await in index.ts, and importing settings-service (which
+  // statically imports from index.ts) would deadlock the ESM module graph. The
+  // local VACUUM INTO backup above provides sufficient rollback protection.
 
-  // 4. Run migrations with rollback protection
+  // 3. Run migrations with rollback protection
   try {
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER, migrationsTable: MIGRATIONS_TABLE });
     console.log('[migrator] Migrations applied successfully.');
