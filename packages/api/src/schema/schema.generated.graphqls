@@ -1,5 +1,11 @@
+input AddBarcodeInput {
+  code: String!
+  inventoryItemId: Int!
+}
+
 input AddInventoryItemInput {
   acquisitionDate: String!
+  barcodes: [String!]
   condition: CardCondition!
   costBasis: Int!
   notes: String
@@ -53,6 +59,25 @@ type BackupSettings {
   lastBackupAt: String
   onedriveConnected: Boolean!
   provider: BackupProvider
+}
+
+type Barcode {
+  code: String!
+  createdAt: String!
+  id: Int!
+  inventoryItemId: Int!
+}
+
+type BarcodeLookupResult {
+  availableQuantity: Int!
+  condition: CardCondition!
+  gameName: String!
+  imageUrl: String
+  inventoryItemId: Int!
+  price: Int!
+  productId: Int!
+  productName: String!
+  setName: String!
 }
 
 type BestSeller {
@@ -156,6 +181,14 @@ type CartItemOutput {
 input CompanySettings {
   companyName: String!
   ein: String!
+}
+
+input CompletePosOrderInput {
+  newItems: [PosLineItemInput!]
+  orderId: Int!
+  paymentMethod: String!
+  stripePaymentIntentId: String
+  taxAmount: Int!
 }
 
 type ConditionInventories {
@@ -460,6 +493,7 @@ type LotStats {
 }
 
 type Mutation {
+  addBarcode(input: AddBarcodeInput!): Barcode!
   addEventRegistration(eventId: Int!, input: AdminEventRegistrationInput!): EventRegistration!
   addInventoryItem(input: AddInventoryItemInput!): InventoryItem!
   addStock(input: AddStockInput!): InventoryItemStock!
@@ -470,12 +504,16 @@ type Mutation {
   cancelEvent(id: Int!): Event!
   cancelEventRegistration(registrationId: Int!): EventRegistration!
   cancelOrder(orderId: Int!): Order!
+  cancelPosPaymentIntent(paymentIntentId: String!): Boolean!
   cancelRecurringSeries(recurrenceGroupId: String!): Int!
   checkInEventRegistration(registrationId: Int!): EventRegistration!
   checkoutWithCart: ShoppingCart!
   clearCart: ShoppingCart!
+  completePosOrder(input: CompletePosOrderInput!): Order!
   createEvent(input: CreateEventInput!): Event!
   createLot(input: CreateLotInput!): Lot!
+  createPosPaymentIntent(amount: Int!): PaymentIntentResult!
+  createTerminalConnectionToken: TerminalConnectionToken!
 
   """Admin mutation - delete all buy rates for a game."""
   deleteBuyRates(categoryId: Int!): Boolean!
@@ -486,6 +524,7 @@ type Mutation {
   enableCronJob(id: Int!): CronJob!
   firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!, userDetails: UserDetails!): String!
   registerForEvent(eventId: Int!, input: PublicEventRegistrationInput!): EventRegistration!
+  removeBarcode(input: RemoveBarcodeInput!): Boolean!
   removeFromCart(cartItem: CartItemInput!): ShoppingCart!
   removeStoreLocation(id: String!): Boolean!
 
@@ -501,6 +540,7 @@ type Mutation {
   """
   setSupportedGames(categoryIds: [Int!]!): [SupportedGame!]!
   submitOrder(input: SubmitOrderInput!): Order!
+  submitPosOrder(input: SubmitPosOrderInput!): Order!
   triggerBackup: BackupResult!
   triggerCronJob(id: Int!): CronJobRun!
   triggerDataUpdate: DataUpdateResult!
@@ -536,7 +576,9 @@ type Order {
   items: [OrderItem!]!
   orderNumber: String!
   organizationId: String!
+  paymentMethod: String
   status: OrderStatus!
+  taxAmount: Int
   totalAmount: Int!
   totalCostBasis: Int
   totalProfit: Int
@@ -584,6 +626,22 @@ type OrderStatusBreakdown {
 input PaginationInput {
   page: Int
   pageSize: Int
+}
+
+type PaymentIntentResult {
+  clientSecret: String!
+  paymentIntentId: String!
+}
+
+type PosConfig {
+  stripeEnabled: Boolean!
+  stripePublishableKey: String
+  taxRate: Float!
+}
+
+input PosLineItemInput {
+  inventoryItemId: Int!
+  quantity: Int!
 }
 
 type ProductConditionPrice {
@@ -698,6 +756,7 @@ type Query {
   """
   getAvailableGames: [SupportedGame!]!
   getBackupSettings: BackupSettings!
+  getBarcodesForInventoryItem(inventoryItemId: Int!): [Barcode!]!
 
   """Admin query - returns buy rate entries for a specific game."""
   getBuyRates(categoryId: Int!): [BuyRateEntry!]!
@@ -728,6 +787,7 @@ type Query {
   getLotStats: LotStats!
   getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
+  getPosConfig(stateCode: String): PosConfig!
   getProduct(organizationId: String, productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
 
@@ -751,6 +811,7 @@ type Query {
   getSupportedGames: [SupportedGame!]!
   getTransactionLogs(filters: TransactionLogFilters, pagination: PaginationInput): TransactionLogPage!
   isSetupPending: Boolean!
+  lookupBarcode(code: String!): BarcodeLookupResult
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
   searchProducts(game: String, isSealed: Boolean, isSingle: Boolean, searchTerm: String!): [ProductSearchResult!]!
 
@@ -772,6 +833,10 @@ input RecurrenceRuleInput {
 enum RegistrationStatus {
   CANCELLED
   REGISTERED
+}
+
+input RemoveBarcodeInput {
+  id: Int!
 }
 
 enum ResourceType {
@@ -879,6 +944,7 @@ type StoreSettings {
 type StripeIntegration {
   enabled: Boolean!
   hasApiKey: Boolean!
+  hasPublishableKey: Boolean!
 }
 
 input SubmitOrderInput {
@@ -886,10 +952,22 @@ input SubmitOrderInput {
   organizationId: String!
 }
 
+input SubmitPosOrderInput {
+  customerName: String!
+  items: [PosLineItemInput!]!
+  paymentMethod: String!
+  stripePaymentIntentId: String
+  taxAmount: Int!
+}
+
 type SupportedGame {
   categoryId: Int!
   displayName: String!
   name: String!
+}
+
+type TerminalConnectionToken {
+  secret: String!
 }
 
 type TransactionLogEntry {
@@ -984,6 +1062,7 @@ input UpdateStoreSettingsInput {
 input UpdateStripeIntegrationInput {
   apiKey: String
   enabled: Boolean
+  publishableKey: String
 }
 
 input UserDetails {
@@ -1004,6 +1083,7 @@ type UserPermissions {
   canManageLots: Boolean!
   canManageStoreLocations: Boolean!
   canManageUsers: Boolean!
+  canUsePOS: Boolean!
   canViewDashboard: Boolean!
   canViewTransactionLog: Boolean!
 }

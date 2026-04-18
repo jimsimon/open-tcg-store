@@ -75,6 +75,35 @@ input AddInventoryItemInput {
   costBasis: Int! # cents
   acquisitionDate: String!
   notes: String
+  barcodes: [String!]
+}
+
+type Barcode {
+  id: Int!
+  code: String!
+  inventoryItemId: Int!
+  createdAt: String!
+}
+
+type BarcodeLookupResult {
+  inventoryItemId: Int!
+  productId: Int!
+  productName: String!
+  gameName: String!
+  setName: String!
+  condition: CardCondition!
+  price: Int!
+  availableQuantity: Int!
+  imageUrl: String
+}
+
+input AddBarcodeInput {
+  inventoryItemId: Int!
+  code: String!
+}
+
+input RemoveBarcodeInput {
+  id: Int!
 }
 
 input UpdateInventoryItemInput {
@@ -116,6 +145,8 @@ extend type Query {
   getInventoryItem(id: Int!): InventoryItem
   getInventoryItemDetails(inventoryItemId: Int!, pagination: PaginationInput): InventoryStockPage!
   searchProducts(searchTerm: String!, game: String, isSingle: Boolean, isSealed: Boolean): [ProductSearchResult!]!
+  lookupBarcode(code: String!): BarcodeLookupResult
+  getBarcodesForInventoryItem(inventoryItemId: Int!): [Barcode!]!
 }
 
 type ProductSearchResult {
@@ -148,4 +179,6 @@ extend type Mutation {
   deleteStock(id: Int!): Boolean!
   bulkUpdateStock(input: BulkUpdateStockInput!): [InventoryItemStock!]!
   bulkDeleteStock(input: BulkDeleteStockInput!): Boolean!
+  addBarcode(input: AddBarcodeInput!): Barcode!
+  removeBarcode(input: RemoveBarcodeInput!): Boolean!
 }

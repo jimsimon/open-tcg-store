@@ -13,6 +13,7 @@ import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '@awesome.me/webawesome/dist/components/tag/tag.js';
 import '../../components/ogs-page.ts';
 import { execute } from '../../lib/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
@@ -27,6 +28,9 @@ import {
   DeleteStockMutation,
   BulkUpdateStockMutation,
   BulkDeleteStockMutation,
+  GetBarcodesQuery,
+  AddBarcodeMutation,
+  RemoveBarcodeMutation,
   sharedInventoryStyles,
   renderConditionBadge,
   formatCurrency,
@@ -105,6 +109,11 @@ export class OgsInventoryDetailPage extends LitElement {
     notes: '',
   };
 
+  // Barcodes
+  @state() private barcodes: Array<{ id: number; code: string; createdAt: string }> = [];
+  @state() private newBarcodeInput = '';
+  @state() private barcodeLoading = false;
+
   // Cost basis warning dialog
   @state() private showCostBasisWarning = false;
   @state() private pendingAction: (() => Promise<void>) | null = null;
@@ -112,6 +121,7 @@ export class OgsInventoryDetailPage extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.fetchDetails();
+    this.fetchBarcodes();
   }
 
   private get numericInventoryItemId(): number {
@@ -156,6 +166,64 @@ export class OgsInventoryDetailPage extends LitElement {
       this.error = e instanceof Error ? e.message : 'Failed to load details';
     } finally {
       this.loading = false;
+    }
+  }
+
+  // --- Barcode fetching & mutations ---
+
+  private async fetchBarcodes() {
+    this.barcodeLoading = true;
+    try {
+      const result = await execute(GetBarcodesQuery, {
+        inventoryItemId: this.numericInventoryItemId,
+      });
+      if (result?.data?.getBarcodesForInventoryItem) {
+        this.barcodes = result.data.getBarcodesForInventoryItem as Array<{
+          id: number;
+          code: string;
+          createdAt: string;
+        }>;
+      }
+    } catch {
+      // silently fail — barcodes are non-critical
+    } finally {
+      this.barcodeLoading = false;
+    }
+  }
+
+  private async handleAddBarcode() {
+    const code = this.newBarcodeInput.trim();
+    if (!code) return;
+    try {
+      const result = await execute(AddBarcodeMutation, {
+        input: {
+          inventoryItemId: this.numericInventoryItemId,
+          code,
+        },
+      });
+      if (result?.errors?.length) {
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
+      } else {
+        this.newBarcodeInput = '';
+        this.fetchBarcodes();
+      }
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'Failed to add barcode';
+    }
+  }
+
+  private async handleRemoveBarcode(id: number) {
+    try {
+      const result = await execute(RemoveBarcodeMutation, {
+        input: { id },
+      });
+      if (result?.errors?.length) {
+        this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
+      } else {
+        this.fetchBarcodes();
+      }
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'Failed to remove barcode';
     }
   }
 
@@ -465,8 +533,9 @@ export class OgsInventoryDetailPage extends LitElement {
           `,
           () => this.renderTable(),
         )}
-        ${this.renderPagination()} ${this.renderAddDialog()} ${this.renderEditDialog()} ${this.renderDeleteDialog()}
-        ${this.renderBulkEditDialog()} ${this.renderBulkDeleteDialog()} ${this.renderCostBasisWarningDialog()}
+        ${this.renderPagination()} ${this.renderBarcodesSection()} ${this.renderAddDialog()} ${this.renderEditDialog()}
+        ${this.renderDeleteDialog()} ${this.renderBulkEditDialog()} ${this.renderBulkDeleteDialog()}
+        ${this.renderCostBasisWarningDialog()}
       </ogs-page>
     `;
   }
@@ -694,6 +763,75 @@ export class OgsInventoryDetailPage extends LitElement {
             `,
           )}
         </div>
+      </div>
+    `;
+  }
+
+  // --- Barcodes Section ---
+
+  private renderBarcodesSection() {
+    return html`
+      <div style="margin-top: 1.5rem;">
+        <h3 style="margin: 0 0 0.75rem 0; font-size: var(--wa-font-size-l); font-weight: 600;">Barcodes</h3>
+        ${when(
+          this.barcodeLoading,
+          () => html`
+            <div
+              style="display: flex; align-items: center; gap: 0.5rem; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);"
+            >
+              <wa-spinner></wa-spinner> Loading barcodes...
+            </div>
+          `,
+          () => html`
+            ${when(
+              this.barcodes.length > 0,
+              () => html`
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  ${this.barcodes.map(
+                    (barcode) => html`
+                      <wa-tag size="medium">
+                        ${barcode.code}
+                        <wa-button
+                          size="small"
+                          variant="text"
+                          style="margin-inline-start: 0.25rem; font-size: 0.75rem;"
+                          @click="${() => this.handleRemoveBarcode(barcode.id)}"
+                        >
+                          <wa-icon name="xmark"></wa-icon>
+                        </wa-button>
+                      </wa-tag>
+                    `,
+                  )}
+                </div>
+              `,
+              () => html`
+                <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); margin: 0 0 0.75rem 0;">
+                  No barcodes assigned to this item.
+                </p>
+              `,
+            )}
+            <div style="display: flex; gap: 0.5rem; align-items: flex-start; max-width: 400px;">
+              <wa-input
+                placeholder="Enter barcode..."
+                .value="${this.newBarcodeInput}"
+                @input="${(e: Event) => {
+                  this.newBarcodeInput = (e.target as WaInput).value as string;
+                }}"
+                @keydown="${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.handleAddBarcode();
+                  }
+                }}"
+                style="flex: 1;"
+              ></wa-input>
+              <wa-button variant="neutral" @click="${this.handleAddBarcode}">
+                <wa-icon slot="start" name="plus"></wa-icon>
+                Add
+              </wa-button>
+            </div>
+          `,
+        )}
       </div>
     `;
   }

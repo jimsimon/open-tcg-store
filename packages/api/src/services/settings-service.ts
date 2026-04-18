@@ -141,7 +141,7 @@ export async function updateBackupSettings(
 // ---------------------------------------------------------------------------
 
 export interface IntegrationSettingsResult {
-  stripe: { enabled: boolean; hasApiKey: boolean };
+  stripe: { enabled: boolean; hasApiKey: boolean; hasPublishableKey: boolean };
   shopify: { enabled: boolean; hasApiKey: boolean; shopDomain: string | null };
 }
 
@@ -151,6 +151,7 @@ export async function getIntegrationSettings(): Promise<IntegrationSettingsResul
     stripe: {
       enabled: !!row.stripeEnabled,
       hasApiKey: !!row.stripeApiKey,
+      hasPublishableKey: !!row.stripePublishableKey,
     },
     shopify: {
       enabled: !!row.shopifyEnabled,
@@ -163,12 +164,13 @@ export async function getIntegrationSettings(): Promise<IntegrationSettingsResul
 export interface UpdateStripeInput {
   enabled?: boolean | null;
   apiKey?: string | null;
+  publishableKey?: string | null;
 }
 
 export async function updateStripeIntegration(
   input: UpdateStripeInput,
   userId: string,
-): Promise<{ enabled: boolean; hasApiKey: boolean }> {
+): Promise<{ enabled: boolean; hasApiKey: boolean; hasPublishableKey: boolean }> {
   await ensureSettingsRow();
 
   const updates: Record<string, unknown> = {
@@ -180,6 +182,10 @@ export async function updateStripeIntegration(
   if (input.apiKey !== undefined) {
     updates.stripeApiKey = encryptIfPresent(input.apiKey);
   }
+  if (input.publishableKey !== undefined) {
+    // Publishable key is not encrypted — it's meant to be exposed client-side
+    updates.stripePublishableKey = input.publishableKey?.trim() || null;
+  }
 
   await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
@@ -187,6 +193,7 @@ export async function updateStripeIntegration(
   return {
     enabled: !!row.stripeEnabled,
     hasApiKey: !!row.stripeApiKey,
+    hasPublishableKey: !!row.stripePublishableKey,
   };
 }
 

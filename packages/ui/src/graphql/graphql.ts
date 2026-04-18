@@ -16,8 +16,14 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddBarcodeInput = {
+  code: Scalars['String']['input'];
+  inventoryItemId: Scalars['Int']['input'];
+};
+
 export type AddInventoryItemInput = {
   acquisitionDate: Scalars['String']['input'];
+  barcodes?: InputMaybe<Array<Scalars['String']['input']>>;
   condition: CardCondition;
   costBasis: Scalars['Int']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
@@ -73,6 +79,27 @@ export type BackupSettings = {
   lastBackupAt?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
   provider?: Maybe<BackupProvider>;
+};
+
+export type Barcode = {
+  __typename?: 'Barcode';
+  code: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  inventoryItemId: Scalars['Int']['output'];
+};
+
+export type BarcodeLookupResult = {
+  __typename?: 'BarcodeLookupResult';
+  availableQuantity: Scalars['Int']['output'];
+  condition: CardCondition;
+  gameName: Scalars['String']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  inventoryItemId: Scalars['Int']['output'];
+  price: Scalars['Int']['output'];
+  productId: Scalars['Int']['output'];
+  productName: Scalars['String']['output'];
+  setName: Scalars['String']['output'];
 };
 
 export type BestSeller = {
@@ -182,6 +209,14 @@ export type CartItemOutput = {
 export type CompanySettings = {
   companyName: Scalars['String']['input'];
   ein: Scalars['String']['input'];
+};
+
+export type CompletePosOrderInput = {
+  newItems?: InputMaybe<Array<PosLineItemInput>>;
+  orderId: Scalars['Int']['input'];
+  paymentMethod: Scalars['String']['input'];
+  stripePaymentIntentId?: InputMaybe<Scalars['String']['input']>;
+  taxAmount: Scalars['Int']['input'];
 };
 
 export type ConditionInventories = {
@@ -507,6 +542,7 @@ export type LotStats = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  addBarcode: Barcode;
   addEventRegistration: EventRegistration;
   addInventoryItem: InventoryItem;
   addStock: InventoryItemStock;
@@ -517,12 +553,16 @@ export type Mutation = {
   cancelEvent: Event;
   cancelEventRegistration: EventRegistration;
   cancelOrder: Order;
+  cancelPosPaymentIntent: Scalars['Boolean']['output'];
   cancelRecurringSeries: Scalars['Int']['output'];
   checkInEventRegistration: EventRegistration;
   checkoutWithCart: ShoppingCart;
   clearCart: ShoppingCart;
+  completePosOrder: Order;
   createEvent: Event;
   createLot: Lot;
+  createPosPaymentIntent: PaymentIntentResult;
+  createTerminalConnectionToken: TerminalConnectionToken;
   /** Admin mutation - delete all buy rates for a game. */
   deleteBuyRates: Scalars['Boolean']['output'];
   deleteInventoryItem: Scalars['Boolean']['output'];
@@ -532,6 +572,7 @@ export type Mutation = {
   enableCronJob: CronJob;
   firstTimeSetup: Scalars['String']['output'];
   registerForEvent: EventRegistration;
+  removeBarcode: Scalars['Boolean']['output'];
   removeFromCart: ShoppingCart;
   removeStoreLocation: Scalars['Boolean']['output'];
   /** Admin mutation - save the buy rate table for a game (replaces all entries). */
@@ -543,6 +584,7 @@ export type Mutation = {
    */
   setSupportedGames: Array<SupportedGame>;
   submitOrder: Order;
+  submitPosOrder: Order;
   triggerBackup: BackupResult;
   triggerCronJob: CronJobRun;
   triggerDataUpdate: DataUpdateResult;
@@ -560,6 +602,11 @@ export type Mutation = {
   updateStoreLocation: StoreLocation;
   updateStoreSettings: StoreSettings;
   updateStripeIntegration: StripeIntegration;
+};
+
+
+export type MutationAddBarcodeArgs = {
+  input: AddBarcodeInput;
 };
 
 
@@ -614,6 +661,11 @@ export type MutationCancelOrderArgs = {
 };
 
 
+export type MutationCancelPosPaymentIntentArgs = {
+  paymentIntentId: Scalars['String']['input'];
+};
+
+
 export type MutationCancelRecurringSeriesArgs = {
   recurrenceGroupId: Scalars['String']['input'];
 };
@@ -624,6 +676,11 @@ export type MutationCheckInEventRegistrationArgs = {
 };
 
 
+export type MutationCompletePosOrderArgs = {
+  input: CompletePosOrderInput;
+};
+
+
 export type MutationCreateEventArgs = {
   input: CreateEventInput;
 };
@@ -631,6 +688,11 @@ export type MutationCreateEventArgs = {
 
 export type MutationCreateLotArgs = {
   input: CreateLotInput;
+};
+
+
+export type MutationCreatePosPaymentIntentArgs = {
+  amount: Scalars['Int']['input'];
 };
 
 
@@ -678,6 +740,11 @@ export type MutationRegisterForEventArgs = {
 };
 
 
+export type MutationRemoveBarcodeArgs = {
+  input: RemoveBarcodeInput;
+};
+
+
 export type MutationRemoveFromCartArgs = {
   cartItem: CartItemInput;
 };
@@ -705,6 +772,11 @@ export type MutationSetSupportedGamesArgs = {
 
 export type MutationSubmitOrderArgs = {
   input: SubmitOrderInput;
+};
+
+
+export type MutationSubmitPosOrderArgs = {
+  input: SubmitPosOrderInput;
 };
 
 
@@ -804,7 +876,9 @@ export type Order = {
   items: Array<OrderItem>;
   orderNumber: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
+  paymentMethod?: Maybe<Scalars['String']['output']>;
   status: OrderStatus;
+  taxAmount?: Maybe<Scalars['Int']['output']>;
   totalAmount: Scalars['Int']['output'];
   totalCostBasis?: Maybe<Scalars['Int']['output']>;
   totalProfit?: Maybe<Scalars['Int']['output']>;
@@ -855,6 +929,24 @@ export type OrderStatusBreakdown = {
 export type PaginationInput = {
   page?: InputMaybe<Scalars['Int']['input']>;
   pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type PaymentIntentResult = {
+  __typename?: 'PaymentIntentResult';
+  clientSecret: Scalars['String']['output'];
+  paymentIntentId: Scalars['String']['output'];
+};
+
+export type PosConfig = {
+  __typename?: 'PosConfig';
+  stripeEnabled: Scalars['Boolean']['output'];
+  stripePublishableKey?: Maybe<Scalars['String']['output']>;
+  taxRate: Scalars['Float']['output'];
+};
+
+export type PosLineItemInput = {
+  inventoryItemId: Scalars['Int']['input'];
+  quantity: Scalars['Int']['input'];
 };
 
 export type ProductConditionPrice = {
@@ -974,6 +1066,7 @@ export type Query = {
    */
   getAvailableGames: Array<SupportedGame>;
   getBackupSettings: BackupSettings;
+  getBarcodesForInventoryItem: Array<Barcode>;
   /** Admin query - returns buy rate entries for a specific game. */
   getBuyRates: Array<BuyRateEntry>;
   getCard: Card;
@@ -1000,6 +1093,7 @@ export type Query = {
   getLotStats: LotStats;
   getLots: LotPage;
   getOrders: OrderPage;
+  getPosConfig: PosConfig;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
   /**
@@ -1021,6 +1115,7 @@ export type Query = {
   getSupportedGames: Array<SupportedGame>;
   getTransactionLogs: TransactionLogPage;
   isSetupPending: Scalars['Boolean']['output'];
+  lookupBarcode?: Maybe<BarcodeLookupResult>;
   lookupSalesTax: SalesTaxLookupResult;
   searchProducts: Array<ProductSearchResult>;
   /**
@@ -1028,6 +1123,11 @@ export type Query = {
    * Used by the SSR server to render nav visibility without multiple hasPermission calls.
    */
   userPermissions: UserPermissions;
+};
+
+
+export type QueryGetBarcodesForInventoryItemArgs = {
+  inventoryItemId: Scalars['Int']['input'];
 };
 
 
@@ -1139,6 +1239,11 @@ export type QueryGetOrdersArgs = {
 };
 
 
+export type QueryGetPosConfigArgs = {
+  stateCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryGetProductArgs = {
   organizationId?: InputMaybe<Scalars['String']['input']>;
   productId: Scalars['String']['input'];
@@ -1187,6 +1292,11 @@ export type QueryGetTransactionLogsArgs = {
 };
 
 
+export type QueryLookupBarcodeArgs = {
+  code: Scalars['String']['input'];
+};
+
+
 export type QueryLookupSalesTaxArgs = {
   countryCode: Scalars['String']['input'];
   stateCode: Scalars['String']['input'];
@@ -1213,6 +1323,10 @@ export enum RegistrationStatus {
   Cancelled = 'CANCELLED',
   Registered = 'REGISTERED'
 }
+
+export type RemoveBarcodeInput = {
+  id: Scalars['Int']['input'];
+};
 
 export enum ResourceType {
   Inventory = 'inventory',
@@ -1331,6 +1445,7 @@ export type StripeIntegration = {
   __typename?: 'StripeIntegration';
   enabled: Scalars['Boolean']['output'];
   hasApiKey: Scalars['Boolean']['output'];
+  hasPublishableKey: Scalars['Boolean']['output'];
 };
 
 export type SubmitOrderInput = {
@@ -1338,11 +1453,24 @@ export type SubmitOrderInput = {
   organizationId: Scalars['String']['input'];
 };
 
+export type SubmitPosOrderInput = {
+  customerName: Scalars['String']['input'];
+  items: Array<PosLineItemInput>;
+  paymentMethod: Scalars['String']['input'];
+  stripePaymentIntentId?: InputMaybe<Scalars['String']['input']>;
+  taxAmount: Scalars['Int']['input'];
+};
+
 export type SupportedGame = {
   __typename?: 'SupportedGame';
   categoryId: Scalars['Int']['output'];
   displayName: Scalars['String']['output'];
   name: Scalars['String']['output'];
+};
+
+export type TerminalConnectionToken = {
+  __typename?: 'TerminalConnectionToken';
+  secret: Scalars['String']['output'];
 };
 
 export type TransactionLogEntry = {
@@ -1439,6 +1567,7 @@ export type UpdateStoreSettingsInput = {
 export type UpdateStripeIntegrationInput = {
   apiKey?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  publishableKey?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UserDetails = {
@@ -1460,6 +1589,7 @@ export type UserPermissions = {
   canManageLots: Scalars['Boolean']['output'];
   canManageStoreLocations: Scalars['Boolean']['output'];
   canManageUsers: Scalars['Boolean']['output'];
+  canUsePOS: Scalars['Boolean']['output'];
   canViewDashboard: Scalars['Boolean']['output'];
   canViewTransactionLog: Scalars['Boolean']['output'];
 };
@@ -1503,7 +1633,7 @@ export type GetEmployeeStoreLocationsQuery = { __typename?: 'Query', getEmployee
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean, canManageEvents: boolean } };
+export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean, canUsePOS: boolean, canManageEvents: boolean } };
 
 export type GetSupportedGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1714,6 +1844,27 @@ export type BulkDeleteStockMutationVariables = Exact<{
 
 export type BulkDeleteStockMutation = { __typename?: 'Mutation', bulkDeleteStock: boolean };
 
+export type GetBarcodesForInventoryItemQueryVariables = Exact<{
+  inventoryItemId: Scalars['Int']['input'];
+}>;
+
+
+export type GetBarcodesForInventoryItemQuery = { __typename?: 'Query', getBarcodesForInventoryItem: Array<{ __typename?: 'Barcode', id: number, code: string, inventoryItemId: number, createdAt: string }> };
+
+export type AddBarcodeMutationVariables = Exact<{
+  input: AddBarcodeInput;
+}>;
+
+
+export type AddBarcodeMutation = { __typename?: 'Mutation', addBarcode: { __typename?: 'Barcode', id: number, code: string, inventoryItemId: number, createdAt: string } };
+
+export type RemoveBarcodeMutationVariables = Exact<{
+  input: RemoveBarcodeInput;
+}>;
+
+
+export type RemoveBarcodeMutation = { __typename?: 'Mutation', removeBarcode: boolean };
+
 export type SearchProductsForLotQueryVariables = Exact<{
   searchTerm: Scalars['String']['input'];
   isSingle?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1786,6 +1937,57 @@ export type UpdateOrderStatusMutationVariables = Exact<{
 
 
 export type UpdateOrderStatusMutation = { __typename?: 'Mutation', updateOrderStatus: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } };
+
+export type LookupBarcodeQueryVariables = Exact<{
+  code: Scalars['String']['input'];
+}>;
+
+
+export type LookupBarcodeQuery = { __typename?: 'Query', lookupBarcode?: { __typename?: 'BarcodeLookupResult', inventoryItemId: number, productName: string, gameName: string, setName: string, condition: CardCondition, price: number, availableQuantity: number, imageUrl?: string | null } | null };
+
+export type PosGetInventoryQueryVariables = Exact<{
+  filters?: InputMaybe<InventoryFilters>;
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type PosGetInventoryQuery = { __typename?: 'Query', getInventory: { __typename?: 'InventoryPage', items: Array<{ __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, condition: CardCondition, price: number, totalQuantity: number }> } };
+
+export type GetOpenOrdersQueryVariables = Exact<{
+  pagination?: InputMaybe<PaginationInput>;
+  filters?: InputMaybe<OrderFilters>;
+}>;
+
+
+export type GetOpenOrdersQuery = { __typename?: 'Query', getOrders: { __typename?: 'OrderPage', items: Array<{ __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number }> }> } };
+
+export type GetPosConfigQueryVariables = Exact<{
+  stateCode?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetPosConfigQuery = { __typename?: 'Query', getPosConfig: { __typename?: 'PosConfig', taxRate: number, stripeEnabled: boolean, stripePublishableKey?: string | null } };
+
+export type SubmitPosOrderMutationVariables = Exact<{
+  input: SubmitPosOrderInput;
+}>;
+
+
+export type SubmitPosOrderMutation = { __typename?: 'Mutation', submitPosOrder: { __typename?: 'Order', id: number, orderNumber: string, totalAmount: number, taxAmount?: number | null, paymentMethod?: string | null, status: OrderStatus } };
+
+export type CompletePosOrderMutationVariables = Exact<{
+  input: CompletePosOrderInput;
+}>;
+
+
+export type CompletePosOrderMutation = { __typename?: 'Mutation', completePosOrder: { __typename?: 'Order', id: number, orderNumber: string, totalAmount: number, taxAmount?: number | null, paymentMethod?: string | null, status: OrderStatus } };
+
+export type CreatePosPaymentIntentMutationVariables = Exact<{
+  amount: Scalars['Int']['input'];
+}>;
+
+
+export type CreatePosPaymentIntentMutation = { __typename?: 'Mutation', createPosPaymentIntent: { __typename?: 'PaymentIntentResult', clientSecret: string, paymentIntentId: string } };
 
 export type GetProductQueryVariables = Exact<{
   productId: Scalars['String']['input'];
@@ -1941,14 +2143,14 @@ export type SetSupportedGamesMutation = { __typename?: 'Mutation', setSupportedG
 export type GetIntegrationSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetIntegrationSettingsQuery = { __typename?: 'Query', getIntegrationSettings: { __typename?: 'IntegrationSettings', stripe: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean }, shopify: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } } };
+export type GetIntegrationSettingsQuery = { __typename?: 'Query', getIntegrationSettings: { __typename?: 'IntegrationSettings', stripe: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean }, shopify: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } } };
 
 export type UpdateStripeIntegrationMutationVariables = Exact<{
   input: UpdateStripeIntegrationInput;
 }>;
 
 
-export type UpdateStripeIntegrationMutation = { __typename?: 'Mutation', updateStripeIntegration: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean } };
+export type UpdateStripeIntegrationMutation = { __typename?: 'Mutation', updateStripeIntegration: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean } };
 
 export type UpdateShopifyIntegrationMutationVariables = Exact<{
   input: UpdateShopifyIntegrationInput;
@@ -2153,6 +2355,7 @@ export const UserPermissionsDocument = new TypedDocumentString(`
     canManageStoreLocations
     canManageUsers
     canViewTransactionLog
+    canUsePOS
     canManageEvents
   }
 }
@@ -2534,6 +2737,31 @@ export const BulkDeleteStockDocument = new TypedDocumentString(`
   bulkDeleteStock(input: $input)
 }
     `) as unknown as TypedDocumentString<BulkDeleteStockMutation, BulkDeleteStockMutationVariables>;
+export const GetBarcodesForInventoryItemDocument = new TypedDocumentString(`
+    query GetBarcodesForInventoryItem($inventoryItemId: Int!) {
+  getBarcodesForInventoryItem(inventoryItemId: $inventoryItemId) {
+    id
+    code
+    inventoryItemId
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<GetBarcodesForInventoryItemQuery, GetBarcodesForInventoryItemQueryVariables>;
+export const AddBarcodeDocument = new TypedDocumentString(`
+    mutation AddBarcode($input: AddBarcodeInput!) {
+  addBarcode(input: $input) {
+    id
+    code
+    inventoryItemId
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<AddBarcodeMutation, AddBarcodeMutationVariables>;
+export const RemoveBarcodeDocument = new TypedDocumentString(`
+    mutation RemoveBarcode($input: RemoveBarcodeInput!) {
+  removeBarcode(input: $input)
+}
+    `) as unknown as TypedDocumentString<RemoveBarcodeMutation, RemoveBarcodeMutationVariables>;
 export const SearchProductsForLotDocument = new TypedDocumentString(`
     query SearchProductsForLot($searchTerm: String!, $isSingle: Boolean, $isSealed: Boolean) {
   searchProducts(
@@ -2720,6 +2948,97 @@ export const UpdateOrderStatusDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UpdateOrderStatusMutation, UpdateOrderStatusMutationVariables>;
+export const LookupBarcodeDocument = new TypedDocumentString(`
+    query LookupBarcode($code: String!) {
+  lookupBarcode(code: $code) {
+    inventoryItemId
+    productName
+    gameName
+    setName
+    condition
+    price
+    availableQuantity
+    imageUrl
+  }
+}
+    `) as unknown as TypedDocumentString<LookupBarcodeQuery, LookupBarcodeQueryVariables>;
+export const PosGetInventoryDocument = new TypedDocumentString(`
+    query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {
+  getInventory(filters: $filters, pagination: $pagination) {
+    items {
+      id
+      productId
+      productName
+      gameName
+      condition
+      price
+      totalQuantity
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<PosGetInventoryQuery, PosGetInventoryQueryVariables>;
+export const GetOpenOrdersDocument = new TypedDocumentString(`
+    query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {
+  getOrders(pagination: $pagination, filters: $filters) {
+    items {
+      id
+      orderNumber
+      customerName
+      totalAmount
+      createdAt
+      items {
+        id
+        productId
+        productName
+        condition
+        quantity
+        unitPrice
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GetOpenOrdersQuery, GetOpenOrdersQueryVariables>;
+export const GetPosConfigDocument = new TypedDocumentString(`
+    query GetPosConfig($stateCode: String) {
+  getPosConfig(stateCode: $stateCode) {
+    taxRate
+    stripeEnabled
+    stripePublishableKey
+  }
+}
+    `) as unknown as TypedDocumentString<GetPosConfigQuery, GetPosConfigQueryVariables>;
+export const SubmitPosOrderDocument = new TypedDocumentString(`
+    mutation SubmitPosOrder($input: SubmitPosOrderInput!) {
+  submitPosOrder(input: $input) {
+    id
+    orderNumber
+    totalAmount
+    taxAmount
+    paymentMethod
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<SubmitPosOrderMutation, SubmitPosOrderMutationVariables>;
+export const CompletePosOrderDocument = new TypedDocumentString(`
+    mutation CompletePosOrder($input: CompletePosOrderInput!) {
+  completePosOrder(input: $input) {
+    id
+    orderNumber
+    totalAmount
+    taxAmount
+    paymentMethod
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<CompletePosOrderMutation, CompletePosOrderMutationVariables>;
+export const CreatePosPaymentIntentDocument = new TypedDocumentString(`
+    mutation CreatePosPaymentIntent($amount: Int!) {
+  createPosPaymentIntent(amount: $amount) {
+    clientSecret
+    paymentIntentId
+  }
+}
+    `) as unknown as TypedDocumentString<CreatePosPaymentIntentMutation, CreatePosPaymentIntentMutationVariables>;
 export const GetProductDocument = new TypedDocumentString(`
     query GetProduct($productId: String!) {
   getProduct(productId: $productId) {
@@ -3006,6 +3325,7 @@ export const GetIntegrationSettingsDocument = new TypedDocumentString(`
     stripe {
       enabled
       hasApiKey
+      hasPublishableKey
     }
     shopify {
       enabled
@@ -3020,6 +3340,7 @@ export const UpdateStripeIntegrationDocument = new TypedDocumentString(`
   updateStripeIntegration(input: $input) {
     enabled
     hasApiKey
+    hasPublishableKey
   }
 }
     `) as unknown as TypedDocumentString<UpdateStripeIntegrationMutation, UpdateStripeIntegrationMutationVariables>;

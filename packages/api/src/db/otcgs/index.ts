@@ -15,6 +15,7 @@ import * as storeSupportedGameRelations from './store-supported-game-relations';
 import * as buyRateRelations from './buy-rate-relations';
 import * as lotRelations from './lot-relations';
 import * as lotItemRelations from './lot-item-relations';
+import * as barcodeRelations from './barcode-relations';
 import * as cronJobRelations from './cron-job-relations';
 import * as eventRelations from './event-relations';
 export * from './schema';
@@ -97,6 +98,7 @@ const otcgs = drizzle(client, {
     ...buyRateRelations,
     ...lotRelations,
     ...lotItemRelations,
+    ...barcodeRelations,
     ...cronJobRelations,
     ...eventRelations,
   },

@@ -28,6 +28,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     canAccessSettings,
     canManageStoreLocations,
     canManageUsers,
+    canUsePOS,
     canManageEvents,
   ] = await Promise.all([
     checkPerm(ctx, { inventory: ['read'] }),
@@ -36,6 +37,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     checkPerm(ctx, { companySettings: ['read'] }),
     checkPerm(ctx, { storeLocations: ['read'] }),
     checkPerm(ctx, { userManagement: ['read'] }),
+    checkPerm(ctx, { order: ['create'] }),
     checkPerm(ctx, { event: ['read'] }),
   ]);
 
@@ -50,6 +52,7 @@ export const userPermissions: NonNullable<QueryResolvers['userPermissions']> = a
     canManageStoreLocations,
     canManageUsers,
     canViewTransactionLog,
+    canUsePOS,
     canManageEvents,
   };
 };

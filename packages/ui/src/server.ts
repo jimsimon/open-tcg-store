@@ -297,6 +297,11 @@ const router = new Router()
     if (ctx.status === 403) return;
     return renderPage(ctx, 'orders');
   })
+  .get('pos', '/pos', async (ctx) => {
+    await requirePermission('order', 'create')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'pos');
+  })
   // Event management (admin - requires event:read permission)
   .get('event-management', '/event-management', async (ctx) => {
     await requirePermission('event', 'read')(ctx, async () => {});

@@ -11,6 +11,7 @@ type UserPermissions {
   canManageStoreLocations: Boolean!
   canManageUsers: Boolean!
   canViewTransactionLog: Boolean!
+  canUsePOS: Boolean!
   canManageEvents: Boolean!
 }
 
