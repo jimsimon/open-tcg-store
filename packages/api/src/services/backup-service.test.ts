@@ -17,9 +17,11 @@ const {
   mockMkdtempSync,
   mockRenameSync,
   mockCopyFileSync,
-  mockAuthorizeURL,
-  mockGetToken,
-  mockCreateToken,
+  mockCalculatePKCECodeChallenge,
+  mockAuthorizationCodeGrantRequest,
+  mockProcessAuthorizationCodeResponse,
+  mockRefreshTokenGrantRequest,
+  mockProcessRefreshTokenResponse,
   mockDriveFilesList,
   mockDriveFilesCreate,
   mockDriveFilesGet,
@@ -46,9 +48,11 @@ const {
   mockMkdtempSync: vi.fn(() => '/tmp/otcgs-backup-xyz'),
   mockRenameSync: vi.fn(),
   mockCopyFileSync: vi.fn(),
-  mockAuthorizeURL: vi.fn(),
-  mockGetToken: vi.fn(),
-  mockCreateToken: vi.fn(),
+  mockCalculatePKCECodeChallenge: vi.fn(),
+  mockAuthorizationCodeGrantRequest: vi.fn(),
+  mockProcessAuthorizationCodeResponse: vi.fn(),
+  mockRefreshTokenGrantRequest: vi.fn(),
+  mockProcessRefreshTokenResponse: vi.fn(),
   mockDriveFilesList: vi.fn(),
   mockDriveFilesCreate: vi.fn(),
   mockDriveFilesGet: vi.fn(),
@@ -108,11 +112,6 @@ vi.mock('node:os', () => ({
   tmpdir: vi.fn(() => '/tmp'),
 }));
 
-// Mock node:crypto
-vi.mock('node:crypto', () => ({
-  randomBytes: vi.fn(() => ({ toString: () => 'mock-state-token' })),
-}));
-
 // Mock @libsql/client for safeRestore integrity check
 vi.mock('@libsql/client', () => ({
   createClient: vi.fn(() => ({
@@ -121,13 +120,17 @@ vi.mock('@libsql/client', () => ({
   })),
 }));
 
-// Mock simple-oauth2 - use a class so `new AuthorizationCode(...)` works
-vi.mock('simple-oauth2', () => ({
-  AuthorizationCode: class {
-    authorizeURL = mockAuthorizeURL;
-    getToken = mockGetToken;
-    createToken = mockCreateToken;
-  },
+// Mock oauth4webapi
+vi.mock('oauth4webapi', () => ({
+  generateRandomState: vi.fn(() => 'mock-state-token'),
+  generateRandomCodeVerifier: vi.fn(() => 'mock-code-verifier'),
+  calculatePKCECodeChallenge: mockCalculatePKCECodeChallenge,
+  validateAuthResponse: vi.fn(() => new URLSearchParams({ code: 'mock-code' })),
+  authorizationCodeGrantRequest: mockAuthorizationCodeGrantRequest,
+  processAuthorizationCodeResponse: mockProcessAuthorizationCodeResponse,
+  refreshTokenGrantRequest: mockRefreshTokenGrantRequest,
+  processRefreshTokenResponse: mockProcessRefreshTokenResponse,
+  None: vi.fn(() => vi.fn()),
 }));
 
 // Mock googleapis - use a class so `new google.auth.OAuth2(...)` works
@@ -195,59 +198,56 @@ describe('backup-service', () => {
     // Restore default implementations cleared by clearAllMocks
     mockMkdtempSync.mockReturnValue('/tmp/otcgs-backup-xyz');
     mockLibsqlExecute.mockResolvedValue({ rows: [['ok']] });
-    // Set env vars for OAuth configs
+    mockCalculatePKCECodeChallenge.mockResolvedValue('mock-code-challenge');
+    // Set env vars for OAuth configs (no client secrets needed with PKCE)
     process.env.APP_URL = 'http://localhost';
     process.env.GOOGLE_CLIENT_ID = 'google-client-id';
-    process.env.GOOGLE_CLIENT_SECRET = 'google-client-secret';
     process.env.DROPBOX_APP_KEY = 'dropbox-app-key';
-    process.env.DROPBOX_APP_SECRET = 'dropbox-app-secret';
     process.env.ONEDRIVE_CLIENT_ID = 'onedrive-client-id';
-    process.env.ONEDRIVE_CLIENT_SECRET = 'onedrive-client-secret';
   });
 
   // -----------------------------------------------------------------------
-  // getAuthUrl
+  // getAuthUrl (PKCE flow via oauth4webapi)
   // -----------------------------------------------------------------------
   describe('getAuthUrl', () => {
-    it('should generate Google Drive auth URL', () => {
-      mockAuthorizeURL.mockReturnValue('https://accounts.google.com/auth?...');
+    it('should generate Google Drive auth URL with PKCE parameters', async () => {
+      const url = await getAuthUrl('google_drive');
+      const parsed = new URL(url);
 
-      const url = getAuthUrl('google_drive');
-
-      expect(url).toBe('https://accounts.google.com/auth?...');
-      expect(mockAuthorizeURL).toHaveBeenCalledWith(
-        expect.objectContaining({
-          scope: 'https://www.googleapis.com/auth/drive.file',
-          access_type: 'offline',
-          prompt: 'consent',
-        }),
-      );
+      expect(parsed.origin).toBe('https://accounts.google.com');
+      expect(parsed.pathname).toBe('/o/oauth2/v2/auth');
+      expect(parsed.searchParams.get('response_type')).toBe('code');
+      expect(parsed.searchParams.get('client_id')).toBe('google-client-id');
+      expect(parsed.searchParams.get('code_challenge')).toBe('mock-code-challenge');
+      expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(parsed.searchParams.get('scope')).toBe('https://www.googleapis.com/auth/drive.file');
+      expect(parsed.searchParams.get('access_type')).toBe('offline');
+      expect(parsed.searchParams.get('prompt')).toBe('consent');
+      expect(parsed.searchParams.get('state')).toBe('mock-state-token');
     });
 
-    it('should generate Dropbox auth URL', () => {
-      mockAuthorizeURL.mockReturnValue('https://www.dropbox.com/oauth2/authorize?...');
+    it('should generate Dropbox auth URL with PKCE parameters', async () => {
+      const url = await getAuthUrl('dropbox');
+      const parsed = new URL(url);
 
-      const url = getAuthUrl('dropbox');
-
-      expect(url).toBe('https://www.dropbox.com/oauth2/authorize?...');
-      expect(mockAuthorizeURL).toHaveBeenCalledWith(
-        expect.objectContaining({
-          token_access_type: 'offline',
-        }),
-      );
+      expect(parsed.origin).toBe('https://www.dropbox.com');
+      expect(parsed.pathname).toBe('/oauth2/authorize');
+      expect(parsed.searchParams.get('client_id')).toBe('dropbox-app-key');
+      expect(parsed.searchParams.get('code_challenge')).toBe('mock-code-challenge');
+      expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(parsed.searchParams.get('token_access_type')).toBe('offline');
+      expect(parsed.searchParams.has('scope')).toBe(false);
     });
 
-    it('should generate OneDrive auth URL', () => {
-      mockAuthorizeURL.mockReturnValue('https://login.microsoftonline.com/auth?...');
+    it('should generate OneDrive auth URL with PKCE parameters', async () => {
+      const url = await getAuthUrl('onedrive');
+      const parsed = new URL(url);
 
-      const url = getAuthUrl('onedrive');
-
-      expect(url).toBe('https://login.microsoftonline.com/auth?...');
-      expect(mockAuthorizeURL).toHaveBeenCalledWith(
-        expect.objectContaining({
-          scope: 'Files.ReadWrite offline_access',
-        }),
-      );
+      expect(parsed.origin).toBe('https://login.microsoftonline.com');
+      expect(parsed.searchParams.get('client_id')).toBe('onedrive-client-id');
+      expect(parsed.searchParams.get('code_challenge')).toBe('mock-code-challenge');
+      expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(parsed.searchParams.get('scope')).toBe('Files.ReadWrite offline_access');
     });
   });
 
@@ -255,50 +255,55 @@ describe('backup-service', () => {
   // Convenience auth URL functions
   // -----------------------------------------------------------------------
   describe('convenience auth URL functions', () => {
-    it('getGoogleDriveAuthUrl should call getAuthUrl with google_drive', () => {
-      mockAuthorizeURL.mockReturnValue('https://google.com/auth');
-      const url = getGoogleDriveAuthUrl();
-      expect(url).toBe('https://google.com/auth');
+    it('getGoogleDriveAuthUrl should return a Google auth URL', async () => {
+      const url = await getGoogleDriveAuthUrl();
+      expect(url).toContain('accounts.google.com');
     });
 
-    it('getDropboxAuthUrl should call getAuthUrl with dropbox', () => {
-      mockAuthorizeURL.mockReturnValue('https://dropbox.com/auth');
-      const url = getDropboxAuthUrl();
-      expect(url).toBe('https://dropbox.com/auth');
+    it('getDropboxAuthUrl should return a Dropbox auth URL', async () => {
+      const url = await getDropboxAuthUrl();
+      expect(url).toContain('dropbox.com');
     });
 
-    it('getOneDriveAuthUrl should call getAuthUrl with onedrive', () => {
-      mockAuthorizeURL.mockReturnValue('https://onedrive.com/auth');
-      const url = getOneDriveAuthUrl();
-      expect(url).toBe('https://onedrive.com/auth');
+    it('getOneDriveAuthUrl should return a OneDrive auth URL', async () => {
+      const url = await getOneDriveAuthUrl();
+      expect(url).toContain('login.microsoftonline.com');
     });
   });
 
   // -----------------------------------------------------------------------
-  // handleOAuthCallback
+  // handleOAuthCallback (PKCE token exchange via oauth4webapi)
   // -----------------------------------------------------------------------
   describe('handleOAuthCallback', () => {
-    it('should exchange code for tokens and store them', async () => {
-      mockGetToken.mockResolvedValue({
-        token: { access_token: 'new-access', refresh_token: 'new-refresh' },
+    it('should exchange code for tokens via PKCE and store them', async () => {
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockResolvedValue({
+        access_token: 'new-access',
+        refresh_token: 'new-refresh',
       });
 
-      await handleOAuthCallback('google_drive', 'auth-code-123');
+      await handleOAuthCallback('google_drive', 'auth-code-123', 'test-verifier');
 
-      expect(mockGetToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: 'auth-code-123',
-        }),
-      );
+      expect(mockAuthorizationCodeGrantRequest).toHaveBeenCalled();
       expect(mockStoreOAuthTokens).toHaveBeenCalledWith('google_drive', 'new-access', 'new-refresh');
     });
 
     it('should throw when no access token is returned', async () => {
-      mockGetToken.mockResolvedValue({
-        token: { access_token: '', refresh_token: '' },
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockResolvedValue({
+        access_token: '',
       });
 
-      await expect(handleOAuthCallback('dropbox', 'code')).rejects.toThrow('Failed to obtain dropbox access token');
+      await expect(handleOAuthCallback('dropbox', 'code', 'verifier')).rejects.toThrow(
+        'Failed to obtain dropbox access token',
+      );
+    });
+
+    it('should throw when token exchange fails', async () => {
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockRejectedValue(new Error('invalid_grant'));
+
+      await expect(handleOAuthCallback('google_drive', 'code', 'verifier')).rejects.toThrow('invalid_grant');
     });
   });
 
@@ -307,23 +312,25 @@ describe('backup-service', () => {
   // -----------------------------------------------------------------------
   describe('convenience callback functions', () => {
     beforeEach(() => {
-      mockGetToken.mockResolvedValue({
-        token: { access_token: 'access', refresh_token: 'refresh' },
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockResolvedValue({
+        access_token: 'access',
+        refresh_token: 'refresh',
       });
     });
 
     it('handleGoogleDriveCallback should handle google_drive callback', async () => {
-      await handleGoogleDriveCallback('code');
+      await handleGoogleDriveCallback('code', 'verifier');
       expect(mockStoreOAuthTokens).toHaveBeenCalledWith('google_drive', 'access', 'refresh');
     });
 
     it('handleDropboxCallback should handle dropbox callback', async () => {
-      await handleDropboxCallback('code');
+      await handleDropboxCallback('code', 'verifier');
       expect(mockStoreOAuthTokens).toHaveBeenCalledWith('dropbox', 'access', 'refresh');
     });
 
     it('handleOneDriveCallback should handle onedrive callback', async () => {
-      await handleOneDriveCallback('code');
+      await handleOneDriveCallback('code', 'verifier');
       expect(mockStoreOAuthTokens).toHaveBeenCalledWith('onedrive', 'access', 'refresh');
     });
   });
@@ -332,6 +339,15 @@ describe('backup-service', () => {
   // performBackup
   // -----------------------------------------------------------------------
   describe('performBackup', () => {
+    /** Helper to mock token refresh via oauth4webapi. */
+    function mockTokenRefreshSuccess() {
+      mockRefreshTokenGrantRequest.mockResolvedValue(new Response());
+      mockProcessRefreshTokenResponse.mockResolvedValue({
+        access_token: 'new-access',
+        refresh_token: 'refresh',
+      });
+    }
+
     it('should return failure when database file does not exist', async () => {
       mockExistsSync.mockReturnValue(false);
 
@@ -345,13 +361,7 @@ describe('backup-service', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(Buffer.from('db-content'));
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       // Folder search returns existing folder
       mockDriveFilesList.mockResolvedValue({
         data: { files: [{ id: 'folder-123' }] },
@@ -370,13 +380,7 @@ describe('backup-service', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(Buffer.from('db-content'));
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockFilesUpload.mockResolvedValue({});
 
       const result = await performBackup('dropbox');
@@ -390,13 +394,7 @@ describe('backup-service', () => {
       mockExistsSync.mockReturnValue(true);
       mockCreateReadStream.mockReturnValue('stream');
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockOneDriveCreateFolder.mockResolvedValue({});
       mockOneDriveListChildren.mockResolvedValue({
         value: [{ name: 'otcgs-backups', id: 'folder-id' }],
@@ -414,13 +412,7 @@ describe('backup-service', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(Buffer.from('db-content'));
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       // Folder search returns empty — no existing folder
       mockDriveFilesList.mockResolvedValue({
         data: { files: [] },
@@ -439,13 +431,7 @@ describe('backup-service', () => {
       mockExistsSync.mockReturnValue(true);
       mockCreateReadStream.mockReturnValue('stream');
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockOneDriveCreateFolder.mockResolvedValue({});
       // Folder not found in children list
       mockOneDriveListChildren.mockResolvedValue({ value: [] });
@@ -481,15 +467,18 @@ describe('backup-service', () => {
   // performRestore
   // -----------------------------------------------------------------------
   describe('performRestore', () => {
+    /** Helper to mock token refresh via oauth4webapi. */
+    function mockTokenRefreshSuccess() {
+      mockRefreshTokenGrantRequest.mockResolvedValue(new Response());
+      mockProcessRefreshTokenResponse.mockResolvedValue({
+        access_token: 'new-access',
+        refresh_token: 'refresh',
+      });
+    }
+
     it('should restore from Google Drive successfully', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       // Folder search
       mockDriveFilesList
         .mockResolvedValueOnce({ data: { files: [{ id: 'folder-123' }] } })
@@ -508,13 +497,7 @@ describe('backup-service', () => {
 
     it('should restore from Dropbox successfully', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockFilesListFolder.mockResolvedValue({
         result: {
           entries: [{ '.tag': 'file', name: 'otcgs-backup-2025.sqlite', path_lower: '/backups/file.sqlite' }],
@@ -532,13 +515,7 @@ describe('backup-service', () => {
 
     it('should restore from OneDrive successfully', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       // Root children — find backup folder
       mockOneDriveListChildren
         .mockResolvedValueOnce({
@@ -568,13 +545,7 @@ describe('backup-service', () => {
 
     it('should fail OneDrive restore when no backup folder found', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockOneDriveListChildren.mockResolvedValue({ value: [] });
 
       const result = await performRestore('onedrive');
@@ -585,13 +556,7 @@ describe('backup-service', () => {
 
     it('should fail OneDrive restore when no backup files found', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockOneDriveListChildren
         .mockResolvedValueOnce({
           value: [{ name: 'otcgs-backups', id: 'folder-id' }],
@@ -606,13 +571,7 @@ describe('backup-service', () => {
 
     it('should fail Google Drive restore when no backup folder found', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockDriveFilesList.mockResolvedValue({ data: { files: [] } });
 
       const result = await performRestore('google_drive');
@@ -623,13 +582,7 @@ describe('backup-service', () => {
 
     it('should fail Google Drive restore when no backup files found', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockDriveFilesList
         .mockResolvedValueOnce({ data: { files: [{ id: 'folder-123' }] } })
         .mockResolvedValueOnce({ data: { files: [] } });
@@ -642,13 +595,7 @@ describe('backup-service', () => {
 
     it('should fail Dropbox restore when no backup files found', async () => {
       mockGetOAuthTokens.mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' });
-      mockCreateToken.mockReturnValue({
-        expired: () => false,
-        refresh: vi.fn().mockResolvedValue({
-          token: { access_token: 'new-access', refresh_token: 'refresh' },
-        }),
-        token: { access_token: 'new-access', refresh_token: 'refresh' },
-      });
+      mockTokenRefreshSuccess();
       mockFilesListFolder.mockResolvedValue({
         result: { entries: [] },
       });

@@ -712,9 +712,9 @@ export class OgsSettingsBackupPage extends OgsPageBase {
               >.`,
             html`Click "Create Credentials" and select "OAuth client ID".`,
             html`Set the application type to "Web application".`,
-            html`Add your redirect URI (e.g.
-              <code>${window.location.origin}/api/backup/oauth/google_drive/callback</code>).`,
-            html`Copy the generated Client ID and paste it below.`,
+            html`Add your redirect URI: <code>${window.location.origin}/api/backup/oauth/google_drive/callback</code>.`,
+            html`Copy the generated <strong>Client ID</strong> and paste it below. No client secret is needed — this app
+              uses PKCE for secure authorization.`,
           ],
         };
       case 'dropbox':
@@ -731,9 +731,10 @@ export class OgsSettingsBackupPage extends OgsPageBase {
               and click "Create app".`,
             html`Choose "Scoped access" and "Full Dropbox" access type.`,
             html`Name your app and click "Create app".`,
-            html`Under Settings, add your redirect URI (e.g.
-              <code>${window.location.origin}/api/backup/oauth/dropbox/callback</code>).`,
-            html`Copy the "App key" (this is your Client ID) and paste it below.`,
+            html`Under the Settings tab, find the "Allow public clients (Implicit Grant & PKCE)" setting and enable it.`,
+            html`Add your redirect URI: <code>${window.location.origin}/api/backup/oauth/dropbox/callback</code>.`,
+            html`Copy the <strong>App key</strong> (this is your Client ID) and paste it below. No app secret is needed
+              — this app uses PKCE for secure authorization.`,
           ],
         };
       case 'onedrive':
@@ -748,10 +749,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
                 >Azure Portal App Registrations</a
               >
               and click "New registration".`,
-            html`Name your application.`,
-            html`Set the redirect URI to "Web" with your callback URL (e.g.
-              <code>${window.location.origin}/api/backup/oauth/onedrive/callback</code>).`,
-            html`After registration, copy the "Application (client) ID" and paste it below.`,
+            html`Name your application and under "Supported account types" select the appropriate option.`,
+            html`Set the redirect URI platform to "Single-page application" (SPA) with your callback URL:
+              <code>${window.location.origin}/api/backup/oauth/onedrive/callback</code>. This enables PKCE support
+              without a client secret.`,
+            html`After registration, copy the <strong>Application (client) ID</strong> and paste it below.`,
           ],
         };
       default:

@@ -11,8 +11,7 @@ import {
 import { join } from 'node:path';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { randomBytes } from 'node:crypto';
-import { AuthorizationCode } from 'simple-oauth2';
+import * as oauth from 'oauth4webapi';
 import { google } from 'googleapis';
 import { Dropbox } from 'dropbox';
 import oneDriveAPI from 'onedrive-api';
@@ -29,25 +28,27 @@ const BACKUP_FOLDER = 'otcgs-backups';
 // OAuth CSRF state management
 // ---------------------------------------------------------------------------
 
-const pendingOAuthStates = new Map<string, { provider: BackupProvider; expiresAt: number }>();
+const pendingOAuthStates = new Map<string, { provider: BackupProvider; codeVerifier: string; expiresAt: number }>();
 
-/** Generate a cryptographic state parameter for OAuth CSRF protection. */
-export function generateOAuthState(provider: BackupProvider): string {
-  const state = randomBytes(32).toString('hex');
+/** Generate a cryptographic state parameter for OAuth CSRF protection (includes PKCE verifier). */
+export function generateOAuthState(provider: BackupProvider): { state: string; codeVerifier: string } {
+  const state = oauth.generateRandomState();
+  const codeVerifier = oauth.generateRandomCodeVerifier();
   pendingOAuthStates.set(state, {
     provider,
+    codeVerifier,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minute expiry
   });
-  return state;
+  return { state, codeVerifier };
 }
 
-/** Validate and consume an OAuth state parameter. Returns the provider if valid. */
-export function validateOAuthState(state: string): BackupProvider | null {
+/** Validate and consume an OAuth state parameter. Returns the provider and code_verifier if valid. */
+export function validateOAuthState(state: string): { provider: BackupProvider; codeVerifier: string } | null {
   const entry = pendingOAuthStates.get(state);
   if (!entry) return null;
   pendingOAuthStates.delete(state);
   if (Date.now() > entry.expiresAt) return null;
-  return entry.provider;
+  return { provider: entry.provider, codeVerifier: entry.codeVerifier };
 }
 
 // Periodically clean up expired state entries
@@ -160,120 +161,130 @@ async function safeRestore(data: Buffer): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Shared OAuth Configuration
+// Shared OAuth Configuration (PKCE — no client secret required)
 // ---------------------------------------------------------------------------
 
 interface OAuthProviderConfig {
   clientId: string;
-  clientSecret: string;
-  authorizeUrl: string;
-  tokenUrl: string;
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
   scopes: string[];
   redirectUri: string;
+  /** Extra params to include in the authorize URL */
+  extraAuthorizeParams?: Record<string, string>;
 }
 
-function getProviderConfig(provider: BackupProvider): OAuthProviderConfig {
+export function getProviderConfig(provider: BackupProvider): OAuthProviderConfig {
   const baseUrl = process.env.APP_URL || 'http://localhost';
 
   switch (provider) {
     case 'google_drive':
       return {
         clientId: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenUrl: 'https://oauth2.googleapis.com/token',
+        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenEndpoint: 'https://oauth2.googleapis.com/token',
         scopes: ['https://www.googleapis.com/auth/drive.file'],
         redirectUri: `${baseUrl}/api/backup/oauth/google_drive/callback`,
+        extraAuthorizeParams: { access_type: 'offline', prompt: 'consent' },
       };
     case 'dropbox':
       return {
         clientId: process.env.DROPBOX_APP_KEY!,
-        clientSecret: process.env.DROPBOX_APP_SECRET!,
-        authorizeUrl: 'https://www.dropbox.com/oauth2/authorize',
-        tokenUrl: 'https://api.dropboxapi.com/oauth2/token',
+        authorizationEndpoint: 'https://www.dropbox.com/oauth2/authorize',
+        tokenEndpoint: 'https://api.dropboxapi.com/oauth2/token',
         scopes: [],
         redirectUri: `${baseUrl}/api/backup/oauth/dropbox/callback`,
+        extraAuthorizeParams: { token_access_type: 'offline' },
       };
     case 'onedrive':
       return {
         clientId: process.env.ONEDRIVE_CLIENT_ID!,
-        clientSecret: process.env.ONEDRIVE_CLIENT_SECRET!,
-        authorizeUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-        tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
         scopes: ['Files.ReadWrite', 'offline_access'],
         redirectUri: `${baseUrl}/api/backup/oauth/onedrive/callback`,
       };
   }
 }
 
-function createOAuthClient(provider: BackupProvider): AuthorizationCode {
-  const config = getProviderConfig(provider);
-  const tokenUrlParsed = new URL(config.tokenUrl);
-  const authorizeUrlParsed = new URL(config.authorizeUrl);
+/** Build the oauth4webapi AuthorizationServer metadata for a provider. */
+function getAuthorizationServer(config: OAuthProviderConfig): oauth.AuthorizationServer {
+  return {
+    // Fabricated issuer — these providers don't support OIDC discovery for
+    // their file API scopes. The value is only used internally by oauth4webapi
+    // for response validation and doesn't need to match a real issuer identifier.
+    issuer: new URL(config.tokenEndpoint).origin as `https://${string}`,
+    authorization_endpoint: config.authorizationEndpoint,
+    token_endpoint: config.tokenEndpoint,
+  };
+}
 
-  return new AuthorizationCode({
-    client: {
-      id: config.clientId,
-      secret: config.clientSecret,
-    },
-    auth: {
-      tokenHost: tokenUrlParsed.origin,
-      tokenPath: tokenUrlParsed.pathname,
-      authorizeHost: authorizeUrlParsed.origin,
-      authorizePath: authorizeUrlParsed.pathname,
-    },
-  });
+/** Build the oauth4webapi Client for a provider. */
+function getOAuthClient(config: OAuthProviderConfig): oauth.Client {
+  return { client_id: config.clientId };
 }
 
 // ---------------------------------------------------------------------------
-// Shared OAuth: Authorize URL + Callback
+// Shared OAuth: Authorize URL + Callback (PKCE flow via oauth4webapi)
 // ---------------------------------------------------------------------------
 
-export function getAuthUrl(provider: BackupProvider): string {
+export async function getAuthUrl(provider: BackupProvider): Promise<string> {
   const config = getProviderConfig(provider);
-  const client = createOAuthClient(provider);
+  const { state, codeVerifier } = generateOAuthState(provider);
+  const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
 
-  const state = generateOAuthState(provider);
+  const authorizationUrl = new URL(config.authorizationEndpoint);
+  authorizationUrl.searchParams.set('client_id', config.clientId);
+  authorizationUrl.searchParams.set('redirect_uri', config.redirectUri);
+  authorizationUrl.searchParams.set('response_type', 'code');
+  authorizationUrl.searchParams.set('code_challenge', codeChallenge);
+  authorizationUrl.searchParams.set('code_challenge_method', 'S256');
+  authorizationUrl.searchParams.set('state', state);
 
-  const params: Record<string, string> = {
-    redirect_uri: config.redirectUri,
-    scope: config.scopes.join(' '),
-    state,
-  };
-
-  // Provider-specific params
-  if (provider === 'google_drive') {
-    params.access_type = 'offline';
-    params.prompt = 'consent';
+  if (config.scopes.length > 0) {
+    authorizationUrl.searchParams.set('scope', config.scopes.join(' '));
   }
-  if (provider === 'dropbox') {
-    params.token_access_type = 'offline';
+  if (config.extraAuthorizeParams) {
+    for (const [key, value] of Object.entries(config.extraAuthorizeParams)) {
+      authorizationUrl.searchParams.set(key, value);
+    }
   }
 
-  return client.authorizeURL(params);
+  return authorizationUrl.href;
 }
 
-export async function handleOAuthCallback(provider: BackupProvider, code: string): Promise<void> {
+export async function handleOAuthCallback(provider: BackupProvider, code: string, codeVerifier: string): Promise<void> {
   const config = getProviderConfig(provider);
-  const client = createOAuthClient(provider);
+  const as = getAuthorizationServer(config);
+  const client = getOAuthClient(config);
+  const clientAuth = oauth.None();
 
-  const tokenParams = {
-    code,
-    redirect_uri: config.redirectUri,
-    scope: config.scopes.join(' '),
-  };
+  // Build a fake callback URL so oauth4webapi can extract the code
+  const callbackUrl = new URL(config.redirectUri);
+  callbackUrl.searchParams.set('code', code);
 
-  const accessToken = await client.getToken(tokenParams);
-  const token = accessToken.token;
+  const params = oauth.validateAuthResponse(as, client, callbackUrl);
+  const response = await oauth.authorizationCodeGrantRequest(
+    as,
+    client,
+    clientAuth,
+    params,
+    config.redirectUri,
+    codeVerifier,
+  );
 
-  const access = (token.access_token as string) || '';
-  const refresh = (token.refresh_token as string) || '';
+  const result = await oauth.processAuthorizationCodeResponse(as, client, response);
 
-  if (!access) {
+  const accessToken = result.access_token;
+  const refreshToken = result.refresh_token ?? '';
+
+  // Belt-and-suspenders: oauth4webapi guarantees access_token on success,
+  // but guard against unexpected empty values defensively.
+  if (!accessToken) {
     throw new Error(`Failed to obtain ${provider} access token`);
   }
 
-  await storeOAuthTokens(provider, access, refresh);
+  await storeOAuthTokens(provider, accessToken, refreshToken);
 }
 
 async function getRefreshedAccessToken(provider: BackupProvider): Promise<string> {
@@ -282,52 +293,45 @@ async function getRefreshedAccessToken(provider: BackupProvider): Promise<string
     throw new Error(`${provider} is not connected. Please authorize first.`);
   }
 
-  const client = createOAuthClient(provider);
+  const config = getProviderConfig(provider);
+  const as = getAuthorizationServer(config);
+  const client = getOAuthClient(config);
+  const clientAuth = oauth.None();
 
-  // Create an access token object from stored tokens
-  let accessToken = client.createToken({
-    access_token: tokens.accessToken || '',
-    refresh_token: tokens.refreshToken,
-  });
+  const response = await oauth.refreshTokenGrantRequest(as, client, clientAuth, tokens.refreshToken);
+  const result = await oauth.processRefreshTokenResponse(as, client, response);
 
-  // Refresh if expired (or always refresh to be safe)
-  if (accessToken.expired()) {
-    accessToken = await accessToken.refresh();
-  } else {
-    // Force refresh to ensure we have a valid token
-    try {
-      accessToken = await accessToken.refresh();
-    } catch {
-      // If refresh fails but token isn't expired, use existing
-    }
+  // Belt-and-suspenders: oauth4webapi guarantees access_token on success,
+  // but guard against unexpected empty values defensively.
+  const newAccess = result.access_token;
+  if (!newAccess) {
+    throw new Error(`Token refresh for ${provider} returned no access token. Please reconnect.`);
   }
 
-  const newAccess = accessToken.token.access_token as string;
-  const newRefresh = (accessToken.token.refresh_token as string) || tokens.refreshToken;
-
+  const newRefresh = result.refresh_token ?? tokens.refreshToken;
   await storeOAuthTokens(provider, newAccess, newRefresh);
 
   return newAccess;
 }
 
 // Convenience exports for the API server routes
-export function getGoogleDriveAuthUrl(): string {
+export async function getGoogleDriveAuthUrl(): Promise<string> {
   return getAuthUrl('google_drive');
 }
-export function getDropboxAuthUrl(): string {
+export async function getDropboxAuthUrl(): Promise<string> {
   return getAuthUrl('dropbox');
 }
-export function getOneDriveAuthUrl(): string {
+export async function getOneDriveAuthUrl(): Promise<string> {
   return getAuthUrl('onedrive');
 }
-export async function handleGoogleDriveCallback(code: string): Promise<void> {
-  return handleOAuthCallback('google_drive', code);
+export async function handleGoogleDriveCallback(code: string, codeVerifier: string): Promise<void> {
+  return handleOAuthCallback('google_drive', code, codeVerifier);
 }
-export async function handleDropboxCallback(code: string): Promise<void> {
-  return handleOAuthCallback('dropbox', code);
+export async function handleDropboxCallback(code: string, codeVerifier: string): Promise<void> {
+  return handleOAuthCallback('dropbox', code, codeVerifier);
 }
-export async function handleOneDriveCallback(code: string): Promise<void> {
-  return handleOAuthCallback('onedrive', code);
+export async function handleOneDriveCallback(code: string, codeVerifier: string): Promise<void> {
+  return handleOAuthCallback('onedrive', code, codeVerifier);
 }
 
 // ---------------------------------------------------------------------------
@@ -338,7 +342,7 @@ async function getGoogleDriveClient() {
   const accessToken = await getRefreshedAccessToken('google_drive');
   const config = getProviderConfig('google_drive');
 
-  const oauth2Client = new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
+  const oauth2Client = new google.auth.OAuth2(config.clientId, undefined, config.redirectUri);
   oauth2Client.setCredentials({ access_token: accessToken });
 
   return google.drive({ version: 'v3', auth: oauth2Client });
