@@ -23,12 +23,13 @@ import { cartState } from '../../lib/cart-state.ts';
 import {
   productPageStyles,
   filterBarStyles,
-  productTableStyles,
-  cartControlsStyles,
+  productGridStyles,
+  productBadgeStyles,
   paginationStyles,
   emptyStateStyles,
   loadingStateStyles,
   getQuantityBadgeClass,
+  formatCurrency,
 } from '../products/products-shared.ts';
 import { AddToCartMutation } from '../../lib/shared-queries';
 import { debounce } from '../../lib/debounce';
@@ -102,17 +103,11 @@ export class OgsProductsSealedPage extends OgsPageBase {
     `,
     productPageStyles,
     filterBarStyles,
-    productTableStyles,
-    cartControlsStyles,
+    productGridStyles,
+    productBadgeStyles,
     paginationStyles,
     emptyStateStyles,
     loadingStateStyles,
-    css`
-      :host {
-        box-sizing: border-box;
-        display: block;
-      }
-    `,
   ];
 
   // --- Properties ---
@@ -331,7 +326,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
     this.cartError = '';
 
     const btn = event.currentTarget as HTMLElement;
-    const container = btn?.closest('.cart-controls');
+    const container = btn?.closest('.product-card-cart');
     const input = container?.querySelector('wa-input') as WaInput | null;
     const quantity = input ? Number.parseInt(input.value as string, 10) || 1 : 1;
 
@@ -386,7 +381,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
         ${when(
           this.loading,
           () => this.renderLoadingState(),
-          () => this.renderProductTable(),
+          () => this.renderProductGrid(),
         )}
         ${this.renderPagination()}
       `,
@@ -482,9 +477,9 @@ export class OgsProductsSealedPage extends OgsPageBase {
     `;
   }
 
-  // --- Product Table (no Rarity column for sealed) ---
+  // --- Product Grid ---
 
-  private renderProductTable() {
+  private renderProductGrid() {
     if (this.products.length === 0 && !this.loading) {
       return html`
         <div class="empty-state">
@@ -496,77 +491,61 @@ export class OgsProductsSealedPage extends OgsPageBase {
     }
 
     return html`
-      <div class="table-container">
-        <table class="wa-table">
-          <thead>
-            <tr>
-              <th scope="col" class="wa-visually-hidden">Thumbnail</th>
-              <th scope="col">Name</th>
-              <th scope="col">Game</th>
-              <th scope="col">Set</th>
-              <th scope="col" class="quantity-cell">Qty</th>
-              <th scope="col" class="price-cell">Price</th>
-              <th scope="col" class="wa-visually-hidden">Add to Cart</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.products.map(
-              (product) => html`
-                <tr>
-                  <td>
-                    ${product.images?.small
-                      ? html`<a href="${product.images.large}" target="_blank"
-                          ><img src="${product.images.small}" alt="${product.name}" class="card-thumbnail"
-                        /></a>`
-                      : html`<div class="card-thumbnail">
-                          <wa-icon name="box" variant="regular" style="font-size: 1.25rem;"></wa-icon>
-                        </div>`}
-                  </td>
-                  <td class="product-name">
-                    <a href="/products/${product.id}">
-                      ${product.name.length > 31 ? `${product.name.substring(0, 31)}...` : product.name}
-                    </a>
-                  </td>
-                  <td>
+      <div class="products-grid">
+        ${this.products.map(
+          (product) => html`
+            <wa-card appearance="outlined">
+              <a class="product-card-link" href="/products/${product.id}">
+                <div class="product-card-image">
+                  ${product.images?.small
+                    ? html`<img src="${product.images.small}" alt="${product.name}" />`
+                    : html`<div class="card-placeholder">
+                        <wa-icon name="box" variant="regular"></wa-icon>
+                      </div>`}
+                </div>
+                <div class="product-card-content">
+                  <div class="product-card-name">${product.name}</div>
+                  <div class="product-card-meta">
                     <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
-                  </td>
-                  <td class="product-set">
-                    ${product.setName.length > 20 ? `${product.setName.substring(0, 20)}...` : product.setName}
-                  </td>
-                  <td class="quantity-cell">
+                    <span>${product.setName}</span>
+                  </div>
+                  <div class="product-card-badges">
                     <span class="quantity-badge ${getQuantityBadgeClass(product.totalQuantity)}">
-                      ${product.totalQuantity > 0 ? product.totalQuantity : '0'}
+                      ${product.totalQuantity > 0 ? `${product.totalQuantity} avail` : 'Out of stock'}
                     </span>
-                  </td>
-                  <td class="price-cell">
+                  </div>
+                </div>
+              </a>
+              <div slot="footer">
+                <div class="product-card-price-row">
+                  <span class="product-price">
                     ${product.lowestPrice != null
-                      ? html`<span class="price-value">$${product.lowestPrice}</span>`
+                      ? formatCurrency(Number(product.lowestPrice))
                       : html`<span class="out-of-stock-text">—</span>`}
-                  </td>
-                  <td>
-                    ${product.totalQuantity > 0
-                      ? html`
-                          <div class="cart-controls">
-                            <wa-input type="number" min="1" max="${product.totalQuantity}" value="1">
-                              <span slot="label" class="wa-visually-hidden">Quantity</span>
-                            </wa-input>
-                            <wa-button
-                              appearance="filled"
-                              size="small"
-                              ?disabled="${this.addingToCart}"
-                              @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
-                            >
-                              <wa-icon name="cart-plus" label="Add to cart"></wa-icon>
-                            </wa-button>
-                          </div>
-                        `
-                      : nothing}
-                  </td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+                  </span>
+                </div>
+                ${product.totalQuantity > 0
+                  ? html`
+                      <div class="product-card-cart">
+                        <wa-input type="number" min="1" max="${product.totalQuantity}" value="1">
+                          <span slot="label" class="wa-visually-hidden">Quantity</span>
+                        </wa-input>
+                        <wa-button
+                          appearance="filled"
+                          size="small"
+                          ?disabled="${this.addingToCart}"
+                          @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
+                        >
+                          <wa-icon name="cart-plus" slot="prefix"></wa-icon>
+                          Add
+                        </wa-button>
+                      </div>
+                    `
+                  : nothing}
+              </div>
+            </wa-card>
+          `,
+        )}
       </div>
     `;
   }

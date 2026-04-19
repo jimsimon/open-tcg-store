@@ -181,30 +181,48 @@ export const filterBarStyles = css`
 export const productGridStyles = css`
   .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
-  .product-card {
-    background: var(--wa-color-surface-raised);
-    border: 1px solid var(--wa-color-border-quiet);
-    border-radius: 12px;
-    overflow: hidden;
+  /* --- wa-card overrides --- */
+
+  .products-grid wa-card {
+    --spacing: 0;
     transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
   }
 
-  .product-card:hover {
+  .products-grid wa-card:hover {
     border-color: var(--wa-color-brand-60);
     box-shadow: 0 4px 12px var(--wa-color-shadow);
     transform: translateY(-2px);
   }
 
+  .products-grid wa-card::part(body) {
+    padding: 0;
+  }
+
+  .products-grid wa-card::part(footer) {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* --- Card link (wraps image + content, no interactive children) --- */
+
+  .product-card-link {
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* --- Card image area --- */
+
   .product-card-image {
     width: 100%;
-    height: 160px;
+    height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,34 +236,61 @@ export const productGridStyles = css`
     object-fit: contain;
   }
 
+  .product-card-image .card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--wa-color-text-quiet);
+    font-size: 3rem;
+  }
+
+  /* --- Card content area (inside the link) --- */
+
   .product-card-content {
-    padding: 1rem;
-    flex: 1;
+    padding: 0.875rem;
     display: flex;
     flex-direction: column;
+    gap: 0.375rem;
   }
 
   .product-card-name {
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--wa-color-text-normal);
-    margin: 0 0 0.375rem 0;
+    margin: 0;
     line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .product-card-meta {
     font-size: 0.8125rem;
     color: var(--wa-color-text-quiet);
-    margin: 0 0 0.75rem 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
   }
 
-  .product-card-footer {
+  .product-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+
+  /* --- Card footer (outside the link, in wa-card footer slot) --- */
+
+  .product-card-price-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: auto;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--wa-color-border-quiet);
+    gap: 0.5rem;
   }
 
   .product-price {
@@ -260,161 +305,53 @@ export const productGridStyles = css`
     color: var(--wa-color-text-quiet);
   }
 
-  .product-quantity {
-    font-size: 0.8125rem;
-    padding: 0.25rem 0.5rem;
+  .product-card-cart {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .product-card-cart wa-input {
+    width: 70px;
+  }
+
+  .product-card-cart wa-input::part(form-control) {
+    display: flex;
+    align-items: center;
+  }
+
+  .product-card-cart wa-input::part(form-control-label) {
+    display: none;
+  }
+
+  .product-card-cart wa-input::part(base) {
     border-radius: 6px;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-quiet);
   }
 
-  .product-quantity.in-stock {
-    background: var(--wa-color-success-fill-quiet);
-    color: var(--wa-color-success-on-quiet);
+  .product-card-cart wa-button {
+    flex: 1;
   }
 
-  .product-quantity.out-of-stock {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
+  /* --- Condition select within cards --- */
+
+  .product-card-condition {
+    width: 100%;
+  }
+
+  .product-card-condition::part(combobox) {
+    font-size: 0.8125rem;
+    min-height: 0;
+    padding: 0.25rem 0.5rem;
   }
 `;
 
-// --- Product Table (alternative to grid) ---
+// --- Shared Badge & Utility Styles (used by both grid and table views) ---
 
-export const productTableStyles = css`
-  .table-container {
-    overflow-x: auto;
-    border-radius: 12px;
-    border: 1px solid var(--wa-color-border-quiet);
-    background: var(--wa-color-surface-raised);
-  }
-
-  .wa-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .wa-table th {
-    background: var(--wa-color-fill-quiet);
-    font-weight: 600;
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    color: var(--wa-color-text-quiet);
-    padding: 0.875rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--wa-color-border-quiet);
-  }
-
-  .wa-table td {
-    padding: 0.875rem 1rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--wa-color-border-quiet);
-    color: var(--wa-color-text-normal);
-  }
-
-  .wa-table tr:last-child td {
-    border-bottom: none;
-  }
-
-  .wa-table tbody tr {
-    transition: background 0.15s ease;
-  }
-
-  .wa-table tbody tr:hover td {
-    background: var(--wa-color-fill-quiet);
-  }
-
-  .card-thumbnail {
-    width: 50px;
-    height: 65px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-quiet);
-    font-size: 20px;
-    object-fit: contain;
-  }
-
-  .card-thumbnail img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-
-  .product-name {
-    font-weight: 600;
-    color: var(--wa-color-text-normal);
-  }
-
-  .product-name a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.15s ease;
-  }
-
-  .product-name a:hover {
-    color: var(--wa-color-text-link);
-    text-decoration: underline;
-  }
-
-  .product-set {
-    font-size: 0.875rem;
-    color: var(--wa-color-text-quiet);
-  }
-
-  .price-cell {
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .price-value {
-    font-weight: 600;
-    color: var(--wa-color-text-normal);
-  }
-
-  .price-from {
-    font-size: 0.75rem;
-    font-weight: 400;
-    color: var(--wa-color-text-quiet);
-  }
-
-  .quantity-cell {
-    text-align: center;
-  }
-
-  .quantity-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    min-width: 44px;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-normal);
-  }
-
-  .quantity-badge.in-stock {
-    background: var(--wa-color-success-fill-quiet);
-    color: var(--wa-color-success-on-quiet);
-  }
-
-  .quantity-badge.low-stock {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .quantity-badge.out-of-stock {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
-  }
-
+export const productBadgeStyles = css`
   .out-of-stock-text {
     color: var(--wa-color-text-quiet);
     font-style: italic;
+    font-size: 0.875rem;
   }
 
   .game-badge {
@@ -438,70 +375,36 @@ export const productTableStyles = css`
     color: var(--wa-color-danger-on-quiet);
   }
 
-  .finish-badges {
-    display: flex;
-    gap: 0.25rem;
-    flex-wrap: wrap;
-  }
-
-  .finish-badge {
+  .quantity-badge {
     display: inline-block;
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    font-size: 0.6875rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+    min-width: 44px;
+    text-align: center;
     background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-on-normal);
+    color: var(--wa-color-text-normal);
   }
 
-  .finish-badge.holofoil {
+  .quantity-badge.in-stock {
+    background: var(--wa-color-success-fill-quiet);
+    color: var(--wa-color-success-on-quiet);
+  }
+
+  .quantity-badge.low-stock {
     background: var(--wa-color-warning-fill-quiet);
     color: var(--wa-color-warning-on-quiet);
   }
 
-  .finish-badge.non-foil {
-    background: var(--wa-color-neutral-fill-quiet);
-    color: var(--wa-color-neutral-on-quiet);
+  .quantity-badge.out-of-stock {
+    background: var(--wa-color-danger-fill-quiet);
+    color: var(--wa-color-danger-on-quiet);
   }
 
-  .finish-badge.glossy {
-    background: var(--wa-color-brand-fill-quiet);
-    color: var(--wa-color-brand-on-quiet);
-  }
-`;
-
-// --- Cart Controls ---
-
-export const cartControlsStyles = css`
-  .cart-controls {
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .cart-controls wa-input {
-    width: 70px;
-  }
-
-  .cart-controls wa-input::part(form-control) {
-    display: flex;
-    align-items: center;
-  }
-
-  .cart-controls wa-input::part(form-control-label) {
-    display: none;
-  }
-
-  .cart-controls wa-input::part(base) {
-    border-radius: 6px;
-  }
-
-  .cart-controls wa-button {
-    border-radius: 6px;
+  .price-value {
+    font-weight: 600;
+    color: var(--wa-color-text-normal);
   }
 `;
 

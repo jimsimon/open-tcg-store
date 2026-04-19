@@ -138,7 +138,7 @@ describe('ogs-products-sealed-page', () => {
     expect(emptyState?.textContent).toContain('No sealed products found');
   });
 
-  test('should render product table when products exist', async () => {
+  test('should render product cards when products exist', async () => {
     const items = [makeFakeSealedProduct()];
     setupDefaultMock(items, 1, 1);
 
@@ -149,15 +149,18 @@ describe('ogs-products-sealed-page', () => {
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const table = element.shadowRoot!.querySelector('table');
-    expect(table).toBeTruthy();
+    const grid = element.shadowRoot!.querySelector('.products-grid');
+    expect(grid).toBeTruthy();
 
-    const headers = Array.from(table!.querySelectorAll('th')).map((th) => th.textContent?.trim());
-    expect(headers).toContain('Name');
-    expect(headers).toContain('Game');
-    expect(headers).toContain('Set');
-    expect(headers).toContain('Qty');
-    expect(headers).toContain('Price');
+    const cards = grid!.querySelectorAll('wa-card');
+    expect(cards.length).toBe(1);
+
+    const card = cards[0];
+    expect(card.querySelector('.product-card-name')?.textContent).toContain('Booster Box - Alpha');
+    expect(card.querySelector('.game-badge')?.textContent).toContain('Magic');
+    expect(card.querySelector('.quantity-badge')).toBeTruthy();
+    expect(card.querySelector('.product-price')).toBeTruthy();
+    expect(card.querySelector('.product-card-link')).toBeTruthy();
   });
 
   test('should show loading spinner when loading', async () => {
