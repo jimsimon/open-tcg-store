@@ -2,13 +2,13 @@ import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
+import { describeCron } from '../../components/ogs-cron-generator.ts';
 import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import '@awesome.me/webawesome/dist/components/switch/switch.js';
-import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/details/details.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
@@ -246,11 +246,14 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
       /* --- Schedule Row --- */
 
+      .schedule-section {
+        margin-top: 0.75rem;
+      }
+
       .schedule-row {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        margin-top: 0.75rem;
       }
 
       .schedule-display {
@@ -262,7 +265,23 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
         border-radius: var(--wa-border-radius-m);
       }
 
-      .schedule-edit {
+      .schedule-description {
+        font-size: var(--wa-font-size-s);
+        color: var(--wa-color-text-muted);
+        font-style: italic;
+      }
+
+      .schedule-edit-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--wa-color-surface-alt);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+      }
+
+      .schedule-edit-actions {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -360,6 +379,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
   @state() runsLoading = false;
   @state() editingScheduleJobId: number | null = null;
   @state() editScheduleValue = '';
+  @state() saveScheduleError = '';
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -433,14 +453,17 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
   private startEditSchedule(job: CronJob) {
     this.editingScheduleJobId = job.id;
     this.editScheduleValue = job.cronExpression;
+    this.saveScheduleError = '';
   }
 
   private cancelEditSchedule() {
     this.editingScheduleJobId = null;
     this.editScheduleValue = '';
+    this.saveScheduleError = '';
   }
 
   private async saveSchedule(jobId: number) {
+    this.saveScheduleError = '';
     try {
       const result = await execute(UpdateCronJobScheduleMutation, {
         id: jobId,
@@ -453,12 +476,12 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
             ? { ...j, cronExpression: updated.cronExpression, nextRunAt: updated.nextRunAt as string | null }
             : j,
         );
+        this.editingScheduleJobId = null;
+        this.editScheduleValue = '';
       }
     } catch (e) {
       console.error('Failed to update schedule:', e);
-    } finally {
-      this.editingScheduleJobId = null;
-      this.editScheduleValue = '';
+      this.saveScheduleError = e instanceof Error ? e.message : 'Failed to save schedule. Please try again.';
     }
   }
 
@@ -580,36 +603,49 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
           : nothing}
 
         <!-- Schedule -->
-        <div class="schedule-row">
+        <div class="schedule-section">
           ${isEditingSchedule
             ? html`
-                <div class="schedule-edit">
-                  <wa-input
-                    size="small"
+                <div class="schedule-edit-section">
+                  <ogs-cron-generator
                     value="${this.editScheduleValue}"
-                    @input="${(e: Event) => {
-                      this.editScheduleValue = (e.target as HTMLInputElement).value;
+                    @ogs-cron-change="${(e: CustomEvent<{ value: string }>) => {
+                      this.editScheduleValue = e.detail.value;
+                      this.saveScheduleError = '';
                     }}"
-                    placeholder="* * * * *"
-                    style="width: 200px;"
-                  ></wa-input>
-                  <wa-button size="small" variant="brand" @click="${() => this.saveSchedule(job.id)}"> Save </wa-button>
-                  <wa-button size="small" variant="neutral" appearance="outlined" @click="${this.cancelEditSchedule}">
-                    Cancel
-                  </wa-button>
+                  ></ogs-cron-generator>
+                  ${this.saveScheduleError
+                    ? html`
+                        <wa-callout variant="danger">
+                          <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                          ${this.saveScheduleError}
+                        </wa-callout>
+                      `
+                    : nothing}
+                  <div class="schedule-edit-actions">
+                    <wa-button size="small" variant="brand" @click="${() => this.saveSchedule(job.id)}">
+                      Save Schedule
+                    </wa-button>
+                    <wa-button size="small" variant="neutral" appearance="outlined" @click="${this.cancelEditSchedule}">
+                      Cancel
+                    </wa-button>
+                  </div>
                 </div>
               `
             : html`
-                <span class="schedule-display">${job.cronExpression}</span>
-                <wa-button
-                  size="small"
-                  variant="neutral"
-                  appearance="outlined"
-                  @click="${() => this.startEditSchedule(job)}"
-                >
-                  <wa-icon slot="start" name="pen-to-square"></wa-icon>
-                  Edit
-                </wa-button>
+                <div class="schedule-row">
+                  <span class="schedule-display">${job.cronExpression}</span>
+                  <span class="schedule-description">${describeCron(job.cronExpression) ?? ''}</span>
+                  <wa-button
+                    size="small"
+                    variant="neutral"
+                    appearance="outlined"
+                    @click="${() => this.startEditSchedule(job)}"
+                  >
+                    <wa-icon slot="start" name="pen-to-square"></wa-icon>
+                    Edit
+                  </wa-button>
+                </div>
               `}
         </div>
 
