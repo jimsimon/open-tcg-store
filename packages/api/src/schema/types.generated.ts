@@ -331,6 +331,7 @@ export type Event = {
   recurrenceGroupId?: Maybe<Scalars['String']['output']>;
   recurrenceRule?: Maybe<RecurrenceRule>;
   registrationCount: Scalars['Int']['output'];
+  registrations?: Maybe<Array<EventRegistration>>;
   startTime: Scalars['String']['output'];
   status: EventStatus;
   updatedAt: Scalars['String']['output'];
@@ -1698,7 +1699,7 @@ export type ResolversTypes = {
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
-  Event: ResolverTypeWrapper<Omit<Event, 'eventType' | 'status'> & { eventType: ResolversTypes['EventType'], status: ResolversTypes['EventStatus'] }>;
+  Event: ResolverTypeWrapper<Omit<Event, 'eventType' | 'registrations' | 'status'> & { eventType: ResolversTypes['EventType'], registrations?: Maybe<Array<ResolversTypes['EventRegistration']>>, status: ResolversTypes['EventStatus'] }>;
   EventFilters: EventFilters;
   EventPage: ResolverTypeWrapper<Omit<EventPage, 'items'> & { items: Array<ResolversTypes['Event']> }>;
   EventRegistration: ResolverTypeWrapper<Omit<EventRegistration, 'status'> & { status: ResolversTypes['RegistrationStatus'] }>;
@@ -1821,7 +1822,7 @@ export type ResolversParentTypes = {
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: DataUpdateResult;
   DataUpdateStatus: DataUpdateStatus;
-  Event: Event;
+  Event: Omit<Event, 'registrations'> & { registrations?: Maybe<Array<ResolversParentTypes['EventRegistration']>> };
   EventFilters: EventFilters;
   EventPage: Omit<EventPage, 'items'> & { items: Array<ResolversParentTypes['Event']> };
   EventRegistration: EventRegistration;
@@ -2077,6 +2078,7 @@ export type EventResolvers<ContextType = any, ParentType extends ResolversParent
   recurrenceGroupId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   recurrenceRule?: Resolver<Maybe<ResolversTypes['RecurrenceRule']>, ParentType, ContextType>;
   registrationCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  registrations?: Resolver<Maybe<Array<ResolversTypes['EventRegistration']>>, ParentType, ContextType>;
   startTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['EventStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

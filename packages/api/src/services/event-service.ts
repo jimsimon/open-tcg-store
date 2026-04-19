@@ -308,7 +308,23 @@ export async function getPublicEvent(eventId: number) {
     .limit(1);
 
   if (!row) return null;
-  return enrichEventWithGame(row);
+  const enriched = await enrichEventWithGame(row);
+
+  // Include active registrations for public event detail pages
+  const registrationRows = await otcgs
+    .select()
+    .from(eventRegistration)
+    .where(and(eq(eventRegistration.eventId, eventId), eq(eventRegistration.status, 'registered')))
+    .orderBy(eventRegistration.createdAt);
+
+  return {
+    ...enriched,
+    registrations: registrationRows.map((r) => ({
+      ...formatRegistration(r),
+      registrantEmail: null,
+      registrantPhone: null,
+    })),
+  };
 }
 
 export async function createEvent(organizationId: string, input: CreateEventInput, userId: string) {
