@@ -629,12 +629,6 @@ export class PosPage extends OgsPageBase {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Pull Order Button --- */
-
-      .pull-order-section {
-        padding-top: 0.5rem;
-      }
-
       /* --- Order Search Dialog --- */
 
       .order-list {
@@ -1128,7 +1122,6 @@ export class PosPage extends OgsPageBase {
             <div class="pos-container">
               <div class="pos-left">
                 ${this.renderProductSearch()} ${this.renderLineItems()}
-                ${this.renderPullOrderSection()}
               </div>
               <div class="pos-right">
                 ${this.renderTotals()} ${this.renderPaymentSection()}
@@ -1153,6 +1146,10 @@ export class PosPage extends OgsPageBase {
           <p>Process in-store transactions</p>
         </div>
         ${when(this.existingOrderId, () => html` <wa-badge variant="brand"> Completing Order </wa-badge> `)}
+        <wa-button variant="neutral" appearance="outlined" @click="${this.openOrderSearchDialog}">
+          <wa-icon slot="start" name="file-import"></wa-icon>
+          Open Pickup Order
+        </wa-button>
       </div>
     `;
   }
@@ -1272,17 +1269,6 @@ export class PosPage extends OgsPageBase {
           </wa-button>
         </td>
       </tr>
-    `;
-  }
-
-  private renderPullOrderSection() {
-    return html`
-      <div class="pull-order-section">
-        <wa-button variant="neutral" appearance="outlined" @click="${this.openOrderSearchDialog}">
-          <wa-icon slot="start" name="file-import"></wa-icon>
-          Pull in Existing Order
-        </wa-button>
-      </div>
     `;
   }
 
@@ -1421,7 +1407,7 @@ export class PosPage extends OgsPageBase {
 
     return html`
       <wa-dialog
-        label="Pull in Existing Order"
+        label="Open Pickup Order"
         ?open="${this.showOrderSearch}"
         @wa-after-hide="${this.closeOrderSearchDialog}"
       >
