@@ -146,7 +146,7 @@ describe('ogs-products-singles-page', () => {
     const grid = element.shadowRoot!.querySelector('.products-grid');
     expect(grid).toBeTruthy();
 
-    const cards = grid!.querySelectorAll('.product-card');
+    const cards = grid!.querySelectorAll('wa-card');
     expect(cards.length).toBe(1);
 
     const card = cards[0];
@@ -155,7 +155,8 @@ describe('ogs-products-singles-page', () => {
     expect(card.querySelector('.rarity-badge')?.textContent).toContain('Mythic Rare');
     expect(card.querySelector('.quantity-badge')).toBeTruthy();
     expect(card.querySelector('.product-price')).toBeTruthy();
-    expect(card.querySelector('wa-select')).toBeTruthy();
+    expect(card.querySelector('.product-card-link')).toBeTruthy();
+    expect(card.querySelector('[slot="footer"] wa-select')).toBeTruthy();
   });
 
   test('should show loading spinner when loading', async () => {

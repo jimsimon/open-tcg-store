@@ -186,21 +186,36 @@ export const productGridStyles = css`
     margin-bottom: 1.5rem;
   }
 
-  .product-card {
-    background: var(--wa-color-surface-raised);
-    border: 1px solid var(--wa-color-border-quiet);
-    border-radius: 12px;
-    overflow: hidden;
+  /* --- wa-card overrides --- */
+
+  .products-grid wa-card {
+    --spacing: 0;
     transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
   }
 
-  .product-card:hover {
+  .products-grid wa-card:hover {
     border-color: var(--wa-color-brand-60);
     box-shadow: 0 4px 12px var(--wa-color-shadow);
     transform: translateY(-2px);
+  }
+
+  .products-grid wa-card::part(body) {
+    padding: 0;
+  }
+
+  .products-grid wa-card::part(footer) {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* --- Card link (wraps image + content, no interactive children) --- */
+
+  .product-card-link {
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
   }
 
   /* --- Card image area --- */
@@ -231,11 +246,10 @@ export const productGridStyles = css`
     font-size: 3rem;
   }
 
-  /* --- Card content area --- */
+  /* --- Card content area (inside the link) --- */
 
   .product-card-content {
     padding: 0.875rem;
-    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
@@ -270,16 +284,7 @@ export const productGridStyles = css`
     flex-wrap: wrap;
   }
 
-  /* --- Card footer --- */
-
-  .product-card-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: auto;
-    padding-top: 0.625rem;
-    border-top: 1px solid var(--wa-color-border-quiet);
-  }
+  /* --- Card footer (outside the link, in wa-card footer slot) --- */
 
   .product-card-price-row {
     display: flex;
@@ -298,29 +303,6 @@ export const productGridStyles = css`
     font-size: 0.75rem;
     font-weight: 400;
     color: var(--wa-color-text-quiet);
-  }
-
-  .product-quantity {
-    font-size: 0.8125rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-quiet);
-  }
-
-  .product-quantity.in-stock {
-    background: var(--wa-color-success-fill-quiet);
-    color: var(--wa-color-success-on-quiet);
-  }
-
-  .product-quantity.low-stock {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .product-quantity.out-of-stock {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
   }
 
   .product-card-cart {

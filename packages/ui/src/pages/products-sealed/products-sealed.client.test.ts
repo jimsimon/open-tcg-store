@@ -152,7 +152,7 @@ describe('ogs-products-sealed-page', () => {
     const grid = element.shadowRoot!.querySelector('.products-grid');
     expect(grid).toBeTruthy();
 
-    const cards = grid!.querySelectorAll('.product-card');
+    const cards = grid!.querySelectorAll('wa-card');
     expect(cards.length).toBe(1);
 
     const card = cards[0];
@@ -160,6 +160,7 @@ describe('ogs-products-sealed-page', () => {
     expect(card.querySelector('.game-badge')?.textContent).toContain('Magic');
     expect(card.querySelector('.quantity-badge')).toBeTruthy();
     expect(card.querySelector('.product-price')).toBeTruthy();
+    expect(card.querySelector('.product-card-link')).toBeTruthy();
   });
 
   test('should show loading spinner when loading', async () => {
