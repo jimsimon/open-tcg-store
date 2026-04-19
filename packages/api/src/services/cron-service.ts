@@ -53,10 +53,18 @@ const DEFAULT_JOBS: DefaultJob[] = [
     config: '{}',
   },
   {
-    name: 'backup',
-    displayName: 'Scheduled Backup',
-    description: 'Runs an automated backup to the configured cloud storage provider.',
+    name: 'local-backup',
+    displayName: 'Local Backup',
+    description: 'Creates a local database backup snapshot with automatic rotation.',
     cronExpression: '0 4 * * *',
+    enabled: true,
+    config: '{"maxBackups": 10}',
+  },
+  {
+    name: 'backup',
+    displayName: 'Cloud Backup',
+    description: 'Runs an automated backup to the configured cloud storage provider.',
+    cronExpression: '0 5 * * *',
     enabled: false,
     config: '{}',
   },
@@ -77,6 +85,13 @@ export async function seedDefaultJobs(): Promise<void> {
     if (existing.length === 0) {
       await otcgs.insert(cronJob).values(job);
       console.log(`[cron] Seeded default job: ${job.name}`);
+    } else {
+      // Keep displayName and description in sync with code-defined defaults.
+      // User-configurable fields (cronExpression, enabled, config) are left untouched.
+      await otcgs
+        .update(cronJob)
+        .set({ displayName: job.displayName, description: job.description, updatedAt: new Date() })
+        .where(eq(cronJob.id, existing[0].id));
     }
   }
 }
@@ -244,6 +259,38 @@ async function executeJobInternal(jobId: number): Promise<typeof cronJobRun.$inf
  */
 export async function executeJob(jobId: number): Promise<typeof cronJobRun.$inferSelect> {
   return executeJobInternal(jobId);
+}
+
+/**
+ * Execute all enabled jobs that are overdue. A job is considered overdue if it
+ * has never run (`lastRunAt` is null) or its `nextRunAt` is in the past (i.e.
+ * it missed its scheduled window, e.g. because the server was down). This
+ * avoids redundant work on restarts that happen within a scheduled window.
+ */
+export async function executeOverdueJobs(): Promise<void> {
+  const jobs = await otcgs.select().from(cronJob).where(eq(cronJob.enabled, true));
+  const now = Date.now();
+
+  const overdueJobs = jobs.filter((job) => {
+    if (!jobHandlers.has(job.name)) return false;
+    // Never run — always overdue
+    if (!job.lastRunAt) return true;
+    // Scheduled time has passed — overdue
+    if (job.nextRunAt && job.nextRunAt.getTime() <= now) return true;
+    return false;
+  });
+
+  if (overdueJobs.length === 0) {
+    console.log('[cron] No overdue jobs to run on startup');
+    return;
+  }
+
+  console.log(`[cron] Running ${overdueJobs.length} overdue job(s) on startup...`);
+
+  for (const job of overdueJobs) {
+    // Fire and forget — don't let one job failure block others
+    executeJobInternal(job.id).catch((err) => console.error(`[cron] Startup run for '${job.name}' failed:`, err));
+  }
 }
 
 // ---------------------------------------------------------------------------

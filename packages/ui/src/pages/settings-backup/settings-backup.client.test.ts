@@ -2,18 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock the GraphQL execute function
 vi.mock('../../lib/graphql.ts', () => ({
-  execute: vi.fn().mockResolvedValue({
-    data: {
-      getBackupSettings: {
-        provider: 'google_drive',
-        frequency: 'daily',
-        lastBackupAt: '2025-01-15T10:00:00.000Z',
-        googleDriveConnected: true,
-        dropboxConnected: false,
-        onedriveConnected: false,
-      },
-    },
-  }),
+  execute: vi.fn().mockResolvedValue({ data: {} }),
 }));
 
 import './settings-backup.client.ts';
@@ -22,30 +11,88 @@ import { execute } from '../../lib/graphql.ts';
 
 const mockExecute = execute as ReturnType<typeof vi.fn>;
 
-// --- Tests ---
+const defaultSettings = {
+  provider: null as string | null,
+  frequency: '',
+  lastBackupAt: null,
+  googleDriveConnected: false,
+  dropboxConnected: false,
+  onedriveConnected: false,
+};
+
+const defaultLocalJob = {
+  id: 1,
+  name: 'local-backup',
+  displayName: 'Local Backup',
+  description: 'Creates a local database backup snapshot with automatic rotation.',
+  cronExpression: '0 4 * * *',
+  enabled: true,
+  lastRunAt: null as string | null,
+  lastRunStatus: null as string | null,
+  lastRunDurationMs: null as number | null,
+  lastRunError: null as string | null,
+  nextRunAt: '2025-01-16T04:00:00.000Z',
+  config: '{"maxBackups": 10}',
+};
+
+const defaultCloudJob = {
+  id: 2,
+  name: 'backup',
+  displayName: 'Cloud Backup',
+  description: 'Runs an automated backup to the configured cloud storage provider.',
+  cronExpression: '0 5 * * *',
+  enabled: false,
+  lastRunAt: null as string | null,
+  lastRunStatus: null as string | null,
+  lastRunDurationMs: null as number | null,
+  lastRunError: null as string | null,
+  nextRunAt: null as string | null,
+  config: '{}',
+};
+
+/**
+ * Sets up the mock to return settings first, then cron jobs.
+ * loadData() calls Promise.all([execute(settings), execute(cronJobs)])
+ * so the first call returns settings data and the second returns jobs.
+ */
+function setupMock(opts?: {
+  settings?: Partial<typeof defaultSettings>;
+  localJob?: Partial<typeof defaultLocalJob> | null;
+  cloudJob?: Partial<typeof defaultCloudJob> | null;
+}): void {
+  const settings = { ...defaultSettings, ...opts?.settings };
+
+  const jobs = [];
+  if (opts?.localJob !== null) {
+    jobs.push({ ...defaultLocalJob, ...opts?.localJob });
+  }
+  if (opts?.cloudJob !== null) {
+    jobs.push({ ...defaultCloudJob, ...opts?.cloudJob });
+  }
+
+  // First call: GetBackupSettings. Second call: GetBackupCronJobs.
+  mockExecute
+    .mockResolvedValueOnce({ data: { getBackupSettings: settings } })
+    .mockResolvedValueOnce({ data: { getCronJobs: jobs } });
+}
 
 describe('ogs-settings-backup-page', () => {
   let element: OgsSettingsBackupPage;
 
-  beforeEach(async () => {
-    mockExecute.mockResolvedValue({
-      data: {
-        getBackupSettings: {
-          provider: 'google_drive',
-          frequency: 'daily',
-          lastBackupAt: '2025-01-15T10:00:00.000Z',
-          googleDriveConnected: true,
-          dropboxConnected: false,
-          onedriveConnected: false,
-        },
-      },
-    });
-
-    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
-    document.body.appendChild(element);
-    await element.updateComplete;
+  async function createElement(): Promise<OgsSettingsBackupPage> {
+    const el = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
+    document.body.appendChild(el);
+    await el.updateComplete;
     await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
+    await el.updateComplete;
+    return el;
+  }
+
+  beforeEach(async () => {
+    setupMock({
+      settings: { googleDriveConnected: true, provider: 'google_drive' },
+    });
+    element = await createElement();
   });
 
   afterEach(() => {
@@ -61,180 +108,89 @@ describe('ogs-settings-backup-page', () => {
   test('should display the page header', () => {
     const header = element.shadowRoot!.querySelector('.page-header h2');
     expect(header).toBeTruthy();
-    expect(header?.textContent).toContain('Backup & Restore');
+    expect(header?.textContent).toContain('Backup Jobs');
   });
 
-  test('should display Cloud Provider section', () => {
+  test('should display local backup job card', () => {
+    const titles = element.shadowRoot!.querySelectorAll('.job-title');
+    const titleTexts = Array.from(titles).map((t) => t.textContent?.trim());
+    expect(titleTexts).toContain('Local Backup');
+  });
+
+  test('should display cloud backup card when a provider is connected', () => {
+    const titles = element.shadowRoot!.querySelectorAll('.job-title');
+    const titleTexts = Array.from(titles).map((t) => t.textContent?.trim());
+    expect(titleTexts).toContain('Cloud Backup');
+  });
+
+  test('should hide cloud backup card when no provider is connected', async () => {
+    element.remove();
+    setupMock({
+      settings: { googleDriveConnected: false, dropboxConnected: false, onedriveConnected: false },
+    });
+    element = await createElement();
+
+    const titles = element.shadowRoot!.querySelectorAll('.job-title');
+    const titleTexts = Array.from(titles).map((t) => t.textContent?.trim());
+    expect(titleTexts).not.toContain('Cloud Backup');
+    expect(titleTexts).toContain('Local Backup');
+  });
+
+  test('should display Run Now buttons', () => {
+    const buttons = element.shadowRoot!.querySelectorAll('wa-button');
+    const runBtns = Array.from(buttons).filter((b) => b.textContent?.includes('Run Now'));
+    expect(runBtns.length).toBeGreaterThan(0);
+  });
+
+  test('should display View History buttons', () => {
+    const buttons = element.shadowRoot!.querySelectorAll('wa-button');
+    const historyBtns = Array.from(buttons).filter((b) => b.textContent?.includes('View History'));
+    expect(historyBtns.length).toBeGreaterThan(0);
+  });
+
+  test('should display Cloud Provider Setup section', () => {
     const sections = element.shadowRoot!.querySelectorAll('.section-header h3');
     const sectionTexts = Array.from(sections).map((s) => s.textContent?.trim());
-    expect(sectionTexts).toContain('Cloud Provider');
+    expect(sectionTexts).toContain('Cloud Provider Setup');
   });
 
-  test('should display Backup Configuration section', () => {
-    const sections = element.shadowRoot!.querySelectorAll('.section-header h3');
-    const sectionTexts = Array.from(sections).map((s) => s.textContent?.trim());
-    expect(sectionTexts).toContain('Backup Configuration');
-  });
-
-  test('should display one provider card for the selected provider', () => {
-    const providerCards = element.shadowRoot!.querySelectorAll('.provider-card');
+  test('should show provider card with connection status', () => {
+    // The provider card wrapper contains the selected config provider card
+    const providerCards = element.shadowRoot!.querySelectorAll('.provider-card-wrapper .provider-card');
     expect(providerCards.length).toBe(1);
   });
 
-  test('should show Google Drive as connected', () => {
-    const providerCards = element.shadowRoot!.querySelectorAll('.provider-card');
-    const googleCard = providerCards[0];
-    const badge = googleCard.querySelector('wa-badge[variant="success"]');
-    expect(badge).toBeTruthy();
-    expect(badge?.textContent).toContain('Connected');
-  });
-
-  test('should show Dropbox as not connected when selected', async () => {
-    element.selectedConfigProvider = 'dropbox';
-    await element.updateComplete;
-    const providerCards = element.shadowRoot!.querySelectorAll('.provider-card');
-    const dropboxCard = providerCards[0];
-    const badge = dropboxCard.querySelector('wa-badge[variant="neutral"]');
-    expect(badge).toBeTruthy();
-    expect(badge?.textContent).toContain('Not connected');
-  });
-
-  test('should display backup provider select with only connected providers', () => {
-    const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
-    expect(providerSelect).toBeTruthy();
-
-    const options = providerSelect!.querySelectorAll('wa-option');
-    // "Select provider" + 1 connected provider (Google Drive) = 2
-    expect(options.length).toBe(2);
-
-    const optionValues = Array.from(options).map((o) => o.getAttribute('value'));
-    expect(optionValues).toContain('');
-    expect(optionValues).toContain('google_drive');
-    expect(optionValues).not.toContain('dropbox');
-    expect(optionValues).not.toContain('onedrive');
-  });
-
-  test('should display backup frequency select', () => {
-    const frequencySelect = element.shadowRoot!.querySelector('wa-select[label="Backup Frequency"]');
-    expect(frequencySelect).toBeTruthy();
-
-    const options = frequencySelect!.querySelectorAll('wa-option');
-    // "Select frequency" + 4 options = 5
-    expect(options.length).toBe(5);
-  });
-
-  test('should display last backup info', () => {
-    const lastBackupInfo = element.shadowRoot!.querySelector('.last-backup-info');
-    expect(lastBackupInfo).toBeTruthy();
-    expect(lastBackupInfo?.textContent).toContain('Last backup:');
-  });
-
-  test('should display Save Settings button', () => {
-    const saveBtn = element.shadowRoot!.querySelector('.save-bar wa-button[variant="brand"]');
-    expect(saveBtn).toBeTruthy();
-    expect(saveBtn?.textContent).toContain('Save Settings');
-  });
-
-  test('should display Backup Now button', () => {
-    const buttons = element.shadowRoot!.querySelectorAll('.save-bar wa-button');
-    const backupBtn = Array.from(buttons).find((b) => b.textContent?.includes('Backup Now'));
-    expect(backupBtn).toBeTruthy();
-  });
-
-  test('should display Restore button', () => {
-    const buttons = element.shadowRoot!.querySelectorAll('.save-bar wa-button');
-    const restoreBtn = Array.from(buttons).find((b) => b.textContent?.includes('Restore'));
-    expect(restoreBtn).toBeTruthy();
-  });
-
-  test('should disable provider select when no providers are connected', async () => {
-    mockExecute.mockResolvedValue({
-      data: {
-        getBackupSettings: {
-          provider: null,
-          frequency: null,
-          lastBackupAt: null,
-          googleDriveConnected: false,
-          dropboxConnected: false,
-          onedriveConnected: false,
-        },
+  test('should show running indicator when a job is running', async () => {
+    element.remove();
+    setupMock({
+      settings: { googleDriveConnected: true, provider: 'google_drive' },
+      localJob: {
+        lastRunAt: new Date().toISOString(),
+        lastRunStatus: 'running',
       },
     });
+    element = await createElement();
 
-    element.remove();
-    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
-    expect(providerSelect).toBeTruthy();
-    expect(providerSelect!.hasAttribute('disabled')).toBe(true);
-
-    const options = providerSelect!.querySelectorAll('wa-option');
-    // Only the placeholder "Select provider" option
-    expect(options.length).toBe(1);
+    const runningIndicator = element.shadowRoot!.querySelector('.running-indicator');
+    expect(runningIndicator).toBeTruthy();
+    expect(runningIndicator?.textContent).toContain('Running');
   });
 
-  test('should enable provider select and list all connected providers', async () => {
-    mockExecute.mockResolvedValue({
-      data: {
-        getBackupSettings: {
-          provider: null,
-          frequency: null,
-          lastBackupAt: null,
-          googleDriveConnected: true,
-          dropboxConnected: true,
-          onedriveConnected: false,
-        },
+  test('should disable Run Now when job is running', async () => {
+    element.remove();
+    setupMock({
+      settings: { googleDriveConnected: true, provider: 'google_drive' },
+      localJob: {
+        lastRunAt: new Date().toISOString(),
+        lastRunStatus: 'running',
       },
     });
+    element = await createElement();
 
-    element.remove();
-    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    const providerSelect = element.shadowRoot!.querySelector('wa-select[label="Backup Provider"]');
-    expect(providerSelect).toBeTruthy();
-    expect(providerSelect!.hasAttribute('disabled')).toBe(false);
-
-    const options = providerSelect!.querySelectorAll('wa-option');
-    // "Select provider" + Google Drive + Dropbox = 3
-    expect(options.length).toBe(3);
-
-    const optionValues = Array.from(options).map((o) => o.getAttribute('value'));
-    expect(optionValues).toContain('google_drive');
-    expect(optionValues).toContain('dropbox');
-    expect(optionValues).not.toContain('onedrive');
-  });
-
-  test('should show "No backups" message when no backup has been made', async () => {
-    mockExecute.mockResolvedValue({
-      data: {
-        getBackupSettings: {
-          provider: null,
-          frequency: null,
-          lastBackupAt: null,
-          googleDriveConnected: false,
-          dropboxConnected: false,
-          onedriveConnected: false,
-        },
-      },
-    });
-
-    element.remove();
-    element = document.createElement('ogs-settings-backup-page') as OgsSettingsBackupPage;
-    document.body.appendChild(element);
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 50));
-    await element.updateComplete;
-
-    const lastBackupInfo = element.shadowRoot!.querySelector('.last-backup-info');
-    expect(lastBackupInfo?.textContent).toContain('No backups have been created yet');
+    const buttons = element.shadowRoot!.querySelectorAll('wa-button');
+    const runNowBtn = Array.from(buttons).find((b) => b.textContent?.includes('Run Now'));
+    expect(runNowBtn).toBeTruthy();
+    expect(runNowBtn!.hasAttribute('disabled')).toBe(true);
   });
 
   test('should show loading spinner initially', async () => {
