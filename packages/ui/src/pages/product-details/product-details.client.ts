@@ -244,6 +244,10 @@ export class ProductDetailsPage extends OgsPageBase {
         border-radius: var(--wa-border-radius-m);
       }
 
+      .image-placeholder[hidden] {
+        display: none;
+      }
+
       .price-cell {
         text-align: right;
         white-space: nowrap;

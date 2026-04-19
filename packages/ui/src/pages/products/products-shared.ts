@@ -246,6 +246,10 @@ export const productGridStyles = css`
     font-size: 3rem;
   }
 
+  .product-card-image .card-placeholder[hidden] {
+    display: none;
+  }
+
   /* --- Card content area (inside the link) --- */
 
   .product-card-content {
