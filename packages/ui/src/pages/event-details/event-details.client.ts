@@ -311,8 +311,8 @@ export class EventDetailsPage extends OgsPageBase {
       /* --- Attendees List --- */
 
       .attendees-list {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 0.5rem;
       }
 
@@ -332,10 +332,24 @@ export class EventDetailsPage extends OgsPageBase {
         flex-shrink: 0;
       }
 
-      .no-attendees {
+      .attendees-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 2rem 1rem;
         color: var(--wa-color-text-muted);
+      }
+
+      .attendees-empty wa-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
+      }
+
+      .attendees-empty p {
+        margin: 0;
         font-size: var(--wa-font-size-s);
-        font-style: italic;
       }
     `,
   ];
@@ -578,8 +592,8 @@ export class EventDetailsPage extends OgsPageBase {
 
         <wa-card appearance="outlined">
           <div slot="header" class="section-header">
-            <wa-icon name="pen-to-square"></wa-icon>
-            <span>Registration</span>
+            <wa-icon name="users"></wa-icon>
+            <span>Registered Attendees</span>
           </div>
           ${when(
             this.registrationSuccess,
@@ -612,16 +626,10 @@ export class EventDetailsPage extends OgsPageBase {
               ${when(this.showRegistration, () => this.renderRegistrationForm())}
             `,
           )}
-        </wa-card>
-
-        ${when(
-          event.registrations && event.registrations.length > 0,
-          () => html`
-            <wa-card appearance="outlined">
-              <div slot="header" class="section-header">
-                <wa-icon name="users"></wa-icon>
-                <span>Registered Attendees</span>
-              </div>
+          ${when(
+            event.registrations && event.registrations.length > 0,
+            () => html`
+              <wa-divider></wa-divider>
               <div class="attendees-list">
                 ${event.registrations!.map(
                   (reg) => html`
@@ -632,9 +640,16 @@ export class EventDetailsPage extends OgsPageBase {
                   `,
                 )}
               </div>
-            </wa-card>
-          `,
-        )}
+            `,
+            () => html`
+              <wa-divider></wa-divider>
+              <div class="attendees-empty">
+                <wa-icon name="users"></wa-icon>
+                <p>No one has registered yet. Be the first!</p>
+              </div>
+            `,
+          )}
+        </wa-card>
       </div>
     `;
   }
