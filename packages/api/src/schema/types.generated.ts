@@ -74,10 +74,13 @@ export type BackupResult = {
 
 export type BackupSettings = {
   __typename?: 'BackupSettings';
+  dropboxClientId?: Maybe<Scalars['String']['output']>;
   dropboxConnected: Scalars['Boolean']['output'];
   frequency?: Maybe<Scalars['String']['output']>;
+  googleDriveClientId?: Maybe<Scalars['String']['output']>;
   googleDriveConnected: Scalars['Boolean']['output'];
   lastBackupAt?: Maybe<Scalars['String']['output']>;
+  onedriveClientId?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
   provider?: Maybe<BackupProvider>;
 };
@@ -565,6 +568,7 @@ export type Mutation = {
   deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   disableCronJob: CronJob;
+  disconnectBackupProvider: BackupSettings;
   enableCronJob: CronJob;
   firstTimeSetup: Scalars['String']['output'];
   registerForEvent: EventRegistration;
@@ -714,6 +718,11 @@ export type MutationdeleteStockArgs = {
 
 export type MutationdisableCronJobArgs = {
   id: Scalars['Int']['input'];
+};
+
+
+export type MutationdisconnectBackupProviderArgs = {
+  provider: BackupProvider;
 };
 
 
@@ -1496,7 +1505,10 @@ export type TransactionLogPage = {
 };
 
 export type UpdateBackupSettingsInput = {
+  dropboxClientId?: InputMaybe<Scalars['String']['input']>;
   frequency?: InputMaybe<Scalars['String']['input']>;
+  googleDriveClientId?: InputMaybe<Scalars['String']['input']>;
+  onedriveClientId?: InputMaybe<Scalars['String']['input']>;
   provider?: InputMaybe<BackupProvider>;
 };
 
@@ -1911,10 +1923,13 @@ export type BackupResultResolvers<ContextType = any, ParentType extends Resolver
 };
 
 export type BackupSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['BackupSettings'] = ResolversParentTypes['BackupSettings']> = {
+  dropboxClientId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   dropboxConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   frequency?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  googleDriveClientId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   googleDriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastBackupAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  onedriveClientId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   onedriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   provider?: Resolver<Maybe<ResolversTypes['BackupProvider']>, ParentType, ContextType>;
 };
@@ -2242,6 +2257,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteLot?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteLotArgs, 'id'>>;
   deleteStock?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationdeleteStockArgs, 'id'>>;
   disableCronJob?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationdisableCronJobArgs, 'id'>>;
+  disconnectBackupProvider?: Resolver<ResolversTypes['BackupSettings'], ParentType, ContextType, RequireFields<MutationdisconnectBackupProviderArgs, 'provider'>>;
   enableCronJob?: Resolver<ResolversTypes['CronJob'], ParentType, ContextType, RequireFields<MutationenableCronJobArgs, 'id'>>;
   firstTimeSetup?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationfirstTimeSetupArgs, 'company' | 'store' | 'supportedGameCategoryIds' | 'userDetails'>>;
   registerForEvent?: Resolver<ResolversTypes['EventRegistration'], ParentType, ContextType, RequireFields<MutationregisterForEventArgs, 'eventId' | 'input'>>;

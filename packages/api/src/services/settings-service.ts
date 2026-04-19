@@ -98,6 +98,9 @@ export interface BackupSettingsResult {
   googleDriveConnected: boolean;
   dropboxConnected: boolean;
   onedriveConnected: boolean;
+  googleDriveClientId: string | null;
+  dropboxClientId: string | null;
+  onedriveClientId: string | null;
 }
 
 export async function getBackupSettings(): Promise<BackupSettingsResult> {
@@ -109,12 +112,18 @@ export async function getBackupSettings(): Promise<BackupSettingsResult> {
     googleDriveConnected: !!row.googleDriveRefreshToken,
     dropboxConnected: !!row.dropboxRefreshToken,
     onedriveConnected: !!row.onedriveRefreshToken,
+    googleDriveClientId: decryptIfPresent(row.googleDriveClientId),
+    dropboxClientId: decryptIfPresent(row.dropboxClientId),
+    onedriveClientId: decryptIfPresent(row.onedriveClientId),
   };
 }
 
 export interface UpdateBackupSettingsInput {
   provider?: string | null;
   frequency?: string | null;
+  googleDriveClientId?: string | null;
+  dropboxClientId?: string | null;
+  onedriveClientId?: string | null;
 }
 
 export async function updateBackupSettings(
@@ -130,6 +139,10 @@ export async function updateBackupSettings(
 
   if (input.provider !== undefined) updates.backupProvider = input.provider;
   if (input.frequency !== undefined) updates.backupFrequency = input.frequency;
+  if (input.googleDriveClientId !== undefined)
+    updates.googleDriveClientId = encryptIfPresent(input.googleDriveClientId);
+  if (input.dropboxClientId !== undefined) updates.dropboxClientId = encryptIfPresent(input.dropboxClientId);
+  if (input.onedriveClientId !== undefined) updates.onedriveClientId = encryptIfPresent(input.onedriveClientId);
 
   await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 
@@ -231,6 +244,46 @@ export async function updateShopifyIntegration(
 }
 
 // ---------------------------------------------------------------------------
+// OAuth Client ID Management (used by backup-service)
+// ---------------------------------------------------------------------------
+
+export async function storeOAuthClientId(
+  provider: 'google_drive' | 'dropbox' | 'onedrive',
+  clientId: string,
+): Promise<void> {
+  await ensureSettingsRow();
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+  switch (provider) {
+    case 'google_drive':
+      updates.googleDriveClientId = encrypt(clientId);
+      break;
+    case 'dropbox':
+      updates.dropboxClientId = encrypt(clientId);
+      break;
+    case 'onedrive':
+      updates.onedriveClientId = encrypt(clientId);
+      break;
+  }
+
+  await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
+}
+
+export async function getOAuthClientId(provider: 'google_drive' | 'dropbox' | 'onedrive'): Promise<string | null> {
+  const row = await ensureSettingsRow();
+
+  switch (provider) {
+    case 'google_drive':
+      return decryptIfPresent(row.googleDriveClientId);
+    case 'dropbox':
+      return decryptIfPresent(row.dropboxClientId);
+    case 'onedrive':
+      return decryptIfPresent(row.onedriveClientId);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OAuth Token Management (used by backup-service)
 // ---------------------------------------------------------------------------
 
@@ -292,14 +345,17 @@ export async function clearOAuthTokens(provider: 'google_drive' | 'dropbox' | 'o
 
   switch (provider) {
     case 'google_drive':
+      updates.googleDriveClientId = null;
       updates.googleDriveAccessToken = null;
       updates.googleDriveRefreshToken = null;
       break;
     case 'dropbox':
+      updates.dropboxClientId = null;
       updates.dropboxAccessToken = null;
       updates.dropboxRefreshToken = null;
       break;
     case 'onedrive':
+      updates.onedriveClientId = null;
       updates.onedriveAccessToken = null;
       updates.onedriveRefreshToken = null;
       break;

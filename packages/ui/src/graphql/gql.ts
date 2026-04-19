@@ -77,13 +77,14 @@ type Documents = {
     "\n  query GetSealedSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": typeof types.GetSealedSetsDocument,
     "\n  query GetSinglesProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {\n    getProductListings(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        name\n        setName\n        gameName\n        rarity\n        finishes\n        images {\n          small\n          large\n        }\n        totalQuantity\n        lowestPrice\n        conditionPrices {\n          inventoryItemId\n          condition\n          quantity\n          price\n        }\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": typeof types.GetSinglesProductListingsDocument,
     "\n  query GetSinglesSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": typeof types.GetSinglesSetsDocument,
-    "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": typeof types.GetBackupSettingsDocument,
+    "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n": typeof types.GetBackupSettingsDocument,
     "\n  query GetBackupCronJobs {\n    getCronJobs {\n      id\n      name\n      displayName\n      description\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n      config\n    }\n  }\n": typeof types.GetBackupCronJobsDocument,
     "\n  mutation TriggerBackupCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": typeof types.TriggerBackupCronJobDocument,
     "\n  mutation EnableBackupCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.EnableBackupCronJobDocument,
     "\n  mutation DisableBackupCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.DisableBackupCronJobDocument,
     "\n  mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {\n    updateBackupSettings(input: $input) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": typeof types.UpdateBackupSettingsDocument,
     "\n  mutation TriggerRestore($provider: BackupProvider!) {\n    triggerRestore(provider: $provider) {\n      success\n      message\n    }\n  }\n": typeof types.TriggerRestoreDocument,
+    "\n  mutation DisconnectBackupProvider($provider: BackupProvider!) {\n    disconnectBackupProvider(provider: $provider) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n": typeof types.DisconnectBackupProviderDocument,
     "\n  query GetBuyRates($categoryId: Int!) {\n    getBuyRates(categoryId: $categoryId) {\n      id\n      description\n      fixedRateCents\n      percentageRate\n      type\n      rarity\n      hidden\n      sortOrder\n    }\n  }\n": typeof types.GetBuyRatesDocument,
     "\n  query GetDistinctRarities($categoryId: Int!) {\n    getDistinctRarities(categoryId: $categoryId)\n  }\n": typeof types.GetDistinctRaritiesDocument,
     "\n  mutation SaveBuyRates($input: SaveBuyRatesInput!) {\n    saveBuyRates(input: $input) {\n      id\n      description\n      fixedRateCents\n      percentageRate\n      type\n      rarity\n      hidden\n      sortOrder\n    }\n  }\n": typeof types.SaveBuyRatesDocument,
@@ -176,13 +177,14 @@ const documents: Documents = {
     "\n  query GetSealedSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": types.GetSealedSetsDocument,
     "\n  query GetSinglesProductListings($filters: ProductListingFilters, $pagination: ProductListingPagination) {\n    getProductListings(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        name\n        setName\n        gameName\n        rarity\n        finishes\n        images {\n          small\n          large\n        }\n        totalQuantity\n        lowestPrice\n        conditionPrices {\n          inventoryItemId\n          condition\n          quantity\n          price\n        }\n      }\n      totalCount\n      page\n      pageSize\n      totalPages\n    }\n  }\n": types.GetSinglesProductListingsDocument,
     "\n  query GetSinglesSets($game: String!, $filters: SetFilters) {\n    getSets(game: $game, filters: $filters) {\n      code\n      name\n    }\n  }\n": types.GetSinglesSetsDocument,
-    "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": types.GetBackupSettingsDocument,
+    "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n": types.GetBackupSettingsDocument,
     "\n  query GetBackupCronJobs {\n    getCronJobs {\n      id\n      name\n      displayName\n      description\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n      config\n    }\n  }\n": types.GetBackupCronJobsDocument,
     "\n  mutation TriggerBackupCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": types.TriggerBackupCronJobDocument,
     "\n  mutation EnableBackupCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.EnableBackupCronJobDocument,
     "\n  mutation DisableBackupCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.DisableBackupCronJobDocument,
     "\n  mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {\n    updateBackupSettings(input: $input) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": types.UpdateBackupSettingsDocument,
     "\n  mutation TriggerRestore($provider: BackupProvider!) {\n    triggerRestore(provider: $provider) {\n      success\n      message\n    }\n  }\n": types.TriggerRestoreDocument,
+    "\n  mutation DisconnectBackupProvider($provider: BackupProvider!) {\n    disconnectBackupProvider(provider: $provider) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n": types.DisconnectBackupProviderDocument,
     "\n  query GetBuyRates($categoryId: Int!) {\n    getBuyRates(categoryId: $categoryId) {\n      id\n      description\n      fixedRateCents\n      percentageRate\n      type\n      rarity\n      hidden\n      sortOrder\n    }\n  }\n": types.GetBuyRatesDocument,
     "\n  query GetDistinctRarities($categoryId: Int!) {\n    getDistinctRarities(categoryId: $categoryId)\n  }\n": types.GetDistinctRaritiesDocument,
     "\n  mutation SaveBuyRates($input: SaveBuyRatesInput!) {\n    saveBuyRates(input: $input) {\n      id\n      description\n      fixedRateCents\n      percentageRate\n      type\n      rarity\n      hidden\n      sortOrder\n    }\n  }\n": types.SaveBuyRatesDocument,
@@ -464,7 +466,7 @@ export function graphql(source: "\n  query GetSinglesSets($game: String!, $filte
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n"): typeof import('./graphql').GetBackupSettingsDocument;
+export function graphql(source: "\n  query GetBackupSettings {\n    getBackupSettings {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n"): typeof import('./graphql').GetBackupSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -489,6 +491,10 @@ export function graphql(source: "\n  mutation UpdateBackupSettings($input: Updat
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation TriggerRestore($provider: BackupProvider!) {\n    triggerRestore(provider: $provider) {\n      success\n      message\n    }\n  }\n"): typeof import('./graphql').TriggerRestoreDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DisconnectBackupProvider($provider: BackupProvider!) {\n    disconnectBackupProvider(provider: $provider) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n    }\n  }\n"): typeof import('./graphql').DisconnectBackupProviderDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -16,6 +16,9 @@ type BackupSettings {
   googleDriveConnected: Boolean!
   dropboxConnected: Boolean!
   onedriveConnected: Boolean!
+  googleDriveClientId: String
+  dropboxClientId: String
+  onedriveClientId: String
 }
 
 type IntegrationSettings {
@@ -73,6 +76,9 @@ input UpdateStoreSettingsInput {
 input UpdateBackupSettingsInput {
   provider: BackupProvider
   frequency: String
+  googleDriveClientId: String
+  dropboxClientId: String
+  onedriveClientId: String
 }
 
 input UpdateStripeIntegrationInput {
@@ -100,6 +106,7 @@ extend type Mutation {
   updateBackupSettings(input: UpdateBackupSettingsInput!): BackupSettings!
   triggerBackup: BackupResult!
   triggerRestore(provider: BackupProvider!): RestoreResult!
+  disconnectBackupProvider(provider: BackupProvider!): BackupSettings!
   updateStripeIntegration(input: UpdateStripeIntegrationInput!): StripeIntegration!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   triggerDataUpdate: DataUpdateResult!

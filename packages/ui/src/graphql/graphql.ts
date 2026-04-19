@@ -73,10 +73,13 @@ export type BackupResult = {
 
 export type BackupSettings = {
   __typename?: 'BackupSettings';
+  dropboxClientId?: Maybe<Scalars['String']['output']>;
   dropboxConnected: Scalars['Boolean']['output'];
   frequency?: Maybe<Scalars['String']['output']>;
+  googleDriveClientId?: Maybe<Scalars['String']['output']>;
   googleDriveConnected: Scalars['Boolean']['output'];
   lastBackupAt?: Maybe<Scalars['String']['output']>;
+  onedriveClientId?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
   provider?: Maybe<BackupProvider>;
 };
@@ -570,6 +573,7 @@ export type Mutation = {
   deleteLot: Scalars['Boolean']['output'];
   deleteStock: Scalars['Boolean']['output'];
   disableCronJob: CronJob;
+  disconnectBackupProvider: BackupSettings;
   enableCronJob: CronJob;
   firstTimeSetup: Scalars['String']['output'];
   registerForEvent: EventRegistration;
@@ -719,6 +723,11 @@ export type MutationDeleteStockArgs = {
 
 export type MutationDisableCronJobArgs = {
   id: Scalars['Int']['input'];
+};
+
+
+export type MutationDisconnectBackupProviderArgs = {
+  provider: BackupProvider;
 };
 
 
@@ -1504,7 +1513,10 @@ export type TransactionLogPage = {
 };
 
 export type UpdateBackupSettingsInput = {
+  dropboxClientId?: InputMaybe<Scalars['String']['input']>;
   frequency?: InputMaybe<Scalars['String']['input']>;
+  googleDriveClientId?: InputMaybe<Scalars['String']['input']>;
+  onedriveClientId?: InputMaybe<Scalars['String']['input']>;
   provider?: InputMaybe<BackupProvider>;
 };
 
@@ -2039,7 +2051,7 @@ export type GetSinglesSetsQuery = { __typename?: 'Query', getSets: Array<{ __typ
 export type GetBackupSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetBackupSettingsQuery = { __typename?: 'Query', getBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
+export type GetBackupSettingsQuery = { __typename?: 'Query', getBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId?: string | null, dropboxClientId?: string | null, onedriveClientId?: string | null } };
 
 export type GetBackupCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2080,6 +2092,13 @@ export type TriggerRestoreMutationVariables = Exact<{
 
 
 export type TriggerRestoreMutation = { __typename?: 'Mutation', triggerRestore: { __typename?: 'RestoreResult', success: boolean, message?: string | null } };
+
+export type DisconnectBackupProviderMutationVariables = Exact<{
+  provider: BackupProvider;
+}>;
+
+
+export type DisconnectBackupProviderMutation = { __typename?: 'Mutation', disconnectBackupProvider: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId?: string | null, dropboxClientId?: string | null, onedriveClientId?: string | null } };
 
 export type GetBuyRatesQueryVariables = Exact<{
   categoryId: Scalars['Int']['input'];
@@ -3187,6 +3206,9 @@ export const GetBackupSettingsDocument = new TypedDocumentString(`
     googleDriveConnected
     dropboxConnected
     onedriveConnected
+    googleDriveClientId
+    dropboxClientId
+    onedriveClientId
   }
 }
     `) as unknown as TypedDocumentString<GetBackupSettingsQuery, GetBackupSettingsQueryVariables>;
@@ -3255,6 +3277,21 @@ export const TriggerRestoreDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<TriggerRestoreMutation, TriggerRestoreMutationVariables>;
+export const DisconnectBackupProviderDocument = new TypedDocumentString(`
+    mutation DisconnectBackupProvider($provider: BackupProvider!) {
+  disconnectBackupProvider(provider: $provider) {
+    provider
+    frequency
+    lastBackupAt
+    googleDriveConnected
+    dropboxConnected
+    onedriveConnected
+    googleDriveClientId
+    dropboxClientId
+    onedriveClientId
+  }
+}
+    `) as unknown as TypedDocumentString<DisconnectBackupProviderMutation, DisconnectBackupProviderMutationVariables>;
 export const GetBuyRatesDocument = new TypedDocumentString(`
     query GetBuyRates($categoryId: Int!) {
   getBuyRates(categoryId: $categoryId) {

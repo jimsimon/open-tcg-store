@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const {
   mockStoreOAuthTokens,
   mockGetOAuthTokens,
+  mockGetOAuthClientId,
   mockUpdateLastBackupAt,
   mockExistsSync,
   mockReadFileSync,
@@ -38,6 +39,7 @@ const {
 } = vi.hoisted(() => ({
   mockStoreOAuthTokens: vi.fn(),
   mockGetOAuthTokens: vi.fn(),
+  mockGetOAuthClientId: vi.fn(),
   mockUpdateLastBackupAt: vi.fn(),
   mockExistsSync: vi.fn(),
   mockReadFileSync: vi.fn(),
@@ -72,6 +74,7 @@ const {
 vi.mock('./settings-service', () => ({
   storeOAuthTokens: mockStoreOAuthTokens,
   getOAuthTokens: mockGetOAuthTokens,
+  getOAuthClientId: mockGetOAuthClientId,
   updateLastBackupAt: mockUpdateLastBackupAt,
 }));
 
@@ -199,11 +202,20 @@ describe('backup-service', () => {
     mockMkdtempSync.mockReturnValue('/tmp/otcgs-backup-xyz');
     mockLibsqlExecute.mockResolvedValue({ rows: [['ok']] });
     mockCalculatePKCECodeChallenge.mockResolvedValue('mock-code-challenge');
-    // Set env vars for OAuth configs (no client secrets needed with PKCE)
+    // Return client IDs from DB (the only source)
+    mockGetOAuthClientId.mockImplementation((provider: string) => {
+      switch (provider) {
+        case 'google_drive':
+          return Promise.resolve('google-client-id');
+        case 'dropbox':
+          return Promise.resolve('dropbox-app-key');
+        case 'onedrive':
+          return Promise.resolve('onedrive-client-id');
+        default:
+          return Promise.resolve(null);
+      }
+    });
     process.env.APP_URL = 'http://localhost';
-    process.env.GOOGLE_CLIENT_ID = 'google-client-id';
-    process.env.DROPBOX_APP_KEY = 'dropbox-app-key';
-    process.env.ONEDRIVE_CLIENT_ID = 'onedrive-client-id';
   });
 
   // -----------------------------------------------------------------------
@@ -248,6 +260,25 @@ describe('backup-service', () => {
       expect(parsed.searchParams.get('code_challenge')).toBe('mock-code-challenge');
       expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
       expect(parsed.searchParams.get('scope')).toBe('Files.ReadWrite offline_access');
+    });
+
+    it('should use client ID from the database', async () => {
+      mockGetOAuthClientId.mockResolvedValue('db-google-client-id');
+
+      const url = await getAuthUrl('google_drive');
+      const parsed = new URL(url);
+
+      expect(parsed.searchParams.get('client_id')).toBe('db-google-client-id');
+      expect(mockGetOAuthClientId).toHaveBeenCalledWith('google_drive');
+    });
+
+    it('should use empty client ID when database has no value', async () => {
+      mockGetOAuthClientId.mockResolvedValue(null);
+
+      const url = await getAuthUrl('google_drive');
+      const parsed = new URL(url);
+
+      expect(parsed.searchParams.get('client_id')).toBe('');
     });
   });
 

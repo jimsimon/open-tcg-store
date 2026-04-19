@@ -36,6 +36,9 @@ const GetBackupSettingsQuery = graphql(`
       googleDriveConnected
       dropboxConnected
       onedriveConnected
+      googleDriveClientId
+      dropboxClientId
+      onedriveClientId
     }
   }
 `);
@@ -107,6 +110,22 @@ const TriggerRestoreMutation = graphql(`
     triggerRestore(provider: $provider) {
       success
       message
+    }
+  }
+`);
+
+const DisconnectBackupProviderMutation = graphql(`
+  mutation DisconnectBackupProvider($provider: BackupProvider!) {
+    disconnectBackupProvider(provider: $provider) {
+      provider
+      frequency
+      lastBackupAt
+      googleDriveConnected
+      dropboxConnected
+      onedriveConnected
+      googleDriveClientId
+      dropboxClientId
+      onedriveClientId
     }
   }
 `);
@@ -378,6 +397,20 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         gap: 0.5rem;
       }
 
+      .client-id-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5rem;
+      }
+
+      .client-id-row .client-id-input {
+        flex: 1;
+      }
+
+      .client-id-row wa-button {
+        flex-shrink: 0;
+      }
+
       .provider-card-wrapper {
         background: var(--wa-color-surface-alt);
         border: 1px solid var(--wa-color-surface-border);
@@ -566,6 +599,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           ...this.connectedProviders,
           ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
         };
+        this.clientIds = {
+          google_drive: s.googleDriveClientId ?? '',
+          dropbox: s.dropboxClientId ?? '',
+          onedrive: s.onedriveClientId ?? '',
+        };
       }
 
       if (jobsResult?.data?.getCronJobs) {
@@ -662,6 +700,31 @@ export class OgsSettingsBackupPage extends OgsPageBase {
   private connectProvider(providerKey: ProviderKey) {
     const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
     window.location.href = `/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
+  }
+
+  private async disconnectProvider(providerKey: ProviderKey) {
+    this.successMessage = '';
+    this.errorMessage = '';
+    try {
+      const result = await execute(DisconnectBackupProviderMutation, {
+        provider: providerKey as BackupProvider,
+      });
+      if (result?.data?.disconnectBackupProvider) {
+        const s = result.data.disconnectBackupProvider;
+        this.connectedProviders = {
+          ...this.connectedProviders,
+          ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
+        };
+        this.clientIds = {
+          google_drive: s.googleDriveClientId ?? '',
+          dropbox: s.dropboxClientId ?? '',
+          onedrive: s.onedriveClientId ?? '',
+        };
+        this.successMessage = `Disconnected ${PROVIDERS[providerKey].name}`;
+      }
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to disconnect provider';
+    }
   }
 
   // --- Helpers ---
@@ -1090,16 +1153,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
                 : html`<wa-badge variant="neutral">Not connected</wa-badge>`}
             </div>
           </div>
-          <wa-button
-            size="small"
-            variant="${connected ? 'neutral' : 'brand'}"
-            appearance="outlined"
-            ?disabled="${!connected && !clientId.trim()}"
-            @click="${() => this.connectProvider(providerKey)}"
-          >
-            <wa-icon slot="start" name="${connected ? 'rotate' : 'link'}"></wa-icon>
-            ${connected ? 'Reconnect' : 'Connect'}
-          </wa-button>
         </div>
         <div class="provider-setup">
           <wa-details summary="How to get a ${name} OAuth Client ID">
@@ -1107,17 +1160,47 @@ export class OgsSettingsBackupPage extends OgsPageBase {
               ${instructions.steps.map((step) => html`<li>${step}</li>`)}
             </ol>
           </wa-details>
-          <wa-input
-            label="OAuth Client ID"
-            placeholder="Paste your ${name} OAuth Client ID"
-            size="small"
-            .value="${clientId}"
-            @input="${(e: Event) => {
-              this.clientIds = { ...this.clientIds, [providerKey]: (e.target as HTMLInputElement).value };
-            }}"
-          >
-            <wa-icon slot="prefix" name="key"></wa-icon>
-          </wa-input>
+          <div class="client-id-row">
+            <wa-input
+              class="client-id-input"
+              label="OAuth Client ID"
+              placeholder="Paste your ${name} OAuth Client ID"
+              size="small"
+              .value="${clientId}"
+              ?readonly="${connected}"
+              @input="${(e: Event) => {
+                if (!connected) {
+                  this.clientIds = { ...this.clientIds, [providerKey]: (e.target as HTMLInputElement).value };
+                }
+              }}"
+            >
+              <wa-icon slot="prefix" name="key"></wa-icon>
+            </wa-input>
+            ${connected
+              ? html`
+                  <wa-button
+                    size="small"
+                    variant="danger"
+                    appearance="outlined"
+                    @click="${() => this.disconnectProvider(providerKey)}"
+                  >
+                    <wa-icon slot="start" name="link-slash"></wa-icon>
+                    Disconnect
+                  </wa-button>
+                `
+              : html`
+                  <wa-button
+                    size="small"
+                    variant="brand"
+                    appearance="outlined"
+                    ?disabled="${!clientId.trim()}"
+                    @click="${() => this.connectProvider(providerKey)}"
+                  >
+                    <wa-icon slot="start" name="link"></wa-icon>
+                    Connect
+                  </wa-button>
+                `}
+          </div>
         </div>
       </div>
     `;

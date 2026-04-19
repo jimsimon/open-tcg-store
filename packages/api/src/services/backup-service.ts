@@ -19,7 +19,7 @@ import { sql } from 'drizzle-orm';
 import { createClient } from '@libsql/client';
 import { databaseFilePath } from '../db/otcgs/drizzle.config';
 import { otcgs } from '../db/otcgs/index';
-import { storeOAuthTokens, getOAuthTokens, updateLastBackupAt } from './settings-service';
+import { storeOAuthTokens, getOAuthTokens, getOAuthClientId, updateLastBackupAt } from './settings-service';
 
 const DB_FILE_PATH = databaseFilePath;
 const BACKUP_FOLDER = 'otcgs-backups';
@@ -174,13 +174,14 @@ interface OAuthProviderConfig {
   extraAuthorizeParams?: Record<string, string>;
 }
 
-export function getProviderConfig(provider: BackupProvider): OAuthProviderConfig {
+export async function getProviderConfig(provider: BackupProvider): Promise<OAuthProviderConfig> {
+  const clientId = (await getOAuthClientId(provider)) ?? '';
   const baseUrl = process.env.APP_URL || 'http://localhost';
 
   switch (provider) {
     case 'google_drive':
       return {
-        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientId,
         authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenEndpoint: 'https://oauth2.googleapis.com/token',
         scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -189,7 +190,7 @@ export function getProviderConfig(provider: BackupProvider): OAuthProviderConfig
       };
     case 'dropbox':
       return {
-        clientId: process.env.DROPBOX_APP_KEY!,
+        clientId,
         authorizationEndpoint: 'https://www.dropbox.com/oauth2/authorize',
         tokenEndpoint: 'https://api.dropboxapi.com/oauth2/token',
         scopes: [],
@@ -198,7 +199,7 @@ export function getProviderConfig(provider: BackupProvider): OAuthProviderConfig
       };
     case 'onedrive':
       return {
-        clientId: process.env.ONEDRIVE_CLIENT_ID!,
+        clientId,
         authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
         tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
         scopes: ['Files.ReadWrite', 'offline_access'],
@@ -229,7 +230,7 @@ function getOAuthClient(config: OAuthProviderConfig): oauth.Client {
 // ---------------------------------------------------------------------------
 
 export async function getAuthUrl(provider: BackupProvider): Promise<string> {
-  const config = getProviderConfig(provider);
+  const config = await getProviderConfig(provider);
   const { state, codeVerifier } = generateOAuthState(provider);
   const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
 
@@ -254,7 +255,7 @@ export async function getAuthUrl(provider: BackupProvider): Promise<string> {
 }
 
 export async function handleOAuthCallback(provider: BackupProvider, code: string, codeVerifier: string): Promise<void> {
-  const config = getProviderConfig(provider);
+  const config = await getProviderConfig(provider);
   const as = getAuthorizationServer(config);
   const client = getOAuthClient(config);
   const clientAuth = oauth.None();
@@ -293,7 +294,7 @@ async function getRefreshedAccessToken(provider: BackupProvider): Promise<string
     throw new Error(`${provider} is not connected. Please authorize first.`);
   }
 
-  const config = getProviderConfig(provider);
+  const config = await getProviderConfig(provider);
   const as = getAuthorizationServer(config);
   const client = getOAuthClient(config);
   const clientAuth = oauth.None();
@@ -340,7 +341,7 @@ export async function handleOneDriveCallback(code: string, codeVerifier: string)
 
 async function getGoogleDriveClient() {
   const accessToken = await getRefreshedAccessToken('google_drive');
-  const config = getProviderConfig('google_drive');
+  const config = await getProviderConfig('google_drive');
 
   const oauth2Client = new google.auth.OAuth2(config.clientId, undefined, config.redirectUri);
   oauth2Client.setCredentials({ access_token: accessToken });

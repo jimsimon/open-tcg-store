@@ -85,6 +85,13 @@
       "when": 1776760414000,
       "tag": "0011_add_stripe_publishable_key",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1776585587284,
+      "tag": "0012_loud_legion",
+      "breakpoints": true
     }
   ]
 }
