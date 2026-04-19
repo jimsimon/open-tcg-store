@@ -89,7 +89,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Section Cards --- */
@@ -119,7 +119,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
       .section-header p {
         margin: 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Status Info --- */
@@ -138,7 +138,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
       }
 
       .status-label {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
         font-weight: 500;
       }
@@ -170,7 +170,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
     `,
   ];
@@ -398,7 +398,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
             ${this.checking ? 'Checking...' : 'Check for Updates'}
           </wa-button>
           ${this.isUpdating && !this.updating
-            ? html`<span style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
+            ? html`<span style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-m);">
                 An update is currently in progress...
               </span>`
             : nothing}

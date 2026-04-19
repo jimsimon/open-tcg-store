@@ -108,7 +108,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Stats Bar --- */
@@ -207,7 +207,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
       }
 
       .wa-table th {
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--wa-color-text-muted);
@@ -219,7 +219,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
 
       .wa-table td {
         padding: 0.875rem 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         border-bottom: 1px solid var(--wa-color-surface-border);
       }
 
@@ -287,7 +287,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- No Store State --- */

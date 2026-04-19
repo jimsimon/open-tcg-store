@@ -104,7 +104,7 @@ export class OgsCronGenerator extends LitElement {
     .mode-tab {
       cursor: pointer;
       padding: 0.375rem 0.75rem;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       font-weight: 500;
       border-radius: var(--wa-border-radius-m);
       border: 1px solid var(--wa-color-surface-border);
@@ -143,7 +143,7 @@ export class OgsCronGenerator extends LitElement {
     }
 
     .description-text {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-normal);
       font-weight: 500;
     }
@@ -174,7 +174,7 @@ export class OgsCronGenerator extends LitElement {
       background: transparent;
       cursor: pointer;
       text-align: left;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-normal);
       transition: all 0.15s ease;
     }
@@ -212,7 +212,7 @@ export class OgsCronGenerator extends LitElement {
     }
 
     .builder-label {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       font-weight: 500;
       color: var(--wa-color-text-muted);
       min-width: 40px;

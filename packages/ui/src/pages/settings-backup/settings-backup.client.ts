@@ -207,7 +207,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Job Cards --- */
@@ -239,7 +239,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       .job-description {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         margin: 0.25rem 0 0 0;
       }
 
@@ -266,13 +266,13 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       }
 
       .status-value {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 500;
       }
 
       .schedule-display {
         font-family: var(--wa-font-family-mono, monospace);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         padding: 0.25rem 0.5rem;
         background: var(--wa-color-surface-alt);
         border: 1px solid var(--wa-color-surface-border);
@@ -324,7 +324,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       .section-header p {
         margin: 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .provider-card {
@@ -368,7 +368,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       .provider-name {
         font-weight: 600;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .provider-setup {
@@ -402,7 +402,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       .setup-steps {
         margin: 0.25rem 0 0.5rem;
         padding-left: 1.25rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
         line-height: 1.6;
       }
@@ -440,7 +440,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Dialog --- */
@@ -472,7 +472,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       }
 
       .delete-warning-text p:last-child {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
       }
 

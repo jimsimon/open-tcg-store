@@ -92,7 +92,7 @@ export class OgsEventCalendar extends LitElement {
       aspect-ratio: 1;
       border-radius: var(--wa-border-radius-m);
       cursor: pointer;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       transition:
         background 0.15s ease,
         color 0.15s ease;

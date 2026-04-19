@@ -61,7 +61,7 @@ export class OgsSettingsAutopricePage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Empty / Coming Soon State --- */
@@ -115,7 +115,7 @@ export class OgsSettingsAutopricePage extends OgsPageBase {
         background: var(--wa-color-surface-alt);
         border: 1px solid var(--wa-color-surface-border);
         border-radius: var(--wa-border-radius-pill);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-normal);
       }
 

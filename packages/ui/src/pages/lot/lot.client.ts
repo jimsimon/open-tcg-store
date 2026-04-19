@@ -240,7 +240,7 @@ export class OgsLotPage extends OgsPageBase {
       th {
         text-align: left;
         padding: 0.5rem 0.5rem;
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         font-weight: 600;
         color: var(--wa-color-text-muted);
         border-bottom: 2px solid var(--wa-color-surface-border);
@@ -249,7 +249,7 @@ export class OgsLotPage extends OgsPageBase {
       td {
         padding: 0.375rem 0.5rem;
         vertical-align: middle;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
       tr:not(:last-child) td {
         border-bottom: 1px solid var(--wa-color-surface-border);
@@ -278,7 +278,7 @@ export class OgsLotPage extends OgsPageBase {
         gap: 0.5rem;
         padding: 0.5rem;
         cursor: pointer;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
       .search-result-item:hover {
         background: var(--wa-color-surface-alt);
@@ -288,7 +288,7 @@ export class OgsLotPage extends OgsPageBase {
         flex-direction: column;
       }
       .result-info strong {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
       .result-info small {
         color: var(--wa-color-text-muted);
@@ -328,7 +328,7 @@ export class OgsLotPage extends OgsPageBase {
         text-align: center;
         padding: 2rem;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .save-bar {

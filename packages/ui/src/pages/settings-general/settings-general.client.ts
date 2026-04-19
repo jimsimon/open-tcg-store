@@ -109,7 +109,7 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Section Cards --- */
@@ -139,7 +139,7 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
       .section-header p {
         margin: 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Form Layout --- */
@@ -171,7 +171,7 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
     `,
   ];
