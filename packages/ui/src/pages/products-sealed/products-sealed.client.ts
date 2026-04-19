@@ -29,6 +29,7 @@ import {
   emptyStateStyles,
   loadingStateStyles,
   getQuantityBadgeClass,
+  formatCurrency,
 } from '../products/products-shared.ts';
 import { AddToCartMutation } from '../../lib/shared-queries';
 import { debounce } from '../../lib/debounce';
@@ -308,6 +309,14 @@ export class OgsProductsSealedPage extends OgsPageBase {
     this.fetchProducts();
   }
 
+  // --- Card navigation ---
+
+  private handleCardClick(event: Event, productId: string) {
+    const target = event.target as HTMLElement;
+    if (target.closest('.product-card-footer')) return;
+    window.location.href = `/products/${productId}`;
+  }
+
   // --- Pagination handlers ---
 
   private goToPage(page: number) {
@@ -493,7 +502,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
       <div class="products-grid">
         ${this.products.map(
           (product) => html`
-            <a class="product-card" href="/products/${product.id}">
+            <div class="product-card" @click="${(e: Event) => this.handleCardClick(e, product.id)}">
               <div class="product-card-image">
                 ${product.images?.small
                   ? html`<img src="${product.images.small}" alt="${product.name}" />`
@@ -512,11 +521,11 @@ export class OgsProductsSealedPage extends OgsPageBase {
                     ${product.totalQuantity > 0 ? `${product.totalQuantity} avail` : 'Out of stock'}
                   </span>
                 </div>
-                <div class="product-card-footer" @click="${(e: Event) => e.preventDefault()}">
+                <div class="product-card-footer">
                   <div class="product-card-price-row">
                     <span class="product-price">
                       ${product.lowestPrice != null
-                        ? `$${product.lowestPrice}`
+                        ? formatCurrency(Number(product.lowestPrice))
                         : html`<span class="out-of-stock-text">—</span>`}
                     </span>
                   </div>
@@ -540,7 +549,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
                     : nothing}
                 </div>
               </div>
-            </a>
+            </div>
           `,
         )}
       </div>

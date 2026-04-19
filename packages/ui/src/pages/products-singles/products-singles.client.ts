@@ -417,6 +417,14 @@ export class OgsProductsSinglesPage extends OgsPageBase {
     };
   }
 
+  // --- Card navigation ---
+
+  private handleCardClick(event: Event, productId: string) {
+    const target = event.target as HTMLElement;
+    if (target.closest('.product-card-footer')) return;
+    window.location.href = `/products/${productId}`;
+  }
+
   // --- Pagination handlers ---
 
   private goToPage(page: number) {
@@ -617,7 +625,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
           const display = this.getDisplayPrice(product);
           const activeCond = this.getActiveCondition(product);
           return html`
-            <a class="product-card" href="/products/${product.id}">
+            <div class="product-card" @click="${(e: Event) => this.handleCardClick(e, product.id)}">
               <div class="product-card-image">
                 ${product.images?.small
                   ? html`<img src="${product.images.small}" alt="${product.name}" />`
@@ -639,7 +647,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                     ${display.quantity > 0 ? `${display.quantity} avail` : 'Out of stock'}
                   </span>
                 </div>
-                <div class="product-card-footer" @click="${(e: Event) => e.preventDefault()}">
+                <div class="product-card-footer">
                   ${product.conditionPrices.length > 0
                     ? html`
                         <wa-select
@@ -680,7 +688,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                     : nothing}
                 </div>
               </div>
-            </a>
+            </div>
           `;
         })}
       </div>
