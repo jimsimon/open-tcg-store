@@ -309,6 +309,15 @@ export class OgsProductsSealedPage extends OgsPageBase {
     this.fetchProducts();
   }
 
+  // --- Image error handler ---
+
+  private handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.hidden = true;
+    const placeholder = img.parentElement?.querySelector('.card-placeholder') as HTMLElement | null;
+    if (placeholder) placeholder.hidden = false;
+  }
+
   // --- Pagination handlers ---
 
   private goToPage(page: number) {
@@ -498,10 +507,15 @@ export class OgsProductsSealedPage extends OgsPageBase {
               <a class="product-card-link" href="/products/${product.id}">
                 <div class="product-card-image">
                   ${product.images?.small
-                    ? html`<img src="${product.images.small}" alt="${product.name}" />`
-                    : html`<div class="card-placeholder">
-                        <wa-icon name="box" variant="regular"></wa-icon>
-                      </div>`}
+                    ? html`<img
+                        src="${product.images.small}"
+                        alt="${product.name}"
+                        @error="${this.handleImageError}"
+                      />`
+                    : nothing}
+                  <div class="card-placeholder" ?hidden="${!!product.images?.small}">
+                    <wa-icon name="box" variant="regular"></wa-icon>
+                  </div>
                 </div>
                 <div class="product-card-content">
                   <div class="product-card-name">${product.name}</div>

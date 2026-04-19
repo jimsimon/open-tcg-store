@@ -41,7 +41,7 @@ export async function resolveCategoryId(gameName: string): Promise<number> {
 /** Build TCG player CDN image URLs for a product. */
 function buildImageUrls(tcgpProductId: number | null) {
   return {
-    small: `https://tcgplayer-cdn.tcgplayer.com/product/${tcgpProductId}_in_200x200.jpg`,
+    small: `https://tcgplayer-cdn.tcgplayer.com/product/${tcgpProductId}_in_400x400.jpg`,
     large: `https://tcgplayer-cdn.tcgplayer.com/product/${tcgpProductId}_in_1000x1000.jpg`,
   };
 }
