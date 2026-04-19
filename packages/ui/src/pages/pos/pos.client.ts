@@ -28,6 +28,11 @@ import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js'
 // 200ms gives slower Bluetooth/USB scanners enough headroom while still feeling instant.
 const BARCODE_TIMEOUT_MS = 200;
 
+// Web Awesome input-type component tags that should suppress barcode scanning while focused.
+// Intentionally excludes non-input elements (wa-button, wa-icon, etc.) so scans still work
+// after a cashier clicks a button.
+const WA_INPUT_TAGS = new Set(['wa-input', 'wa-textarea', 'wa-select', 'wa-combobox']);
+
 // --- Types ---
 
 interface PosLineItem {
@@ -771,7 +776,6 @@ export class PosPage extends OgsPageBase {
     // NOT suppress scans (a common POS flow is: click a quantity button → scanner fires).
     const target = event.target as HTMLElement;
     const tag = target.tagName.toLowerCase();
-    const WA_INPUT_TAGS = new Set(['wa-input', 'wa-textarea', 'wa-select', 'wa-combobox']);
     if (
       tag === 'input' ||
       tag === 'textarea' ||
