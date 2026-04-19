@@ -275,21 +275,24 @@ export class EventDetailsPage extends OgsPageBase {
         white-space: pre-line;
       }
 
-      /* --- Capacity --- */
+      /* --- Registration Bar --- */
+
+      .registration-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
 
       .capacity-info {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         font-size: var(--wa-font-size-s);
-        padding: 0.75rem 1rem;
-        background: var(--wa-color-surface-sunken);
-        border-radius: var(--wa-border-radius-m);
-        margin-bottom: 1rem;
       }
 
       .capacity-info.full {
-        background: var(--wa-color-danger-container);
         color: var(--wa-color-danger-text);
       }
 
@@ -604,25 +607,27 @@ export class EventDetailsPage extends OgsPageBase {
               </wa-callout>
             `,
             () => html`
-              ${event.capacity != null
-                ? html`
-                    <div class="capacity-info ${isFull ? 'full' : ''}">
-                      <wa-icon name="${isFull ? 'circle-xmark' : 'circle-check'}"></wa-icon>
-                      ${isFull
-                        ? 'This event is full. Registration is closed.'
-                        : `${event.capacity - event.registrationCount} spot${event.capacity - event.registrationCount !== 1 ? 's' : ''} remaining`}
-                    </div>
-                  `
-                : nothing}
-              ${when(
-                !this.showRegistration && !isFull,
-                () => html`
-                  <wa-button variant="brand" @click="${this.openRegistrationForm}">
-                    <wa-icon slot="start" name="pen-to-square"></wa-icon>
-                    Register for Event
-                  </wa-button>
-                `,
-              )}
+              <div class="registration-bar">
+                ${event.capacity != null
+                  ? html`
+                      <div class="capacity-info ${isFull ? 'full' : ''}">
+                        <wa-icon name="${isFull ? 'circle-xmark' : 'circle-check'}"></wa-icon>
+                        ${isFull
+                          ? 'This event is full. Registration is closed.'
+                          : `${event.capacity - event.registrationCount} spot${event.capacity - event.registrationCount !== 1 ? 's' : ''} remaining`}
+                      </div>
+                    `
+                  : nothing}
+                ${when(
+                  !this.showRegistration && !isFull,
+                  () => html`
+                    <wa-button variant="brand" @click="${this.openRegistrationForm}">
+                      <wa-icon slot="start" name="pen-to-square"></wa-icon>
+                      Register for Event
+                    </wa-button>
+                  `,
+                )}
+              </div>
               ${when(this.showRegistration, () => this.renderRegistrationForm())}
             `,
           )}
