@@ -456,18 +456,19 @@ const router = new Router()
   // Authorize routes require authentication; callbacks validate the CSRF state parameter.
   .get('/api/backup/oauth/google_drive/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    ctx.redirect(getGoogleDriveAuthUrl());
+    ctx.redirect(await getGoogleDriveAuthUrl());
   })
   .get('/api/backup/oauth/google_drive/callback', async (ctx: RouterContext) => {
     try {
       if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
-      if (!state || validateOAuthState(state) !== 'google_drive') {
+      const oauthState = state ? validateOAuthState(state) : null;
+      if (!oauthState || oauthState.provider !== 'google_drive') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
       }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
-      await handleGoogleDriveCallback(code);
+      await handleGoogleDriveCallback(code, oauthState.codeVerifier);
       ctx.redirect('/settings/backup?connected=google_drive');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
@@ -476,18 +477,19 @@ const router = new Router()
   })
   .get('/api/backup/oauth/dropbox/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    ctx.redirect(getDropboxAuthUrl());
+    ctx.redirect(await getDropboxAuthUrl());
   })
   .get('/api/backup/oauth/dropbox/callback', async (ctx: RouterContext) => {
     try {
       if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
-      if (!state || validateOAuthState(state) !== 'dropbox') {
+      const oauthState = state ? validateOAuthState(state) : null;
+      if (!oauthState || oauthState.provider !== 'dropbox') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
       }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
-      await handleDropboxCallback(code);
+      await handleDropboxCallback(code, oauthState.codeVerifier);
       ctx.redirect('/settings/backup?connected=dropbox');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
@@ -496,18 +498,19 @@ const router = new Router()
   })
   .get('/api/backup/oauth/onedrive/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    ctx.redirect(getOneDriveAuthUrl());
+    ctx.redirect(await getOneDriveAuthUrl());
   })
   .get('/api/backup/oauth/onedrive/callback', async (ctx: RouterContext) => {
     try {
       if (!(await requireCompanySettingsUpdate(ctx))) return;
       const state = ctx.query.state as string;
-      if (!state || validateOAuthState(state) !== 'onedrive') {
+      const oauthState = state ? validateOAuthState(state) : null;
+      if (!oauthState || oauthState.provider !== 'onedrive') {
         throw new Error('Invalid or expired OAuth state. Please try again.');
       }
       const code = ctx.query.code as string;
       if (!code) throw new Error('No authorization code received');
-      await handleOneDriveCallback(code);
+      await handleOneDriveCallback(code, oauthState.codeVerifier);
       ctx.redirect('/settings/backup?connected=onedrive');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth failed';
