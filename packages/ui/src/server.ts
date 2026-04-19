@@ -279,10 +279,13 @@ const router = new Router()
   .get('buy-rates', '/buy-rates', async (ctx) => {
     return renderPage(ctx, 'buy-rates');
   })
-  // Public events page (anonymous access)
+  // Public events pages (anonymous access)
   .use('/events', ensureAnonymousSession)
   .get('events', '/events', async (ctx) => {
     return renderPage(ctx, 'events');
+  })
+  .get('event-details', '/events/:eventId', async (ctx) => {
+    return renderPage(ctx, 'event-details');
   })
   // Backward-compatible redirects from old card URLs
   .get('cards-redirect', '/games/:game/cards', async (ctx) => {
