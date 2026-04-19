@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
 COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+# packages/shared has no dependencies so pnpm does not create a node_modules dir for it
 
 # Copy source code
 COPY . .
