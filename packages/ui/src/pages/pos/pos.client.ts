@@ -261,7 +261,7 @@ export class PosPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- POS Layout --- */
@@ -348,7 +348,7 @@ export class PosPage extends OgsPageBase {
       }
 
       .search-result-info strong {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -361,7 +361,7 @@ export class PosPage extends OgsPageBase {
 
       .search-result-price {
         font-weight: 600;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
       }
@@ -393,7 +393,7 @@ export class PosPage extends OgsPageBase {
       }
 
       .wa-table th {
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--wa-color-text-muted);
@@ -405,7 +405,7 @@ export class PosPage extends OgsPageBase {
 
       .wa-table td {
         padding: 0.875rem 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         border-bottom: 1px solid var(--wa-color-surface-border);
       }
 
@@ -463,7 +463,7 @@ export class PosPage extends OgsPageBase {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .totals-row.total {
@@ -545,7 +545,7 @@ export class PosPage extends OgsPageBase {
         border-radius: var(--wa-border-radius-m);
         text-align: center;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .stripe-placeholder wa-icon {
@@ -632,7 +632,7 @@ export class PosPage extends OgsPageBase {
 
       .empty-line-items p {
         margin: 0;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Order Search Dialog --- */
@@ -666,7 +666,7 @@ export class PosPage extends OgsPageBase {
       }
 
       .order-item-info strong {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .order-item-info small {
@@ -704,7 +704,7 @@ export class PosPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
     `,
   ];

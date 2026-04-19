@@ -473,7 +473,7 @@ export class SettingsDashboardPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-quiet);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Controls Bar --- */
@@ -652,14 +652,14 @@ export class SettingsDashboardPage extends OgsPageBase {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .best-seller-stats {
         display: flex;
         gap: var(--wa-space-l);
         flex-shrink: 0;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .best-seller-stat {
@@ -696,7 +696,7 @@ export class SettingsDashboardPage extends OgsPageBase {
       }
 
       .empty-state-description {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
         margin: 0;
         max-width: 320px;

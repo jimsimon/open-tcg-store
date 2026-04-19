@@ -234,7 +234,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Back link --- */
@@ -245,7 +245,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
         gap: 0.5rem;
         color: var(--wa-color-text-muted);
         text-decoration: none;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         margin-bottom: 1rem;
         cursor: pointer;
         transition: color 0.15s ease;
@@ -314,7 +314,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
 
       .override-description {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Permission Grid --- */
@@ -375,7 +375,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
 
       .permission-card-description {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .permission-card wa-switch {
@@ -429,7 +429,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Footer Actions --- */

@@ -107,7 +107,7 @@ export class OgsSettingsIntegrationsPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Integration Cards --- */
@@ -152,7 +152,7 @@ export class OgsSettingsIntegrationsPage extends OgsPageBase {
       .integration-title-text p {
         margin: 0.125rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Form Fields --- */
@@ -197,7 +197,7 @@ export class OgsSettingsIntegrationsPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
     `,
   ];

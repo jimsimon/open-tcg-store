@@ -145,7 +145,7 @@ export class OgsLotsPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Summary Stats --- */
@@ -268,7 +268,7 @@ export class OgsLotsPage extends OgsPageBase {
       }
 
       .wa-table th {
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--wa-color-text-muted);
@@ -281,7 +281,7 @@ export class OgsLotsPage extends OgsPageBase {
 
       .wa-table td {
         padding: 0.875rem 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         border-bottom: 1px solid var(--wa-color-surface-border);
       }
 
@@ -332,7 +332,7 @@ export class OgsLotsPage extends OgsPageBase {
 
       .pagination-info {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .pagination-controls {
@@ -365,7 +365,7 @@ export class OgsLotsPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .empty-state {
@@ -428,7 +428,7 @@ export class OgsLotsPage extends OgsPageBase {
       }
 
       .delete-warning-text p:last-child {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
       }
 

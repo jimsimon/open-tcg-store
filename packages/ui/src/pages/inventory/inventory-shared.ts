@@ -291,7 +291,7 @@ export const sharedInventoryStyles = [
     .page-header p {
       margin: 0.25rem 0 0 0;
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     /* --- Summary Stats --- */
@@ -415,7 +415,7 @@ export const sharedInventoryStyles = [
       background: var(--wa-color-brand-container);
       color: var(--wa-color-brand-text);
       border-radius: var(--wa-border-radius-pill);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       font-weight: 600;
     }
 
@@ -431,7 +431,7 @@ export const sharedInventoryStyles = [
     }
 
     .wa-table th {
-      font-size: var(--wa-font-size-xs);
+      font-size: var(--wa-font-size-s);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--wa-color-text-muted);
@@ -463,7 +463,7 @@ export const sharedInventoryStyles = [
     .game-name,
     .set-name {
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     /* --- Clickable row --- */
@@ -528,7 +528,7 @@ export const sharedInventoryStyles = [
 
     .pagination-info {
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .pagination-controls {
@@ -552,7 +552,7 @@ export const sharedInventoryStyles = [
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-muted);
     }
 
@@ -573,7 +573,7 @@ export const sharedInventoryStyles = [
 
     .loading-container span {
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .empty-state {
@@ -645,7 +645,7 @@ export const sharedInventoryStyles = [
     }
 
     .search-result-item .result-info strong {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .search-result-item .result-info small {
@@ -676,7 +676,7 @@ export const sharedInventoryStyles = [
     .selected-product p {
       margin: 0 0 0.5rem 0;
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .product-image {
@@ -691,7 +691,7 @@ export const sharedInventoryStyles = [
 
     .market-prices h4 {
       margin: 0 0 0.5rem 0;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       font-weight: 600;
     }
 
@@ -716,7 +716,7 @@ export const sharedInventoryStyles = [
       background: var(--wa-color-surface-alt);
       border: 1px solid var(--wa-color-surface-border);
       border-radius: var(--wa-border-radius-l);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       font-weight: 500;
     }
 
@@ -805,7 +805,7 @@ export const sharedInventoryStyles = [
     }
 
     .delete-warning-text p:last-child {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-muted);
     }
 
@@ -837,7 +837,7 @@ export const sharedInventoryStyles = [
     }
 
     .cost-basis-warning-text p:last-child {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-muted);
     }
 
@@ -856,7 +856,7 @@ export const sharedInventoryStyles = [
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 1rem;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-muted);
     }
 
