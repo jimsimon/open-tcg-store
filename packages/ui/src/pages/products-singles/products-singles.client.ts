@@ -18,6 +18,7 @@ import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { graphql } from '../../graphql/index.ts';
+import { storeUrl } from '../../lib/store-url';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import { cartState } from '../../lib/cart-state.ts';
 import {
@@ -627,7 +628,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
           const activeCond = this.getActiveCondition(product);
           return html`
             <wa-card appearance="outlined">
-              <a class="product-card-link" href="/products/${product.id}">
+              <a class="product-card-link" href="${storeUrl(`/products/${product.id}`)}">
                 <div class="product-card-image">
                   ${product.images?.small
                     ? html`<img

@@ -12,6 +12,7 @@ import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import { activeStoreId } from '../../lib/store-context';
+import { storeUrl } from '../../lib/store-url';
 import { formatTime, getEventColor } from '../../lib/event-helpers.ts';
 
 // --- Types ---
@@ -660,7 +661,7 @@ export class EventsPage extends OgsPageBase {
     return html`
       <a
         class="event-chip"
-        href="/events/${event.id}"
+        href="${storeUrl(`/events/${event.id}`)}"
         style="background: ${color.bg}; color: ${color.text}; border-color: ${color.border};"
         title="${event.name}"
       >

@@ -30,10 +30,10 @@ import { execute } from '../lib/graphql';
 import logoSvg from '../assets/logo.svg?raw';
 import { cartState } from '../lib/cart-state';
 import { storeList, activeStoreId, initActiveStoreFromCookie, setActiveStoreCookie } from '../lib/store-context';
+import { storeUrl } from '../lib/store-url';
 import { getAuthClient } from '../lib/auth';
 import './ogs-cart-drawer.ts';
 import './ogs-auth-dialog.ts';
-import type { OgsCartDrawer } from './ogs-cart-drawer.ts';
 
 // --- GraphQL Queries for Store Locations ---
 
@@ -383,10 +383,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
     window.removeEventListener('scroll', this.boundHandleScroll);
   }
 
-  private get cartDrawer(): OgsCartDrawer | null {
-    return this.renderRoot.querySelector('ogs-cart-drawer');
-  }
-
   private handleScroll() {
     const currentScrollY = window.scrollY;
     const delta = currentScrollY - this.lastScrollY;
@@ -481,11 +477,11 @@ export class OgsPage extends SignalWatcher(LitElement) {
           () => html`
             <nav aria-label="Main navigation">
               <div class="nav-section-label">Shop</div>
-              ${this.renderNavLink('/products/singles', 'bag-shopping', 'Browse', 'products')}
-              ${this.renderNavSubLink('/products/singles', 'Singles', 'products/singles')}
-              ${this.renderNavSubLink('/products/sealed', 'Sealed', 'products/sealed')}
-              ${this.renderNavLink('/buy-rates', 'hand-holding-dollar', 'Buy Rates', 'buy-rates')}
-              ${this.renderNavLink('/events', 'calendar-days', 'Events', 'events')}
+              ${this.renderNavLink(storeUrl('/products/singles'), 'bag-shopping', 'Browse', 'products')}
+              ${this.renderNavSubLink(storeUrl('/products/singles'), 'Singles', 'products/singles')}
+              ${this.renderNavSubLink(storeUrl('/products/sealed'), 'Sealed', 'products/sealed')}
+              ${this.renderNavLink(storeUrl('/buy-rates'), 'hand-holding-dollar', 'Buy Rates', 'buy-rates')}
+              ${this.renderNavLink(storeUrl('/events'), 'calendar-days', 'Events', 'events')}
               ${when(
                 this.canManageInventory,
                 () => html`
@@ -493,22 +489,29 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   <div class="nav-section-label">Employees</div>
 
                   ${when(this.canViewDashboard, () =>
-                    this.renderNavLink('/settings-dashboard', 'house', 'Dashboard', 'Dashboard'),
+                    this.renderNavLink(storeUrl('/settings-dashboard'), 'house', 'Dashboard', 'Dashboard'),
                   )}
-                  ${this.renderNavLink('/orders', 'receipt', 'Orders', 'Orders')}
-                  ${when(this.canUsePOS, () => this.renderNavLink('/pos', 'cash-register', 'POS', 'pos'))}
-                  ${this.renderNavLink('/inventory/singles', 'boxes-stacked', 'Inventory', 'inventory')}
-                  ${this.renderNavSubLink('/inventory/singles', 'Singles', 'inventory/singles')}
-                  ${this.renderNavSubLink('/inventory/sealed', 'Sealed', 'inventory/sealed')}
-                  ${when(this.canManageLots, () => this.renderNavLink('/lots', 'layer-group', 'Lots', 'lots'))}
+                  ${this.renderNavLink(storeUrl('/orders'), 'receipt', 'Orders', 'Orders')}
+                  ${when(this.canUsePOS, () => this.renderNavLink(storeUrl('/pos'), 'cash-register', 'POS', 'pos'))}
+                  ${this.renderNavLink(storeUrl('/inventory/singles'), 'boxes-stacked', 'Inventory', 'inventory')}
+                  ${this.renderNavSubLink(storeUrl('/inventory/singles'), 'Singles', 'inventory/singles')}
+                  ${this.renderNavSubLink(storeUrl('/inventory/sealed'), 'Sealed', 'inventory/sealed')}
+                  ${when(this.canManageLots, () =>
+                    this.renderNavLink(storeUrl('/lots'), 'layer-group', 'Lots', 'lots'),
+                  )}
                   ${when(this.canViewTransactionLog, () =>
-                    this.renderNavLink('/transaction-log', 'clock-rotate-left', 'Transaction Log', 'Transaction Log'),
+                    this.renderNavLink(
+                      storeUrl('/transaction-log'),
+                      'clock-rotate-left',
+                      'Transaction Log',
+                      'Transaction Log',
+                    ),
                   )}
                   ${when(this.canManageUsers, () =>
-                    this.renderNavLink('/users', 'users-gear', 'User Accounts', 'users'),
+                    this.renderNavLink(storeUrl('/users'), 'users-gear', 'User Accounts', 'users'),
                   )}
                   ${when(this.canManageEvents, () =>
-                    this.renderNavLink('/event-management', 'calendar-pen', 'Events', 'event-management'),
+                    this.renderNavLink(storeUrl('/event-management'), 'calendar-pen', 'Events', 'event-management'),
                   )}
                 `,
               )}
@@ -562,27 +565,31 @@ export class OgsPage extends SignalWatcher(LitElement) {
     if (!newStoreId || newStoreId === activeStoreId.get()) return;
 
     if (this.isAnonymous) {
-      // Anonymous users: just update the cookie
+      // Anonymous users: persist selection to cookie before navigating
       setActiveStoreCookie(newStoreId);
     } else {
-      // Authenticated users: update the session via better-auth
+      // Authenticated users: update the session via better-auth before navigating
       try {
         const authClient = await getAuthClient();
         await authClient.organization.setActive({ organizationId: newStoreId });
-        activeStoreId.set(newStoreId);
       } catch (err) {
         console.error('Failed to set active store:', err);
         return;
       }
     }
 
-    // Re-fetch cart for the new store
-    await this.cartDrawer?.fetchCart();
-
-    // Dispatch event so page components can re-fetch their data
-    this.dispatchEvent(
-      new CustomEvent('store-changed', { detail: { storeId: newStoreId }, bubbles: true, composed: true }),
-    );
+    // Navigate to the same page but under the new store's URL.
+    // The page reload will re-fetch all data for the new store context.
+    const currentPath = window.location.pathname;
+    const storeUrlPattern = /^\/stores\/[^/]+/;
+    if (storeUrlPattern.test(currentPath)) {
+      // Replace the storeId segment in the current URL
+      const newPath = currentPath.replace(storeUrlPattern, `/stores/${newStoreId}`);
+      window.location.href = newPath + window.location.search;
+    } else {
+      // On a non-store page (e.g. settings) — navigate to the new store's default page
+      window.location.href = `/stores/${newStoreId}/products/singles`;
+    }
   }
 
   private openCartDrawer() {

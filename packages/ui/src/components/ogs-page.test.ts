@@ -25,11 +25,15 @@ vi.mock('../lib/graphql', () => ({
   execute: (...args: unknown[]) => mockExecute(...args),
 }));
 
+const TEST_STORE_ID = 'test-store-id';
+
 describe('ogs-page', () => {
   let element: OgsPage;
 
   beforeEach(async () => {
     element = document.createElement('ogs-page') as OgsPage;
+    // Set activeOrganizationId so storeUrl() can build valid store-scoped links
+    element.activeOrganizationId = TEST_STORE_ID;
     document.body.appendChild(element);
     await element.updateComplete;
   });
@@ -254,8 +258,12 @@ describe('ogs-page', () => {
       const inventoryLinks = Array.from(links).filter(
         (a) => a.href.includes('/inventory/singles') || a.href.includes('/inventory/sealed'),
       );
-      const dashboardLink = Array.from(links).find((a) => a.getAttribute('href') === '/');
-      const ordersLink = Array.from(links).find((a) => a.getAttribute('href') === '/orders');
+      const dashboardLink = Array.from(links).find((a) =>
+        a.getAttribute('href')?.includes(`/stores/${TEST_STORE_ID}/settings-dashboard`),
+      );
+      const ordersLink = Array.from(links).find((a) =>
+        a.getAttribute('href')?.includes(`/stores/${TEST_STORE_ID}/orders`),
+      );
 
       expect(inventoryLinks.length).toBe(0);
       expect(dashboardLink).toBeFalsy();
@@ -268,13 +276,18 @@ describe('ogs-page', () => {
 
       const links = element.shadowRoot!.querySelectorAll('a');
       const inventoryParentLink = Array.from(links).find(
-        (a) => a.classList.contains('nav-link') && a.getAttribute('href') === '/inventory/singles',
+        (a) =>
+          a.classList.contains('nav-link') && a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/singles`,
       );
       const inventorySinglesLink = Array.from(links).find(
-        (a) => a.classList.contains('nav-sub-link') && a.getAttribute('href') === '/inventory/singles',
+        (a) =>
+          a.classList.contains('nav-sub-link') &&
+          a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/singles`,
       );
       const inventorySealedLink = Array.from(links).find(
-        (a) => a.classList.contains('nav-sub-link') && a.getAttribute('href') === '/inventory/sealed',
+        (a) =>
+          a.classList.contains('nav-sub-link') &&
+          a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/sealed`,
       );
 
       expect(inventoryParentLink).toBeTruthy();
@@ -291,8 +304,12 @@ describe('ogs-page', () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a.nav-sub-link');
-      const inventorySinglesLink = Array.from(links).find((a) => a.getAttribute('href') === '/inventory/singles');
-      const inventorySealedLink = Array.from(links).find((a) => a.getAttribute('href') === '/inventory/sealed');
+      const inventorySinglesLink = Array.from(links).find(
+        (a) => a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/singles`,
+      );
+      const inventorySealedLink = Array.from(links).find(
+        (a) => a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/sealed`,
+      );
 
       expect(inventorySinglesLink).toBeTruthy();
       expect(inventorySealedLink).toBeTruthy();
@@ -304,7 +321,9 @@ describe('ogs-page', () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a.nav-sub-link');
-      const singlesLink = Array.from(links).find((a) => a.getAttribute('href') === '/inventory/singles');
+      const singlesLink = Array.from(links).find(
+        (a) => a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/singles`,
+      );
       expect(singlesLink?.hasAttribute('current')).toBe(true);
     });
 
@@ -314,7 +333,9 @@ describe('ogs-page', () => {
       await element.updateComplete;
 
       const links = element.shadowRoot!.querySelectorAll('a.nav-sub-link');
-      const sealedLink = Array.from(links).find((a) => a.getAttribute('href') === '/inventory/sealed');
+      const sealedLink = Array.from(links).find(
+        (a) => a.getAttribute('href') === `/stores/${TEST_STORE_ID}/inventory/sealed`,
+      );
       expect(sealedLink?.hasAttribute('current')).toBe(true);
     });
 

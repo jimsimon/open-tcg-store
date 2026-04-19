@@ -56,8 +56,13 @@ const NO_PERMISSIONS = {
 export async function getPageAttributes(ctx: RouterContext): Promise<PageAttributes> {
   const isAnonymous = ctx.state.auth?.user?.isAnonymous === true;
   const userName = ctx.state.auth?.user?.name ?? '';
+  // Prefer the URL's storeId (for store-scoped routes) over the session value.
+  // After syncStoreContext middleware runs, these should agree for authenticated users.
+  // For anonymous users on store-scoped pages, the URL is the only source.
   const activeOrganizationId =
-    ((ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string) ?? '';
+    (ctx.params.storeId as string) ??
+    ((ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string) ??
+    '';
 
   // No active organization — no org-based permissions
   if (!activeOrganizationId) {

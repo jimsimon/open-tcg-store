@@ -23,6 +23,7 @@ import { OrderStatus } from '../../graphql/graphql.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
+import { storeUrl } from '../../lib/store-url';
 import { debounce } from '../../lib/debounce';
 
 // --- Types ---
@@ -1012,7 +1013,9 @@ export class OrdersPage extends OgsPageBase {
                             </td>
                             <td>
                               ${item.lotId
-                                ? html`<a href="/lots/${item.lotId}" @click="${(e: Event) => e.stopPropagation()}"
+                                ? html`<a
+                                    href="${storeUrl(`/lots/${item.lotId}`)}"
+                                    @click="${(e: Event) => e.stopPropagation()}"
                                     >#${item.lotId}</a
                                   >`
                                 : '-'}

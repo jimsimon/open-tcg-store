@@ -23,6 +23,7 @@ import { graphql } from '../../graphql/index.ts';
 import type { CreateLotInput, UpdateLotInput } from '../../graphql/graphql.ts';
 import { formatCurrency, centsToInputValue, inputValueToCents } from '../../lib/currency';
 import { debounce } from '../../lib/debounce';
+import { storeUrl } from '../../lib/store-url';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -697,7 +698,7 @@ export class OgsLotPage extends OgsPageBase {
       } else {
         await execute(CreateLotMutation, { input: input as CreateLotInput });
       }
-      window.location.href = '/lots';
+      window.location.href = storeUrl('/lots');
     } catch (e) {
       this.validationErrors = [e instanceof Error ? e.message : 'Failed to save lot'];
     } finally {
@@ -743,7 +744,7 @@ export class OgsLotPage extends OgsPageBase {
             <div class="product-section">${this.renderProductList()}</div>
 
             <div class="save-bar">
-              <wa-button variant="neutral" href="/lots">Cancel</wa-button>
+              <wa-button variant="neutral" href="${storeUrl('/lots')}">Cancel</wa-button>
               <div class="spacer"></div>
               <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
                 <wa-icon slot="start" name="floppy-disk"></wa-icon>

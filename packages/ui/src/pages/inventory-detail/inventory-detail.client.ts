@@ -15,6 +15,7 @@ import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '@awesome.me/webawesome/dist/components/tag/tag.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
+import { storeUrl } from '../../lib/store-url';
 import { execute } from '../../lib/graphql.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
@@ -118,7 +119,7 @@ export class OgsInventoryDetailPage extends OgsPageBase {
   }
 
   private get backUrl(): string {
-    return this.inventoryType === 'sealed' ? '/inventory/sealed' : '/inventory/singles';
+    return storeUrl(this.inventoryType === 'sealed' ? '/inventory/sealed' : '/inventory/singles');
   }
 
   // --- Data Fetching ---

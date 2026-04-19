@@ -18,6 +18,7 @@ import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js'
 import { cartState } from '../../lib/cart-state.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 import { conditionLabel } from '../../lib/labels';
+import { storeUrl } from '../../lib/store-url';
 import { AddToCartMutation } from '../../lib/shared-queries';
 
 // --- Types ---
@@ -415,7 +416,7 @@ export class ProductDetailsPage extends OgsPageBase {
 
     const p = this.product;
     const icon = p.isSingle ? 'id-card' : 'box';
-    const backUrl = p.isSingle ? '/products/singles' : '/products/sealed';
+    const backUrl = storeUrl(p.isSingle ? '/products/singles' : '/products/sealed');
     const backLabel = p.isSingle ? 'Single Cards' : 'Sealed Products';
     const subtitle = [p.gameName, p.setName].filter(Boolean).join(' / ');
 

@@ -17,6 +17,7 @@ import { graphql } from '../../graphql/index.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { formatCurrency } from '../../lib/currency.ts';
 import { debounce } from '../../lib/debounce';
+import { storeUrl } from '../../lib/store-url';
 
 // ---------------------------------------------------------------------------
 // GraphQL Operations
@@ -666,7 +667,7 @@ export class OgsLotsPage extends OgsPageBase {
   private renderActionBar() {
     return html`
       <div class="action-bar">
-        <wa-button variant="brand" href="/lots/new">
+        <wa-button variant="brand" href="${storeUrl('/lots/new')}">
           <wa-icon slot="start" name="plus"></wa-icon>
           Add Lot
         </wa-button>
@@ -681,7 +682,7 @@ export class OgsLotsPage extends OgsPageBase {
           <wa-icon name="layer-group"></wa-icon>
           <h3>No Lots Found</h3>
           <p>Create your first lot to start tracking batch inventory purchases and their profitability.</p>
-          <wa-button variant="brand" href="/lots/new">
+          <wa-button variant="brand" href="${storeUrl('/lots/new')}">
             <wa-icon slot="start" name="plus"></wa-icon>
             Add Lot
           </wa-button>
@@ -711,7 +712,7 @@ export class OgsLotsPage extends OgsPageBase {
                   <tr
                     class="clickable-row"
                     @click="${() => {
-                      window.location.href = `/lots/${lot.id}`;
+                      window.location.href = storeUrl(`/lots/${lot.id}`);
                     }}"
                   >
                     <td><strong>${lot.name}</strong></td>
@@ -727,7 +728,7 @@ export class OgsLotsPage extends OgsPageBase {
                     <td>${lot.acquisitionDate}</td>
                     <td>
                       <div class="actions-cell" @click="${(e: Event) => e.stopPropagation()}">
-                        <wa-button variant="text" size="small" href="/lots/${lot.id}">
+                        <wa-button variant="text" size="small" href="${storeUrl(`/lots/${lot.id}`)}">
                           <wa-icon name="pen-to-square"></wa-icon>
                         </wa-button>
                         <wa-button

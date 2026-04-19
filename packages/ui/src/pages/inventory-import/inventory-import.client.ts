@@ -7,6 +7,7 @@ import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
+import { storeUrl } from '../../lib/store-url';
 
 @customElement('ogs-inventory-import-page')
 export class OgsInventoryImportPage extends OgsPageBase {
@@ -170,11 +171,11 @@ export class OgsInventoryImportPage extends OgsPageBase {
           </div>
 
           <div class="nav-links">
-            <wa-button appearance="outlined" variant="neutral" href="/inventory/singles">
+            <wa-button appearance="outlined" variant="neutral" href="${storeUrl('/inventory/singles')}">
               <wa-icon slot="start" name="id-card"></wa-icon>
               Back to Singles
             </wa-button>
-            <wa-button appearance="outlined" variant="neutral" href="/inventory/sealed">
+            <wa-button appearance="outlined" variant="neutral" href="${storeUrl('/inventory/sealed')}">
               <wa-icon slot="start" name="package"></wa-icon>
               Back to Sealed
             </wa-button>

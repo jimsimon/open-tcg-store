@@ -17,6 +17,14 @@ const IsSetupPendingQuery = graphql(`
   }
 `);
 
+const GetDefaultStoreIdQuery = graphql(`
+  query GetDefaultStoreId {
+    getAllStoreLocations {
+      id
+    }
+  }
+`);
+
 type AppState = {
   auth: typeof authClient.$Infer.Session;
 };
@@ -213,6 +221,81 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   return next();
 }
 
+/**
+ * Middleware that syncs the session's active organization to match the URL's storeId.
+ * For authenticated users: calls setActive if the session's org differs from the URL.
+ * For anonymous users: no-op (anonymous sessions don't have org memberships).
+ */
+async function syncStoreContext(ctx: Context, next: Next) {
+  const storeId = (ctx as RouterContext).params.storeId;
+  if (!storeId) return next();
+
+  if (ctx.state.auth?.user && ctx.state.auth.user.isAnonymous !== true) {
+    const sessionOrgId = (ctx.state.auth.session as Record<string, unknown>)?.activeOrganizationId as
+      | string
+      | undefined;
+    if (sessionOrgId !== storeId) {
+      try {
+        const result = await authClient.organization.setActive({
+          organizationId: storeId,
+          fetchOptions: {
+            headers: {
+              Cookie: (ctx.headers.cookie as string) ?? '',
+              Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
+            },
+          },
+        });
+        if (result.error) {
+          ctx.status = 403;
+          ctx.body = 'Access denied: you are not a member of this store';
+          return;
+        }
+        // Re-fetch session with updated activeOrganizationId
+        const getSessionResponse = await getSession(ctx);
+        if (getSessionResponse.data) {
+          ctx.state.auth = getSessionResponse.data;
+        }
+      } catch {
+        ctx.status = 403;
+        ctx.body = 'Access denied: you are not a member of this store';
+        return;
+      }
+    }
+  }
+
+  return next();
+}
+
+/**
+ * Resolve a store ID for redirects that need to construct a store-scoped URL.
+ * Priority: session activeOrganizationId → ogs-selected-store cookie → first available store.
+ */
+async function resolveStoreId(ctx: Context): Promise<string | null> {
+  // 1. From session
+  const sessionOrgId = (ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as
+    | string
+    | undefined;
+  if (sessionOrgId) return sessionOrgId;
+
+  // 2. From cookie
+  const cookieHeader = ctx.headers.cookie as string | undefined;
+  if (cookieHeader) {
+    const match = cookieHeader.match(/(?:^|;\s*)ogs-selected-store=([^;]*)/);
+    if (match?.[1]) return match[1];
+  }
+
+  // 3. Query for the first available store
+  try {
+    const result = await execute(GetDefaultStoreIdQuery);
+    const stores = result?.data?.getAllStoreLocations;
+    if (stores && stores.length > 0) return stores[0].id;
+  } catch {
+    /* fall through */
+  }
+
+  return null;
+}
+
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL || 'http://localhost:5174';
 
 const router = new Router()
@@ -238,19 +321,23 @@ const router = new Router()
     }
     return next();
   })
+  // ---------------------------------------------------------------------------
+  // Global routes (no store prefix)
+  // ---------------------------------------------------------------------------
   .get('root', '/', async (ctx) => {
+    const storeId = await resolveStoreId(ctx);
+    if (!storeId) {
+      // No stores exist — likely first-time setup
+      ctx.redirect('/first-time-setup');
+      return;
+    }
     // Owners → settings dashboard; everyone else → product browsing
     const isOwner = await hasPermission(ctx, 'companySettings', 'read');
     if (isOwner) {
-      ctx.redirect('/settings-dashboard');
+      ctx.redirect(`/stores/${storeId}/settings-dashboard`);
     } else {
-      ctx.redirect('/products/singles');
+      ctx.redirect(`/stores/${storeId}/products/singles`);
     }
-  })
-  .get('settings-dashboard', '/settings-dashboard', async (ctx) => {
-    await requirePermission('companySettings', 'read')(ctx, async () => {});
-    if (ctx.status === 403) return;
-    return renderPage(ctx, 'settings-dashboard');
   })
   .get('first-time-setup', '/first-time-setup', async (ctx) => {
     if (!(await isSetupPending())) {
@@ -262,116 +349,146 @@ const router = new Router()
   .get('maintenance', '/maintenance', async (ctx) => {
     return renderPage(ctx, 'maintenance');
   })
-  .use('/products', ensureAnonymousSession)
-  .get('products-redirect', '/products', async (ctx) => {
-    ctx.redirect('/products/singles');
-  })
-  .get('products-singles', '/products/singles', async (ctx) => {
-    return renderPage(ctx, 'products-singles');
-  })
-  .get('products-sealed', '/products/sealed', async (ctx) => {
-    return renderPage(ctx, 'products-sealed');
-  })
-  .get('product-details', '/products/:productId', async (ctx) => {
-    return renderPage(ctx, 'product-details');
-  })
-  .use('/buy-rates', ensureAnonymousSession)
-  .get('buy-rates', '/buy-rates', async (ctx) => {
-    return renderPage(ctx, 'buy-rates');
-  })
-  // Public events pages (anonymous access)
-  .use('/events', ensureAnonymousSession)
-  .get('events', '/events', async (ctx) => {
-    return renderPage(ctx, 'events');
-  })
-  .get('event-details', '/events/:eventId', async (ctx) => {
-    return renderPage(ctx, 'event-details');
-  })
-  // Backward-compatible redirects from old card URLs
+  // Backward-compatible redirects from old card URLs (need storeId resolution)
   .get('cards-redirect', '/games/:game/cards', async (ctx) => {
+    const storeId = await resolveStoreId(ctx);
+    if (!storeId) {
+      ctx.redirect('/');
+      return;
+    }
     const game = ctx.params.game;
-    ctx.redirect(`/products/singles?game=${game}`);
+    ctx.redirect(`/stores/${storeId}/products/singles?game=${game}`);
   })
   .get('card-details-redirect', '/games/:game/cards/:cardId', async (ctx) => {
-    ctx.redirect(`/products/${ctx.params.cardId}`);
+    const storeId = await resolveStoreId(ctx);
+    if (!storeId) {
+      ctx.redirect('/');
+      return;
+    }
+    ctx.redirect(`/stores/${storeId}/products/${ctx.params.cardId}`);
   })
-  .get('orders', '/orders', async (ctx) => {
+  // ---------------------------------------------------------------------------
+  // Store-scoped routes — all under /stores/:storeId
+  // ---------------------------------------------------------------------------
+  // Sync session's active organization with the URL's storeId
+  .use('/stores/:storeId', syncStoreContext)
+  // Public store routes — ensure anonymous users get a session
+  .use('/stores/:storeId/products', ensureAnonymousSession)
+  .use('/stores/:storeId/buy-rates', ensureAnonymousSession)
+  .use('/stores/:storeId/events', ensureAnonymousSession)
+  // Dashboard
+  .get('settings-dashboard', '/stores/:storeId/settings-dashboard', async (ctx) => {
+    await requirePermission('companySettings', 'read')(ctx, async () => {});
+    if (ctx.status === 403) return;
+    return renderPage(ctx, 'settings-dashboard');
+  })
+  // Products
+  .get('products-redirect', '/stores/:storeId/products', async (ctx) => {
+    ctx.redirect(`/stores/${ctx.params.storeId}/products/singles`);
+  })
+  .get('products-singles', '/stores/:storeId/products/singles', async (ctx) => {
+    return renderPage(ctx, 'products-singles');
+  })
+  .get('products-sealed', '/stores/:storeId/products/sealed', async (ctx) => {
+    return renderPage(ctx, 'products-sealed');
+  })
+  .get('product-details', '/stores/:storeId/products/:productId', async (ctx) => {
+    return renderPage(ctx, 'product-details');
+  })
+  // Buy Rates
+  .get('buy-rates', '/stores/:storeId/buy-rates', async (ctx) => {
+    return renderPage(ctx, 'buy-rates');
+  })
+  // Public events
+  .get('events', '/stores/:storeId/events', async (ctx) => {
+    return renderPage(ctx, 'events');
+  })
+  .get('event-details', '/stores/:storeId/events/:eventId', async (ctx) => {
+    return renderPage(ctx, 'event-details');
+  })
+  // Orders
+  .get('orders', '/stores/:storeId/orders', async (ctx) => {
     await requirePermission('order', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'orders');
   })
-  .get('pos', '/pos', async (ctx) => {
+  // POS
+  .get('pos', '/stores/:storeId/pos', async (ctx) => {
     await requirePermission('order', 'create')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'pos');
   })
-  // Event management (admin - requires event:read permission)
-  .get('event-management', '/event-management', async (ctx) => {
+  // Event management (admin)
+  .get('event-management', '/stores/:storeId/event-management', async (ctx) => {
     await requirePermission('event', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'event-management');
   })
-  .get('transaction-log', '/transaction-log', async (ctx) => {
+  // Transaction log
+  .get('transaction-log', '/stores/:storeId/transaction-log', async (ctx) => {
     await requirePermission('transactionLog', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'transaction-log');
   })
-  .get('inventory-redirect', '/inventory', async (ctx) => {
-    ctx.redirect('/inventory/singles');
+  // Inventory
+  .get('inventory-redirect', '/stores/:storeId/inventory', async (ctx) => {
+    ctx.redirect(`/stores/${ctx.params.storeId}/inventory/singles`);
   })
-  .get('inventory-singles', '/inventory/singles', async (ctx) => {
+  .get('inventory-singles', '/stores/:storeId/inventory/singles', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-singles');
   })
-  .get('inventory-sealed', '/inventory/sealed', async (ctx) => {
+  .get('inventory-sealed', '/stores/:storeId/inventory/sealed', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-sealed');
   })
-  .get('inventory-singles-detail', '/inventory/singles/:inventoryItemId', async (ctx) => {
+  .get('inventory-singles-detail', '/stores/:storeId/inventory/singles/:inventoryItemId', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');
   })
-  .get('inventory-sealed-detail', '/inventory/sealed/:inventoryItemId', async (ctx) => {
+  .get('inventory-sealed-detail', '/stores/:storeId/inventory/sealed/:inventoryItemId', async (ctx) => {
     await requirePermission('inventory', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-detail');
   })
-  .get('import-inventory', '/inventory/import', async (ctx) => {
+  .get('import-inventory', '/stores/:storeId/inventory/import', async (ctx) => {
     await requirePermission('inventory', 'create')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'inventory-import');
   })
   // Lot routes
-  .get('lots', '/lots', async (ctx) => {
+  .get('lots', '/stores/:storeId/lots', async (ctx) => {
     await requirePermission('lot', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'lots');
   })
-  .get('lot-new', '/lots/new', async (ctx) => {
+  .get('lot-new', '/stores/:storeId/lots/new', async (ctx) => {
     await requirePermission('lot', 'create')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'lot');
   })
-  .get('lot-detail', '/lots/:lotId', async (ctx) => {
+  .get('lot-detail', '/stores/:storeId/lots/:lotId', async (ctx) => {
     await requirePermission('lot', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'lot');
   })
-  // User management routes - require userManagement permission
-  .get('users', '/users', async (ctx) => {
+  // User management routes
+  .get('users', '/stores/:storeId/users', async (ctx) => {
     await requirePermission('userManagement', 'read')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'settings-users');
   })
-  .get('user-edit', '/users/:userId', async (ctx) => {
+  .get('user-edit', '/stores/:storeId/users/:userId', async (ctx) => {
     await requirePermission('userManagement', 'update')(ctx, async () => {});
     if (ctx.status === 403) return;
     return renderPage(ctx, 'settings-user-edit');
   })
-  // Settings routes - require companySettings:read permission
+  // ---------------------------------------------------------------------------
+  // Settings routes (global, no store prefix)
+  // ---------------------------------------------------------------------------
   .use('/settings', requirePermission('companySettings', 'read'))
   .get('settings-redirect', '/settings', async (ctx) => {
     ctx.redirect('/settings/general');
