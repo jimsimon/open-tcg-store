@@ -30,7 +30,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -38,7 +38,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@902fa8ec7d6ecbea8a68b1c52b571b7a4f57f6de # v5
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -46,10 +46,10 @@ jobs:
             type=sha,prefix=,format=short,value=${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5730b0ef9c7e6edd4c72e6c70aa12f99edaf3a3 # v3
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
 
       - name: Build and push
-        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
         with:
           context: .
           push: true
