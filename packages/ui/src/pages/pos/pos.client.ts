@@ -25,7 +25,8 @@ import { debounce } from '../../lib/debounce';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 
 // How many ms of silence after the last keystroke before the barcode buffer is discarded.
-const BARCODE_TIMEOUT_MS = 100;
+// 200ms gives slower Bluetooth/USB scanners enough headroom while still feeling instant.
+const BARCODE_TIMEOUT_MS = 200;
 
 // --- Types ---
 
@@ -706,7 +707,7 @@ export class PosPage extends OgsPageBase {
   connectedCallback() {
     super.connectedCallback();
     this.fetchPosConfig();
-    document.addEventListener('keydown', this.boundHandleKeydown);
+    document.addEventListener('keydown', this.boundHandleKeydown, { passive: true });
   }
 
   disconnectedCallback() {
@@ -766,15 +767,17 @@ export class PosPage extends OgsPageBase {
    */
   private handlePageKeydown(event: KeyboardEvent) {
     // Ignore when the user is typing in a real input / interactive element.
+    // Only block on actual text-entry elements — wa-button, wa-badge, wa-icon, etc. should
+    // NOT suppress scans (a common POS flow is: click a quantity button → scanner fires).
     const target = event.target as HTMLElement;
     const tag = target.tagName.toLowerCase();
+    const WA_INPUT_TAGS = new Set(['wa-input', 'wa-textarea', 'wa-select', 'wa-combobox']);
     if (
       tag === 'input' ||
       tag === 'textarea' ||
       tag === 'select' ||
       target.isContentEditable ||
-      // Web Awesome components shadow-host tag names start with "wa-"
-      tag.startsWith('wa-')
+      WA_INPUT_TAGS.has(tag)
     ) {
       return;
     }
@@ -1120,12 +1123,8 @@ export class PosPage extends OgsPageBase {
               `,
             )}
             <div class="pos-container">
-              <div class="pos-left">
-                ${this.renderProductSearch()} ${this.renderLineItems()}
-              </div>
-              <div class="pos-right">
-                ${this.renderTotals()} ${this.renderPaymentSection()}
-              </div>
+              <div class="pos-left">${this.renderProductSearch()} ${this.renderLineItems()}</div>
+              <div class="pos-right">${this.renderTotals()} ${this.renderPaymentSection()}</div>
             </div>
             ${this.renderOrderSearchDialog()}
           `,
