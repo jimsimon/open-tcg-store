@@ -1652,6 +1652,21 @@ export type GetPublicBuyRatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetPublicBuyRatesQuery = { __typename?: 'Query', getPublicBuyRates: { __typename?: 'PublicBuyRates', games: Array<{ __typename?: 'BuyRateTable', categoryId: number, gameName: string, gameDisplayName: string, entries: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, sortOrder: number }> }> } };
 
+export type GetPublicEventQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetPublicEventQuery = { __typename?: 'Query', getPublicEvent?: { __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number } | null };
+
+export type RegisterForEventDetailMutationVariables = Exact<{
+  eventId: Scalars['Int']['input'];
+  input: PublicEventRegistrationInput;
+}>;
+
+
+export type RegisterForEventDetailMutation = { __typename?: 'Mutation', registerForEvent: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
+
 export type GetEventsQueryVariables = Exact<{
   pagination?: InputMaybe<PaginationInput>;
   filters?: InputMaybe<EventFilters>;
@@ -1733,14 +1748,6 @@ export type GetPublicEventsQueryVariables = Exact<{
 
 
 export type GetPublicEventsQuery = { __typename?: 'Query', getPublicEvents: Array<{ __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number }> };
-
-export type RegisterForEventMutationVariables = Exact<{
-  eventId: Scalars['Int']['input'];
-  input: PublicEventRegistrationInput;
-}>;
-
-
-export type RegisterForEventMutation = { __typename?: 'Mutation', registerForEvent: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
 
 export type GetAvailableGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2416,6 +2423,33 @@ export const GetPublicBuyRatesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetPublicBuyRatesQuery, GetPublicBuyRatesQueryVariables>;
+export const GetPublicEventDocument = new TypedDocumentString(`
+    query GetPublicEvent($id: Int!) {
+  getPublicEvent(id: $id) {
+    id
+    name
+    description
+    eventType
+    gameName
+    gameDisplayName
+    startTime
+    endTime
+    capacity
+    entryFeeInCents
+    status
+    registrationCount
+  }
+}
+    `) as unknown as TypedDocumentString<GetPublicEventQuery, GetPublicEventQueryVariables>;
+export const RegisterForEventDetailDocument = new TypedDocumentString(`
+    mutation RegisterForEventDetail($eventId: Int!, $input: PublicEventRegistrationInput!) {
+  registerForEvent(eventId: $eventId, input: $input) {
+    id
+    registrantName
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<RegisterForEventDetailMutation, RegisterForEventDetailMutationVariables>;
 export const GetEventsDocument = new TypedDocumentString(`
     query GetEvents($pagination: PaginationInput, $filters: EventFilters) {
   getEvents(pagination: $pagination, filters: $filters) {
@@ -2560,15 +2594,6 @@ export const GetPublicEventsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetPublicEventsQuery, GetPublicEventsQueryVariables>;
-export const RegisterForEventDocument = new TypedDocumentString(`
-    mutation RegisterForEvent($eventId: Int!, $input: PublicEventRegistrationInput!) {
-  registerForEvent(eventId: $eventId, input: $input) {
-    id
-    registrantName
-    status
-  }
-}
-    `) as unknown as TypedDocumentString<RegisterForEventMutation, RegisterForEventMutationVariables>;
 export const GetAvailableGamesDocument = new TypedDocumentString(`
     query GetAvailableGames {
   getAvailableGames {
