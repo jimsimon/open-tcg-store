@@ -527,7 +527,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   ${this.renderNavLink('/settings/buyrates', 'hand-holding-dollar', 'Buy Rates', 'settings/buyrates')}
                   ${this.renderNavLink('/settings/data-updates', 'database', 'Card Data', 'settings/data-updates')}
                   ${this.renderNavLink('/settings/integrations', 'plug', 'Integrations', 'settings/integrations')}
-                  ${this.renderNavLink('/settings/scheduled-tasks', 'clock', 'Scheduled Tasks', 'settings/scheduled-tasks')}
+                  ${this.renderNavLink(
+                    '/settings/scheduled-tasks',
+                    'clock',
+                    'Scheduled Tasks',
+                    'settings/scheduled-tasks',
+                  )}
                 `,
               )}
             </nav>
