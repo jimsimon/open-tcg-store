@@ -1,0 +1,1 @@
+ALTER TABLE `company_settings` ADD `google_drive_client_secret` text;

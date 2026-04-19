@@ -8,6 +8,7 @@ const {
   mockStoreOAuthTokens,
   mockGetOAuthTokens,
   mockGetOAuthClientId,
+  mockGetOAuthClientSecret,
   mockUpdateLastBackupAt,
   mockExistsSync,
   mockReadFileSync,
@@ -36,45 +37,67 @@ const {
   mockDbRun,
   mockLibsqlExecute,
   mockLibsqlClose,
-} = vi.hoisted(() => ({
-  mockStoreOAuthTokens: vi.fn(),
-  mockGetOAuthTokens: vi.fn(),
-  mockGetOAuthClientId: vi.fn(),
-  mockUpdateLastBackupAt: vi.fn(),
-  mockExistsSync: vi.fn(),
-  mockReadFileSync: vi.fn(),
-  mockWriteFileSync: vi.fn(),
-  mockCreateReadStream: vi.fn(),
-  mockUnlinkSync: vi.fn(),
-  mockRmSync: vi.fn(),
-  mockMkdtempSync: vi.fn(() => '/tmp/otcgs-backup-xyz'),
-  mockRenameSync: vi.fn(),
-  mockCopyFileSync: vi.fn(),
-  mockCalculatePKCECodeChallenge: vi.fn(),
-  mockAuthorizationCodeGrantRequest: vi.fn(),
-  mockProcessAuthorizationCodeResponse: vi.fn(),
-  mockRefreshTokenGrantRequest: vi.fn(),
-  mockProcessRefreshTokenResponse: vi.fn(),
-  mockDriveFilesList: vi.fn(),
-  mockDriveFilesCreate: vi.fn(),
-  mockDriveFilesGet: vi.fn(),
-  mockFilesUpload: vi.fn(),
-  mockFilesListFolder: vi.fn(),
-  mockFilesDownload: vi.fn(),
-  mockOneDriveCreateFolder: vi.fn(),
-  mockOneDriveListChildren: vi.fn(),
-  mockOneDriveUploadSimple: vi.fn(),
-  mockOneDriveDownload: vi.fn(),
-  mockDbRun: vi.fn().mockResolvedValue(undefined),
-  mockLibsqlExecute: vi.fn().mockResolvedValue({ rows: [['ok']] }),
-  mockLibsqlClose: vi.fn(),
-}));
+  MockResponseBodyError,
+} = vi.hoisted(() => {
+  class _MockResponseBodyError extends Error {
+    error: string;
+    error_description?: string;
+    status: number;
+    constructor(
+      message: string,
+      options: { cause: { error: string; error_description?: string }; response: { status: number } },
+    ) {
+      super(message, options);
+      this.name = 'ResponseBodyError';
+      this.error = options.cause.error;
+      this.error_description = options.cause.error_description;
+      this.status = options.response.status;
+    }
+  }
+
+  return {
+    mockStoreOAuthTokens: vi.fn(),
+    mockGetOAuthTokens: vi.fn(),
+    mockGetOAuthClientId: vi.fn(),
+    mockGetOAuthClientSecret: vi.fn(),
+    mockUpdateLastBackupAt: vi.fn(),
+    mockExistsSync: vi.fn(),
+    mockReadFileSync: vi.fn(),
+    mockWriteFileSync: vi.fn(),
+    mockCreateReadStream: vi.fn(),
+    mockUnlinkSync: vi.fn(),
+    mockRmSync: vi.fn(),
+    mockMkdtempSync: vi.fn(() => '/tmp/otcgs-backup-xyz'),
+    mockRenameSync: vi.fn(),
+    mockCopyFileSync: vi.fn(),
+    mockCalculatePKCECodeChallenge: vi.fn(),
+    mockAuthorizationCodeGrantRequest: vi.fn(),
+    mockProcessAuthorizationCodeResponse: vi.fn(),
+    mockRefreshTokenGrantRequest: vi.fn(),
+    mockProcessRefreshTokenResponse: vi.fn(),
+    mockDriveFilesList: vi.fn(),
+    mockDriveFilesCreate: vi.fn(),
+    mockDriveFilesGet: vi.fn(),
+    mockFilesUpload: vi.fn(),
+    mockFilesListFolder: vi.fn(),
+    mockFilesDownload: vi.fn(),
+    mockOneDriveCreateFolder: vi.fn(),
+    mockOneDriveListChildren: vi.fn(),
+    mockOneDriveUploadSimple: vi.fn(),
+    mockOneDriveDownload: vi.fn(),
+    mockDbRun: vi.fn().mockResolvedValue(undefined),
+    mockLibsqlExecute: vi.fn().mockResolvedValue({ rows: [['ok']] }),
+    mockLibsqlClose: vi.fn(),
+    MockResponseBodyError: _MockResponseBodyError,
+  };
+});
 
 // Mock settings-service
 vi.mock('./settings-service', () => ({
   storeOAuthTokens: mockStoreOAuthTokens,
   getOAuthTokens: mockGetOAuthTokens,
   getOAuthClientId: mockGetOAuthClientId,
+  getOAuthClientSecret: mockGetOAuthClientSecret,
   updateLastBackupAt: mockUpdateLastBackupAt,
 }));
 
@@ -123,7 +146,7 @@ vi.mock('@libsql/client', () => ({
   })),
 }));
 
-// Mock oauth4webapi
+// Mock oauth4webapi — include ResponseBodyError so `instanceof` checks work
 vi.mock('oauth4webapi', () => ({
   generateRandomState: vi.fn(() => 'mock-state-token'),
   generateRandomCodeVerifier: vi.fn(() => 'mock-code-verifier'),
@@ -134,6 +157,8 @@ vi.mock('oauth4webapi', () => ({
   refreshTokenGrantRequest: mockRefreshTokenGrantRequest,
   processRefreshTokenResponse: mockProcessRefreshTokenResponse,
   None: vi.fn(() => vi.fn()),
+  ClientSecretPost: vi.fn(() => vi.fn()),
+  ResponseBodyError: MockResponseBodyError,
 }));
 
 // Mock googleapis - use a class so `new google.auth.OAuth2(...)` works
@@ -211,6 +236,14 @@ describe('backup-service', () => {
           return Promise.resolve('dropbox-app-key');
         case 'onedrive':
           return Promise.resolve('onedrive-client-id');
+        default:
+          return Promise.resolve(null);
+      }
+    });
+    mockGetOAuthClientSecret.mockImplementation((provider: string) => {
+      switch (provider) {
+        case 'google_drive':
+          return Promise.resolve('google-client-secret');
         default:
           return Promise.resolve(null);
       }
@@ -335,6 +368,34 @@ describe('backup-service', () => {
       mockProcessAuthorizationCodeResponse.mockRejectedValue(new Error('invalid_grant'));
 
       await expect(handleOAuthCallback('google_drive', 'code', 'verifier')).rejects.toThrow('invalid_grant');
+    });
+
+    it('should surface error_description from ResponseBodyError', async () => {
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockRejectedValue(
+        new MockResponseBodyError('server responded with an error in the response body', {
+          cause: { error: 'invalid_client', error_description: 'The OAuth client was not found.' },
+          response: { status: 401 },
+        }),
+      );
+
+      await expect(handleOAuthCallback('google_drive', 'code', 'verifier')).rejects.toThrow(
+        'google_drive token exchange failed: The OAuth client was not found.',
+      );
+    });
+
+    it('should surface error code from ResponseBodyError when no description', async () => {
+      mockAuthorizationCodeGrantRequest.mockResolvedValue(new Response());
+      mockProcessAuthorizationCodeResponse.mockRejectedValue(
+        new MockResponseBodyError('server responded with an error in the response body', {
+          cause: { error: 'invalid_grant' },
+          response: { status: 400 },
+        }),
+      );
+
+      await expect(handleOAuthCallback('dropbox', 'code', 'verifier')).rejects.toThrow(
+        'dropbox token exchange failed: invalid_grant',
+      );
     });
   });
 

@@ -101,6 +101,7 @@ export interface BackupSettingsResult {
   googleDriveClientId: string | null;
   dropboxClientId: string | null;
   onedriveClientId: string | null;
+  googleDriveHasClientSecret: boolean;
 }
 
 export async function getBackupSettings(): Promise<BackupSettingsResult> {
@@ -115,6 +116,7 @@ export async function getBackupSettings(): Promise<BackupSettingsResult> {
     googleDriveClientId: decryptIfPresent(row.googleDriveClientId),
     dropboxClientId: decryptIfPresent(row.dropboxClientId),
     onedriveClientId: decryptIfPresent(row.onedriveClientId),
+    googleDriveHasClientSecret: !!row.googleDriveClientSecret,
   };
 }
 
@@ -270,6 +272,29 @@ export async function storeOAuthClientId(
   await otcgs.update(companySettings).set(updates).where(eq(companySettings.id, 1));
 }
 
+export async function storeOAuthClientSecret(_provider: 'google_drive', clientSecret: string): Promise<void> {
+  await ensureSettingsRow();
+
+  await otcgs
+    .update(companySettings)
+    .set({
+      googleDriveClientSecret: encrypt(clientSecret),
+      updatedAt: new Date(),
+    })
+    .where(eq(companySettings.id, 1));
+}
+
+export async function getOAuthClientSecret(provider: 'google_drive' | 'dropbox' | 'onedrive'): Promise<string | null> {
+  const row = await ensureSettingsRow();
+
+  switch (provider) {
+    case 'google_drive':
+      return decryptIfPresent(row.googleDriveClientSecret);
+    default:
+      return null;
+  }
+}
+
 export async function getOAuthClientId(provider: 'google_drive' | 'dropbox' | 'onedrive'): Promise<string | null> {
   const row = await ensureSettingsRow();
 
@@ -346,6 +371,7 @@ export async function clearOAuthTokens(provider: 'google_drive' | 'dropbox' | 'o
   switch (provider) {
     case 'google_drive':
       updates.googleDriveClientId = null;
+      updates.googleDriveClientSecret = null;
       updates.googleDriveAccessToken = null;
       updates.googleDriveRefreshToken = null;
       break;
