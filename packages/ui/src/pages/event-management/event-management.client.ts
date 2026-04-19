@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
@@ -15,7 +15,7 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import type { EventType } from '../../graphql/graphql.ts';
@@ -263,19 +263,7 @@ function statusVariant(status: string): string {
 // --- Component ---
 
 @customElement('ogs-event-management-page')
-export class OgsEventManagementPage extends LitElement {
-  // --- Permission properties ---
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean }) canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: Boolean }) canManageEvents = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class OgsEventManagementPage extends OgsPageBase {
   @property({ type: Boolean }) showUserMenu = false;
 
   // --- List state ---
@@ -1027,26 +1015,13 @@ export class OgsEventManagementPage extends LitElement {
   // --- Render ---
 
   render() {
-    return html`
-      <ogs-page
-        activePage="event-management"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?showUserMenu="${this.showUserMenu}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        ?canManageEvents="${this.canManageEvents}"
-        activeOrganizationId="${this.activeOrganizationId}"
-      >
+    return this.renderPage(
+      html`
         ${this.selectedEvent ? this.renderDetailMode() : this.renderListMode()} ${this.renderEventDialog()}
         ${this.renderAddRegistrationDialog()} ${this.renderCancelEventDialog()} ${this.renderCancelSeriesDialog()}
-      </ogs-page>
-    `;
+      `,
+      { activePage: 'event-management', showUserMenu: this.showUserMenu },
+    );
   }
 
   // --- List Mode ---

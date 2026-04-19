@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development tsx --conditions=development,browser src/server.ts",
+    "start": "NODE_ENV=production node --import tsx/esm src/server.ts",
     "build": "tsc && vite build"
   },
   "dependencies": {

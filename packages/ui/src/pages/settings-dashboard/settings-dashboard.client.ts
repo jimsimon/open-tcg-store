@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
@@ -10,7 +10,7 @@ import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '../../components/ogs-chart.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
@@ -173,19 +173,7 @@ function formatNumber(value: number | null | undefined): string {
 // ---------------------------------------------------------------------------
 
 @customElement('ogs-settings-dashboard-page')
-export class SettingsDashboardPage extends LitElement {
-  // --- Server-injected properties ---
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class SettingsDashboardPage extends OgsPageBase {
   @property({ type: Boolean }) showStoreSelector = false;
 
   // --- UI state ---
@@ -726,23 +714,8 @@ export class SettingsDashboardPage extends LitElement {
   ];
 
   render() {
-    return html`
-      <ogs-page
-        activePage="Dashboard"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${this._handleStoreChanged}"
-      >
+    return this.renderPage(
+      html`
         <div class="page-header">
           <div class="page-header-icon">
             <wa-icon name="house" style="font-size: 1.5rem;"></wa-icon>
@@ -799,8 +772,14 @@ export class SettingsDashboardPage extends LitElement {
           ${this._renderOrderStatusCard()} ${this._renderSalesCard()} ${this._renderBestSellersCard()}
           ${this._renderInventorySummaryCard()}
         </div>
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'Dashboard',
+        showUserMenu: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this._handleStoreChanged(),
+      },
+    );
   }
 
   // =========================================================================
