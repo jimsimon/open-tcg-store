@@ -181,7 +181,7 @@ export const filterBarStyles = css`
 export const productGridStyles = css`
   .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -202,14 +202,17 @@ export const productGridStyles = css`
     transform: translateY(-2px);
   }
 
+  /* --- Card image area --- */
+
   .product-card-image {
     width: 100%;
-    height: 160px;
+    height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--wa-color-fill-quiet);
     overflow: hidden;
+    cursor: pointer;
   }
 
   .product-card-image img {
@@ -218,34 +221,90 @@ export const productGridStyles = css`
     object-fit: contain;
   }
 
+  .product-card-image a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .product-card-image .card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--wa-color-text-quiet);
+    font-size: 3rem;
+  }
+
+  /* --- Card content area --- */
+
   .product-card-content {
-    padding: 1rem;
+    padding: 0.875rem;
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 0.375rem;
   }
 
   .product-card-name {
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--wa-color-text-normal);
-    margin: 0 0 0.375rem 0;
+    margin: 0;
     line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .product-card-name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .product-card-name a:hover {
+    color: var(--wa-color-text-link);
+    text-decoration: underline;
   }
 
   .product-card-meta {
     font-size: 0.8125rem;
     color: var(--wa-color-text-quiet);
-    margin: 0 0 0.75rem 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
   }
+
+  .product-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+
+  /* --- Card footer --- */
 
   .product-card-footer {
     display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--wa-color-border-quiet);
+  }
+
+  .product-card-price-row {
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: auto;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--wa-color-border-quiet);
+    gap: 0.5rem;
   }
 
   .product-price {
@@ -273,9 +332,116 @@ export const productGridStyles = css`
     color: var(--wa-color-success-on-quiet);
   }
 
+  .product-quantity.low-stock {
+    background: var(--wa-color-warning-fill-quiet);
+    color: var(--wa-color-warning-on-quiet);
+  }
+
   .product-quantity.out-of-stock {
     background: var(--wa-color-danger-fill-quiet);
     color: var(--wa-color-danger-on-quiet);
+  }
+
+  .product-card-cart {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .product-card-cart wa-input {
+    width: 70px;
+  }
+
+  .product-card-cart wa-input::part(form-control) {
+    display: flex;
+    align-items: center;
+  }
+
+  .product-card-cart wa-input::part(form-control-label) {
+    display: none;
+  }
+
+  .product-card-cart wa-input::part(base) {
+    border-radius: 6px;
+  }
+
+  .product-card-cart wa-button {
+    flex: 1;
+  }
+
+  /* --- Condition select within cards --- */
+
+  .product-card-condition {
+    width: 100%;
+  }
+
+  .product-card-condition::part(combobox) {
+    font-size: 0.8125rem;
+    min-height: 0;
+    padding: 0.25rem 0.5rem;
+  }
+`;
+
+// --- Shared Badge & Utility Styles (used by both grid and table views) ---
+
+export const productBadgeStyles = css`
+  .out-of-stock-text {
+    color: var(--wa-color-text-quiet);
+    font-style: italic;
+    font-size: 0.875rem;
+  }
+
+  .game-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    background: var(--wa-color-fill-quiet);
+    color: var(--wa-color-on-normal);
+  }
+
+  .game-badge.magic {
+    background: var(--wa-color-warning-fill-quiet);
+    color: var(--wa-color-warning-on-quiet);
+  }
+
+  .game-badge.pokemon {
+    background: var(--wa-color-danger-fill-quiet);
+    color: var(--wa-color-danger-on-quiet);
+  }
+
+  .quantity-badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    min-width: 44px;
+    text-align: center;
+    background: var(--wa-color-fill-quiet);
+    color: var(--wa-color-text-normal);
+  }
+
+  .quantity-badge.in-stock {
+    background: var(--wa-color-success-fill-quiet);
+    color: var(--wa-color-success-on-quiet);
+  }
+
+  .quantity-badge.low-stock {
+    background: var(--wa-color-warning-fill-quiet);
+    color: var(--wa-color-warning-on-quiet);
+  }
+
+  .quantity-badge.out-of-stock {
+    background: var(--wa-color-danger-fill-quiet);
+    color: var(--wa-color-danger-on-quiet);
+  }
+
+  .price-value {
+    font-weight: 600;
+    color: var(--wa-color-text-normal);
   }
 `;
 
@@ -371,11 +537,6 @@ export const productTableStyles = css`
     white-space: nowrap;
   }
 
-  .price-value {
-    font-weight: 600;
-    color: var(--wa-color-text-normal);
-  }
-
   .price-from {
     font-size: 0.75rem;
     font-weight: 400;
@@ -384,58 +545,6 @@ export const productTableStyles = css`
 
   .quantity-cell {
     text-align: center;
-  }
-
-  .quantity-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    min-width: 44px;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-normal);
-  }
-
-  .quantity-badge.in-stock {
-    background: var(--wa-color-success-fill-quiet);
-    color: var(--wa-color-success-on-quiet);
-  }
-
-  .quantity-badge.low-stock {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .quantity-badge.out-of-stock {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
-  }
-
-  .out-of-stock-text {
-    color: var(--wa-color-text-quiet);
-    font-style: italic;
-  }
-
-  .game-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: capitalize;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-on-normal);
-  }
-
-  .game-badge.magic {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .game-badge.pokemon {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
   }
 
   .finish-badges {

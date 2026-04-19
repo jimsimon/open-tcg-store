@@ -132,7 +132,7 @@ describe('ogs-products-singles-page', () => {
     expect(emptyState?.textContent).toContain('No cards found');
   });
 
-  test('should render product table when products exist', async () => {
+  test('should render product cards when products exist', async () => {
     const items = [makeFakeProduct()];
     setupDefaultMock(items, 1, 1);
 
@@ -143,17 +143,19 @@ describe('ogs-products-singles-page', () => {
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const table = element.shadowRoot!.querySelector('table');
-    expect(table).toBeTruthy();
+    const grid = element.shadowRoot!.querySelector('.products-grid');
+    expect(grid).toBeTruthy();
 
-    const headers = Array.from(table!.querySelectorAll('th')).map((th) => th.textContent?.trim());
-    expect(headers).toContain('Name');
-    expect(headers).toContain('Game');
-    expect(headers).toContain('Set');
-    expect(headers).toContain('Rarity');
-    expect(headers).toContain('Condition');
-    expect(headers).toContain('Qty');
-    expect(headers).toContain('Price');
+    const cards = grid!.querySelectorAll('.product-card');
+    expect(cards.length).toBe(1);
+
+    const card = cards[0];
+    expect(card.querySelector('.product-card-name')?.textContent).toContain('Black Lotus');
+    expect(card.querySelector('.game-badge')?.textContent).toContain('Magic');
+    expect(card.querySelector('.rarity-badge')?.textContent).toContain('Mythic Rare');
+    expect(card.querySelector('.quantity-badge')).toBeTruthy();
+    expect(card.querySelector('.product-price')).toBeTruthy();
+    expect(card.querySelector('wa-select')).toBeTruthy();
   });
 
   test('should show loading spinner when loading', async () => {
