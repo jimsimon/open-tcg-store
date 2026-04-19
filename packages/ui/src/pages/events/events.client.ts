@@ -334,15 +334,15 @@ export class EventsPage extends OgsPageBase {
       /* --- Event chips --- */
 
       .event-chip {
-        display: block;
-        padding: 1px 4px;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        padding: 2px 4px;
         border-radius: 3px;
         font-size: 11px;
         line-height: 1.3;
         cursor: pointer;
-        white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
         text-decoration: none;
         border-left: 3px solid;
         transition:
