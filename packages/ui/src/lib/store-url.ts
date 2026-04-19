@@ -1,13 +1,28 @@
 import { activeStoreId } from './store-context';
 
 /**
+ * Cached store ID extracted from the current URL pathname.
+ * Invalidated when the pathname changes (e.g., after navigation).
+ */
+let cachedUrlStoreId: string | null = null;
+let cachedPathname: string | null = null;
+
+/**
  * Extract the store ID from the current URL pathname.
  * Returns the store ID if the URL matches `/stores/:storeId/...`, otherwise null.
+ * The result is cached per-pathname to avoid re-parsing the regex on every call
+ * during Lit render cycles (~15+ calls per render).
  */
 export function getStoreIdFromUrl(): string | null {
   if (typeof window === 'undefined') return null;
-  const match = window.location.pathname.match(/^\/stores\/([^/]+)/);
-  return match?.[1] ?? null;
+
+  const pathname = window.location.pathname;
+  if (pathname === cachedPathname) return cachedUrlStoreId;
+
+  const match = pathname.match(/^\/stores\/([^/]+)/);
+  cachedUrlStoreId = match?.[1] ?? null;
+  cachedPathname = pathname;
+  return cachedUrlStoreId;
 }
 
 /**

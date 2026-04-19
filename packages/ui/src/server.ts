@@ -243,6 +243,15 @@ async function syncStoreContext(ctx: Context, next: Next) {
               Cookie: (ctx.headers.cookie as string) ?? '',
               Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
             },
+            onSuccess: (successCtx) => {
+              // Propagate Set-Cookie headers so the browser's session stays in sync.
+              // Without this, the browser would keep sending the old session token and
+              // syncStoreContext would re-fire setActive on every subsequent page load.
+              const responseCookies = successCtx.response.headers.getSetCookie();
+              for (const cookie of responseCookies) {
+                ctx.response.append('Set-Cookie', cookie);
+              }
+            },
           },
         });
         if (result.error) {
@@ -266,22 +275,27 @@ async function syncStoreContext(ctx: Context, next: Next) {
   return next();
 }
 
+/** Validates that a string looks like a legitimate store/organization ID (alphanumeric with hyphens/underscores). */
+function isValidStoreId(value: string): boolean {
+  return /^[\w-]+$/.test(value) && value.length > 0 && value.length <= 128;
+}
+
 /**
  * Resolve a store ID for redirects that need to construct a store-scoped URL.
  * Priority: session activeOrganizationId → ogs-selected-store cookie → first available store.
  */
 async function resolveStoreId(ctx: Context): Promise<string | null> {
-  // 1. From session
+  // 1. From session (trusted — server-set)
   const sessionOrgId = (ctx.state.auth?.session as Record<string, unknown> | undefined)?.activeOrganizationId as
     | string
     | undefined;
   if (sessionOrgId) return sessionOrgId;
 
-  // 2. From cookie
+  // 2. From cookie (user-controlled — validate before using in URL construction)
   const cookieHeader = ctx.headers.cookie as string | undefined;
   if (cookieHeader) {
     const match = cookieHeader.match(/(?:^|;\s*)ogs-selected-store=([^;]*)/);
-    if (match?.[1]) return match[1];
+    if (match?.[1] && isValidStoreId(match[1])) return match[1];
   }
 
   // 3. Query for the first available store
@@ -370,9 +384,12 @@ const router = new Router()
   // ---------------------------------------------------------------------------
   // Store-scoped routes — all under /stores/:storeId
   // ---------------------------------------------------------------------------
-  // Sync session's active organization with the URL's storeId
+  // Sync session's active organization with the URL's storeId.
+  // Runs before ensureAnonymousSession — for authenticated users it syncs the org;
+  // for anonymous/unauthenticated users it's a no-op and falls through to the
+  // anonymous session middleware below.
   .use('/stores/:storeId', syncStoreContext)
-  // Public store routes — ensure anonymous users get a session
+  // Public store routes — ensure anonymous users get a session for cart functionality
   .use('/stores/:storeId/products', ensureAnonymousSession)
   .use('/stores/:storeId/buy-rates', ensureAnonymousSession)
   .use('/stores/:storeId/events', ensureAnonymousSession)
