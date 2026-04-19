@@ -75,14 +75,30 @@ const MAX_VISIBLE_EVENTS = 3;
 
 // --- Helpers ---
 
-function getMonthDateRange(year: number, month: number): { dateFrom: string; dateTo: string } {
-  const from = new Date(year, month, 1);
-  const to = new Date(year, month + 1, 0);
+/**
+ * Compute the visible date range for the calendar grid. This covers the full
+ * grid from the first visible Sunday to the last visible Saturday, so events
+ * on overflow days from the previous/next month are also fetched.
+ */
+function getVisibleDateRange(year: number, month: number): { dateFrom: string; dateTo: string } {
   const pad = (n: number) => String(n).padStart(2, '0');
-  return {
-    dateFrom: `${from.getFullYear()}-${pad(from.getMonth() + 1)}-01`,
-    dateTo: `${to.getFullYear()}-${pad(to.getMonth() + 1)}-${pad(to.getDate())}`,
-  };
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  // First day of the month and its day-of-week (0=Sun)
+  const firstOfMonth = new Date(year, month, 1);
+  const firstDow = firstOfMonth.getDay();
+
+  // Grid starts on the Sunday before (or on) the 1st
+  const gridStart = new Date(year, month, 1 - firstDow);
+
+  // Last day of the month
+  const lastOfMonth = new Date(year, month + 1, 0);
+  const lastDow = lastOfMonth.getDay();
+
+  // Grid ends on the Saturday after (or on) the last day
+  const gridEnd = new Date(year, month + 1, 0 + (6 - lastDow));
+
+  return { dateFrom: fmt(gridStart), dateTo: fmt(gridEnd) };
 }
 
 function formatDate(year: number, month: number, day: number): string {
@@ -386,7 +402,7 @@ export class EventsPage extends OgsPageBase {
     this.loading = true;
     this.error = '';
 
-    const { dateFrom, dateTo } = getMonthDateRange(this.currentYear, this.currentMonth);
+    const { dateFrom, dateTo } = getVisibleDateRange(this.currentYear, this.currentMonth);
 
     try {
       const result = await execute(GetPublicEventsQuery, {

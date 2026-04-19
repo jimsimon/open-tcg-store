@@ -235,6 +235,7 @@ export class EventDetailsPage extends OgsPageBase {
         font-size: var(--wa-font-size-m);
         line-height: 1.7;
         color: var(--wa-color-text-normal);
+        white-space: pre-line;
       }
 
       /* --- Capacity --- */
