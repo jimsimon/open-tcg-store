@@ -498,7 +498,7 @@ describe('card-service', () => {
 
       const result = await getProductListings({ gameName: 'Magic' }, { page: 1, pageSize: 10 }, null);
 
-      expect(result.items[0].images.small).toBe('https://tcgplayer-cdn.tcgplayer.com/product/42_in_200x200.jpg');
+      expect(result.items[0].images.small).toBe('https://tcgplayer-cdn.tcgplayer.com/product/42_in_400x400.jpg');
       expect(result.items[0].images.large).toBe('https://tcgplayer-cdn.tcgplayer.com/product/42_in_1000x1000.jpg');
     });
   });
