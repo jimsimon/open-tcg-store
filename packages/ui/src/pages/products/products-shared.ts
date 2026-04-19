@@ -194,6 +194,8 @@ export const productGridStyles = css`
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
+    color: inherit;
+    text-decoration: none;
   }
 
   .product-card:hover {
@@ -212,21 +214,12 @@ export const productGridStyles = css`
     justify-content: center;
     background: var(--wa-color-fill-quiet);
     overflow: hidden;
-    cursor: pointer;
   }
 
   .product-card-image img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-  }
-
-  .product-card-image a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
   }
 
   .product-card-image .card-placeholder {
@@ -259,17 +252,6 @@ export const productGridStyles = css`
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  .product-card-name a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.15s ease;
-  }
-
-  .product-card-name a:hover {
-    color: var(--wa-color-text-link);
-    text-decoration: underline;
   }
 
   .product-card-meta {

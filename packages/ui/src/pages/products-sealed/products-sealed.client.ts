@@ -493,20 +493,16 @@ export class OgsProductsSealedPage extends OgsPageBase {
       <div class="products-grid">
         ${this.products.map(
           (product) => html`
-            <div class="product-card">
+            <a class="product-card" href="/products/${product.id}">
               <div class="product-card-image">
                 ${product.images?.small
-                  ? html`<a href="${product.images.large}" target="_blank"
-                      ><img src="${product.images.small}" alt="${product.name}"
-                    /></a>`
+                  ? html`<img src="${product.images.small}" alt="${product.name}" />`
                   : html`<div class="card-placeholder">
                       <wa-icon name="box" variant="regular"></wa-icon>
                     </div>`}
               </div>
               <div class="product-card-content">
-                <div class="product-card-name">
-                  <a href="/products/${product.id}">${product.name}</a>
-                </div>
+                <div class="product-card-name">${product.name}</div>
                 <div class="product-card-meta">
                   <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
                   <span>${product.setName}</span>
@@ -516,7 +512,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
                     ${product.totalQuantity > 0 ? `${product.totalQuantity} avail` : 'Out of stock'}
                   </span>
                 </div>
-                <div class="product-card-footer">
+                <div class="product-card-footer" @click="${(e: Event) => e.preventDefault()}">
                   <div class="product-card-price-row">
                     <span class="product-price">
                       ${product.lowestPrice != null
@@ -544,7 +540,7 @@ export class OgsProductsSealedPage extends OgsPageBase {
                     : nothing}
                 </div>
               </div>
-            </div>
+            </a>
           `,
         )}
       </div>

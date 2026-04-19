@@ -617,20 +617,16 @@ export class OgsProductsSinglesPage extends OgsPageBase {
           const display = this.getDisplayPrice(product);
           const activeCond = this.getActiveCondition(product);
           return html`
-            <div class="product-card">
+            <a class="product-card" href="/products/${product.id}">
               <div class="product-card-image">
                 ${product.images?.small
-                  ? html`<a href="${product.images.large}" target="_blank"
-                      ><img src="${product.images.small}" alt="${product.name}"
-                    /></a>`
+                  ? html`<img src="${product.images.small}" alt="${product.name}" />`
                   : html`<div class="card-placeholder">
                       <wa-icon name="id-card" variant="regular"></wa-icon>
                     </div>`}
               </div>
               <div class="product-card-content">
-                <div class="product-card-name">
-                  <a href="/products/${product.id}">${product.name}</a>
-                </div>
+                <div class="product-card-name">${product.name}</div>
                 <div class="product-card-meta">
                   <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
                   <span>${product.setName}</span>
@@ -643,7 +639,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                     ${display.quantity > 0 ? `${display.quantity} avail` : 'Out of stock'}
                   </span>
                 </div>
-                <div class="product-card-footer">
+                <div class="product-card-footer" @click="${(e: Event) => e.preventDefault()}">
                   ${product.conditionPrices.length > 0
                     ? html`
                         <wa-select
@@ -684,7 +680,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                     : nothing}
                 </div>
               </div>
-            </div>
+            </a>
           `;
         })}
       </div>
