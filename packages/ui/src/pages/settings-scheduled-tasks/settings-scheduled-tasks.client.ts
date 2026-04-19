@@ -186,7 +186,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
       .job-list {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(28rem, 100%), 1fr));
         gap: 1rem;
       }
 
