@@ -25,9 +25,10 @@ import {
   validateOAuthState,
 } from './services/backup-service.ts';
 import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
-import { registerJobHandler, seedDefaultJobs, startScheduler } from './services/cron-service.ts';
+import { registerJobHandler, seedDefaultJobs, startScheduler, executeOverdueJobs } from './services/cron-service.ts';
 import { tcgDataUpdateHandler } from './services/cron-handlers/tcg-data-update-handler.ts';
 import { backupHandler } from './services/cron-handlers/backup-handler.ts';
+import { localBackupHandler } from './services/cron-handlers/local-backup-handler.ts';
 import { eventRecurrenceHandler } from './services/cron-handlers/event-recurrence-handler.ts';
 import { sql } from 'drizzle-orm';
 import { rateLimit } from './lib/rate-limit.ts';
@@ -722,11 +723,13 @@ app
 
     // Register cron job handlers
     registerJobHandler('tcg-data-update', tcgDataUpdateHandler);
+    registerJobHandler('local-backup', localBackupHandler);
     registerJobHandler('backup', backupHandler);
     registerJobHandler('event-recurrence-generator', eventRecurrenceHandler);
 
-    // Seed default job definitions and start the cron scheduler (fire-and-forget)
+    // Seed default job definitions, start the cron scheduler, and run overdue jobs
     seedDefaultJobs()
       .then(() => startScheduler())
+      .then(() => executeOverdueJobs())
       .catch((err) => console.error('[cron] Failed to start scheduler:', err));
   });

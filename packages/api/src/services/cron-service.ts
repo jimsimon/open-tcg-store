@@ -53,10 +53,18 @@ const DEFAULT_JOBS: DefaultJob[] = [
     config: '{}',
   },
   {
-    name: 'backup',
-    displayName: 'Scheduled Backup',
-    description: 'Runs an automated backup to the configured cloud storage provider.',
+    name: 'local-backup',
+    displayName: 'Local Backup',
+    description: 'Creates a local database backup snapshot with automatic rotation.',
     cronExpression: '0 4 * * *',
+    enabled: true,
+    config: '{"maxBackups": 10}',
+  },
+  {
+    name: 'backup',
+    displayName: 'Cloud Backup',
+    description: 'Runs an automated backup to the configured cloud storage provider.',
+    cronExpression: '0 5 * * *',
     enabled: false,
     config: '{}',
   },
@@ -77,6 +85,13 @@ export async function seedDefaultJobs(): Promise<void> {
     if (existing.length === 0) {
       await otcgs.insert(cronJob).values(job);
       console.log(`[cron] Seeded default job: ${job.name}`);
+    } else {
+      // Keep displayName and description in sync with code-defined defaults.
+      // User-configurable fields (cronExpression, enabled, config) are left untouched.
+      await otcgs
+        .update(cronJob)
+        .set({ displayName: job.displayName, description: job.description, updatedAt: new Date() })
+        .where(eq(cronJob.id, existing[0].id));
     }
   }
 }
@@ -244,6 +259,47 @@ async function executeJobInternal(jobId: number): Promise<typeof cronJobRun.$inf
  */
 export async function executeJob(jobId: number): Promise<typeof cronJobRun.$inferSelect> {
   return executeJobInternal(jobId);
+}
+
+/**
+ * Execute all enabled jobs that are overdue. A job is considered overdue when
+ * its `nextRunAt` is in the past (i.e. it missed its scheduled window, e.g.
+ * because the server was down). Jobs that have never run are only treated as
+ * overdue if they don't have a future `nextRunAt` (which `startScheduler()`
+ * sets), so freshly seeded jobs on a first boot wait for their scheduled time
+ * rather than firing on every dev-server restart.
+ *
+ * Jobs are executed sequentially to avoid concurrent `VACUUM INTO` operations
+ * (used by backup jobs) which could cause `SQLITE_BUSY` errors.
+ */
+export async function executeOverdueJobs(): Promise<void> {
+  const jobs = await otcgs.select().from(cronJob).where(eq(cronJob.enabled, true));
+  const now = Date.now();
+
+  const overdueJobs = jobs.filter((job) => {
+    if (!jobHandlers.has(job.name)) return false;
+    // If nextRunAt is in the past, the job missed its window — overdue
+    if (job.nextRunAt && job.nextRunAt.getTime() <= now) return true;
+    // Never run and no future schedule — overdue (shouldn't normally happen
+    // since startScheduler() sets nextRunAt, but handles edge cases)
+    if (!job.lastRunAt && !job.nextRunAt) return true;
+    return false;
+  });
+
+  if (overdueJobs.length === 0) {
+    console.log('[cron] No overdue jobs to run on startup');
+    return;
+  }
+
+  console.log(`[cron] Running ${overdueJobs.length} overdue job(s) on startup...`);
+
+  for (const job of overdueJobs) {
+    try {
+      await executeJobInternal(job.id);
+    } catch (err) {
+      console.error(`[cron] Startup run for '${job.name}' failed:`, err);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -2033,17 +2033,38 @@ export type GetBackupSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetBackupSettingsQuery = { __typename?: 'Query', getBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
 
+export type GetBackupCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetBackupCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, displayName: string, description?: string | null, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null, config?: string | null }> };
+
+export type TriggerBackupCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type TriggerBackupCronJobMutation = { __typename?: 'Mutation', triggerCronJob: { __typename?: 'CronJobRun', id: number, status: string, summary?: string | null, error?: string | null, durationMs?: number | null } };
+
+export type EnableBackupCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type EnableBackupCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
+export type DisableBackupCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DisableBackupCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
 export type UpdateBackupSettingsMutationVariables = Exact<{
   input: UpdateBackupSettingsInput;
 }>;
 
 
 export type UpdateBackupSettingsMutation = { __typename?: 'Mutation', updateBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
-
-export type TriggerBackupMutationVariables = Exact<{ [key: string]: never; }>;
-
-
-export type TriggerBackupMutation = { __typename?: 'Mutation', triggerBackup: { __typename?: 'BackupResult', success: boolean, message?: string | null, timestamp?: string | null } };
 
 export type TriggerRestoreMutationVariables = Exact<{
   provider: BackupProvider;
@@ -3140,6 +3161,51 @@ export const GetBackupSettingsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetBackupSettingsQuery, GetBackupSettingsQueryVariables>;
+export const GetBackupCronJobsDocument = new TypedDocumentString(`
+    query GetBackupCronJobs {
+  getCronJobs {
+    id
+    name
+    displayName
+    description
+    cronExpression
+    enabled
+    lastRunAt
+    lastRunStatus
+    lastRunDurationMs
+    lastRunError
+    nextRunAt
+    config
+  }
+}
+    `) as unknown as TypedDocumentString<GetBackupCronJobsQuery, GetBackupCronJobsQueryVariables>;
+export const TriggerBackupCronJobDocument = new TypedDocumentString(`
+    mutation TriggerBackupCronJob($id: Int!) {
+  triggerCronJob(id: $id) {
+    id
+    status
+    summary
+    error
+    durationMs
+  }
+}
+    `) as unknown as TypedDocumentString<TriggerBackupCronJobMutation, TriggerBackupCronJobMutationVariables>;
+export const EnableBackupCronJobDocument = new TypedDocumentString(`
+    mutation EnableBackupCronJob($id: Int!) {
+  enableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<EnableBackupCronJobMutation, EnableBackupCronJobMutationVariables>;
+export const DisableBackupCronJobDocument = new TypedDocumentString(`
+    mutation DisableBackupCronJob($id: Int!) {
+  disableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<DisableBackupCronJobMutation, DisableBackupCronJobMutationVariables>;
 export const UpdateBackupSettingsDocument = new TypedDocumentString(`
     mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {
   updateBackupSettings(input: $input) {
@@ -3152,15 +3218,6 @@ export const UpdateBackupSettingsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UpdateBackupSettingsMutation, UpdateBackupSettingsMutationVariables>;
-export const TriggerBackupDocument = new TypedDocumentString(`
-    mutation TriggerBackup {
-  triggerBackup {
-    success
-    message
-    timestamp
-  }
-}
-    `) as unknown as TypedDocumentString<TriggerBackupMutation, TriggerBackupMutationVariables>;
 export const TriggerRestoreDocument = new TypedDocumentString(`
     mutation TriggerRestore($provider: BackupProvider!) {
   triggerRestore(provider: $provider) {

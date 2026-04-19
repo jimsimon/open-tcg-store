@@ -12,6 +12,7 @@ import '@awesome.me/webawesome/dist/components/badge/badge.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/details/details.js';
+import '@awesome.me/webawesome/dist/components/switch/switch.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import { execute } from '../../lib/graphql';
@@ -22,6 +23,10 @@ if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
 }
 
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
 const GetBackupSettingsQuery = graphql(`
   query GetBackupSettings {
     getBackupSettings {
@@ -31,6 +36,55 @@ const GetBackupSettingsQuery = graphql(`
       googleDriveConnected
       dropboxConnected
       onedriveConnected
+    }
+  }
+`);
+
+const GetCronJobsQuery = graphql(`
+  query GetBackupCronJobs {
+    getCronJobs {
+      id
+      name
+      displayName
+      description
+      cronExpression
+      enabled
+      lastRunAt
+      lastRunStatus
+      lastRunDurationMs
+      lastRunError
+      nextRunAt
+      config
+    }
+  }
+`);
+
+const TriggerCronJobMutation = graphql(`
+  mutation TriggerBackupCronJob($id: Int!) {
+    triggerCronJob(id: $id) {
+      id
+      status
+      summary
+      error
+      durationMs
+    }
+  }
+`);
+
+const EnableCronJobMutation = graphql(`
+  mutation EnableBackupCronJob($id: Int!) {
+    enableCronJob(id: $id) {
+      id
+      enabled
+    }
+  }
+`);
+
+const DisableCronJobMutation = graphql(`
+  mutation DisableBackupCronJob($id: Int!) {
+    disableCronJob(id: $id) {
+      id
+      enabled
     }
   }
 `);
@@ -48,16 +102,6 @@ const UpdateBackupSettingsMutation = graphql(`
   }
 `);
 
-const TriggerBackupMutation = graphql(`
-  mutation TriggerBackup {
-    triggerBackup {
-      success
-      message
-      timestamp
-    }
-  }
-`);
-
 const TriggerRestoreMutation = graphql(`
   mutation TriggerRestore($provider: BackupProvider!) {
     triggerRestore(provider: $provider) {
@@ -66,6 +110,25 @@ const TriggerRestoreMutation = graphql(`
     }
   }
 `);
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface CronJob {
+  id: number;
+  name: string;
+  displayName: string;
+  description: string;
+  cronExpression: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
+  lastRunDurationMs: number | null;
+  lastRunError: string | null;
+  nextRunAt: string | null;
+  config: string | null;
+}
 
 interface ProviderConfig {
   name: string;
@@ -81,6 +144,13 @@ const PROVIDERS: Record<ProviderKey, ProviderConfig> = {
   dropbox: { name: 'Dropbox', icon: 'box-open', connectedKey: 'dropboxConnected' },
   onedrive: { name: 'OneDrive', icon: 'cloud', connectedKey: 'onedriveConnected' },
 };
+
+/** Polling interval (ms) when a job is running */
+const RUNNING_POLL_INTERVAL = 3000;
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 @customElement('ogs-settings-backup-page')
 export class OgsSettingsBackupPage extends OgsPageBase {
@@ -140,13 +210,104 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Section Headers --- */
+      /* --- Job Cards --- */
+
+      .job-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .job-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .job-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .job-title {
+        font-size: var(--wa-font-size-l);
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .job-description {
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+        margin: 0.25rem 0 0 0;
+      }
+
+      .job-status-row {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .status-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .status-label {
+        font-size: var(--wa-font-size-xs);
+        color: var(--wa-color-text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .status-value {
+        font-size: var(--wa-font-size-s);
+        font-weight: 500;
+      }
+
+      .schedule-display {
+        font-family: var(--wa-font-family-mono, monospace);
+        font-size: var(--wa-font-size-s);
+        padding: 0.25rem 0.5rem;
+        background: var(--wa-color-surface-alt);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+      }
+
+      .running-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      .running-indicator wa-spinner {
+        font-size: 0.875rem;
+      }
+
+      /* --- Actions --- */
+
+      .job-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--wa-color-surface-border);
+        flex-wrap: wrap;
+      }
+
+      /* --- Cloud Provider Setup --- */
 
       .section-header {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
       }
 
       .section-header wa-icon {
@@ -166,21 +327,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-size: var(--wa-font-size-s);
       }
 
-      .settings-section {
-        margin-bottom: 1.5rem;
-      }
-
-      .settings-section:last-child {
-        margin-bottom: 0;
-      }
-
-      /* --- Provider Cards --- */
-
       .provider-card {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0.875rem 1.25rem;
+        padding: 0.75rem 1rem;
         background: var(--wa-color-surface-alt);
         border: 1px solid var(--wa-color-surface-border);
         border-radius: var(--wa-border-radius-l);
@@ -201,11 +352,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2.25rem;
+        height: 2.25rem;
         border-radius: var(--wa-border-radius-m);
         background: var(--wa-color-surface-raised);
-        font-size: 1.125rem;
+        font-size: 1rem;
         flex-shrink: 0;
       }
 
@@ -217,10 +368,15 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       .provider-name {
         font-weight: 600;
-        font-size: var(--wa-font-size-m);
+        font-size: var(--wa-font-size-s);
       }
 
-      /* --- Provider Card Wrapper --- */
+      .provider-setup {
+        padding: 0 1rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
 
       .provider-card-wrapper {
         background: var(--wa-color-surface-alt);
@@ -243,15 +399,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         border-color: transparent;
       }
 
-      .provider-setup {
-        padding: 0 1.25rem 0.875rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
       .setup-steps {
-        margin: 0.25rem 0 0.75rem;
+        margin: 0.25rem 0 0.5rem;
         padding-left: 1.25rem;
         font-size: var(--wa-font-size-s);
         color: var(--wa-color-text-muted);
@@ -259,7 +408,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       }
 
       .setup-steps li {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.125rem;
       }
 
       .setup-link {
@@ -267,51 +416,15 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-weight: 500;
       }
 
-      /* --- Form Layout --- */
-
-      .form-grid {
-        display: grid;
-        gap: 0.75rem;
+      .cloud-setup-section {
+        margin-top: 1.5rem;
       }
 
-      .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      .last-backup-info {
+      .backup-provider-row {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        background: var(--wa-color-surface-alt);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-m);
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-text-muted);
-      }
-
-      .last-backup-info wa-icon {
-        color: var(--wa-color-brand-text);
-        flex-shrink: 0;
-      }
-
-      .save-bar {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-top: 0.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--wa-color-surface-border);
-      }
-
-      /* --- Action Buttons --- */
-
-      .action-bar {
-        display: flex;
         gap: 0.75rem;
-        flex-wrap: wrap;
+        margin-top: 0.75rem;
       }
 
       /* --- Loading & Messages --- */
@@ -375,9 +488,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     `,
   ];
 
+  // --- State ---
+
+  @state() loading = true;
+  @state() jobs: CronJob[] = [];
   @state() provider = '';
-  @state() frequency = '';
-  @state() lastBackupAt: string | null = null;
   @state() connectedProviders: Record<ProviderKey, boolean> = {
     google_drive: false,
     dropbox: false,
@@ -389,21 +504,34 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     dropbox: '',
     onedrive: '',
   };
-  @state() loading = true;
-  @state() saving = false;
-  @state() backingUp = false;
   @state() restoring = false;
   @state() showRestoreDialog = false;
   @state() successMessage = '';
   @state() errorMessage = '';
 
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+
   get hasConnectedProvider(): boolean {
     return PROVIDER_KEYS.some((key) => this.connectedProviders[key]);
   }
 
+  get localBackupJob(): CronJob | undefined {
+    return this.jobs.find((j) => j.name === 'local-backup');
+  }
+
+  get cloudBackupJob(): CronJob | undefined {
+    return this.jobs.find((j) => j.name === 'backup');
+  }
+
+  get hasRunningJob(): boolean {
+    return this.jobs.some((j) => j.lastRunStatus === 'running');
+  }
+
+  // --- Lifecycle ---
+
   connectedCallback(): void {
     super.connectedCallback();
-    this.loadSettings();
+    this.loadData();
 
     // Check for OAuth callback params
     const params = new URLSearchParams(window.location.search);
@@ -417,19 +545,36 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     }
   }
 
-  async loadSettings() {
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.stopPolling();
+  }
+
+  // --- Data Loading ---
+
+  private async loadData() {
     try {
-      const result = await execute(GetBackupSettingsQuery);
-      if (result?.data?.getBackupSettings) {
-        const s = result.data.getBackupSettings;
+      const [settingsResult, jobsResult] = await Promise.all([
+        execute(GetBackupSettingsQuery),
+        execute(GetCronJobsQuery),
+      ]);
+
+      if (settingsResult?.data?.getBackupSettings) {
+        const s = settingsResult.data.getBackupSettings;
         this.provider = s.provider ?? '';
-        this.frequency = s.frequency ?? '';
-        this.lastBackupAt = s.lastBackupAt as string | null;
         this.connectedProviders = {
           ...this.connectedProviders,
           ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
         };
       }
+
+      if (jobsResult?.data?.getCronJobs) {
+        const allJobs = jobsResult.data.getCronJobs as CronJob[];
+        this.jobs = allJobs.filter((j) => j.name === 'local-backup' || j.name === 'backup');
+      }
+
+      // Start polling if any job is running
+      this.updatePolling();
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load settings';
     } finally {
@@ -437,49 +582,64 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     }
   }
 
-  async handleSave() {
-    this.saving = true;
-    this.successMessage = '';
-    this.errorMessage = '';
+  private async refreshJobs() {
     try {
-      const result = await execute(UpdateBackupSettingsMutation, {
-        input: { provider: this.provider as BackupProvider, frequency: this.frequency },
-      });
-      if (result?.errors?.length) {
-        this.errorMessage = result.errors.map((e: { message: string }) => e.message).join(', ');
-      } else {
-        this.successMessage = 'Backup settings saved';
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+      const result = await execute(GetCronJobsQuery);
+      if (result?.data?.getCronJobs) {
+        const allJobs = result.data.getCronJobs as CronJob[];
+        this.jobs = allJobs.filter((j) => j.name === 'local-backup' || j.name === 'backup');
       }
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to save';
-    } finally {
-      this.saving = false;
+      this.updatePolling();
+    } catch {
+      // silently fail polling
     }
   }
 
-  async handleBackup() {
-    this.backingUp = true;
-    this.successMessage = '';
-    this.errorMessage = '';
-    try {
-      const result = await execute(TriggerBackupMutation);
-      if (result?.data?.triggerBackup?.success) {
-        this.successMessage = result.data.triggerBackup.message ?? 'Backup completed';
-        this.lastBackupAt = result.data.triggerBackup.timestamp as string | null;
-      } else {
-        this.errorMessage = result?.data?.triggerBackup?.message ?? 'Backup failed';
-      }
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Backup failed';
-    } finally {
-      this.backingUp = false;
+  private updatePolling() {
+    if (this.hasRunningJob && !this.pollTimer) {
+      this.pollTimer = setInterval(() => this.refreshJobs(), RUNNING_POLL_INTERVAL);
+    } else if (!this.hasRunningJob && this.pollTimer) {
+      this.stopPolling();
     }
   }
 
-  async handleRestore() {
+  private stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  // --- Actions ---
+
+  private async triggerJob(jobId: number) {
+    this.successMessage = '';
+    this.errorMessage = '';
+    try {
+      await execute(TriggerCronJobMutation, { id: jobId });
+      await this.refreshJobs();
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to trigger job';
+    }
+  }
+
+  private async toggleJob(job: CronJob) {
+    try {
+      if (job.enabled) {
+        const result = await execute(DisableCronJobMutation, { id: job.id });
+        const enabled = result?.data?.disableCronJob?.enabled ?? false;
+        this.jobs = this.jobs.map((j) => (j.id === job.id ? { ...j, enabled } : j));
+      } else {
+        const result = await execute(EnableCronJobMutation, { id: job.id });
+        const enabled = result?.data?.enableCronJob?.enabled ?? true;
+        this.jobs = this.jobs.map((j) => (j.id === job.id ? { ...j, enabled } : j));
+      }
+    } catch (e) {
+      console.error('Failed to toggle job:', e);
+    }
+  }
+
+  private async handleRestore() {
     this.showRestoreDialog = false;
     this.restoring = true;
     this.successMessage = '';
@@ -496,6 +656,39 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       this.errorMessage = e instanceof Error ? e.message : 'Restore failed';
     } finally {
       this.restoring = false;
+    }
+  }
+
+  private connectProvider(providerKey: ProviderKey) {
+    const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
+    window.location.href = `/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
+  }
+
+  // --- Helpers ---
+
+  private formatDateTime(iso: string | null): string {
+    if (!iso) return 'Never';
+    return new Date(iso).toLocaleString();
+  }
+
+  private formatDuration(ms: number | null): string {
+    if (ms == null) return '-';
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${(ms / 60000).toFixed(1)}m`;
+  }
+
+  private getStatusVariant(status: string | null): string {
+    switch (status) {
+      case 'success':
+        return 'success';
+      case 'failure':
+      case 'error':
+        return 'danger';
+      case 'running':
+        return 'warning';
+      default:
+        return 'neutral';
     }
   }
 
@@ -566,10 +759,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     }
   }
 
-  connectProvider(providerKey: ProviderKey) {
-    const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
-    window.location.href = `/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
-  }
+  // --- Render ---
 
   render() {
     return this.renderPage(
@@ -598,8 +788,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-icon name="cloud-arrow-up" style="font-size: 1.5rem;"></wa-icon>
         </div>
         <div class="page-header-content">
-          <h2>Backup & Restore</h2>
-          <p>Manage cloud backups and restore your data</p>
+          <h2>Backup Jobs</h2>
+          <p>Manage local and cloud backup schedules</p>
         </div>
       </div>
     `;
@@ -624,106 +814,199 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           `
         : nothing}
 
+      <div class="job-list">
+        ${this.localBackupJob ? this.renderJobCard(this.localBackupJob) : nothing}
+        ${this.cloudBackupJob && this.hasConnectedProvider ? this.renderCloudBackupCard(this.cloudBackupJob) : nothing}
+      </div>
+
+      ${this.renderCloudProviderSetup()}
+    `;
+  }
+
+  private renderJobCard(job: CronJob) {
+    const isRunning = job.lastRunStatus === 'running';
+
+    return html`
       <wa-card appearance="outline">
-        <!-- Cloud Provider -->
-        <div class="settings-section">
-          <div class="section-header">
-            <wa-icon name="cloud"></wa-icon>
-            <div>
-              <h3>Cloud Provider</h3>
-              <p>Select and configure a cloud storage provider for backup</p>
+        <div class="job-header">
+          <div>
+            <div class="job-title-row">
+              <h3 class="job-title">${job.displayName}</h3>
+              ${isRunning
+                ? html`
+                    <wa-badge variant="warning">
+                      <span class="running-indicator">
+                        <wa-spinner></wa-spinner>
+                        Running
+                      </span>
+                    </wa-badge>
+                  `
+                : html`
+                    <wa-badge variant="${this.getStatusVariant(job.lastRunStatus)}">
+                      ${job.lastRunStatus ?? 'idle'}
+                    </wa-badge>
+                  `}
             </div>
+            <p class="job-description">${job.description}</p>
           </div>
-          <wa-select
-            label="Provider"
-            .value="${this.selectedConfigProvider}"
-            @change="${(e: Event) => {
-              this.selectedConfigProvider = (e.target as HTMLSelectElement).value as ProviderKey;
-            }}"
-            style="margin-bottom: 0.75rem;"
+          <wa-switch ?checked="${job.enabled}" @wa-change="${() => this.toggleJob(job)}"></wa-switch>
+        </div>
+
+        <div class="job-status-row">
+          <div class="status-item">
+            <span class="status-label">Schedule</span>
+            <span class="schedule-display">${job.cronExpression}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Last Run</span>
+            <span class="status-value">${this.formatDateTime(job.lastRunAt)}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Duration</span>
+            <span class="status-value">${this.formatDuration(job.lastRunDurationMs)}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Next Run</span>
+            <span class="status-value">${this.formatDateTime(job.nextRunAt)}</span>
+          </div>
+        </div>
+
+        ${job.lastRunError
+          ? html`
+              <wa-callout variant="danger" style="margin-top: 0.75rem;">
+                <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                ${job.lastRunError}
+              </wa-callout>
+            `
+          : nothing}
+
+        <div class="job-actions">
+          <wa-button
+            size="small"
+            variant="brand"
+            appearance="outlined"
+            ?disabled="${!job.enabled || isRunning}"
+            ?loading="${isRunning}"
+            @click="${() => this.triggerJob(job.id)}"
           >
-            ${PROVIDER_KEYS.map((key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`)}
-          </wa-select>
-          ${this.renderSelectedProviderCard()}
-        </div>
-
-        <!-- Backup Configuration -->
-        <div class="settings-section">
-          <div class="section-header">
-            <wa-icon name="sliders"></wa-icon>
-            <div>
-              <h3>Backup Configuration</h3>
-              <p>Choose your backup provider and schedule</p>
-            </div>
-          </div>
-          <div class="form-grid">
-            <div class="form-row">
-              <wa-select
-                label="Backup Provider"
-                .value="${this.provider}"
-                ?disabled="${!this.hasConnectedProvider}"
-                @change="${(e: Event) => {
-                  this.provider = (e.target as HTMLSelectElement).value;
-                }}"
-              >
-                <wa-option value="">Select provider</wa-option>
-                ${PROVIDER_KEYS.filter((key) => this.connectedProviders[key]).map(
-                  (key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`,
-                )}
-              </wa-select>
-
-              <wa-select
-                label="Backup Frequency"
-                .value="${this.frequency}"
-                @change="${(e: Event) => {
-                  this.frequency = (e.target as HTMLSelectElement).value;
-                }}"
-              >
-                <wa-option value="">Select frequency</wa-option>
-                <wa-option value="daily">Daily</wa-option>
-                <wa-option value="weekly">Weekly</wa-option>
-                <wa-option value="monthly">Monthly</wa-option>
-                <wa-option value="manual">Manual Only</wa-option>
-              </wa-select>
-            </div>
-
-            ${this.lastBackupAt
-              ? html`
-                  <div class="last-backup-info">
-                    <wa-icon name="clock-rotate-left"></wa-icon>
-                    <span>Last backup: ${new Date(this.lastBackupAt).toLocaleString()}</span>
-                  </div>
-                `
-              : html`
-                  <div class="last-backup-info">
-                    <wa-icon name="circle-info"></wa-icon>
-                    <span>No backups have been created yet.</span>
-                  </div>
-                `}
-          </div>
-        </div>
-
-        <!-- Save & Actions -->
-        <div class="save-bar">
-          <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
-            <wa-icon slot="start" name="floppy-disk"></wa-icon>
-            Save Settings
+            <wa-icon slot="start" name="play"></wa-icon>
+            Run Now
           </wa-button>
           <wa-button
+            size="small"
             variant="neutral"
             appearance="outlined"
-            ?loading="${this.backingUp}"
-            ?disabled="${!this.provider}"
-            @click="${this.handleBackup}"
+            @click="${() => {
+              window.location.href = '/settings/scheduled-tasks';
+            }}"
           >
-            <wa-icon slot="start" name="cloud-arrow-up"></wa-icon>
-            Backup Now
+            <wa-icon slot="start" name="clock-rotate-left"></wa-icon>
+            View History
+          </wa-button>
+        </div>
+      </wa-card>
+    `;
+  }
+
+  private renderCloudBackupCard(job: CronJob) {
+    const isRunning = job.lastRunStatus === 'running';
+    const activeProviderName = this.provider
+      ? (PROVIDERS[this.provider as ProviderKey]?.name ?? this.provider)
+      : 'Not configured';
+
+    return html`
+      <wa-card appearance="outline">
+        <div class="job-header">
+          <div>
+            <div class="job-title-row">
+              <h3 class="job-title">${job.displayName}</h3>
+              ${isRunning
+                ? html`
+                    <wa-badge variant="warning">
+                      <span class="running-indicator">
+                        <wa-spinner></wa-spinner>
+                        Running
+                      </span>
+                    </wa-badge>
+                  `
+                : html`
+                    <wa-badge variant="${this.getStatusVariant(job.lastRunStatus)}">
+                      ${job.lastRunStatus ?? 'idle'}
+                    </wa-badge>
+                  `}
+            </div>
+            <p class="job-description">${job.description}</p>
+          </div>
+          <wa-switch ?checked="${job.enabled}" @wa-change="${() => this.toggleJob(job)}"></wa-switch>
+        </div>
+
+        <div class="job-status-row">
+          <div class="status-item">
+            <span class="status-label">Provider</span>
+            <span class="status-value">${activeProviderName}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Schedule</span>
+            <span class="schedule-display">${job.cronExpression}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Last Run</span>
+            <span class="status-value">${this.formatDateTime(job.lastRunAt)}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Duration</span>
+            <span class="status-value">${this.formatDuration(job.lastRunDurationMs)}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Next Run</span>
+            <span class="status-value">${this.formatDateTime(job.nextRunAt)}</span>
+          </div>
+        </div>
+
+        ${job.lastRunError
+          ? html`
+              <wa-callout variant="danger" style="margin-top: 0.75rem;">
+                <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                ${job.lastRunError}
+              </wa-callout>
+            `
+          : nothing}
+
+        <div class="backup-provider-row">
+          <wa-select
+            label="Backup Provider"
+            .value="${this.provider}"
+            size="small"
+            @change="${(e: Event) => {
+              this.provider = (e.target as HTMLSelectElement).value;
+              this.saveBackupProvider();
+            }}"
+          >
+            <wa-option value="">Select provider</wa-option>
+            ${PROVIDER_KEYS.filter((key) => this.connectedProviders[key]).map(
+              (key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`,
+            )}
+          </wa-select>
+        </div>
+
+        <div class="job-actions">
+          <wa-button
+            size="small"
+            variant="brand"
+            appearance="outlined"
+            ?disabled="${!job.enabled || isRunning || !this.provider}"
+            ?loading="${isRunning}"
+            @click="${() => this.triggerJob(job.id)}"
+          >
+            <wa-icon slot="start" name="play"></wa-icon>
+            Run Now
           </wa-button>
           <wa-button
+            size="small"
             variant="danger"
             appearance="outlined"
             ?loading="${this.restoring}"
-            ?disabled="${!this.provider}"
+            ?disabled="${!this.provider || isRunning}"
             @click="${() => {
               this.showRestoreDialog = true;
             }}"
@@ -731,8 +1014,56 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             <wa-icon slot="start" name="cloud-arrow-down"></wa-icon>
             Restore
           </wa-button>
+          <wa-button
+            size="small"
+            variant="neutral"
+            appearance="outlined"
+            @click="${() => {
+              window.location.href = '/settings/scheduled-tasks';
+            }}"
+          >
+            <wa-icon slot="start" name="clock-rotate-left"></wa-icon>
+            View History
+          </wa-button>
         </div>
       </wa-card>
+    `;
+  }
+
+  private async saveBackupProvider() {
+    try {
+      await execute(UpdateBackupSettingsMutation, {
+        input: { provider: (this.provider as BackupProvider) || null },
+      });
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to save provider';
+    }
+  }
+
+  private renderCloudProviderSetup() {
+    return html`
+      <div class="cloud-setup-section">
+        <div class="section-header">
+          <wa-icon name="cloud"></wa-icon>
+          <div>
+            <h3>Cloud Provider Setup</h3>
+            <p>Connect a cloud provider to enable cloud backups</p>
+          </div>
+        </div>
+
+        <wa-select
+          label="Provider"
+          .value="${this.selectedConfigProvider}"
+          @change="${(e: Event) => {
+            this.selectedConfigProvider = (e.target as HTMLSelectElement).value as ProviderKey;
+          }}"
+          style="margin-bottom: 0.75rem;"
+        >
+          ${PROVIDER_KEYS.map((key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`)}
+        </wa-select>
+
+        ${this.renderSelectedProviderCard()}
+      </div>
     `;
   }
 
