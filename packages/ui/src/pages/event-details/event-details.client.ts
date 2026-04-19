@@ -645,7 +645,7 @@ export class EventDetailsPage extends OgsPageBase {
               <wa-divider></wa-divider>
               <div class="attendees-empty">
                 <wa-icon name="users"></wa-icon>
-                <p>${isFull ? 'No one has registered yet.' : 'No one has registered yet. Be the first!'}</p>
+                <p>No one has registered yet. Be the first!</p>
               </div>
             `,
           )}
