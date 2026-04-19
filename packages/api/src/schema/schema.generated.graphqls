@@ -53,10 +53,13 @@ type BackupResult {
 }
 
 type BackupSettings {
+  dropboxClientId: String
   dropboxConnected: Boolean!
   frequency: String
+  googleDriveClientId: String
   googleDriveConnected: Boolean!
   lastBackupAt: String
+  onedriveClientId: String
   onedriveConnected: Boolean!
   provider: BackupProvider
 }
@@ -522,6 +525,7 @@ type Mutation {
   deleteLot(id: Int!): Boolean!
   deleteStock(id: Int!): Boolean!
   disableCronJob(id: Int!): CronJob!
+  disconnectBackupProvider(provider: BackupProvider!): BackupSettings!
   enableCronJob(id: Int!): CronJob!
   firstTimeSetup(company: CompanySettings!, store: InitialStoreLocation!, supportedGameCategoryIds: [Int!]!, userDetails: UserDetails!): String!
   registerForEvent(eventId: Int!, input: PublicEventRegistrationInput!): EventRegistration!
@@ -999,7 +1003,10 @@ type TransactionLogPage {
 }
 
 input UpdateBackupSettingsInput {
+  dropboxClientId: String
   frequency: String
+  googleDriveClientId: String
+  onedriveClientId: String
   provider: BackupProvider
 }
 
