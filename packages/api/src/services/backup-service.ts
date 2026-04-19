@@ -79,7 +79,7 @@ export async function createSafeBackupFile(): Promise<string> {
 /**
  * Clean up a temporary backup file and its parent temp directory.
  */
-function cleanupTempBackup(tempPath: string): void {
+export function cleanupTempBackup(tempPath: string): void {
   try {
     unlinkSync(tempPath);
     // Remove the temp directory too

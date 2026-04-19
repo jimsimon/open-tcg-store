@@ -262,10 +262,15 @@ export async function executeJob(jobId: number): Promise<typeof cronJobRun.$infe
 }
 
 /**
- * Execute all enabled jobs that are overdue. A job is considered overdue if it
- * has never run (`lastRunAt` is null) or its `nextRunAt` is in the past (i.e.
- * it missed its scheduled window, e.g. because the server was down). This
- * avoids redundant work on restarts that happen within a scheduled window.
+ * Execute all enabled jobs that are overdue. A job is considered overdue when
+ * its `nextRunAt` is in the past (i.e. it missed its scheduled window, e.g.
+ * because the server was down). Jobs that have never run are only treated as
+ * overdue if they don't have a future `nextRunAt` (which `startScheduler()`
+ * sets), so freshly seeded jobs on a first boot wait for their scheduled time
+ * rather than firing on every dev-server restart.
+ *
+ * Jobs are executed sequentially to avoid concurrent `VACUUM INTO` operations
+ * (used by backup jobs) which could cause `SQLITE_BUSY` errors.
  */
 export async function executeOverdueJobs(): Promise<void> {
   const jobs = await otcgs.select().from(cronJob).where(eq(cronJob.enabled, true));
@@ -273,10 +278,11 @@ export async function executeOverdueJobs(): Promise<void> {
 
   const overdueJobs = jobs.filter((job) => {
     if (!jobHandlers.has(job.name)) return false;
-    // Never run — always overdue
-    if (!job.lastRunAt) return true;
-    // Scheduled time has passed — overdue
+    // If nextRunAt is in the past, the job missed its window — overdue
     if (job.nextRunAt && job.nextRunAt.getTime() <= now) return true;
+    // Never run and no future schedule — overdue (shouldn't normally happen
+    // since startScheduler() sets nextRunAt, but handles edge cases)
+    if (!job.lastRunAt && !job.nextRunAt) return true;
     return false;
   });
 
@@ -288,8 +294,11 @@ export async function executeOverdueJobs(): Promise<void> {
   console.log(`[cron] Running ${overdueJobs.length} overdue job(s) on startup...`);
 
   for (const job of overdueJobs) {
-    // Fire and forget — don't let one job failure block others
-    executeJobInternal(job.id).catch((err) => console.error(`[cron] Startup run for '${job.name}' failed:`, err));
+    try {
+      await executeJobInternal(job.id);
+    } catch (err) {
+      console.error(`[cron] Startup run for '${job.name}' failed:`, err);
+    }
   }
 }
 

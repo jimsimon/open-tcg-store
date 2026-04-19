@@ -1,7 +1,7 @@
-import { mkdirSync, existsSync, readdirSync, unlinkSync, copyFileSync, rmSync } from 'node:fs';
+import { mkdirSync, existsSync, readdirSync, unlinkSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import type { JobResult } from '../cron-service.ts';
-import { createSafeBackupFile } from '../backup-service.ts';
+import { createSafeBackupFile, cleanupTempBackup } from '../backup-service.ts';
 import { databaseFilePath } from '../../db/otcgs/drizzle.config.ts';
 
 /** Default number of local backup files to keep. Configurable via job config `maxBackups`. */
@@ -13,7 +13,8 @@ const DEFAULT_MAX_BACKUPS = 10;
  * Automatically rotates old backups, keeping the most recent N files.
  */
 export async function localBackupHandler(config: Record<string, unknown>): Promise<JobResult> {
-  const maxBackups = typeof config.maxBackups === 'number' ? config.maxBackups : DEFAULT_MAX_BACKUPS;
+  const maxBackups =
+    typeof config.maxBackups === 'number' && config.maxBackups > 0 ? config.maxBackups : DEFAULT_MAX_BACKUPS;
 
   try {
     // Ensure the backups directory exists next to the database file
@@ -33,13 +34,7 @@ export async function localBackupHandler(config: Record<string, unknown>): Promi
     try {
       copyFileSync(tempPath, backupPath);
     } finally {
-      // Clean up the temp file
-      try {
-        unlinkSync(tempPath);
-        rmSync(join(tempPath, '..'), { recursive: true, force: true });
-      } catch {
-        // Best-effort cleanup
-      }
+      cleanupTempBackup(tempPath);
     }
 
     // Rotate old backups: keep only the most recent maxBackups files
