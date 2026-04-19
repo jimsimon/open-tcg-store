@@ -232,6 +232,18 @@ export class ProductDetailsPage extends OgsPageBase {
         font-style: italic;
       }
 
+      .image-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 200px;
+        background: var(--wa-color-fill-quiet);
+        color: var(--wa-color-text-quiet);
+        font-size: 4rem;
+        border-radius: var(--wa-border-radius-m);
+      }
+
       .price-cell {
         text-align: right;
         white-space: nowrap;
@@ -359,6 +371,13 @@ export class ProductDetailsPage extends OgsPageBase {
     }
   }
 
+  private handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.hidden = true;
+    const placeholder = img.parentElement?.querySelector('.image-placeholder') as HTMLElement | null;
+    if (placeholder) placeholder.hidden = false;
+  }
+
   render() {
     return this.renderPage(
       html`
@@ -436,22 +455,27 @@ export class ProductDetailsPage extends OgsPageBase {
     const p = this.product!;
     return html`
       <wa-card appearance="outlined">
-        <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
-          <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-            <img src="${p.images?.large}" alt="${p.name}" />
-          </div>
-          <table class="wa-table wa-zebra-rows wa-hover-rows">
-            <tbody>
-              <tr>
-                <th scope="row">Set</th>
-                <td>${p.setName}</td>
-              </tr>
-              <tr>
-                <th scope="row">Game</th>
-                <td>${p.gameName}</td>
-              </tr>
-              <tr>
-                <th scope="row">Type</th>
+          <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
+            <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
+              ${p.images?.large
+                ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
+                : nothing}
+              <div class="image-placeholder" ?hidden="${!!p.images?.large}">
+                <wa-icon name="id-card" variant="regular"></wa-icon>
+              </div>
+            </div>
+            <table class="wa-table wa-zebra-rows wa-hover-rows">
+              <tbody>
+                <tr>
+                  <th scope="row">Set</th>
+                  <td>${p.setName}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Game</th>
+                  <td>${p.gameName}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Type</th>
                 <td>${p.type ?? '—'}</td>
               </tr>
               <tr>
@@ -486,9 +510,15 @@ export class ProductDetailsPage extends OgsPageBase {
 
     return html`
       <wa-card appearance="outlined">
-        <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
-          <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-            <img src="${p.images?.large}" alt="${p.name}" />
+         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
+           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
+              ${p.images?.large
+                ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
+                : nothing}
+              <div class="image-placeholder" ?hidden="${!!p.images?.large}">
+                <wa-icon name="box" variant="regular"></wa-icon>
+              </div>
+
           </div>
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <tbody>
