@@ -183,7 +183,7 @@ interface OAuthProviderConfig {
 
 export async function getProviderConfig(provider: BackupProvider): Promise<OAuthProviderConfig> {
   const clientId = (await getOAuthClientId(provider)) ?? '';
-  const clientSecret = await getOAuthClientSecret(provider);
+  const clientSecret = provider === 'google_drive' ? await getOAuthClientSecret(provider) : null;
   const baseUrl = process.env.APP_URL || 'http://localhost';
 
   switch (provider) {
