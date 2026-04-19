@@ -50,6 +50,9 @@ importers:
       croner:
         specifier: ^10.0.1
         version: 10.0.1
+      cronstrue:
+        specifier: ^3.14.0
+        version: 3.14.0
       dotenv:
         specifier: ^17.3.1
         version: 17.4.2
@@ -3132,6 +3135,10 @@ packages:
   croner@10.0.1:
     resolution: {integrity: sha512-ixNtAJndqh173VQ4KodSdJEI6nuioBWI0V1ITNKhZZsO0pEMoDxz539T4FTTbSZ/xIOSuDnzxLVRqBVSvPNE2g==}
     engines: {node: '>=18.0'}
+
+  cronstrue@3.14.0:
+    resolution: {integrity: sha512-XnW4vuK/jPJjmTyDWiej1Zq36Od7ITwxaV2O1pzHZuyMVvdy7NAvyvIBzybt+idqSpfqYuoDG7uf/ocGtJVWxA==}
+    hasBin: true
 
   cross-fetch@4.1.0:
     resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
@@ -7714,7 +7721,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 24.3.1
+      '@types/node': 25.6.0
     optional: true
 
   '@types/body-parser@1.19.6':
@@ -7774,7 +7781,7 @@ snapshots:
 
   '@types/interpret@1.1.4':
     dependencies:
-      '@types/node': 22.19.17
+      '@types/node': 25.6.0
 
   '@types/js-cookie@3.0.6': {}
 
@@ -8367,6 +8374,8 @@ snapshots:
       typescript: 6.0.3
 
   croner@10.0.1: {}
+
+  cronstrue@3.14.0: {}
 
   cross-fetch@4.1.0:
     dependencies:
