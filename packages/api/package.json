@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development tsx --conditions=development src/server.ts",
+    "dev": "NODE_ENV=development tsx --env-file-if-exists=../../.env --conditions=development src/server.ts",
     "start": "NODE_ENV=production node --import tsx/esm src/server.ts",
     "build": "tsc && vite build",
     "db:update-better-auth-schema": "npx @better-auth/cli generate -y --output ./src/db/otcgs/auth-schema.ts",

@@ -53,9 +53,6 @@ importers:
       cronstrue:
         specifier: ^3.14.0
         version: 3.14.0
-      dotenv:
-        specifier: ^17.3.1
-        version: 17.4.2
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.2.0)(kysely@0.28.16)(pg@8.20.0)(prisma@5.22.0)
