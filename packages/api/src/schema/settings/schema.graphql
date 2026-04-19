@@ -19,6 +19,7 @@ type BackupSettings {
   googleDriveClientId: String
   dropboxClientId: String
   onedriveClientId: String
+  googleDriveHasClientSecret: Boolean!
 }
 
 type IntegrationSettings {

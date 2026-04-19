@@ -39,6 +39,7 @@ const GetBackupSettingsQuery = graphql(`
       googleDriveClientId
       dropboxClientId
       onedriveClientId
+      googleDriveHasClientSecret
     }
   }
 `);
@@ -126,6 +127,7 @@ const DisconnectBackupProviderMutation = graphql(`
       googleDriveClientId
       dropboxClientId
       onedriveClientId
+      googleDriveHasClientSecret
     }
   }
 `);
@@ -537,6 +539,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     dropbox: '',
     onedrive: '',
   };
+  @state() googleDriveClientSecret = '';
+  @state() googleDriveHasClientSecret = false;
   @state() restoring = false;
   @state() showRestoreDialog = false;
   @state() successMessage = '';
@@ -604,6 +608,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           dropbox: s.dropboxClientId ?? '',
           onedrive: s.onedriveClientId ?? '',
         };
+        this.googleDriveHasClientSecret = s.googleDriveHasClientSecret;
       }
 
       if (jobsResult?.data?.getCronJobs) {
@@ -697,9 +702,26 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     }
   }
 
-  private connectProvider(providerKey: ProviderKey) {
-    const params = new URLSearchParams({ client_id: this.clientIds[providerKey] });
-    window.location.href = `/api/backup/oauth/${providerKey}/authorize?${params.toString()}`;
+  private async connectProvider(providerKey: ProviderKey) {
+    const body: Record<string, string> = { client_id: this.clientIds[providerKey] };
+    if (providerKey === 'google_drive' && this.googleDriveClientSecret) {
+      body.client_secret = this.googleDriveClientSecret;
+    }
+    try {
+      const response = await fetch(`/api/backup/oauth/${providerKey}/authorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        this.errorMessage = `Failed to initiate ${PROVIDERS[providerKey].name} authorization`;
+        return;
+      }
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to start OAuth flow';
+    }
   }
 
   private async disconnectProvider(providerKey: ProviderKey) {
@@ -720,6 +742,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           dropbox: s.dropboxClientId ?? '',
           onedrive: s.onedriveClientId ?? '',
         };
+        this.googleDriveHasClientSecret = s.googleDriveHasClientSecret;
+        this.googleDriveClientSecret = '';
         this.successMessage = `Disconnected ${PROVIDERS[providerKey].name}`;
       }
     } catch (e) {
@@ -776,8 +800,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             html`Click "Create Credentials" and select "OAuth client ID".`,
             html`Set the application type to "Web application".`,
             html`Add your redirect URI: <code>${window.location.origin}/api/backup/oauth/google_drive/callback</code>.`,
-            html`Copy the generated <strong>Client ID</strong> and paste it below. No client secret is needed — this app
-              uses PKCE for secure authorization.`,
+            html`Copy the generated <strong>Client ID</strong> and <strong>Client Secret</strong> and paste them below.`,
           ],
         };
       case 'dropbox':
@@ -914,7 +937,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             </div>
             <p class="job-description">${job.description}</p>
           </div>
-          <wa-switch ?checked="${job.enabled}" @wa-change="${() => this.toggleJob(job)}"></wa-switch>
+          <wa-switch ?checked="${job.enabled}" @change="${() => this.toggleJob(job)}"></wa-switch>
         </div>
 
         <div class="job-status-row">
@@ -1002,7 +1025,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             </div>
             <p class="job-description">${job.description}</p>
           </div>
-          <wa-switch ?checked="${job.enabled}" @wa-change="${() => this.toggleJob(job)}"></wa-switch>
+          <wa-switch ?checked="${job.enabled}" @change="${() => this.toggleJob(job)}"></wa-switch>
         </div>
 
         <div class="job-status-row">
@@ -1176,6 +1199,30 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             >
               <wa-icon slot="prefix" name="key"></wa-icon>
             </wa-input>
+          </div>
+          ${providerKey === 'google_drive'
+            ? html`
+                <div class="client-id-row">
+                  <wa-input
+                    class="client-id-input"
+                    label="OAuth Client Secret"
+                    placeholder="Paste your ${name} OAuth Client Secret"
+                    type="password"
+                    size="small"
+                    .value="${connected && this.googleDriveHasClientSecret ? '••••••••' : this.googleDriveClientSecret}"
+                    ?readonly="${connected}"
+                    @input="${(e: Event) => {
+                      if (!connected) {
+                        this.googleDriveClientSecret = (e.target as HTMLInputElement).value;
+                      }
+                    }}"
+                  >
+                    <wa-icon slot="prefix" name="lock"></wa-icon>
+                  </wa-input>
+                </div>
+              `
+            : nothing}
+          <div class="client-id-row" style="margin-top: 0.25rem;">
             ${connected
               ? html`
                   <wa-button
@@ -1193,7 +1240,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
                     size="small"
                     variant="brand"
                     appearance="outlined"
-                    ?disabled="${!clientId.trim()}"
+                    ?disabled="${!clientId.trim() ||
+                    (providerKey === 'google_drive' && !this.googleDriveClientSecret.trim())}"
                     @click="${() => this.connectProvider(providerKey)}"
                   >
                     <wa-icon slot="start" name="link"></wa-icon>

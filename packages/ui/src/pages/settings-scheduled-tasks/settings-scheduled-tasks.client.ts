@@ -578,7 +578,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
             </div>
             <p class="job-description">${job.description}</p>
           </div>
-          <wa-switch ?checked="${job.enabled}" @wa-change="${() => this.toggleJob(job)}"></wa-switch>
+          <wa-switch ?checked="${job.enabled}" @change="${() => this.toggleJob(job)}"></wa-switch>
         </div>
 
         <!-- Status info -->

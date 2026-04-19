@@ -103,6 +103,10 @@ function fakeSettingsRow(overrides: Record<string, unknown> = {}) {
     shopifyEnabled: false,
     shopifyApiKey: null,
     shopifyShopDomain: null,
+    googleDriveClientId: null,
+    dropboxClientId: null,
+    onedriveClientId: null,
+    googleDriveClientSecret: null,
     googleDriveAccessToken: 'encrypted:gd-access',
     googleDriveRefreshToken: 'encrypted:gd-refresh',
     dropboxAccessToken: null,
@@ -280,6 +284,21 @@ describe('settings-service', () => {
 
       expect(result.lastBackupAt).toBeNull();
     });
+
+    it('should return googleDriveHasClientSecret as true when secret is stored', async () => {
+      selectChain = chainable([fakeSettingsRow({ googleDriveClientSecret: 'encrypted:secret' })]);
+      mockOtcgs.select.mockImplementation(() => selectChain);
+
+      const result = await getBackupSettings();
+
+      expect(result.googleDriveHasClientSecret).toBe(true);
+    });
+
+    it('should return googleDriveHasClientSecret as false when no secret', async () => {
+      const result = await getBackupSettings();
+
+      expect(result.googleDriveHasClientSecret).toBe(false);
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -453,10 +472,11 @@ describe('settings-service', () => {
   });
 
   describe('clearOAuthTokens', () => {
-    it('should clear Google Drive tokens', async () => {
+    it('should clear Google Drive tokens and client secret', async () => {
       await clearOAuthTokens('google_drive');
 
       const setCall = (updateChain.set as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(setCall.googleDriveClientSecret).toBeNull();
       expect(setCall.googleDriveAccessToken).toBeNull();
       expect(setCall.googleDriveRefreshToken).toBeNull();
     });

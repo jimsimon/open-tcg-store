@@ -24,7 +24,7 @@ import {
   handleOneDriveCallback,
   validateOAuthState,
 } from './services/backup-service.ts';
-import { storeOAuthClientId } from './services/settings-service.ts';
+import { storeOAuthClientId, storeOAuthClientSecret } from './services/settings-service.ts';
 import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
 import { registerJobHandler, seedDefaultJobs, startScheduler, executeOverdueJobs } from './services/cron-service.ts';
 import { tcgDataUpdateHandler } from './services/cron-handlers/tcg-data-update-handler.ts';
@@ -454,13 +454,18 @@ const router = new Router()
       endpoint: '/graphql',
     });
   })
-  // OAuth callback routes for backup providers
-  // Authorize routes require authentication; callbacks validate the CSRF state parameter.
-  .get('/api/backup/oauth/google_drive/authorize', async (ctx: RouterContext) => {
+  // OAuth routes for backup providers
+  // Authorize routes (POST) require authentication and return the provider's auth URL.
+  // Callback routes (GET) validate the CSRF state parameter and exchange the code for tokens.
+  .post('/api/backup/oauth/google_drive/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    const clientId = ctx.query.client_id as string | undefined;
-    if (clientId?.trim()) await storeOAuthClientId('google_drive', clientId.trim());
-    ctx.redirect(await getGoogleDriveAuthUrl());
+    const body = ctx.request.body as Record<string, unknown> | undefined;
+    const clientId = (body?.client_id as string | undefined)?.trim();
+    const clientSecret = (body?.client_secret as string | undefined)?.trim();
+    if (clientId) await storeOAuthClientId('google_drive', clientId);
+    if (clientSecret) await storeOAuthClientSecret('google_drive', clientSecret);
+    const url = await getGoogleDriveAuthUrl();
+    ctx.body = { url };
   })
   .get('/api/backup/oauth/google_drive/callback', async (ctx: RouterContext) => {
     try {
@@ -479,11 +484,13 @@ const router = new Router()
       ctx.redirect(`/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
-  .get('/api/backup/oauth/dropbox/authorize', async (ctx: RouterContext) => {
+  .post('/api/backup/oauth/dropbox/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    const clientId = ctx.query.client_id as string | undefined;
-    if (clientId?.trim()) await storeOAuthClientId('dropbox', clientId.trim());
-    ctx.redirect(await getDropboxAuthUrl());
+    const body = ctx.request.body as Record<string, unknown> | undefined;
+    const clientId = (body?.client_id as string | undefined)?.trim();
+    if (clientId) await storeOAuthClientId('dropbox', clientId);
+    const url = await getDropboxAuthUrl();
+    ctx.body = { url };
   })
   .get('/api/backup/oauth/dropbox/callback', async (ctx: RouterContext) => {
     try {
@@ -502,11 +509,13 @@ const router = new Router()
       ctx.redirect(`/settings/backup?error=${encodeURIComponent(message)}`);
     }
   })
-  .get('/api/backup/oauth/onedrive/authorize', async (ctx: RouterContext) => {
+  .post('/api/backup/oauth/onedrive/authorize', async (ctx: RouterContext) => {
     if (!(await requireCompanySettingsUpdate(ctx))) return;
-    const clientId = ctx.query.client_id as string | undefined;
-    if (clientId?.trim()) await storeOAuthClientId('onedrive', clientId.trim());
-    ctx.redirect(await getOneDriveAuthUrl());
+    const body = ctx.request.body as Record<string, unknown> | undefined;
+    const clientId = (body?.client_id as string | undefined)?.trim();
+    if (clientId) await storeOAuthClientId('onedrive', clientId);
+    const url = await getOneDriveAuthUrl();
+    ctx.body = { url };
   })
   .get('/api/backup/oauth/onedrive/callback', async (ctx: RouterContext) => {
     try {

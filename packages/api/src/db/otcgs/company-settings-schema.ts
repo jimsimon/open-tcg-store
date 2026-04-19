@@ -23,10 +23,13 @@ export const companySettings = sqliteTable('company_settings', {
   shopifyApiKey: text('shopify_api_key'),
   shopifyShopDomain: text('shopify_shop_domain'),
 
-  // OAuth Client IDs (encrypted — PKCE public IDs, stored so users can configure via UI)
+  // OAuth Client IDs (encrypted — stored so users can configure via UI)
   googleDriveClientId: text('google_drive_client_id'),
   dropboxClientId: text('dropbox_client_id'),
   onedriveClientId: text('onedrive_client_id'),
+
+  // OAuth Client Secrets (encrypted — required by some providers e.g. Google)
+  googleDriveClientSecret: text('google_drive_client_secret'),
 
   // OAuth Tokens (encrypted)
   googleDriveAccessToken: text('google_drive_access_token'),
