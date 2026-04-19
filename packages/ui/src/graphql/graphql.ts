@@ -602,6 +602,7 @@ export type Mutation = {
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
   updateOrderStatus: Order;
+  updateRecurrenceRule: Event;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -841,6 +842,12 @@ export type MutationUpdateLotArgs = {
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: OrderStatus;
+};
+
+
+export type MutationUpdateRecurrenceRuleArgs = {
+  frequency: Scalars['String']['input'];
+  recurrenceGroupId: Scalars['String']['input'];
 };
 
 
@@ -1731,6 +1738,14 @@ export type CancelRecurringSeriesMutationVariables = Exact<{
 
 export type CancelRecurringSeriesMutation = { __typename?: 'Mutation', cancelRecurringSeries: number };
 
+export type UpdateRecurrenceRuleMutationVariables = Exact<{
+  recurrenceGroupId: Scalars['String']['input'];
+  frequency: Scalars['String']['input'];
+}>;
+
+
+export type UpdateRecurrenceRuleMutation = { __typename?: 'Mutation', updateRecurrenceRule: { __typename?: 'Event', id: number, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: string } | null } };
+
 export type AddEventRegistrationMutationVariables = Exact<{
   eventId: Scalars['Int']['input'];
   input: AdminEventRegistrationInput;
@@ -2569,6 +2584,19 @@ export const CancelRecurringSeriesDocument = new TypedDocumentString(`
   cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)
 }
     `) as unknown as TypedDocumentString<CancelRecurringSeriesMutation, CancelRecurringSeriesMutationVariables>;
+export const UpdateRecurrenceRuleDocument = new TypedDocumentString(`
+    mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {
+  updateRecurrenceRule(
+    recurrenceGroupId: $recurrenceGroupId
+    frequency: $frequency
+  ) {
+    id
+    recurrenceRule {
+      frequency
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateRecurrenceRuleMutation, UpdateRecurrenceRuleMutationVariables>;
 export const AddEventRegistrationDocument = new TypedDocumentString(`
     mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {
   addEventRegistration(eventId: $eventId, input: $input) {

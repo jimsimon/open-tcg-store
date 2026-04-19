@@ -558,6 +558,7 @@ type Mutation {
   updateItemInCart(cartItem: CartItemInput!): ShoppingCart!
   updateLot(input: UpdateLotInput!): Lot!
   updateOrderStatus(orderId: Int!, status: OrderStatus!): Order!
+  updateRecurrenceRule(frequency: String!, recurrenceGroupId: String!): Event!
   updateShopifyIntegration(input: UpdateShopifyIntegrationInput!): ShopifyIntegration!
   updateStock(input: UpdateStockInput!): InventoryItemStock!
   updateStoreLocation(input: UpdateStoreLocationInput!): StoreLocation!

@@ -124,6 +124,7 @@ extend type Query {
 extend type Mutation {
   createEvent(input: CreateEventInput!): Event!
   updateEvent(id: Int!, input: UpdateEventInput!): Event!
+  updateRecurrenceRule(recurrenceGroupId: String!, frequency: String!): Event!
   cancelEvent(id: Int!): Event!
   cancelRecurringSeries(recurrenceGroupId: String!): Int!
   addEventRegistration(eventId: Int!, input: AdminEventRegistrationInput!): EventRegistration!

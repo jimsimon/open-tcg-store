@@ -189,6 +189,17 @@ const CancelRecurringSeriesMutation = graphql(`
   }
 `);
 
+const UpdateRecurrenceRuleMutation = graphql(`
+  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {
+    updateRecurrenceRule(recurrenceGroupId: $recurrenceGroupId, frequency: $frequency) {
+      id
+      recurrenceRule {
+        frequency
+      }
+    }
+  }
+`);
+
 const AddEventRegistrationMutation = graphql(`
   mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {
     addEventRegistration(eventId: $eventId, input: $input) {
@@ -314,6 +325,12 @@ export class OgsEventManagementPage extends OgsPageBase {
   // --- Confirm dialogs ---
   @state() private showCancelEventDialog = false;
   @state() private showCancelSeriesDialog = false;
+
+  // --- Edit recurrence dialog ---
+  @state() private showEditRecurrenceDialog = false;
+  @state() private editRecurrenceFrequency = '';
+  @state() private editRecurrenceSaving = false;
+  @state() private editRecurrenceError = '';
 
   static styles = [
     css`
@@ -942,6 +959,35 @@ export class OgsEventManagementPage extends OgsPageBase {
     }
   }
 
+  private async handleUpdateRecurrenceRule() {
+    if (!this.selectedEvent?.recurrenceGroupId || !this.editRecurrenceFrequency) {
+      this.editRecurrenceError = 'Frequency is required.';
+      return;
+    }
+
+    this.editRecurrenceSaving = true;
+    this.editRecurrenceError = '';
+
+    try {
+      const result = await execute(UpdateRecurrenceRuleMutation, {
+        recurrenceGroupId: this.selectedEvent.recurrenceGroupId,
+        frequency: this.editRecurrenceFrequency,
+      });
+
+      if (result?.errors?.length) {
+        this.editRecurrenceError = result.errors.map((e: { message: string }) => e.message).join(', ');
+        return;
+      }
+
+      this.showEditRecurrenceDialog = false;
+      this.fetchEventDetail(this.selectedEvent.id);
+    } catch (e) {
+      this.editRecurrenceError = e instanceof Error ? e.message : 'Failed to update recurrence';
+    } finally {
+      this.editRecurrenceSaving = false;
+    }
+  }
+
   // --- Registration actions ---
 
   private async handleAddRegistration() {
@@ -1019,6 +1065,7 @@ export class OgsEventManagementPage extends OgsPageBase {
       html`
         ${this.selectedEvent ? this.renderDetailMode() : this.renderListMode()} ${this.renderEventDialog()}
         ${this.renderAddRegistrationDialog()} ${this.renderCancelEventDialog()} ${this.renderCancelSeriesDialog()}
+        ${this.renderEditRecurrenceDialog()}
       `,
       { activePage: 'event-management', showUserMenu: this.showUserMenu },
     );
@@ -1274,6 +1321,23 @@ export class OgsEventManagementPage extends OgsPageBase {
                   </wa-button>
                   ${ev.recurrenceGroupId
                     ? html`
+                        ${ev.isRecurrenceTemplate
+                          ? html`
+                              <wa-button
+                                size="small"
+                                variant="neutral"
+                                appearance="outlined"
+                                @click="${() => {
+                                  this.editRecurrenceFrequency = ev.recurrenceRule?.frequency.toUpperCase() ?? '';
+                                  this.editRecurrenceError = '';
+                                  this.showEditRecurrenceDialog = true;
+                                }}"
+                              >
+                                <wa-icon slot="start" name="arrows-rotate"></wa-icon>
+                                Edit Recurrence
+                              </wa-button>
+                            `
+                          : nothing}
                         <wa-button
                           size="small"
                           variant="danger"
@@ -1692,6 +1756,54 @@ export class OgsEventManagementPage extends OgsPageBase {
         <wa-button slot="footer" variant="danger" @click="${this.handleCancelSeries}">
           <wa-icon slot="start" name="xmark"></wa-icon>
           Cancel Series
+        </wa-button>
+      </wa-dialog>
+    `;
+  }
+
+  private renderEditRecurrenceDialog() {
+    return html`
+      <wa-dialog
+        label="Edit Recurrence"
+        ?open="${this.showEditRecurrenceDialog}"
+        @wa-after-hide="${(e: Event) => {
+          if (e.target === e.currentTarget) this.showEditRecurrenceDialog = false;
+        }}"
+      >
+        <div class="dialog-form">
+          ${this.editRecurrenceError
+            ? html`
+                <wa-callout variant="danger">
+                  <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                  ${this.editRecurrenceError}
+                </wa-callout>
+              `
+            : nothing}
+          <p style="margin-top: 0;">
+            Changing the recurrence frequency will cancel all future scheduled instances and regenerate them with the
+            new frequency.
+          </p>
+          <wa-select
+            label="Recurrence Frequency"
+            .value="${this.editRecurrenceFrequency}"
+            @change="${(e: Event) => (this.editRecurrenceFrequency = (e.target as WaSelect).value as string)}"
+          >
+            <wa-option value="WEEKLY">Weekly</wa-option>
+            <wa-option value="BIWEEKLY">Biweekly</wa-option>
+            <wa-option value="MONTHLY">Monthly</wa-option>
+          </wa-select>
+        </div>
+        <wa-button slot="footer" variant="neutral" @click="${() => (this.showEditRecurrenceDialog = false)}">
+          Cancel
+        </wa-button>
+        <wa-button
+          slot="footer"
+          variant="brand"
+          ?loading="${this.editRecurrenceSaving}"
+          @click="${this.handleUpdateRecurrenceRule}"
+        >
+          <wa-icon slot="start" name="floppy-disk"></wa-icon>
+          Save Recurrence
         </wa-button>
       </wa-dialog>
     `;

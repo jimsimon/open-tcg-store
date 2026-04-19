@@ -597,6 +597,7 @@ export type Mutation = {
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
   updateOrderStatus: Order;
+  updateRecurrenceRule: Event;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -836,6 +837,12 @@ export type MutationupdateLotArgs = {
 export type MutationupdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: OrderStatus;
+};
+
+
+export type MutationupdateRecurrenceRuleArgs = {
+  frequency: Scalars['String']['input'];
+  recurrenceGroupId: Scalars['String']['input'];
 };
 
 
@@ -2281,6 +2288,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateItemInCart?: Resolver<ResolversTypes['ShoppingCart'], ParentType, ContextType, RequireFields<MutationupdateItemInCartArgs, 'cartItem'>>;
   updateLot?: Resolver<ResolversTypes['Lot'], ParentType, ContextType, RequireFields<MutationupdateLotArgs, 'input'>>;
   updateOrderStatus?: Resolver<ResolversTypes['Order'], ParentType, ContextType, RequireFields<MutationupdateOrderStatusArgs, 'orderId' | 'status'>>;
+  updateRecurrenceRule?: Resolver<ResolversTypes['Event'], ParentType, ContextType, RequireFields<MutationupdateRecurrenceRuleArgs, 'frequency' | 'recurrenceGroupId'>>;
   updateShopifyIntegration?: Resolver<ResolversTypes['ShopifyIntegration'], ParentType, ContextType, RequireFields<MutationupdateShopifyIntegrationArgs, 'input'>>;
   updateStock?: Resolver<ResolversTypes['InventoryItemStock'], ParentType, ContextType, RequireFields<MutationupdateStockArgs, 'input'>>;
   updateStoreLocation?: Resolver<ResolversTypes['StoreLocation'], ParentType, ContextType, RequireFields<MutationupdateStoreLocationArgs, 'input'>>;

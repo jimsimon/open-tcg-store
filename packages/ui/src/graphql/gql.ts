@@ -34,6 +34,7 @@ type Documents = {
     "\n  mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {\n    updateEvent(id: $id, input: $input) {\n      id\n      name\n      status\n    }\n  }\n": typeof types.UpdateEventDocument,
     "\n  mutation CancelEvent($id: Int!) {\n    cancelEvent(id: $id) {\n      id\n      status\n    }\n  }\n": typeof types.CancelEventDocument,
     "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n": typeof types.CancelRecurringSeriesDocument,
+    "\n  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {\n    updateRecurrenceRule(recurrenceGroupId: $recurrenceGroupId, frequency: $frequency) {\n      id\n      recurrenceRule {\n        frequency\n      }\n    }\n  }\n": typeof types.UpdateRecurrenceRuleDocument,
     "\n  mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {\n    addEventRegistration(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": typeof types.AddEventRegistrationDocument,
     "\n  mutation CancelEventRegistration($registrationId: Int!) {\n    cancelEventRegistration(registrationId: $registrationId) {\n      id\n      status\n    }\n  }\n": typeof types.CancelEventRegistrationDocument,
     "\n  mutation CheckInEventRegistration($registrationId: Int!) {\n    checkInEventRegistration(registrationId: $registrationId) {\n      id\n      checkedIn\n      checkedInAt\n    }\n  }\n": typeof types.CheckInEventRegistrationDocument,
@@ -134,6 +135,7 @@ const documents: Documents = {
     "\n  mutation UpdateEvent($id: Int!, $input: UpdateEventInput!) {\n    updateEvent(id: $id, input: $input) {\n      id\n      name\n      status\n    }\n  }\n": types.UpdateEventDocument,
     "\n  mutation CancelEvent($id: Int!) {\n    cancelEvent(id: $id) {\n      id\n      status\n    }\n  }\n": types.CancelEventDocument,
     "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n": types.CancelRecurringSeriesDocument,
+    "\n  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {\n    updateRecurrenceRule(recurrenceGroupId: $recurrenceGroupId, frequency: $frequency) {\n      id\n      recurrenceRule {\n        frequency\n      }\n    }\n  }\n": types.UpdateRecurrenceRuleDocument,
     "\n  mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {\n    addEventRegistration(eventId: $eventId, input: $input) {\n      id\n      registrantName\n      status\n    }\n  }\n": types.AddEventRegistrationDocument,
     "\n  mutation CancelEventRegistration($registrationId: Int!) {\n    cancelEventRegistration(registrationId: $registrationId) {\n      id\n      status\n    }\n  }\n": types.CancelEventRegistrationDocument,
     "\n  mutation CheckInEventRegistration($registrationId: Int!) {\n    checkInEventRegistration(registrationId: $registrationId) {\n      id\n      checkedIn\n      checkedInAt\n    }\n  }\n": types.CheckInEventRegistrationDocument,
@@ -291,6 +293,10 @@ export function graphql(source: "\n  mutation CancelEvent($id: Int!) {\n    canc
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation CancelRecurringSeries($recurrenceGroupId: String!) {\n    cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)\n  }\n"): typeof import('./graphql').CancelRecurringSeriesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {\n    updateRecurrenceRule(recurrenceGroupId: $recurrenceGroupId, frequency: $frequency) {\n      id\n      recurrenceRule {\n        frequency\n      }\n    }\n  }\n"): typeof import('./graphql').UpdateRecurrenceRuleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

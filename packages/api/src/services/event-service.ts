@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, count, desc, ne, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, count, desc, ne, isNotNull, inArray, or, isNull } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index.ts';
 import { event } from '../db/otcgs/event-schema.ts';
 import { eventRegistration } from '../db/otcgs/event-registration-schema.ts';
@@ -217,6 +217,8 @@ function validateCreateInput(input: CreateEventInput) {
   }
 
   if (input.recurrenceRule) {
+    // Normalize to lowercase to accept both 'WEEKLY' and 'weekly'
+    input.recurrenceRule.frequency = input.recurrenceRule.frequency.toLowerCase();
     if (!VALID_FREQUENCIES.includes(input.recurrenceRule.frequency)) {
       throw new Error(`Invalid recurrence frequency: ${input.recurrenceRule.frequency}`);
     }
@@ -274,7 +276,8 @@ export async function getPublicEvents(organizationId: string, dateFrom: string, 
         eq(event.status, 'scheduled'),
         gte(event.startTime, new Date(dateFrom)),
         lte(event.startTime, new Date(dateTo)),
-        // Don't show template events in the public calendar unless they have a valid startTime
+        // Exclude template events — only show concrete scheduled instances
+        or(eq(event.isRecurrenceTemplate, false), isNull(event.isRecurrenceTemplate)),
       ),
     )
     .orderBy(event.startTime);
@@ -431,6 +434,65 @@ export async function cancelEvent(eventId: number, organizationId: string, _user
     .returning();
 
   return enrichEventWithGame(updated);
+}
+
+/**
+ * Update the recurrence frequency for an entire recurring series.
+ * Cancels all future scheduled instances and regenerates them with the new frequency.
+ * Returns the updated template event.
+ */
+export async function updateRecurrenceRule(
+  recurrenceGroupId: string,
+  organizationId: string,
+  frequency: string,
+  _userId: string,
+) {
+  const normalizedFrequency = frequency.toLowerCase();
+  if (!VALID_FREQUENCIES.includes(normalizedFrequency)) {
+    throw new Error(`Invalid recurrence frequency: ${frequency}`);
+  }
+
+  // Fetch the template
+  const [template] = await otcgs
+    .select()
+    .from(event)
+    .where(
+      and(
+        eq(event.recurrenceGroupId, recurrenceGroupId),
+        eq(event.organizationId, organizationId),
+        eq(event.isRecurrenceTemplate, true),
+      ),
+    )
+    .limit(1);
+
+  if (!template) throw new Error('Recurring series not found');
+
+  // Cancel all future scheduled instances (not the template itself)
+  const now = new Date();
+  await otcgs
+    .update(event)
+    .set({ status: 'cancelled', updatedAt: new Date() })
+    .where(
+      and(
+        eq(event.recurrenceGroupId, recurrenceGroupId),
+        eq(event.organizationId, organizationId),
+        eq(event.status, 'scheduled'),
+        gte(event.startTime, now),
+        ne(event.id, template.id),
+      ),
+    );
+
+  // Update the template's recurrence rule
+  const [updatedTemplate] = await otcgs
+    .update(event)
+    .set({ recurrenceRule: JSON.stringify({ frequency: normalizedFrequency }), updatedAt: new Date() })
+    .where(eq(event.id, template.id))
+    .returning();
+
+  // Regenerate instances with the new frequency for the next 8 weeks
+  await generateRecurrenceInstances(updatedTemplate, normalizedFrequency, 8);
+
+  return enrichEventWithGame(updatedTemplate);
 }
 
 export async function cancelRecurringSeries(
