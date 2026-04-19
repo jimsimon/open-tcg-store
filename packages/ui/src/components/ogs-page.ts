@@ -516,19 +516,23 @@ export class OgsPage extends SignalWatcher(LitElement) {
                 this.canAccessSettings,
                 () => html`
                   <wa-divider></wa-divider>
-                  <div class="nav-section-label">Owner</div>
+                  <div class="nav-section-label">Settings</div>
 
-                  ${this.renderNavLink('/settings/general', 'gear', 'Settings', 'settings')}
-                  ${this.renderNavSubLink('/settings/general', 'General', 'settings/general')}
+                  ${this.renderNavLink('/settings/general', 'gear', 'General', 'settings/general')}
                   ${when(this.canManageStoreLocations, () =>
-                    this.renderNavSubLink('/settings/locations', 'Store Locations', 'settings/locations'),
+                    this.renderNavLink('/settings/locations', 'location-dot', 'Store Locations', 'settings/locations'),
                   )}
-                  ${this.renderNavSubLink('/settings/backup', 'Backup & Restore', 'settings/backup')}
-                  ${this.renderNavSubLink('/settings/autoprice', 'Autoprice', 'settings/autoprice')}
-                  ${this.renderNavSubLink('/settings/buyrates', 'Buy Rates', 'settings/buyrates')}
-                  ${this.renderNavSubLink('/settings/data-updates', 'Card Data', 'settings/data-updates')}
-                  ${this.renderNavSubLink('/settings/integrations', 'Integrations', 'settings/integrations')}
-                  ${this.renderNavSubLink('/settings/scheduled-tasks', 'Scheduled Tasks', 'settings/scheduled-tasks')}
+                  ${this.renderNavLink('/settings/backup', 'floppy-disk', 'Backup & Restore', 'settings/backup')}
+                  ${this.renderNavLink('/settings/autoprice', 'tags', 'Autoprice', 'settings/autoprice')}
+                  ${this.renderNavLink('/settings/buyrates', 'hand-holding-dollar', 'Buy Rates', 'settings/buyrates')}
+                  ${this.renderNavLink('/settings/data-updates', 'database', 'Card Data', 'settings/data-updates')}
+                  ${this.renderNavLink('/settings/integrations', 'plug', 'Integrations', 'settings/integrations')}
+                  ${this.renderNavLink(
+                    '/settings/scheduled-tasks',
+                    'clock',
+                    'Scheduled Tasks',
+                    'settings/scheduled-tasks',
+                  )}
                 `,
               )}
             </nav>
