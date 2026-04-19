@@ -455,27 +455,27 @@ export class ProductDetailsPage extends OgsPageBase {
     const p = this.product!;
     return html`
       <wa-card appearance="outlined">
-          <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
-            <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-              ${p.images?.large
-                ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
-                : nothing}
-              <div class="image-placeholder" ?hidden="${!!p.images?.large}">
-                <wa-icon name="id-card" variant="regular"></wa-icon>
-              </div>
+        <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
+          <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
+            ${p.images?.large
+              ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
+              : nothing}
+            <div class="image-placeholder" ?hidden="${!!p.images?.large}">
+              <wa-icon name="id-card" variant="regular"></wa-icon>
             </div>
-            <table class="wa-table wa-zebra-rows wa-hover-rows">
-              <tbody>
-                <tr>
-                  <th scope="row">Set</th>
-                  <td>${p.setName}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Game</th>
-                  <td>${p.gameName}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Type</th>
+          </div>
+          <table class="wa-table wa-zebra-rows wa-hover-rows">
+            <tbody>
+              <tr>
+                <th scope="row">Set</th>
+                <td>${p.setName}</td>
+              </tr>
+              <tr>
+                <th scope="row">Game</th>
+                <td>${p.gameName}</td>
+              </tr>
+              <tr>
+                <th scope="row">Type</th>
                 <td>${p.type ?? '—'}</td>
               </tr>
               <tr>
@@ -510,15 +510,14 @@ export class ProductDetailsPage extends OgsPageBase {
 
     return html`
       <wa-card appearance="outlined">
-         <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
-           <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
-              ${p.images?.large
-                ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
-                : nothing}
-              <div class="image-placeholder" ?hidden="${!!p.images?.large}">
-                <wa-icon name="box" variant="regular"></wa-icon>
-              </div>
-
+        <div class="wa-flank wa-align-items-start" style="--flank-size: 20rem;">
+          <div class="wa-frame wa-border-radius-m" style="aspect-ratio: auto;">
+            ${p.images?.large
+              ? html`<img src="${p.images.large}" alt="${p.name}" @error="${this.handleImageError}" />`
+              : nothing}
+            <div class="image-placeholder" ?hidden="${!!p.images?.large}">
+              <wa-icon name="box" variant="regular"></wa-icon>
+            </div>
           </div>
           <table class="wa-table wa-zebra-rows wa-hover-rows">
             <tbody>
