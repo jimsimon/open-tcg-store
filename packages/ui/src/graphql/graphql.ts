@@ -333,6 +333,7 @@ export type Event = {
   recurrenceGroupId?: Maybe<Scalars['String']['output']>;
   recurrenceRule?: Maybe<RecurrenceRule>;
   registrationCount: Scalars['Int']['output'];
+  registrations?: Maybe<Array<EventRegistration>>;
   startTime: Scalars['String']['output'];
   status: EventStatus;
   updatedAt: Scalars['String']['output'];
@@ -1657,7 +1658,7 @@ export type GetPublicEventQueryVariables = Exact<{
 }>;
 
 
-export type GetPublicEventQuery = { __typename?: 'Query', getPublicEvent?: { __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number } | null };
+export type GetPublicEventQuery = { __typename?: 'Query', getPublicEvent?: { __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, registrations?: Array<{ __typename?: 'EventRegistration', registrantName: string }> | null } | null };
 
 export type RegisterForEventDetailMutationVariables = Exact<{
   eventId: Scalars['Int']['input'];
@@ -2438,6 +2439,9 @@ export const GetPublicEventDocument = new TypedDocumentString(`
     entryFeeInCents
     status
     registrationCount
+    registrations {
+      registrantName
+    }
   }
 }
     `) as unknown as TypedDocumentString<GetPublicEventQuery, GetPublicEventQueryVariables>;

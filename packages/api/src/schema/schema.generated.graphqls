@@ -297,6 +297,7 @@ type Event {
   recurrenceGroupId: String
   recurrenceRule: RecurrenceRule
   registrationCount: Int!
+  registrations: [EventRegistration!]
   startTime: String!
   status: EventStatus!
   updatedAt: String!

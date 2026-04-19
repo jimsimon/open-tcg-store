@@ -34,6 +34,7 @@ type Event {
   entryFeeInCents: Int
   status: EventStatus!
   registrationCount: Int!
+  registrations: [EventRegistration!]
   recurrenceRule: RecurrenceRule
   recurrenceGroupId: String
   isRecurrenceTemplate: Boolean!

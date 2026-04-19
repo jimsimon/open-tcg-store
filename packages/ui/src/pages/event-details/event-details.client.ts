@@ -19,6 +19,10 @@ import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js'
 
 // --- Types ---
 
+interface EventRegistrationDetail {
+  registrantName: string;
+}
+
 interface EventDetail {
   id: number;
   name: string;
@@ -32,6 +36,7 @@ interface EventDetail {
   entryFeeInCents: number | null;
   status: string;
   registrationCount: number;
+  registrations: EventRegistrationDetail[] | null;
 }
 
 // --- GraphQL ---
@@ -51,6 +56,9 @@ const GetPublicEventQuery = graphql(`
       entryFeeInCents
       status
       registrationCount
+      registrations {
+        registrantName
+      }
     }
   }
 `);
@@ -299,6 +307,36 @@ export class EventDetailsPage extends OgsPageBase {
         align-items: center;
         margin-top: 1rem;
       }
+
+      /* --- Attendees List --- */
+
+      .attendees-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .attendee-item {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--wa-border-radius-m);
+        background: var(--wa-color-surface-sunken);
+        font-size: var(--wa-font-size-s);
+      }
+
+      .attendee-item wa-icon {
+        color: var(--wa-color-text-muted);
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      .no-attendees {
+        color: var(--wa-color-text-muted);
+        font-size: var(--wa-font-size-s);
+        font-style: italic;
+      }
     `,
   ];
 
@@ -392,9 +430,14 @@ export class EventDetailsPage extends OgsPageBase {
       } else {
         this.registrationSuccess = true;
         this.showRegistration = false;
-        // Update registration count locally
+        // Update registration count and attendees list locally
         if (this.event) {
-          this.event = { ...this.event, registrationCount: this.event.registrationCount + 1 };
+          const currentRegistrations = this.event.registrations ?? [];
+          this.event = {
+            ...this.event,
+            registrationCount: this.event.registrationCount + 1,
+            registrations: [...currentRegistrations, { registrantName: this.registrationName.trim() }],
+          };
         }
       }
     } catch (e) {
@@ -570,6 +613,28 @@ export class EventDetailsPage extends OgsPageBase {
             `,
           )}
         </wa-card>
+
+        ${when(
+          event.registrations && event.registrations.length > 0,
+          () => html`
+            <wa-card appearance="outlined">
+              <div slot="header" class="section-header">
+                <wa-icon name="users"></wa-icon>
+                <span>Registered Attendees</span>
+              </div>
+              <div class="attendees-list">
+                ${event.registrations!.map(
+                  (reg) => html`
+                    <div class="attendee-item">
+                      <wa-icon name="user"></wa-icon>
+                      <span>${reg.registrantName}</span>
+                    </div>
+                  `,
+                )}
+              </div>
+            </wa-card>
+          `,
+        )}
       </div>
     `;
   }
