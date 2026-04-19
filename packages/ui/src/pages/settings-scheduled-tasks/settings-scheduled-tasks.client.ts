@@ -393,6 +393,7 @@ export class OgsSettingsScheduledTasksPage extends LitElement {
   @state() runsLoading = false;
   @state() editingScheduleJobId: number | null = null;
   @state() editScheduleValue = '';
+  @state() saveScheduleError = '';
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -466,14 +467,17 @@ export class OgsSettingsScheduledTasksPage extends LitElement {
   private startEditSchedule(job: CronJob) {
     this.editingScheduleJobId = job.id;
     this.editScheduleValue = job.cronExpression;
+    this.saveScheduleError = '';
   }
 
   private cancelEditSchedule() {
     this.editingScheduleJobId = null;
     this.editScheduleValue = '';
+    this.saveScheduleError = '';
   }
 
   private async saveSchedule(jobId: number) {
+    this.saveScheduleError = '';
     try {
       const result = await execute(UpdateCronJobScheduleMutation, {
         id: jobId,
@@ -486,12 +490,12 @@ export class OgsSettingsScheduledTasksPage extends LitElement {
             ? { ...j, cronExpression: updated.cronExpression, nextRunAt: updated.nextRunAt as string | null }
             : j,
         );
+        this.editingScheduleJobId = null;
+        this.editScheduleValue = '';
       }
     } catch (e) {
       console.error('Failed to update schedule:', e);
-    } finally {
-      this.editingScheduleJobId = null;
-      this.editScheduleValue = '';
+      this.saveScheduleError = e instanceof Error ? e.message : 'Failed to save schedule. Please try again.';
     }
   }
 
@@ -634,8 +638,17 @@ export class OgsSettingsScheduledTasksPage extends LitElement {
                     value="${this.editScheduleValue}"
                     @ogs-cron-change="${(e: CustomEvent<{ value: string }>) => {
                       this.editScheduleValue = e.detail.value;
+                      this.saveScheduleError = '';
                     }}"
                   ></ogs-cron-generator>
+                  ${this.saveScheduleError
+                    ? html`
+                        <wa-callout variant="danger">
+                          <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                          ${this.saveScheduleError}
+                        </wa-callout>
+                      `
+                    : nothing}
                   <div class="schedule-edit-actions">
                     <wa-button size="small" variant="brand" @click="${() => this.saveSchedule(job.id)}">
                       Save Schedule

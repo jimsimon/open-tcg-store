@@ -250,6 +250,12 @@ export class OgsCronGenerator extends LitElement {
   willUpdate(changed: PropertyValues): void {
     if (changed.has('value')) {
       this.internalValue = this.value;
+      if (this.mode === 'advanced') {
+        this.advancedInput = this.value;
+        this.advancedError = '';
+      } else if (this.mode === 'builder') {
+        this.parseIntoBuilder(this.value);
+      }
     }
   }
 
@@ -347,10 +353,11 @@ export class OgsCronGenerator extends LitElement {
     const val = (e.target as HTMLInputElement).value;
     this.advancedInput = val;
 
-    const desc = describeCron(val);
+    const trimmed = val.trim();
+    const desc = describeCron(trimmed);
     if (desc) {
       this.advancedError = '';
-      this.emitChange(val);
+      this.emitChange(trimmed);
     } else {
       this.advancedError = 'Invalid cron expression';
     }
