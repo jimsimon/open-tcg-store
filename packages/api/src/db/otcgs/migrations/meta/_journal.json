@@ -78,6 +78,13 @@
       "when": 1776746980000,
       "tag": "0010_add_order_payment_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1776760414000,
+      "tag": "0011_add_stripe_publishable_key",
+      "breakpoints": true
     }
   ]
 }

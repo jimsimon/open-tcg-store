@@ -1,0 +1,1 @@
+ALTER TABLE `company_settings` ADD `stripe_publishable_key` text;
