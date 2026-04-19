@@ -319,11 +319,20 @@ export async function getPublicEvent(eventId: number) {
 
   return {
     ...enriched,
-    registrations: registrationRows.map((r) => ({
-      ...formatRegistration(r),
-      registrantEmail: null,
-      registrantPhone: null,
-    })),
+    registrations: registrationRows.map((r) => {
+      const formatted = formatRegistration(r);
+      return {
+        id: formatted.id,
+        eventId: formatted.eventId,
+        registrantName: formatted.registrantName,
+        registrantEmail: null,
+        registrantPhone: null,
+        status: formatted.status,
+        checkedIn: formatted.checkedIn,
+        checkedInAt: formatted.checkedInAt,
+        createdAt: formatted.createdAt,
+      };
+    }),
   };
 }
 
