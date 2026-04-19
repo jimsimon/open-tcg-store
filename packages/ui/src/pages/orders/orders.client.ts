@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
@@ -16,7 +16,7 @@ if (typeof globalThis.document !== 'undefined') {
 }
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import { OrderStatus } from '../../graphql/graphql.ts';
@@ -136,18 +136,7 @@ const UpdateOrderStatusMutation = graphql(`
 `);
 
 @customElement('ogs-orders-page')
-export class OrdersPage extends LitElement {
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class OrdersPage extends OgsPageBase {
   @property({ type: Boolean }) showStoreSelector = false;
 
   @state() orders: Order[] = [];
@@ -732,23 +721,8 @@ export class OrdersPage extends LitElement {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="Orders"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.fetchOrders()}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()} ${this.renderStatsBar()} ${this.renderFilterBar()}
         ${when(
           this.error,
@@ -770,8 +744,14 @@ export class OrdersPage extends LitElement {
           () => this.renderContent(),
         )}
         ${this.renderCancelDialog()}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'Orders',
+        showUserMenu: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this.fetchOrders(),
+      },
+    );
   }
 
   private renderPageHeader() {

@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -11,7 +11,7 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import '../../components/ogs-event-calendar.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
@@ -122,20 +122,8 @@ function getMonthDateRange(year: number, month: number): { dateFrom: string; dat
 // --- Component ---
 
 @customElement('ogs-events-page')
-export class EventsPage extends LitElement {
-  // --- Permission properties ---
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean }) canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
+export class EventsPage extends OgsPageBase {
   @property({ type: Boolean }) showStoreSelector = false;
-  @property({ type: Boolean }) showUserMenu = false;
 
   // --- Page state ---
   @state() events: PublicEvent[] = [];
@@ -597,23 +585,8 @@ export class EventsPage extends LitElement {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="events"
-        ?showUserMenu="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.handleStoreChanged()}"
-      >
+    return this.renderPage(
+      html`
         ${this.renderPageHeader()}
         ${when(
           this.error,
@@ -634,8 +607,14 @@ export class EventsPage extends LitElement {
           `,
           () => this.renderContent(),
         )}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'events',
+        showUserMenu: true,
+        showStoreSelector: this.showStoreSelector,
+        onStoreChanged: () => this.handleStoreChanged(),
+      },
+    );
   }
 
   private renderPageHeader() {

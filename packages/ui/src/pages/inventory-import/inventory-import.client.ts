@@ -1,15 +1,15 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { css, html } from 'lit';
+import { customElement } from 'lit/decorators.js';
 import { unsafeCSS } from 'lit';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
 import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 
 @customElement('ogs-inventory-import-page')
-export class OgsInventoryImportPage extends LitElement {
+export class OgsInventoryImportPage extends OgsPageBase {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -130,33 +130,9 @@ export class OgsInventoryImportPage extends LitElement {
     `,
   ];
 
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
-
   render() {
-    return html`
-      <ogs-page
-        pageTitle="Import Inventory"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-      >
+    return this.renderPage(
+      html`
         <div class="page-header">
           <div class="page-header-icon">
             <wa-icon name="upload" style="font-size: 1.5rem;"></wa-icon>
@@ -204,7 +180,8 @@ export class OgsInventoryImportPage extends LitElement {
             </wa-button>
           </div>
         </div>
-      </ogs-page>
-    `;
+      `,
+      {},
+    );
   }
 }

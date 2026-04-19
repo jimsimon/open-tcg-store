@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
@@ -11,7 +11,7 @@ import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
-import '../../components/ogs-page.ts';
+import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
@@ -111,7 +111,7 @@ function sanitizeHtml(html: string): string {
 // --- Component ---
 
 @customElement('ogs-product-details-page')
-export class ProductDetailsPage extends LitElement {
+export class ProductDetailsPage extends OgsPageBase {
   static styles = [
     css`
       ${unsafeCSS(nativeStyle)}
@@ -277,17 +277,6 @@ export class ProductDetailsPage extends LitElement {
     `,
   ];
 
-  @property({ type: Boolean }) isAnonymous = false;
-  @property({ type: String }) userName = '';
-  @property({ type: Boolean }) canManageInventory = false;
-  @property({ type: Boolean })
-  canManageLots = false;
-  @property({ type: Boolean }) canViewDashboard = false;
-  @property({ type: Boolean }) canAccessSettings = false;
-  @property({ type: Boolean }) canManageStoreLocations = false;
-  @property({ type: Boolean }) canManageUsers = false;
-  @property({ type: Boolean }) canViewTransactionLog = false;
-  @property({ type: String }) activeOrganizationId = '';
   @property({ type: Boolean }) showStoreSelector = false;
 
   @property()
@@ -371,31 +360,22 @@ export class ProductDetailsPage extends LitElement {
   }
 
   render() {
-    return html`
-      <ogs-page
-        activePage="products"
-        ?showCartButton="${true}"
-        ?isAnonymous="${this.isAnonymous}"
-        userName="${this.userName}"
-        ?canManageInventory="${this.canManageInventory}"
-        ?canManageLots="${this.canManageLots}"
-        ?canViewDashboard="${this.canViewDashboard}"
-        ?canAccessSettings="${this.canAccessSettings}"
-        ?canManageStoreLocations="${this.canManageStoreLocations}"
-        ?canManageUsers="${this.canManageUsers}"
-        ?canViewTransactionLog="${this.canViewTransactionLog}"
-        activeOrganizationId="${this.activeOrganizationId}"
-        ?showStoreSelector="${this.showStoreSelector}"
-        @store-changed="${() => this.fetchProduct()}"
-        @order-submitted="${() => this.fetchProduct()}"
-      >
+    return this.renderPage(
+      html`
         ${when(
           this.loading,
           () => html`<div class="loading-container"><wa-spinner style="font-size: 2rem;"></wa-spinner></div>`,
           () => this.renderContent(),
         )}
-      </ogs-page>
-    `;
+      `,
+      {
+        activePage: 'products',
+        showStoreSelector: this.showStoreSelector,
+        showCartButton: true,
+        onStoreChanged: () => this.fetchProduct(),
+        onOrderSubmitted: () => this.fetchProduct(),
+      },
+    );
   }
 
   private renderContent() {
