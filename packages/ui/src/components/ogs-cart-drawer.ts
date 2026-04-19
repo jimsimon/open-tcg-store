@@ -108,7 +108,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
 
     .cart-item-name {
       font-weight: 600;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       flex: 1;
       word-break: break-word;
     }
@@ -133,7 +133,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
 
     .cart-item-price {
       font-weight: 600;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       white-space: nowrap;
     }
 
@@ -433,7 +433,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
                     <div class="cart-empty">
                       <wa-icon name="shopping-cart"></wa-icon>
                       <p>Your cart is empty</p>
-                      <p style="font-size: var(--wa-font-size-s);">Browse products to add items to your cart.</p>
+                      <p style="font-size: var(--wa-font-size-m);">Browse products to add items to your cart.</p>
                     </div>
                   `}
             `}

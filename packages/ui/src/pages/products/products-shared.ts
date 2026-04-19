@@ -60,7 +60,7 @@ export const productPageStyles = css`
   .page-header p {
     margin: 0.25rem 0 0 0;
     color: var(--wa-color-text-muted);
-    font-size: var(--wa-font-size-s);
+    font-size: var(--wa-font-size-m);
   }
 `;
 
@@ -156,7 +156,7 @@ export const filterBarStyles = css`
     user-select: none;
     transition: all 0.15s ease;
     color: var(--wa-color-text-normal);
-    font-size: var(--wa-font-size-s);
+    font-size: var(--wa-font-size-m);
     font-weight: 500;
   }
 
@@ -226,7 +226,7 @@ export const productGridStyles = css`
   }
 
   .product-card-name {
-    font-size: 0.9375rem;
+    font-size: var(--wa-font-size-m);
     font-weight: 600;
     color: var(--wa-color-text-normal);
     margin: 0 0 0.375rem 0;
@@ -234,7 +234,7 @@ export const productGridStyles = css`
   }
 
   .product-card-meta {
-    font-size: 0.8125rem;
+    font-size: var(--wa-font-size-m);
     color: var(--wa-color-text-quiet);
     margin: 0 0 0.75rem 0;
   }
@@ -297,7 +297,7 @@ export const productTableStyles = css`
   .wa-table th {
     background: var(--wa-color-fill-quiet);
     font-weight: 600;
-    font-size: 0.8125rem;
+    font-size: var(--wa-font-size-s);
     text-transform: uppercase;
     letter-spacing: 0.025em;
     color: var(--wa-color-text-quiet);
@@ -362,7 +362,7 @@ export const productTableStyles = css`
   }
 
   .product-set {
-    font-size: 0.875rem;
+    font-size: var(--wa-font-size-m);
     color: var(--wa-color-text-quiet);
   }
 
@@ -526,7 +526,7 @@ export const paginationStyles = css`
     align-items: center;
     gap: 0.5rem;
     color: var(--wa-color-text-quiet);
-    font-size: 0.875rem;
+    font-size: var(--wa-font-size-m);
   }
 
   .pagination-buttons {
@@ -555,7 +555,7 @@ export const paginationStyles = css`
   }
 
   .page-size-select label {
-    font-size: 0.8125rem;
+    font-size: var(--wa-font-size-m);
     color: var(--wa-color-text-quiet);
   }
 
@@ -619,7 +619,7 @@ export const loadingStateStyles = css`
 
   .loading-text {
     color: var(--wa-color-text-quiet);
-    font-size: 0.9375rem;
+    font-size: var(--wa-font-size-m);
   }
 `;
 

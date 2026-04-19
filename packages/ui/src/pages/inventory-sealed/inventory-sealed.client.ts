@@ -796,7 +796,7 @@ export class OgsInventorySealedPage extends OgsPageBase {
 
               <div>
                 <label
-                  style="font-size: var(--wa-font-size-s); font-weight: 500; display: block; margin-bottom: 0.25rem;"
+                  style="font-size: var(--wa-font-size-m); font-weight: 500; display: block; margin-bottom: 0.25rem;"
                   >Barcodes (optional)</label
                 >
                 <div style="display: flex; gap: 0.5rem; align-items: flex-start;">

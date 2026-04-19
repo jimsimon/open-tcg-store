@@ -113,7 +113,7 @@ export class EventDetailsPage extends OgsPageBase {
         align-items: center;
         gap: 0.5rem;
         margin-bottom: 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
       }
 
@@ -165,7 +165,7 @@ export class EventDetailsPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .page-header-badges {
@@ -203,7 +203,7 @@ export class EventDetailsPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .not-found {
@@ -248,7 +248,7 @@ export class EventDetailsPage extends OgsPageBase {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .meta-item wa-icon {
@@ -281,7 +281,7 @@ export class EventDetailsPage extends OgsPageBase {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         padding: 0.75rem 1rem;
         background: var(--wa-color-surface-sunken);
         border-radius: var(--wa-border-radius-m);

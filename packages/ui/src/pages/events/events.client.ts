@@ -171,7 +171,7 @@ export class EventsPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Loading / Empty --- */
@@ -187,7 +187,7 @@ export class EventsPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .empty-state {
@@ -307,19 +307,19 @@ export class EventsPage extends OgsPageBase {
         background: var(--wa-color-brand-fill-normal);
         color: var(--wa-color-brand-on-normal);
         border-radius: 50%;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
       .day-number {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 500;
         margin-bottom: 0.25rem;
-        line-height: 26px;
-        width: 26px;
+        line-height: 28px;
+        width: 28px;
         text-align: center;
       }
 
