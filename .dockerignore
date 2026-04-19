@@ -1,0 +1,46 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (installed fresh in Docker)
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+dist-ssr
+
+# Local data files
+sqlite-data
+
+# Test/coverage artifacts
+coverage
+**/*.test.ts
+**/*.client.test.ts
+
+# Dev tooling
+.husky
+.kilo
+.playwright-mcp
+screenshots
+plans
+
+# Editor
+.vscode
+.idea
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS
+.DS_Store
+
+# Tilt dev environment
+Tiltfile
+nginx/nginx.conf

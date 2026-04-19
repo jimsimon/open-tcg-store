@@ -139,7 +139,8 @@ describe('ogs-settings-general-page', () => {
   });
 
   test('should display checkboxes for available games', () => {
-    const checkboxes = element.shadowRoot!.querySelectorAll('wa-checkbox');
+    const picker = element.shadowRoot!.querySelector('ogs-games-picker');
+    const checkboxes = picker!.shadowRoot!.querySelectorAll('wa-checkbox');
     expect(checkboxes.length).toBe(3);
     const labels = Array.from(checkboxes).map((cb) => cb.textContent?.trim());
     expect(labels).toContain('Magic: The Gathering');
@@ -148,7 +149,8 @@ describe('ogs-settings-general-page', () => {
   });
 
   test('should have supported games pre-checked', () => {
-    const checkboxes = element.shadowRoot!.querySelectorAll('wa-checkbox');
+    const picker = element.shadowRoot!.querySelector('ogs-games-picker');
+    const checkboxes = picker!.shadowRoot!.querySelectorAll('wa-checkbox');
     const checkedLabels = Array.from(checkboxes)
       .filter((cb) => cb.hasAttribute('checked'))
       .map((cb) => cb.textContent?.trim());
@@ -212,12 +214,11 @@ describe('ogs-settings-general-page', () => {
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const checkboxes = element.shadowRoot!.querySelectorAll('wa-checkbox');
+    const picker = element.shadowRoot!.querySelector('ogs-games-picker');
+    const checkboxes = picker!.shadowRoot!.querySelectorAll('wa-checkbox');
     expect(checkboxes.length).toBe(0);
 
-    // Should show the "no game categories" message
-    const sections = element.shadowRoot!.querySelectorAll('.settings-section');
-    const gamesSection = sections[sections.length - 1];
-    expect(gamesSection?.textContent).toContain('No game categories available');
+    // Should show the "no game categories" message inside the picker
+    expect(picker!.shadowRoot!.textContent).toContain('No game categories available');
   });
 });

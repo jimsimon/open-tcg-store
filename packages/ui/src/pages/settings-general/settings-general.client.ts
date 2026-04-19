@@ -1,14 +1,14 @@
-import { type PropertyValues, css, html, nothing, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
+import '../../components/ogs-games-picker.ts';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import '@awesome.me/webawesome/dist/components/card/card.js';
-import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
 import '@awesome.me/webawesome/dist/components/divider/divider.js';
 import nativeStyle from '@awesome.me/webawesome/dist/styles/native.css?inline';
 import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inline';
@@ -158,59 +158,6 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
         border-top: 1px solid var(--wa-color-surface-border);
       }
 
-      /* --- Games Picker --- */
-
-      .games-toolbar {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-s);
-        margin-bottom: var(--wa-space-s);
-        flex-wrap: wrap;
-      }
-
-      .games-toolbar wa-input {
-        flex: 1;
-        min-width: 180px;
-      }
-
-      .games-toolbar .toolbar-actions {
-        display: flex;
-        align-items: center;
-        gap: var(--wa-space-2xs);
-        flex-shrink: 0;
-      }
-
-      .games-count {
-        font-size: var(--wa-font-size-s);
-        color: var(--wa-color-text-muted);
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      .games-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: var(--wa-space-2xs) var(--wa-space-m);
-        max-height: 320px;
-        overflow-y: auto;
-        padding: var(--wa-space-s);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-m);
-        background: var(--wa-color-surface-raised);
-      }
-
-      .games-grid wa-checkbox {
-        padding: var(--wa-space-2xs) 0;
-      }
-
-      .games-empty {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: var(--wa-space-l);
-        color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
-      }
-
       /* --- Loading & Messages --- */
 
       .loading-container {
@@ -233,45 +180,10 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
   @state() ein = '';
   @state() availableGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
   @state() selectedGameCategoryIds: number[] = [];
-  @state() gameSearchTerm = '';
   @state() loading = true;
   @state() saving = false;
   @state() successMessage = '';
   @state() errorMessage = '';
-
-  private cachedFilteredGames: Array<{ categoryId: number; name: string; displayName: string }> = [];
-  private cachedSelectedSet = new Set<number>();
-  private cachedAllFilteredSelected = false;
-  private cachedAnyFilteredSelected = false;
-
-  private get filteredGames() {
-    return this.cachedFilteredGames;
-  }
-
-  private get allFilteredSelected() {
-    return this.cachedAllFilteredSelected;
-  }
-
-  private get anyFilteredSelected() {
-    return this.cachedAnyFilteredSelected;
-  }
-
-  protected override willUpdate(changedProperties: PropertyValues): void {
-    super.willUpdate(changedProperties);
-
-    const filtered = this.gameSearchTerm
-      ? this.availableGames.filter((g) => g.displayName.toLowerCase().includes(this.gameSearchTerm.toLowerCase()))
-      : this.availableGames;
-
-    const selectedSet = new Set(this.selectedGameCategoryIds);
-    const allSelected = filtered.length > 0 && filtered.every((g) => selectedSet.has(g.categoryId));
-    const anySelected = filtered.some((g) => selectedSet.has(g.categoryId));
-
-    this.cachedFilteredGames = filtered;
-    this.cachedSelectedSet = selectedSet;
-    this.cachedAllFilteredSelected = allSelected;
-    this.cachedAnyFilteredSelected = anySelected;
-  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -306,23 +218,8 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
     }
   }
 
-  private handleGameToggle(categoryId: number, checked: boolean) {
-    if (checked) {
-      this.selectedGameCategoryIds = [...this.selectedGameCategoryIds, categoryId];
-    } else {
-      this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => id !== categoryId);
-    }
-  }
-
-  private handleSelectAllGames() {
-    const filteredIds = this.filteredGames.map((g) => g.categoryId);
-    const merged = new Set([...this.selectedGameCategoryIds, ...filteredIds]);
-    this.selectedGameCategoryIds = [...merged];
-  }
-
-  private handleDeselectAllGames() {
-    const filteredIds = new Set(this.filteredGames.map((g) => g.categoryId));
-    this.selectedGameCategoryIds = this.selectedGameCategoryIds.filter((id) => !filteredIds.has(id));
+  private handleGamesChange(e: CustomEvent<{ categoryIds: number[] }>) {
+    this.selectedGameCategoryIds = e.detail.categoryIds;
   }
 
   async handleSave() {
@@ -456,61 +353,11 @@ export class OgsSettingsGeneralPage extends OgsPageBase {
               <p>Select the trading card games your store buys and sells</p>
             </div>
           </div>
-          ${this.availableGames.length === 0
-            ? html`<p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);">
-                No game categories available. Please populate your TCG data catalog first.
-              </p>`
-            : html`
-                <div class="games-toolbar">
-                  <wa-input
-                    placeholder="Search games..."
-                    .value="${this.gameSearchTerm}"
-                    @input="${(e: Event) => {
-                      this.gameSearchTerm = (e.target as HTMLInputElement).value;
-                    }}"
-                    clearable
-                  >
-                    <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
-                  </wa-input>
-                  <div class="toolbar-actions">
-                    <wa-button
-                      size="small"
-                      variant="default"
-                      @click="${this.handleSelectAllGames}"
-                      ?disabled="${this.allFilteredSelected}"
-                    >
-                      Select all
-                    </wa-button>
-                    <wa-button
-                      size="small"
-                      variant="default"
-                      @click="${this.handleDeselectAllGames}"
-                      ?disabled="${!this.anyFilteredSelected}"
-                    >
-                      Deselect all
-                    </wa-button>
-                  </div>
-                  <span class="games-count"
-                    >${this.selectedGameCategoryIds.length} of ${this.availableGames.length} selected</span
-                  >
-                </div>
-                <div class="games-grid">
-                  ${this.filteredGames.length === 0
-                    ? html`<div class="games-empty">No games match your search</div>`
-                    : this.filteredGames.map(
-                        (game) => html`
-                          <wa-checkbox
-                            ?checked="${this.cachedSelectedSet.has(game.categoryId)}"
-                            @change="${(e: Event) => {
-                              this.handleGameToggle(game.categoryId, (e.target as HTMLInputElement).checked);
-                            }}"
-                          >
-                            ${game.displayName}
-                          </wa-checkbox>
-                        `,
-                      )}
-                </div>
-              `}
+          <ogs-games-picker
+            .games="${this.availableGames}"
+            .selectedCategoryIds="${this.selectedGameCategoryIds}"
+            @ogs-games-change="${this.handleGamesChange}"
+          ></ogs-games-picker>
         </div>
 
         <!-- Save -->
