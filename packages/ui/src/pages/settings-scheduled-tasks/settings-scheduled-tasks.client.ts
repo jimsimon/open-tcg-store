@@ -185,9 +185,13 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
       /* --- Job Cards --- */
 
       .job-list {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
         gap: 1rem;
+      }
+
+      .job-list wa-card {
+        height: 100%;
       }
 
       .job-header {
