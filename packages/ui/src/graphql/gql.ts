@@ -69,6 +69,7 @@ type Documents = {
     "\n  query LookupBarcode($code: String!) {\n    lookupBarcode(code: $code) {\n      inventoryItemId\n      productName\n      gameName\n      setName\n      condition\n      price\n      availableQuantity\n      imageUrl\n    }\n  }\n": typeof types.LookupBarcodeDocument,
     "\n  query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        condition\n        price\n        totalQuantity\n      }\n    }\n  }\n": typeof types.PosGetInventoryDocument,
     "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n": typeof types.GetOpenOrdersDocument,
+    "\n  query POSGetActiveStoreLocation {\n    getActiveStoreLocation {\n      id\n      state\n    }\n  }\n": typeof types.PosGetActiveStoreLocationDocument,
     "\n  query GetPosConfig($stateCode: String) {\n    getPosConfig(stateCode: $stateCode) {\n      taxRate\n      stripeEnabled\n      stripePublishableKey\n    }\n  }\n": typeof types.GetPosConfigDocument,
     "\n  mutation SubmitPosOrder($input: SubmitPosOrderInput!) {\n    submitPosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": typeof types.SubmitPosOrderDocument,
     "\n  mutation CompletePosOrder($input: CompletePosOrderInput!) {\n    completePosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": typeof types.CompletePosOrderDocument,
@@ -171,6 +172,7 @@ const documents: Documents = {
     "\n  query LookupBarcode($code: String!) {\n    lookupBarcode(code: $code) {\n      inventoryItemId\n      productName\n      gameName\n      setName\n      condition\n      price\n      availableQuantity\n      imageUrl\n    }\n  }\n": types.LookupBarcodeDocument,
     "\n  query POSGetInventory($filters: InventoryFilters, $pagination: PaginationInput) {\n    getInventory(filters: $filters, pagination: $pagination) {\n      items {\n        id\n        productId\n        productName\n        gameName\n        condition\n        price\n        totalQuantity\n      }\n    }\n  }\n": types.PosGetInventoryDocument,
     "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n": types.GetOpenOrdersDocument,
+    "\n  query POSGetActiveStoreLocation {\n    getActiveStoreLocation {\n      id\n      state\n    }\n  }\n": types.PosGetActiveStoreLocationDocument,
     "\n  query GetPosConfig($stateCode: String) {\n    getPosConfig(stateCode: $stateCode) {\n      taxRate\n      stripeEnabled\n      stripePublishableKey\n    }\n  }\n": types.GetPosConfigDocument,
     "\n  mutation SubmitPosOrder($input: SubmitPosOrderInput!) {\n    submitPosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": types.SubmitPosOrderDocument,
     "\n  mutation CompletePosOrder($input: CompletePosOrderInput!) {\n    completePosOrder(input: $input) {\n      id\n      orderNumber\n      totalAmount\n      taxAmount\n      paymentMethod\n      status\n    }\n  }\n": types.CompletePosOrderDocument,
@@ -435,6 +437,10 @@ export function graphql(source: "\n  query POSGetInventory($filters: InventoryFi
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetOpenOrders($pagination: PaginationInput, $filters: OrderFilters) {\n    getOrders(pagination: $pagination, filters: $filters) {\n      items {\n        id\n        orderNumber\n        customerName\n        totalAmount\n        createdAt\n        items {\n          id\n          productId\n          productName\n          condition\n          quantity\n          unitPrice\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GetOpenOrdersDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query POSGetActiveStoreLocation {\n    getActiveStoreLocation {\n      id\n      state\n    }\n  }\n"): typeof import('./graphql').PosGetActiveStoreLocationDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

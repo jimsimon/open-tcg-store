@@ -2003,6 +2003,11 @@ export type GetOpenOrdersQueryVariables = Exact<{
 
 export type GetOpenOrdersQuery = { __typename?: 'Query', getOrders: { __typename?: 'OrderPage', items: Array<{ __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number }> }> } };
 
+export type PosGetActiveStoreLocationQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PosGetActiveStoreLocationQuery = { __typename?: 'Query', getActiveStoreLocation?: { __typename?: 'StoreLocation', id: string, state: string } | null };
+
 export type GetPosConfigQueryVariables = Exact<{
   stateCode?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -3099,6 +3104,14 @@ export const GetOpenOrdersDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetOpenOrdersQuery, GetOpenOrdersQueryVariables>;
+export const PosGetActiveStoreLocationDocument = new TypedDocumentString(`
+    query POSGetActiveStoreLocation {
+  getActiveStoreLocation {
+    id
+    state
+  }
+}
+    `) as unknown as TypedDocumentString<PosGetActiveStoreLocationQuery, PosGetActiveStoreLocationQueryVariables>;
 export const GetPosConfigDocument = new TypedDocumentString(`
     query GetPosConfig($stateCode: String) {
   getPosConfig(stateCode: $stateCode) {
