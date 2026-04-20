@@ -29,12 +29,11 @@ import {
   paginationStyles,
   emptyStateStyles,
   loadingStateStyles,
-  getQuantityBadgeClass,
 } from '../products/products-shared.ts';
 import { formatCurrency } from '../../lib/currency.ts';
 import { AddToCartMutation } from '../../lib/shared-queries';
 import { debounce } from '../../lib/debounce';
-import { conditionLabel } from '../../lib/labels';
+import { conditionLabel, rarityAbbrev } from '../../lib/labels';
 
 // --- Types ---
 
@@ -129,9 +128,19 @@ export class OgsProductsSinglesPage extends OgsPageBase {
         padding: 0.25rem 0.5rem;
         border-radius: 6px;
         font-size: 0.75rem;
-        font-weight: 500;
+        font-weight: 600;
+        letter-spacing: 0.025em;
         background: var(--wa-color-fill-quiet);
         color: var(--wa-color-on-normal);
+        cursor: default;
+        outline: none;
+        transition: outline-color 0.15s ease;
+      }
+
+      .rarity-badge:hover,
+      .rarity-badge:focus-visible {
+        outline: 2px solid var(--wa-color-brand-60);
+        outline-offset: 1px;
       }
 
       .rarity-badge.common {
@@ -644,57 +653,64 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                 <div class="product-card-content">
                   <div class="product-card-name">${product.name}</div>
                   <div class="product-card-meta">
-                    <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
-                    <span>${product.setName}</span>
-                  </div>
-                  <div class="product-card-badges">
                     ${product.rarity
-                      ? html`<span class="rarity-badge ${product.rarity.toLowerCase()}">${product.rarity}</span>`
+                      ? html`<span
+                            class="rarity-badge ${product.rarity.toLowerCase()}"
+                            title="${product.rarity}"
+                            aria-label="${product.rarity}"
+                            tabindex="0"
+                            >${rarityAbbrev(product.rarity)}</span
+                          ><span class="meta-separator" aria-hidden="true"></span>`
                       : nothing}
-                    <span class="quantity-badge ${getQuantityBadgeClass(display.quantity)}">
-                      ${display.quantity > 0 ? `${display.quantity} avail` : 'Out of stock'}
-                    </span>
+                    <span class="product-card-set-name" title="${product.setName}">${product.setName}</span>
                   </div>
                 </div>
               </a>
               <div slot="footer">
-                ${product.conditionPrices.length > 0
-                  ? html`
-                      <wa-select
-                        class="product-card-condition"
-                        value="${activeCond}"
-                        @change="${(e: Event) => this.handleRowConditionChange(product.id, e)}"
-                        size="small"
-                      >
-                        ${product.conditionPrices.map(
-                          (cp) => html`<wa-option value="${cp.condition}">${conditionLabel(cp.condition)}</wa-option>`,
-                        )}
-                      </wa-select>
-                    `
-                  : nothing}
-                <div class="product-card-price-row">
-                  <span class="product-price">
-                    ${display.price != null ? display.price : html`<span class="out-of-stock-text">—</span>`}
-                  </span>
+                <div class="product-card-footer ${display.quantity <= 0 ? 'product-card-footer--oos' : ''}">
+                  <div class="product-card-price-row">
+                    ${display.quantity > 0 && product.conditionPrices.length > 0
+                      ? html`
+                          <wa-select
+                            class="product-card-condition"
+                            value="${activeCond}"
+                            @change="${(e: Event) => this.handleRowConditionChange(product.id, e)}"
+                            size="small"
+                          >
+                            ${product.conditionPrices.map(
+                              (cp) =>
+                                html`<wa-option value="${cp.condition}">${conditionLabel(cp.condition)}</wa-option>`,
+                            )}
+                          </wa-select>
+                        `
+                      : nothing}
+                    ${display.quantity <= 0
+                      ? html`<span class="product-card-availability out-of-stock">Out of stock</span>`
+                      : nothing}
+                    <span class="product-price">
+                      ${display.price != null ? display.price : html`<span class="out-of-stock-text">—</span>`}
+                    </span>
+                  </div>
+                  <div class="product-card-cart">
+                    ${display.quantity > 0
+                      ? html`
+                          <span class="product-card-availability"> ${display.quantity} available </span>
+                          <wa-input type="number" min="1" max="${display.quantity}" value="1">
+                            <span slot="label" class="wa-visually-hidden">Quantity</span>
+                          </wa-input>
+                          <wa-button
+                            appearance="filled"
+                            size="small"
+                            title="Add to cart"
+                            ?disabled="${this.addingToCart}"
+                            @click="${(e: Event) => this.handleAddToCart(display.inventoryItemId, e)}"
+                          >
+                            <wa-icon name="cart-plus"></wa-icon>
+                          </wa-button>
+                        `
+                      : nothing}
+                  </div>
                 </div>
-                ${display.quantity > 0
-                  ? html`
-                      <div class="product-card-cart">
-                        <wa-input type="number" min="1" max="${display.quantity}" value="1">
-                          <span slot="label" class="wa-visually-hidden">Quantity</span>
-                        </wa-input>
-                        <wa-button
-                          appearance="filled"
-                          size="small"
-                          ?disabled="${this.addingToCart}"
-                          @click="${(e: Event) => this.handleAddToCart(display.inventoryItemId, e)}"
-                        >
-                          <wa-icon name="cart-plus" slot="prefix"></wa-icon>
-                          Add
-                        </wa-button>
-                      </div>
-                    `
-                  : nothing}
               </div>
             </wa-card>
           `;

@@ -214,12 +214,14 @@ export const productGridStyles = css`
 
   .products-grid wa-card::part(body) {
     padding: 0;
+    flex: 1;
   }
 
   .products-grid wa-card::part(footer) {
-    padding: 0.75rem;
+    display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
 
   /* --- Card link (wraps image + content, no interactive children) --- */
@@ -229,6 +231,8 @@ export const productGridStyles = css`
     flex-direction: column;
     color: inherit;
     text-decoration: none;
+    background: var(--wa-color-fill-quiet);
+    border-radius: var(--wa-border-radius-l) var(--wa-border-radius-l) 0 0;
   }
 
   /* --- Card image area --- */
@@ -240,8 +244,6 @@ export const productGridStyles = css`
     align-items: center;
     justify-content: center;
     padding: 0.75rem 0;
-    background: var(--wa-color-fill-quiet);
-    border-radius: var(--wa-border-radius-l) var(--wa-border-radius-l) 0 0;
     overflow: hidden;
   }
 
@@ -280,6 +282,7 @@ export const productGridStyles = css`
     color: var(--wa-color-text-normal);
     margin: 0;
     line-height: 1.3;
+    min-height: 2.6em; /* reserve 2 lines (2 × 1.3 line-height) */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -293,7 +296,20 @@ export const productGridStyles = css`
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .product-card-set-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .meta-separator {
+    width: 1px;
+    height: 0.875rem;
+    background: var(--wa-color-border-quiet);
   }
 
   .product-card-badges {
@@ -305,6 +321,22 @@ export const productGridStyles = css`
 
   /* --- Card footer (outside the link, in wa-card footer slot) --- */
 
+  .product-card-footer {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-card-footer--oos {
+    /* Total must match in-stock: priceRow + cartMargin + cartRow */
+    min-height: calc(28.8px + 0.5rem + 54px);
+    justify-content: center;
+  }
+
+  .product-card-footer--oos .product-card-cart {
+    display: none;
+  }
+
+  /* Row: condition dropdown + price side by side */
   .product-card-price-row {
     display: flex;
     align-items: center;
@@ -316,6 +348,8 @@ export const productGridStyles = css`
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--wa-color-text-normal);
+    white-space: nowrap;
+    margin-left: auto;
   }
 
   .product-price-from {
@@ -324,14 +358,30 @@ export const productGridStyles = css`
     color: var(--wa-color-text-quiet);
   }
 
+  /* Row: availability text + qty input + cart button */
   .product-card-cart {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--wa-color-border-quiet);
+    margin-top: 0.5rem;
+    min-height: 54px;
+  }
+
+  .product-card-availability {
+    font-size: 0.8125rem;
+    color: var(--wa-color-text-quiet);
+    white-space: nowrap;
+  }
+
+  .product-card-availability.out-of-stock {
+    color: var(--wa-color-danger-60);
   }
 
   .product-card-cart wa-input {
-    width: 70px;
+    width: 56px;
+    margin-left: auto;
   }
 
   .product-card-cart wa-input::part(form-control) {
@@ -347,14 +397,11 @@ export const productGridStyles = css`
     border-radius: 6px;
   }
 
-  .product-card-cart wa-button {
-    flex: 1;
-  }
-
   /* --- Condition select within cards --- */
 
   .product-card-condition {
-    width: 100%;
+    width: 155px;
+    flex-shrink: 0;
   }
 
   .product-card-condition::part(combobox) {
