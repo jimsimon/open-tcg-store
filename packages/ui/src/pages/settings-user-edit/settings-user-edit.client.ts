@@ -899,7 +899,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
         <p>
           This user is not assigned to the currently selected store. Go back to the users list and assign them first.
         </p>
-        <wa-button variant="brand" href="${storeUrl('/users')}">
+        <wa-button variant="neutral" appearance="outlined" href="${storeUrl('/users')}">
           <wa-icon slot="start" name="arrow-left"></wa-icon>
           Back to Users
         </wa-button>

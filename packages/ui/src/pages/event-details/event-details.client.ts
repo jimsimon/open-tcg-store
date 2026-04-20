@@ -706,7 +706,6 @@ export class EventDetailsPage extends OgsPageBase {
           </wa-button>
           <wa-button
             variant="neutral"
-            appearance="plain"
             @click="${() => {
               this.showRegistration = false;
               this.registrationError = '';
