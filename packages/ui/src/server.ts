@@ -90,6 +90,11 @@ function getSession(ctx: Context) {
         // We need to copy over any session cookies from the browser request to the API request
         Cookie: ctx.headers.cookie,
       } as Record<string, string>,
+      onSuccess: (successCtx) => {
+        // Forward any Set-Cookie headers (e.g. session token refresh) to the
+        // browser so the client stays in sync with the server-side session.
+        forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
+      },
     },
   });
 }
