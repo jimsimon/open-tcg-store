@@ -115,6 +115,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         width: 100%;
         padding-inline: var(--wa-space-l);
         padding-inline-end: var(--wa-space-s);
+        background: var(--wa-color-surface-raised);
       }
 
       .header-content h1 {
@@ -155,6 +156,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         flex-direction: column;
         gap: 1px;
         padding: var(--wa-space-s) 0;
+        background: var(--wa-color-surface-raised);
       }
 
       .nav-section-label {
