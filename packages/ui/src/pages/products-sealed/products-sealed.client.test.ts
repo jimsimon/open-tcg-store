@@ -157,8 +157,7 @@ describe('ogs-products-sealed-page', () => {
 
     const card = cards[0];
     expect(card.querySelector('.product-card-name')?.textContent).toContain('Booster Box - Alpha');
-    expect(card.querySelector('.game-badge')?.textContent).toContain('Magic');
-    expect(card.querySelector('.quantity-badge')).toBeTruthy();
+    expect(card.querySelector('.product-card-availability')).toBeTruthy();
     expect(card.querySelector('.product-price')).toBeTruthy();
     expect(card.querySelector('.product-card-link')).toBeTruthy();
   });

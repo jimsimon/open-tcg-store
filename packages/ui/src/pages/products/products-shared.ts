@@ -312,13 +312,6 @@ export const productGridStyles = css`
     background: var(--wa-color-border-quiet);
   }
 
-  .product-card-badges {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    flex-wrap: wrap;
-  }
-
   /* --- Card footer (outside the link, in wa-card footer slot) --- */
 
   .product-card-footer {
@@ -326,14 +319,8 @@ export const productGridStyles = css`
     flex-direction: column;
   }
 
-  .product-card-footer--oos {
-    /* Total must match in-stock: priceRow + cartMargin + cartRow */
-    min-height: calc(28.8px + 0.5rem + 54px);
-    justify-content: center;
-  }
-
   .product-card-footer--oos .product-card-cart {
-    display: none;
+    visibility: hidden;
   }
 
   /* Row: condition dropdown + price side by side */
@@ -366,7 +353,6 @@ export const productGridStyles = css`
     padding-top: 0.625rem;
     border-top: 1px solid var(--wa-color-border-quiet);
     margin-top: 0.5rem;
-    min-height: 54px;
   }
 
   .product-card-availability {
@@ -418,54 +404,6 @@ export const productBadgeStyles = css`
     color: var(--wa-color-text-quiet);
     font-style: italic;
     font-size: var(--wa-font-size-m);
-  }
-
-  .game-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: capitalize;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-on-normal);
-  }
-
-  .game-badge.magic {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .game-badge.pokemon {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
-  }
-
-  .quantity-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    min-width: 44px;
-    text-align: center;
-    background: var(--wa-color-fill-quiet);
-    color: var(--wa-color-text-normal);
-  }
-
-  .quantity-badge.in-stock {
-    background: var(--wa-color-success-fill-quiet);
-    color: var(--wa-color-success-on-quiet);
-  }
-
-  .quantity-badge.low-stock {
-    background: var(--wa-color-warning-fill-quiet);
-    color: var(--wa-color-warning-on-quiet);
-  }
-
-  .quantity-badge.out-of-stock {
-    background: var(--wa-color-danger-fill-quiet);
-    color: var(--wa-color-danger-on-quiet);
   }
 
   .price-value {
@@ -591,14 +529,6 @@ export const loadingStateStyles = css`
     font-size: var(--wa-font-size-m);
   }
 `;
-
-// --- Helper: Get quantity badge class ---
-
-export function getQuantityBadgeClass(quantity: number | null | undefined): string {
-  if (!quantity || quantity <= 0) return 'out-of-stock';
-  if (quantity <= 3) return 'low-stock';
-  return 'in-stock';
-}
 
 // --- Helper: Format currency ---
 // Re-exported from shared utility; values are now integer cents.

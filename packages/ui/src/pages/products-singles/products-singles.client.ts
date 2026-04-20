@@ -133,14 +133,6 @@ export class OgsProductsSinglesPage extends OgsPageBase {
         background: var(--wa-color-fill-quiet);
         color: var(--wa-color-on-normal);
         cursor: default;
-        outline: none;
-        transition: outline-color 0.15s ease;
-      }
-
-      .rarity-badge:hover,
-      .rarity-badge:focus-visible {
-        outline: 2px solid var(--wa-color-brand-60);
-        outline-offset: 1px;
       }
 
       .rarity-badge.common {
@@ -658,7 +650,6 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                             class="rarity-badge ${product.rarity.toLowerCase()}"
                             title="${product.rarity}"
                             aria-label="${product.rarity}"
-                            tabindex="0"
                             >${rarityAbbrev(product.rarity)}</span
                           ><span class="meta-separator" aria-hidden="true"></span>`
                       : nothing}
