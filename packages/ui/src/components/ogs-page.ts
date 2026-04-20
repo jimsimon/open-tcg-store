@@ -113,6 +113,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       .header-content {
         block-size: 64px;
         width: 100%;
+        padding-block: 0;
         padding-inline: var(--wa-space-l);
         padding-inline-end: var(--wa-space-s);
         background: var(--wa-color-surface-raised);
