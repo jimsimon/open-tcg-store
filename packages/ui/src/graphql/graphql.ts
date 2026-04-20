@@ -2101,6 +2101,14 @@ export type DisableBackupCronJobMutationVariables = Exact<{
 
 export type DisableBackupCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
 
+export type UpdateBackupCronJobScheduleMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+  cronExpression: Scalars['String']['input'];
+}>;
+
+
+export type UpdateBackupCronJobScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
+
 export type UpdateBackupSettingsMutationVariables = Exact<{
   input: UpdateBackupSettingsInput;
 }>;
@@ -2185,6 +2193,33 @@ export type TriggerDataUpdateMutationVariables = Exact<{ [key: string]: never; }
 
 
 export type TriggerDataUpdateMutation = { __typename?: 'Mutation', triggerDataUpdate: { __typename?: 'DataUpdateResult', success: boolean, message?: string | null, newVersion?: string | null } };
+
+export type GetDataUpdateCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetDataUpdateCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null }> };
+
+export type EnableDataUpdateCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type EnableDataUpdateCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
+export type DisableDataUpdateCronJobMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DisableDataUpdateCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+
+export type UpdateDataUpdateScheduleMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+  cronExpression: Scalars['String']['input'];
+}>;
+
+
+export type UpdateDataUpdateScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
 
 export type GetStoreSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3298,6 +3333,15 @@ export const DisableBackupCronJobDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<DisableBackupCronJobMutation, DisableBackupCronJobMutationVariables>;
+export const UpdateBackupCronJobScheduleDocument = new TypedDocumentString(`
+    mutation UpdateBackupCronJobSchedule($id: Int!, $cronExpression: String!) {
+  updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {
+    id
+    cronExpression
+    nextRunAt
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateBackupCronJobScheduleMutation, UpdateBackupCronJobScheduleMutationVariables>;
 export const UpdateBackupSettingsDocument = new TypedDocumentString(`
     mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {
   updateBackupSettings(input: $input) {
@@ -3442,6 +3486,46 @@ export const TriggerDataUpdateDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<TriggerDataUpdateMutation, TriggerDataUpdateMutationVariables>;
+export const GetDataUpdateCronJobsDocument = new TypedDocumentString(`
+    query GetDataUpdateCronJobs {
+  getCronJobs {
+    id
+    name
+    cronExpression
+    enabled
+    lastRunAt
+    lastRunStatus
+    lastRunDurationMs
+    lastRunError
+    nextRunAt
+  }
+}
+    `) as unknown as TypedDocumentString<GetDataUpdateCronJobsQuery, GetDataUpdateCronJobsQueryVariables>;
+export const EnableDataUpdateCronJobDocument = new TypedDocumentString(`
+    mutation EnableDataUpdateCronJob($id: Int!) {
+  enableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<EnableDataUpdateCronJobMutation, EnableDataUpdateCronJobMutationVariables>;
+export const DisableDataUpdateCronJobDocument = new TypedDocumentString(`
+    mutation DisableDataUpdateCronJob($id: Int!) {
+  disableCronJob(id: $id) {
+    id
+    enabled
+  }
+}
+    `) as unknown as TypedDocumentString<DisableDataUpdateCronJobMutation, DisableDataUpdateCronJobMutationVariables>;
+export const UpdateDataUpdateScheduleDocument = new TypedDocumentString(`
+    mutation UpdateDataUpdateSchedule($id: Int!, $cronExpression: String!) {
+  updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {
+    id
+    cronExpression
+    nextRunAt
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateDataUpdateScheduleMutation, UpdateDataUpdateScheduleMutationVariables>;
 export const GetStoreSettingsDocument = new TypedDocumentString(`
     query GetStoreSettings {
   getStoreSettings {

@@ -390,12 +390,17 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
     this.loadJobs();
   }
 
+  /** Jobs managed by their own dedicated settings pages */
+  private static MANAGED_JOBS = new Set(['tcg-data-update', 'local-backup', 'backup']);
+
   private async loadJobs() {
     this.loading = true;
     try {
       const result = await execute(GetCronJobsQuery);
       if (result?.data?.getCronJobs) {
-        this.jobs = result.data.getCronJobs as CronJob[];
+        this.jobs = (result.data.getCronJobs as CronJob[]).filter(
+          (j) => !OgsSettingsScheduledTasksPage.MANAGED_JOBS.has(j.name),
+        );
       }
     } catch (e) {
       console.error('Failed to load cron jobs:', e);

@@ -1,16 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../lib/graphql.ts', () => ({
-  execute: vi.fn().mockResolvedValue({
-    data: {
-      getDataUpdateStatus: {
-        currentVersion: '2026-04-05T12:00:00.000Z',
-        latestVersion: null,
-        updateAvailable: false,
-        isUpdating: false,
-      },
-    },
-  }),
+  execute: vi.fn().mockResolvedValue({ data: {} }),
 }));
 
 import './settings-data-updates.client.ts';
@@ -19,17 +10,44 @@ import { execute } from '../../lib/graphql.ts';
 
 const mockExecute = execute as ReturnType<typeof vi.fn>;
 
+const defaultCronJob = {
+  id: 1,
+  name: 'tcg-data-update',
+  cronExpression: '0 3 * * *',
+  enabled: true,
+  lastRunAt: null as string | null,
+  lastRunStatus: null as string | null,
+  lastRunDurationMs: null as number | null,
+  lastRunError: null as string | null,
+  nextRunAt: '2026-04-20T07:00:00.000Z',
+};
+
 function setupDefaultMock(overrides: Record<string, unknown> = {}) {
-  mockExecute.mockResolvedValue({
-    data: {
-      getDataUpdateStatus: {
-        currentVersion: '2026-04-05T12:00:00.000Z',
-        latestVersion: null,
-        updateAvailable: false,
-        isUpdating: false,
-        ...overrides,
-      },
-    },
+  // loadAll() calls fetchStatus() and fetchCronJob() via Promise.all,
+  // so execute is called twice in parallel. Use mockResolvedValue for both.
+  mockExecute.mockImplementation((query: unknown) => {
+    const queryStr = String(query);
+    if (queryStr.includes('GetDataUpdateStatus') || queryStr.includes('getDataUpdateStatus')) {
+      return Promise.resolve({
+        data: {
+          getDataUpdateStatus: {
+            currentVersion: '2026-04-05T12:00:00.000Z',
+            latestVersion: null,
+            updateAvailable: false,
+            isUpdating: false,
+            ...overrides,
+          },
+        },
+      });
+    }
+    if (queryStr.includes('GetDataUpdateCronJobs') || queryStr.includes('getCronJobs')) {
+      return Promise.resolve({
+        data: {
+          getCronJobs: [defaultCronJob],
+        },
+      });
+    }
+    return Promise.resolve({ data: {} });
   });
 }
 
@@ -58,7 +76,7 @@ describe('ogs-settings-data-updates-page', () => {
   test('should display the page header', () => {
     const header = element.shadowRoot!.querySelector('.page-header h2');
     expect(header).toBeTruthy();
-    expect(header?.textContent).toContain('Card Data Updates');
+    expect(header?.textContent).toContain('Card Data');
   });
 
   test('should display the page description', () => {
@@ -100,8 +118,9 @@ describe('ogs-settings-data-updates-page', () => {
   });
 
   test('should not show Update Available column when up to date', () => {
-    const statusItems = element.shadowRoot!.querySelectorAll('.status-item');
-    // Only the "Last Updated" item should be present
+    const statusGrid = element.shadowRoot!.querySelector('.status-grid');
+    const statusItems = statusGrid!.querySelectorAll('.status-item');
+    // Only the "Last Updated" item should be present in the database status card
     expect(statusItems.length).toBe(1);
     const label = statusItems[0].querySelector('.status-label');
     expect(label?.textContent).toContain('Last Updated');
@@ -136,7 +155,8 @@ describe('ogs-settings-data-updates-page', () => {
     await new Promise((r) => setTimeout(r, 50));
     await element.updateComplete;
 
-    const statusItems = element.shadowRoot!.querySelectorAll('.status-item');
+    const statusGrid = element.shadowRoot!.querySelector('.status-grid');
+    const statusItems = statusGrid!.querySelectorAll('.status-item');
     expect(statusItems.length).toBe(2);
     const labels = Array.from(statusItems).map((el) => el.querySelector('.status-label')?.textContent?.trim());
     expect(labels).toContain('Last Updated');

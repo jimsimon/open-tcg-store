@@ -2,6 +2,7 @@ import { TemplateResult, css, html, nothing, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
+import { describeCron } from '../../components/ogs-cron-generator.ts';
 import '@awesome.me/webawesome/dist/components/select/select.js';
 import '@awesome.me/webawesome/dist/components/option/option.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -89,6 +90,16 @@ const DisableCronJobMutation = graphql(`
     disableCronJob(id: $id) {
       id
       enabled
+    }
+  }
+`);
+
+const UpdateCronJobScheduleMutation = graphql(`
+  mutation UpdateBackupCronJobSchedule($id: Int!, $cronExpression: String!) {
+    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {
+      id
+      cronExpression
+      nextRunAt
     }
   }
 `);
@@ -291,6 +302,28 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-weight: 500;
       }
 
+      .running-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      .running-indicator wa-spinner {
+        font-size: 0.875rem;
+      }
+
+      /* --- Schedule --- */
+
+      .schedule-section {
+        margin-top: 0.75rem;
+      }
+
+      .schedule-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
       .schedule-display {
         font-family: var(--wa-font-family-mono, monospace);
         font-size: var(--wa-font-size-m);
@@ -300,14 +333,26 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         border-radius: var(--wa-border-radius-m);
       }
 
-      .running-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
+      .schedule-description {
+        font-size: var(--wa-font-size-m);
+        color: var(--wa-color-text-muted);
+        font-style: italic;
       }
 
-      .running-indicator wa-spinner {
-        font-size: 0.875rem;
+      .schedule-edit-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--wa-color-surface-alt);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-m);
+      }
+
+      .schedule-edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
 
       /* --- Actions --- */
@@ -322,7 +367,13 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         flex-wrap: wrap;
       }
 
-      /* --- Cloud Provider Setup --- */
+      /* --- Cloud Provider Setup (inline in card) --- */
+
+      .cloud-provider-section {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--wa-color-surface-border);
+      }
 
       .section-header {
         display: flex;
@@ -348,55 +399,15 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-size: var(--wa-font-size-m);
       }
 
-      .provider-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1rem;
-        background: var(--wa-color-surface-alt);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-l);
-        transition: border-color 0.15s ease;
-      }
-
-      .provider-card:hover {
-        border-color: var(--wa-color-brand-text);
-      }
-
-      .provider-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .provider-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.25rem;
-        height: 2.25rem;
-        border-radius: var(--wa-border-radius-m);
-        background: var(--wa-color-surface-raised);
-        font-size: 1rem;
-        flex-shrink: 0;
-      }
-
-      .provider-details {
-        display: flex;
-        flex-direction: column;
-        gap: 0.125rem;
-      }
-
-      .provider-name {
-        font-weight: 600;
-        font-size: var(--wa-font-size-m);
-      }
-
       .provider-setup {
-        padding: 0 1rem 0.75rem;
+        margin-top: 0.75rem;
+        padding: 0.75rem 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        background: var(--wa-color-surface-alt);
+        border: 1px solid var(--wa-color-surface-border);
+        border-radius: var(--wa-border-radius-l);
       }
 
       .client-id-row {
@@ -411,27 +422,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       .client-id-row wa-button {
         flex-shrink: 0;
-      }
-
-      .provider-card-wrapper {
-        background: var(--wa-color-surface-alt);
-        border: 1px solid var(--wa-color-surface-border);
-        border-radius: var(--wa-border-radius-l);
-        transition: border-color 0.15s ease;
-      }
-
-      .provider-card-wrapper:hover {
-        border-color: var(--wa-color-brand-text);
-      }
-
-      .provider-card-wrapper .provider-card {
-        border: none;
-        background: none;
-        border-radius: 0;
-      }
-
-      .provider-card-wrapper .provider-card:hover {
-        border-color: transparent;
       }
 
       .setup-steps {
@@ -451,15 +441,10 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         font-weight: 500;
       }
 
-      .cloud-setup-section {
-        margin-top: 1.5rem;
-      }
-
-      .backup-provider-row {
+      .provider-connected-row {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        margin-top: 0.75rem;
       }
 
       /* --- Loading & Messages --- */
@@ -527,13 +512,12 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
   @state() loading = true;
   @state() jobs: CronJob[] = [];
-  @state() provider = '';
+  @state() provider: ProviderKey | '' = '';
   @state() connectedProviders: Record<ProviderKey, boolean> = {
     google_drive: false,
     dropbox: false,
     onedrive: false,
   };
-  @state() selectedConfigProvider: ProviderKey = 'google_drive';
   @state() clientIds: Record<ProviderKey, string> = {
     google_drive: '',
     dropbox: '',
@@ -546,11 +530,12 @@ export class OgsSettingsBackupPage extends OgsPageBase {
   @state() successMessage = '';
   @state() errorMessage = '';
 
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  // Schedule editing
+  @state() editingScheduleJobId: number | null = null;
+  @state() editScheduleValue = '';
+  @state() saveScheduleError = '';
 
-  get hasConnectedProvider(): boolean {
-    return PROVIDER_KEYS.some((key) => this.connectedProviders[key]);
-  }
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   get localBackupJob(): CronJob | undefined {
     return this.jobs.find((j) => j.name === 'local-backup');
@@ -562,6 +547,15 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
   get hasRunningJob(): boolean {
     return this.jobs.some((j) => j.lastRunStatus === 'running');
+  }
+
+  /** The provider currently shown in the cloud backup card's dropdown */
+  get selectedProvider(): ProviderKey {
+    return (this.provider as ProviderKey) || 'google_drive';
+  }
+
+  get isSelectedProviderConnected(): boolean {
+    return this.provider !== '' && this.connectedProviders[this.provider as ProviderKey];
   }
 
   // --- Lifecycle ---
@@ -598,7 +592,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
       if (settingsResult?.data?.getBackupSettings) {
         const s = settingsResult.data.getBackupSettings;
-        this.provider = s.provider ?? '';
+        this.provider = (s.provider as ProviderKey | '') ?? '';
         this.connectedProviders = {
           ...this.connectedProviders,
           ...Object.fromEntries(PROVIDER_KEYS.map((key) => [key, s[PROVIDERS[key].connectedKey]])),
@@ -616,7 +610,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         this.jobs = allJobs.filter((j) => j.name === 'local-backup' || j.name === 'backup');
       }
 
-      // Start polling if any job is running
       this.updatePolling();
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to load settings';
@@ -667,6 +660,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
   }
 
   private async toggleJob(job: CronJob) {
+    // For cloud backup, require a connected provider to enable
+    if (!job.enabled && job.name === 'backup' && !this.isSelectedProviderConnected) {
+      this.errorMessage = 'Connect a cloud provider before enabling cloud backup.';
+      return;
+    }
     try {
       if (job.enabled) {
         const result = await execute(DisableCronJobMutation, { id: job.id });
@@ -677,10 +675,51 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         const enabled = result?.data?.enableCronJob?.enabled ?? true;
         this.jobs = this.jobs.map((j) => (j.id === job.id ? { ...j, enabled } : j));
       }
+      // Refresh to get updated nextRunAt
+      await this.refreshJobs();
     } catch (e) {
       console.error('Failed to toggle job:', e);
     }
   }
+
+  // --- Schedule Editing ---
+
+  private startEditSchedule(job: CronJob) {
+    this.editingScheduleJobId = job.id;
+    this.editScheduleValue = job.cronExpression;
+    this.saveScheduleError = '';
+  }
+
+  private cancelEditSchedule() {
+    this.editingScheduleJobId = null;
+    this.editScheduleValue = '';
+    this.saveScheduleError = '';
+  }
+
+  private async saveSchedule(jobId: number) {
+    this.saveScheduleError = '';
+    try {
+      const result = await execute(UpdateCronJobScheduleMutation, {
+        id: jobId,
+        cronExpression: this.editScheduleValue,
+      });
+      if (result?.data?.updateCronJobSchedule) {
+        const updated = result.data.updateCronJobSchedule;
+        this.jobs = this.jobs.map((j) =>
+          j.id === jobId
+            ? { ...j, cronExpression: updated.cronExpression, nextRunAt: updated.nextRunAt as string | null }
+            : j,
+        );
+        this.editingScheduleJobId = null;
+        this.editScheduleValue = '';
+      }
+    } catch (e) {
+      console.error('Failed to update schedule:', e);
+      this.saveScheduleError = e instanceof Error ? e.message : 'Failed to save schedule. Please try again.';
+    }
+  }
+
+  // --- Restore ---
 
   private async handleRestore() {
     this.showRestoreDialog = false;
@@ -699,6 +738,40 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       this.errorMessage = e instanceof Error ? e.message : 'Restore failed';
     } finally {
       this.restoring = false;
+    }
+  }
+
+  // --- Provider Management ---
+
+  private async handleProviderChange(e: Event) {
+    const newProvider = (e.target as HTMLSelectElement).value as ProviderKey;
+    this.provider = newProvider;
+
+    // Save the provider selection to the backend
+    await this.saveBackupProvider();
+
+    // If the newly selected provider is not connected, disable cloud backup cron
+    if (!this.connectedProviders[newProvider]) {
+      const cloudJob = this.cloudBackupJob;
+      if (cloudJob?.enabled) {
+        try {
+          const result = await execute(DisableCronJobMutation, { id: cloudJob.id });
+          const enabled = result?.data?.disableCronJob?.enabled ?? false;
+          this.jobs = this.jobs.map((j) => (j.id === cloudJob.id ? { ...j, enabled } : j));
+        } catch (err) {
+          console.error('Failed to disable cloud backup:', err);
+        }
+      }
+    }
+  }
+
+  private async saveBackupProvider() {
+    try {
+      await execute(UpdateBackupSettingsMutation, {
+        input: { provider: (this.provider as BackupProvider) || null },
+      });
+    } catch (e) {
+      this.errorMessage = e instanceof Error ? e.message : 'Failed to save provider';
     }
   }
 
@@ -745,6 +818,20 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         this.googleDriveHasClientSecret = s.googleDriveHasClientSecret;
         this.googleDriveClientSecret = '';
         this.successMessage = `Disconnected ${PROVIDERS[providerKey].name}`;
+
+        // If we just disconnected the active provider, disable cloud backup
+        if (this.provider === providerKey) {
+          const cloudJob = this.cloudBackupJob;
+          if (cloudJob?.enabled) {
+            try {
+              const disableResult = await execute(DisableCronJobMutation, { id: cloudJob.id });
+              const enabled = disableResult?.data?.disableCronJob?.enabled ?? false;
+              this.jobs = this.jobs.map((j) => (j.id === cloudJob.id ? { ...j, enabled } : j));
+            } catch (err) {
+              console.error('Failed to disable cloud backup after disconnect:', err);
+            }
+          }
+        }
       }
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to disconnect provider';
@@ -876,8 +963,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-icon name="cloud-arrow-up" style="font-size: 1.5rem;"></wa-icon>
         </div>
         <div class="page-header-content">
-          <h2>Backup Jobs</h2>
-          <p>Manage local and cloud backup schedules</p>
+          <h2>Backup & Restore</h2>
+          <p>Manage local and cloud backups</p>
         </div>
       </div>
     `;
@@ -903,16 +990,17 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         : nothing}
 
       <div class="job-list">
-        ${this.localBackupJob ? this.renderJobCard(this.localBackupJob) : nothing}
-        ${this.cloudBackupJob && this.hasConnectedProvider ? this.renderCloudBackupCard(this.cloudBackupJob) : nothing}
+        ${this.localBackupJob ? this.renderLocalBackupCard(this.localBackupJob) : nothing}
+        ${this.cloudBackupJob ? this.renderCloudBackupCard(this.cloudBackupJob) : nothing}
       </div>
-
-      ${this.renderCloudProviderSetup()}
     `;
   }
 
-  private renderJobCard(job: CronJob) {
+  // --- Local Backup Card ---
+
+  private renderLocalBackupCard(job: CronJob) {
     const isRunning = job.lastRunStatus === 'running';
+    const isEditingSchedule = this.editingScheduleJobId === job.id;
 
     return html`
       <wa-card appearance="outline">
@@ -920,20 +1008,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <div>
             <div class="job-title-row">
               <h3 class="job-title">${job.displayName}</h3>
-              ${isRunning
-                ? html`
-                    <wa-badge variant="warning">
-                      <span class="running-indicator">
-                        <wa-spinner></wa-spinner>
-                        Running
-                      </span>
-                    </wa-badge>
-                  `
-                : html`
-                    <wa-badge variant="${this.getStatusVariant(job.lastRunStatus)}">
-                      ${job.lastRunStatus ?? 'idle'}
-                    </wa-badge>
-                  `}
+              ${this.renderStatusBadge(job)}
             </div>
             <p class="job-description">${job.description}</p>
           </div>
@@ -941,10 +1016,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         </div>
 
         <div class="job-status-row">
-          <div class="status-item">
-            <span class="status-label">Schedule</span>
-            <span class="schedule-display">${job.cronExpression}</span>
-          </div>
           <div class="status-item">
             <span class="status-label">Last Run</span>
             <span class="status-value">${this.formatDateTime(job.lastRunAt)}</span>
@@ -967,6 +1038,11 @@ export class OgsSettingsBackupPage extends OgsPageBase {
               </wa-callout>
             `
           : nothing}
+
+        <!-- Schedule -->
+        <div class="schedule-section">
+          ${isEditingSchedule ? this.renderScheduleEditor(job.id) : this.renderScheduleDisplay(job)}
+        </div>
 
         <div class="job-actions">
           <wa-button
@@ -980,27 +1056,18 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             <wa-icon slot="start" name="play"></wa-icon>
             Run Now
           </wa-button>
-          <wa-button
-            size="small"
-            variant="neutral"
-            appearance="outlined"
-            @click="${() => {
-              window.location.href = '/settings/scheduled-tasks';
-            }}"
-          >
-            <wa-icon slot="start" name="clock-rotate-left"></wa-icon>
-            View History
-          </wa-button>
         </div>
       </wa-card>
     `;
   }
 
+  // --- Cloud Backup Card ---
+
   private renderCloudBackupCard(job: CronJob) {
     const isRunning = job.lastRunStatus === 'running';
-    const activeProviderName = this.provider
-      ? (PROVIDERS[this.provider as ProviderKey]?.name ?? this.provider)
-      : 'Not configured';
+    const isEditingSchedule = this.editingScheduleJobId === job.id;
+    const providerKey = this.provider as ProviderKey;
+    const canEnable = this.provider !== '' && this.connectedProviders[providerKey];
 
     return html`
       <wa-card appearance="outline">
@@ -1008,35 +1075,27 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <div>
             <div class="job-title-row">
               <h3 class="job-title">${job.displayName}</h3>
-              ${isRunning
-                ? html`
-                    <wa-badge variant="warning">
-                      <span class="running-indicator">
-                        <wa-spinner></wa-spinner>
-                        Running
-                      </span>
-                    </wa-badge>
-                  `
-                : html`
-                    <wa-badge variant="${this.getStatusVariant(job.lastRunStatus)}">
-                      ${job.lastRunStatus ?? 'idle'}
-                    </wa-badge>
-                  `}
+              ${this.renderStatusBadge(job)}
             </div>
             <p class="job-description">${job.description}</p>
           </div>
-          <wa-switch ?checked="${job.enabled}" @change="${() => this.toggleJob(job)}"></wa-switch>
+          <wa-switch
+            ?checked="${job.enabled}"
+            ?disabled="${!canEnable && !job.enabled}"
+            @change="${() => this.toggleJob(job)}"
+          ></wa-switch>
         </div>
 
+        ${!canEnable && !job.enabled
+          ? html`
+              <wa-callout variant="neutral" style="margin-top: 0.75rem;">
+                <wa-icon slot="icon" name="circle-info"></wa-icon>
+                Connect a cloud provider below to enable automatic cloud backups.
+              </wa-callout>
+            `
+          : nothing}
+
         <div class="job-status-row">
-          <div class="status-item">
-            <span class="status-label">Provider</span>
-            <span class="status-value">${activeProviderName}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Schedule</span>
-            <span class="schedule-display">${job.cronExpression}</span>
-          </div>
           <div class="status-item">
             <span class="status-label">Last Run</span>
             <span class="status-value">${this.formatDateTime(job.lastRunAt)}</span>
@@ -1060,21 +1119,23 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             `
           : nothing}
 
-        <div class="backup-provider-row">
+        <!-- Schedule -->
+        <div class="schedule-section">
+          ${isEditingSchedule ? this.renderScheduleEditor(job.id) : this.renderScheduleDisplay(job)}
+        </div>
+
+        <!-- Cloud Provider -->
+        <div class="cloud-provider-section">
           <wa-select
             label="Backup Provider"
-            .value="${this.provider}"
+            .value="${this.provider || 'google_drive'}"
             size="small"
-            @change="${(e: Event) => {
-              this.provider = (e.target as HTMLSelectElement).value;
-              this.saveBackupProvider();
-            }}"
+            @change="${this.handleProviderChange}"
           >
-            <wa-option value="">Select provider</wa-option>
-            ${PROVIDER_KEYS.filter((key) => this.connectedProviders[key]).map(
-              (key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`,
-            )}
+            ${PROVIDER_KEYS.map((key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`)}
           </wa-select>
+
+          ${this.renderProviderSetup()}
         </div>
 
         <div class="job-actions">
@@ -1082,7 +1143,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             size="small"
             variant="brand"
             appearance="outlined"
-            ?disabled="${!job.enabled || isRunning || !this.provider}"
+            ?disabled="${!job.enabled || isRunning || !this.isSelectedProviderConnected}"
             ?loading="${isRunning}"
             @click="${() => this.triggerJob(job.id)}"
           >
@@ -1094,7 +1155,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             variant="danger"
             appearance="outlined"
             ?loading="${this.restoring}"
-            ?disabled="${!this.provider || isRunning}"
+            ?disabled="${!this.isSelectedProviderConnected || isRunning}"
             @click="${() => {
               this.showRestoreDialog = true;
             }}"
@@ -1102,157 +1163,155 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             <wa-icon slot="start" name="cloud-arrow-down"></wa-icon>
             Restore
           </wa-button>
-          <wa-button
-            size="small"
-            variant="neutral"
-            appearance="outlined"
-            @click="${() => {
-              window.location.href = '/settings/scheduled-tasks';
-            }}"
-          >
-            <wa-icon slot="start" name="clock-rotate-left"></wa-icon>
-            View History
-          </wa-button>
         </div>
       </wa-card>
     `;
   }
 
-  private async saveBackupProvider() {
-    try {
-      await execute(UpdateBackupSettingsMutation, {
-        input: { provider: (this.provider as BackupProvider) || null },
-      });
-    } catch (e) {
-      this.errorMessage = e instanceof Error ? e.message : 'Failed to save provider';
-    }
+  // --- Shared Schedule Rendering ---
+
+  private renderStatusBadge(job: CronJob) {
+    const isRunning = job.lastRunStatus === 'running';
+    return isRunning
+      ? html`
+          <wa-badge variant="warning">
+            <span class="running-indicator">
+              <wa-spinner></wa-spinner>
+              Running
+            </span>
+          </wa-badge>
+        `
+      : html`
+          <wa-badge variant="${this.getStatusVariant(job.lastRunStatus)}"> ${job.lastRunStatus ?? 'idle'} </wa-badge>
+        `;
   }
 
-  private renderCloudProviderSetup() {
+  private renderScheduleDisplay(job: CronJob) {
     return html`
-      <div class="cloud-setup-section">
-        <div class="section-header">
-          <wa-icon name="cloud"></wa-icon>
-          <div>
-            <h3>Cloud Provider Setup</h3>
-            <p>Connect a cloud provider to enable cloud backups</p>
-          </div>
-        </div>
-
-        <wa-select
-          label="Provider"
-          .value="${this.selectedConfigProvider}"
-          @change="${(e: Event) => {
-            this.selectedConfigProvider = (e.target as HTMLSelectElement).value as ProviderKey;
-          }}"
-          style="margin-bottom: 0.75rem;"
-        >
-          ${PROVIDER_KEYS.map((key) => html`<wa-option value="${key}">${PROVIDERS[key].name}</wa-option>`)}
-        </wa-select>
-
-        ${this.renderSelectedProviderCard()}
+      <div class="schedule-row">
+        <span class="schedule-display">${job.cronExpression}</span>
+        <span class="schedule-description">${describeCron(job.cronExpression) ?? ''}</span>
+        <wa-button size="small" variant="neutral" appearance="outlined" @click="${() => this.startEditSchedule(job)}">
+          <wa-icon slot="start" name="pen-to-square"></wa-icon>
+          Edit
+        </wa-button>
       </div>
     `;
   }
 
-  private renderSelectedProviderCard() {
-    const providerKey = this.selectedConfigProvider;
-    const { name, icon } = PROVIDERS[providerKey];
+  private renderScheduleEditor(jobId: number) {
+    return html`
+      <div class="schedule-edit-section">
+        <ogs-cron-generator
+          value="${this.editScheduleValue}"
+          @ogs-cron-change="${(e: CustomEvent<{ value: string }>) => {
+            this.editScheduleValue = e.detail.value;
+            this.saveScheduleError = '';
+          }}"
+        ></ogs-cron-generator>
+        ${this.saveScheduleError
+          ? html`
+              <wa-callout variant="danger">
+                <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+                ${this.saveScheduleError}
+              </wa-callout>
+            `
+          : nothing}
+        <div class="schedule-edit-actions">
+          <wa-button size="small" variant="brand" @click="${() => this.saveSchedule(jobId)}"> Save Schedule </wa-button>
+          <wa-button size="small" variant="neutral" appearance="outlined" @click="${this.cancelEditSchedule}">
+            Cancel
+          </wa-button>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Provider Setup (inline in cloud card) ---
+
+  private renderProviderSetup() {
+    const providerKey = this.selectedProvider;
     const connected = this.connectedProviders[providerKey];
     const clientId = this.clientIds[providerKey];
+    const { name } = PROVIDERS[providerKey];
     const instructions = this.getOAuthInstructions(providerKey);
 
-    return html`
-      <div class="provider-card-wrapper">
-        <div class="provider-card">
-          <div class="provider-info">
-            <div class="provider-icon">
-              <wa-icon name="${icon}" variant="solid"></wa-icon>
-            </div>
-            <div class="provider-details">
-              <span class="provider-name">${name}</span>
-              ${connected
-                ? html`<wa-badge variant="success">Connected</wa-badge>`
-                : html`<wa-badge variant="neutral">Not connected</wa-badge>`}
-            </div>
+    if (connected) {
+      return html`
+        <div class="provider-setup">
+          <div class="provider-connected-row">
+            <wa-badge variant="success">Connected</wa-badge>
+            <wa-button
+              size="small"
+              variant="danger"
+              appearance="outlined"
+              @click="${() => this.disconnectProvider(providerKey)}"
+            >
+              <wa-icon slot="start" name="link-slash"></wa-icon>
+              Disconnect
+            </wa-button>
           </div>
         </div>
-        <div class="provider-setup">
-          <wa-details summary="How to get a ${name} OAuth Client ID">
-            <ol class="setup-steps">
-              ${instructions.steps.map((step) => html`<li>${step}</li>`)}
-            </ol>
-          </wa-details>
-          <div class="client-id-row">
-            <wa-input
-              class="client-id-input"
-              label="OAuth Client ID"
-              placeholder="Paste your ${name} OAuth Client ID"
-              size="small"
-              .value="${clientId}"
-              ?readonly="${connected}"
-              @input="${(e: Event) => {
-                if (!connected) {
-                  this.clientIds = { ...this.clientIds, [providerKey]: (e.target as HTMLInputElement).value };
-                }
-              }}"
-            >
-              <wa-icon slot="prefix" name="key"></wa-icon>
-            </wa-input>
-          </div>
-          ${providerKey === 'google_drive'
-            ? html`
-                <div class="client-id-row">
-                  <wa-input
-                    class="client-id-input"
-                    label="OAuth Client Secret"
-                    placeholder="Paste your ${name} OAuth Client Secret"
-                    type="password"
-                    size="small"
-                    .value="${connected && this.googleDriveHasClientSecret ? '••••••••' : this.googleDriveClientSecret}"
-                    ?readonly="${connected}"
-                    @input="${(e: Event) => {
-                      if (!connected) {
-                        this.googleDriveClientSecret = (e.target as HTMLInputElement).value;
-                      }
-                    }}"
-                  >
-                    <wa-icon slot="prefix" name="lock"></wa-icon>
-                  </wa-input>
-                </div>
-              `
-            : nothing}
-          <div class="client-id-row" style="margin-top: 0.25rem;">
-            ${connected
-              ? html`
-                  <wa-button
-                    size="small"
-                    variant="danger"
-                    appearance="outlined"
-                    @click="${() => this.disconnectProvider(providerKey)}"
-                  >
-                    <wa-icon slot="start" name="link-slash"></wa-icon>
-                    Disconnect
-                  </wa-button>
-                `
-              : html`
-                  <wa-button
-                    size="small"
-                    variant="brand"
-                    appearance="outlined"
-                    ?disabled="${!clientId.trim() ||
-                    (providerKey === 'google_drive' && !this.googleDriveClientSecret.trim())}"
-                    @click="${() => this.connectProvider(providerKey)}"
-                  >
-                    <wa-icon slot="start" name="link"></wa-icon>
-                    Connect
-                  </wa-button>
-                `}
-          </div>
+      `;
+    }
+
+    return html`
+      <div class="provider-setup">
+        <wa-details summary="How to get a ${name} OAuth Client ID">
+          <ol class="setup-steps">
+            ${instructions.steps.map((step) => html`<li>${step}</li>`)}
+          </ol>
+        </wa-details>
+        <div class="client-id-row">
+          <wa-input
+            class="client-id-input"
+            label="OAuth Client ID"
+            placeholder="Paste your ${name} OAuth Client ID"
+            size="small"
+            .value="${clientId}"
+            @input="${(e: Event) => {
+              this.clientIds = { ...this.clientIds, [providerKey]: (e.target as HTMLInputElement).value };
+            }}"
+          >
+            <wa-icon slot="prefix" name="key"></wa-icon>
+          </wa-input>
+        </div>
+        ${providerKey === 'google_drive'
+          ? html`
+              <div class="client-id-row">
+                <wa-input
+                  class="client-id-input"
+                  label="OAuth Client Secret"
+                  placeholder="Paste your ${name} OAuth Client Secret"
+                  type="password"
+                  size="small"
+                  .value="${this.googleDriveClientSecret}"
+                  @input="${(e: Event) => {
+                    this.googleDriveClientSecret = (e.target as HTMLInputElement).value;
+                  }}"
+                >
+                  <wa-icon slot="prefix" name="lock"></wa-icon>
+                </wa-input>
+              </div>
+            `
+          : nothing}
+        <div class="client-id-row" style="margin-top: 0.25rem;">
+          <wa-button
+            size="small"
+            variant="brand"
+            appearance="outlined"
+            ?disabled="${!clientId.trim() || (providerKey === 'google_drive' && !this.googleDriveClientSecret.trim())}"
+            @click="${() => this.connectProvider(providerKey)}"
+          >
+            <wa-icon slot="start" name="link"></wa-icon>
+            Connect
+          </wa-button>
         </div>
       </div>
     `;
   }
+
+  // --- Restore Dialog ---
 
   private renderRestoreDialog() {
     return html`
@@ -1269,8 +1328,8 @@ export class OgsSettingsBackupPage extends OgsPageBase {
             <p>This action will overwrite your current database</p>
             <p>
               Restoring from a backup will replace all current data with the backup data from
-              <strong>${this.provider?.replace('_', ' ')}</strong>. All changes since the last backup will be lost. This
-              action cannot be undone.
+              <strong>${this.provider ? PROVIDERS[this.provider as ProviderKey]?.name : ''}</strong>. All changes since
+              the last backup will be lost. This action cannot be undone.
             </p>
           </div>
         </div>
