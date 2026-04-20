@@ -603,6 +603,7 @@ export type Mutation = {
   updateItemInCart: ShoppingCart;
   updateLot: Lot;
   updateOrderStatus: Order;
+  updateRecurrenceRule: Event;
   updateShopifyIntegration: ShopifyIntegration;
   updateStock: InventoryItemStock;
   updateStoreLocation: StoreLocation;
@@ -842,6 +843,12 @@ export type MutationUpdateLotArgs = {
 export type MutationUpdateOrderStatusArgs = {
   orderId: Scalars['Int']['input'];
   status: OrderStatus;
+};
+
+
+export type MutationUpdateRecurrenceRuleArgs = {
+  frequency: RecurrenceFrequency;
+  recurrenceGroupId: Scalars['String']['input'];
 };
 
 
@@ -1321,13 +1328,19 @@ export type QuerySearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
+export enum RecurrenceFrequency {
+  Biweekly = 'BIWEEKLY',
+  Monthly = 'MONTHLY',
+  Weekly = 'WEEKLY'
+}
+
 export type RecurrenceRule = {
   __typename?: 'RecurrenceRule';
-  frequency: Scalars['String']['output'];
+  frequency: RecurrenceFrequency;
 };
 
 export type RecurrenceRuleInput = {
-  frequency: Scalars['String']['input'];
+  frequency: RecurrenceFrequency;
 };
 
 export enum RegistrationStatus {
@@ -1694,7 +1707,7 @@ export type GetEventQueryVariables = Exact<{
 }>;
 
 
-export type GetEventQuery = { __typename?: 'Query', getEvent?: { __typename?: 'Event', id: number, organizationId: string, name: string, description?: string | null, eventType: EventType, categoryId?: number | null, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean, createdAt: string, updatedAt: string, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: string } | null } | null };
+export type GetEventQuery = { __typename?: 'Query', getEvent?: { __typename?: 'Event', id: number, organizationId: string, name: string, description?: string | null, eventType: EventType, categoryId?: number | null, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean, createdAt: string, updatedAt: string, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: RecurrenceFrequency } | null } | null };
 
 export type GetEventRegistrationsQueryVariables = Exact<{
   eventId: Scalars['Int']['input'];
@@ -1731,6 +1744,14 @@ export type CancelRecurringSeriesMutationVariables = Exact<{
 
 
 export type CancelRecurringSeriesMutation = { __typename?: 'Mutation', cancelRecurringSeries: number };
+
+export type UpdateRecurrenceRuleMutationVariables = Exact<{
+  recurrenceGroupId: Scalars['String']['input'];
+  frequency: RecurrenceFrequency;
+}>;
+
+
+export type UpdateRecurrenceRuleMutation = { __typename?: 'Mutation', updateRecurrenceRule: { __typename?: 'Event', id: number, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: RecurrenceFrequency } | null } };
 
 export type AddEventRegistrationMutationVariables = Exact<{
   eventId: Scalars['Int']['input'];
@@ -2570,6 +2591,19 @@ export const CancelRecurringSeriesDocument = new TypedDocumentString(`
   cancelRecurringSeries(recurrenceGroupId: $recurrenceGroupId)
 }
     `) as unknown as TypedDocumentString<CancelRecurringSeriesMutation, CancelRecurringSeriesMutationVariables>;
+export const UpdateRecurrenceRuleDocument = new TypedDocumentString(`
+    mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: RecurrenceFrequency!) {
+  updateRecurrenceRule(
+    recurrenceGroupId: $recurrenceGroupId
+    frequency: $frequency
+  ) {
+    id
+    recurrenceRule {
+      frequency
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateRecurrenceRuleMutation, UpdateRecurrenceRuleMutationVariables>;
 export const AddEventRegistrationDocument = new TypedDocumentString(`
     mutation AddEventRegistration($eventId: Int!, $input: AdminEventRegistrationInput!) {
   addEventRegistration(eventId: $eventId, input: $input) {

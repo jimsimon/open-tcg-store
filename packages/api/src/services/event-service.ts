@@ -1,11 +1,11 @@
-import { eq, and, gte, lte, count, desc, ne, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, count, desc, ne, isNotNull, inArray, or, isNull } from 'drizzle-orm';
 import { otcgs } from '../db/otcgs/index.ts';
 import { event } from '../db/otcgs/event-schema.ts';
 import { eventRegistration } from '../db/otcgs/event-registration-schema.ts';
 import { category } from '../db/tcg-data/schema.ts';
 import { normalizePagination } from '../lib/sql-utils.ts';
 import { formatDate } from '../lib/date-utils.ts';
-import type { EventType, EventStatus, RegistrationStatus } from '../schema/types.generated.ts';
+import type { EventType, EventStatus, RecurrenceFrequency, RegistrationStatus } from '../schema/types.generated.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,9 +65,18 @@ const DB_TO_GQL_EVENT_TYPE: Record<string, string> = Object.fromEntries(
 
 const VALID_FREQUENCIES = ['weekly', 'biweekly', 'monthly'];
 
+/** Default number of weeks into the future to generate recurring event instances. */
+export const DEFAULT_RECURRENCE_WINDOW_WEEKS = 8;
+
 // ---------------------------------------------------------------------------
 // Formatting helpers
 // ---------------------------------------------------------------------------
+
+/** Parse a JSON recurrence rule from the DB and convert the frequency to its GraphQL enum value. */
+function formatRecurrenceRule(raw: string): { frequency: RecurrenceFrequency } {
+  const parsed = JSON.parse(raw) as { frequency: string };
+  return { frequency: parsed.frequency.toUpperCase() as RecurrenceFrequency };
+}
 
 async function enrichEventWithGame(e: typeof event.$inferSelect) {
   let gameName: string | null = null;
@@ -106,7 +115,7 @@ async function enrichEventWithGame(e: typeof event.$inferSelect) {
     entryFeeInCents: e.entryFeeInCents,
     status: e.status.toUpperCase() as EventStatus,
     registrationCount: regCount.count,
-    recurrenceRule: e.recurrenceRule ? JSON.parse(e.recurrenceRule) : null,
+    recurrenceRule: e.recurrenceRule ? formatRecurrenceRule(e.recurrenceRule) : null,
     recurrenceGroupId: e.recurrenceGroupId,
     isRecurrenceTemplate: e.isRecurrenceTemplate ?? false,
     createdAt: formatDate(e.createdAt) ?? new Date().toISOString(),
@@ -167,7 +176,7 @@ async function enrichEventsWithGame(rows: (typeof event.$inferSelect)[]) {
       entryFeeInCents: e.entryFeeInCents,
       status: e.status.toUpperCase() as EventStatus,
       registrationCount: regCountMap.get(e.id) ?? 0,
-      recurrenceRule: e.recurrenceRule ? JSON.parse(e.recurrenceRule) : null,
+      recurrenceRule: e.recurrenceRule ? formatRecurrenceRule(e.recurrenceRule) : null,
       recurrenceGroupId: e.recurrenceGroupId,
       isRecurrenceTemplate: e.isRecurrenceTemplate ?? false,
       createdAt: formatDate(e.createdAt) ?? new Date().toISOString(),
@@ -217,6 +226,8 @@ function validateCreateInput(input: CreateEventInput) {
   }
 
   if (input.recurrenceRule) {
+    // Normalize to lowercase to accept both 'WEEKLY' and 'weekly'
+    input.recurrenceRule.frequency = input.recurrenceRule.frequency.toLowerCase();
     if (!VALID_FREQUENCIES.includes(input.recurrenceRule.frequency)) {
       throw new Error(`Invalid recurrence frequency: ${input.recurrenceRule.frequency}`);
     }
@@ -274,7 +285,8 @@ export async function getPublicEvents(organizationId: string, dateFrom: string, 
         eq(event.status, 'scheduled'),
         gte(event.startTime, new Date(dateFrom)),
         lte(event.startTime, new Date(dateTo)),
-        // Don't show template events in the public calendar unless they have a valid startTime
+        // Exclude template events — only show concrete scheduled instances
+        or(eq(event.isRecurrenceTemplate, false), isNull(event.isRecurrenceTemplate)),
       ),
     )
     .orderBy(event.startTime);
@@ -369,7 +381,7 @@ export async function createEvent(organizationId: string, input: CreateEventInpu
 
   // If recurring, generate initial batch of instances
   if (hasRecurrence && input.recurrenceRule) {
-    await generateRecurrenceInstances(created, input.recurrenceRule.frequency, 8);
+    await generateRecurrenceInstances(created, input.recurrenceRule.frequency, DEFAULT_RECURRENCE_WINDOW_WEEKS);
   }
 
   return enrichEventWithGame(created);
@@ -431,6 +443,82 @@ export async function cancelEvent(eventId: number, organizationId: string, _user
     .returning();
 
   return enrichEventWithGame(updated);
+}
+
+/**
+ * Update the recurrence frequency for an entire recurring series.
+ * Deletes all future scheduled instances and their registrations, updates
+ * the template rule, and regenerates instances — all within a transaction.
+ * Returns the updated template event.
+ */
+export async function updateRecurrenceRule(
+  recurrenceGroupId: string,
+  organizationId: string,
+  frequency: string,
+  _userId: string,
+) {
+  const normalizedFrequency = frequency.toLowerCase();
+  if (!VALID_FREQUENCIES.includes(normalizedFrequency)) {
+    throw new Error(`Invalid recurrence frequency: ${frequency}`);
+  }
+
+  // Fetch the template
+  const [template] = await otcgs
+    .select()
+    .from(event)
+    .where(
+      and(
+        eq(event.recurrenceGroupId, recurrenceGroupId),
+        eq(event.organizationId, organizationId),
+        eq(event.isRecurrenceTemplate, true),
+      ),
+    )
+    .limit(1);
+
+  if (!template) throw new Error('Recurring series not found');
+
+  // Delete old instances + update template atomically. Instance generation
+  // runs after the transaction; if it fails the nightly cron job will fill
+  // the gap, so we never leave orphaned cancelled rows that skew scheduling.
+  const updatedTemplate = await otcgs.transaction(async (tx) => {
+    // Collect IDs of future scheduled instances to delete
+    const now = new Date();
+    const futureInstances = await tx
+      .select({ id: event.id })
+      .from(event)
+      .where(
+        and(
+          eq(event.recurrenceGroupId, recurrenceGroupId),
+          eq(event.organizationId, organizationId),
+          eq(event.status, 'scheduled'),
+          gte(event.startTime, now),
+          ne(event.id, template.id),
+        ),
+      );
+
+    if (futureInstances.length > 0) {
+      const futureIds = futureInstances.map((e) => e.id);
+      // Delete registrations for those instances first (FK constraint)
+      await tx.delete(eventRegistration).where(inArray(eventRegistration.eventId, futureIds));
+      // Delete the instances themselves
+      await tx.delete(event).where(inArray(event.id, futureIds));
+    }
+
+    // Update the template's recurrence rule
+    const [updated] = await tx
+      .update(event)
+      .set({ recurrenceRule: JSON.stringify({ frequency: normalizedFrequency }), updatedAt: new Date() })
+      .where(eq(event.id, template.id))
+      .returning();
+
+    return updated;
+  });
+
+  // Regenerate instances outside the transaction (uses global `otcgs` connection).
+  // Safe: if this fails, the nightly cron job will create missing instances.
+  await generateRecurrenceInstances(updatedTemplate, normalizedFrequency, DEFAULT_RECURRENCE_WINDOW_WEEKS);
+
+  return enrichEventWithGame(updatedTemplate);
 }
 
 export async function cancelRecurringSeries(
