@@ -1,8 +1,9 @@
-import { sql, and, eq, exists, isNull, gt } from 'drizzle-orm';
+import { sql, and, eq, exists, isNull, gt, inArray } from 'drizzle-orm';
 import { otcgs } from '../db';
 import { product, productExtendedData } from '../db/tcg-data/schema';
 import { inventoryItem } from '../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../db/otcgs/inventory-stock-schema';
+import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
 import { likeEscaped } from '../lib/sql-utils';
 
 import type {
@@ -404,7 +405,18 @@ async function queryProductListings(
   const conditions = [];
 
   if (categoryId !== undefined) {
+    // Specific game selected — filter to that game
     conditions.push(eq(product.categoryId, categoryId));
+  } else {
+    // No specific game — restrict to store's supported games
+    const supportedRows = await otcgs.select({ categoryId: storeSupportedGame.categoryId }).from(storeSupportedGame);
+    const supportedIds = supportedRows.map((r) => r.categoryId);
+    if (supportedIds.length > 0) {
+      conditions.push(inArray(product.categoryId, supportedIds));
+    } else {
+      // No supported games configured — return empty results
+      return { items: [], totalCount: 0 };
+    }
   }
 
   if (filters?.searchTerm && filters.searchTerm.trim().length > 0) {
