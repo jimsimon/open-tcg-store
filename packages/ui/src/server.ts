@@ -107,6 +107,11 @@ function getSession(ctx: Context) {
   return authClient.getSession({
     fetchOptions: {
       headers: authHeaders(ctx),
+      onSuccess: (successCtx) => {
+        // Forward any Set-Cookie headers (e.g. session token refresh) to the
+        // browser so the client stays in sync with the server-side session.
+        forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
+      },
     },
   });
 }

@@ -414,6 +414,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
             <wa-button
               class="nav-toggle"
               data-toggle-nav
+              variant="neutral"
               appearance="plain"
               size="small"
               aria-label="Toggle navigation"
@@ -479,7 +480,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
             </wa-select>
             ${this.showCartButton
               ? html`
-                  <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
+                  <wa-button
+                    variant="neutral"
+                    appearance="filled"
+                    aria-label="Shopping cart"
+                    @click="${this.openCartDrawer}"
+                  >
                     <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
                     <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
                   </wa-button>
@@ -622,7 +628,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
     if (this.isAnonymous || !this.userName) {
       return html`
         <wa-dropdown>
-          <wa-button class="avatar-button" appearance="filled" slot="trigger" aria-label="User menu">
+          <wa-button class="avatar-button" variant="neutral" appearance="filled" slot="trigger" aria-label="User menu">
             <wa-icon name="user" variant="solid" label="User"></wa-icon>
           </wa-button>
           <wa-dropdown-item @click="${this.openAuthDialog}">
@@ -635,7 +641,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
     return html`
       <wa-dropdown>
-        <wa-button class="avatar-button" appearance="filled" slot="trigger" aria-label="User menu">
+        <wa-button class="avatar-button" variant="neutral" appearance="filled" slot="trigger" aria-label="User menu">
           <wa-icon name="user" variant="solid" label="User"></wa-icon>
         </wa-button>
         <div class="dropdown-user-label">${this.userName}</div>
