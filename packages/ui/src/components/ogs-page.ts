@@ -393,6 +393,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   private handleScroll() {
     const currentScrollY = window.scrollY;
     const delta = currentScrollY - this.lastScrollY;
+    this.lastScrollY = currentScrollY;
 
     if (Math.abs(delta) < this.scrollThreshold) return;
 
@@ -403,8 +404,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
       // Scrolling up
       this.toggleAttribute('header-hidden', false);
     }
-
-    this.lastScrollY = currentScrollY;
   }
 
   render() {
