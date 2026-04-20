@@ -630,6 +630,7 @@ export class OgsInventorySinglesPage extends OgsPageBase {
                 <wa-button
                   size="small"
                   variant="neutral"
+                  appearance="plain"
                   ?disabled="${this.currentPage === 1}"
                   @click="${() => this.goToPage(this.currentPage - 1)}"
                 >
@@ -650,6 +651,7 @@ export class OgsInventorySinglesPage extends OgsPageBase {
                 <wa-button
                   size="small"
                   variant="neutral"
+                  appearance="plain"
                   ?disabled="${this.currentPage === this.totalPages}"
                   @click="${() => this.goToPage(this.currentPage + 1)}"
                 >

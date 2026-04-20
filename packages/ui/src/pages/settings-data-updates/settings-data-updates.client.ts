@@ -625,7 +625,6 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
           </wa-button>
           <wa-button
             variant="neutral"
-            appearance="outlined"
             ?loading="${this.checking}"
             ?disabled="${this.updating || this.checking}"
             @click="${this.handleCheckForUpdates}"
