@@ -102,6 +102,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       }
 
       wa-page::part(main-content) {
+        width: 100%;
         max-width: 1600px;
         margin-inline: auto;
         padding-block: var(--wa-space-l);
