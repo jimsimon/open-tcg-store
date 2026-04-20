@@ -1267,7 +1267,7 @@ export class OgsEventManagementPage extends OgsPageBase {
       <wa-button
         size="small"
         variant="neutral"
-        appearance="plain"
+        appearance="outlined"
         style="margin-bottom: 1rem;"
         @click="${this.handleBackToList}"
       >
