@@ -86,11 +86,14 @@ export class OgsPage extends SignalWatcher(LitElement) {
       wa-page::part(header) {
         border-bottom: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
         background: var(--wa-color-surface-raised);
-        transition: translate 0.3s ease;
+        max-height: 64px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
       }
 
       :host([header-hidden]) wa-page::part(header) {
-        translate: 0 -100%;
+        max-height: 0;
+        border-bottom-width: 0;
       }
 
       wa-page::part(menu) {
@@ -112,6 +115,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         width: 100%;
         padding-inline: var(--wa-space-l);
         padding-inline-end: var(--wa-space-s);
+        background: var(--wa-color-surface-raised);
       }
 
       .header-content h1 {
@@ -152,6 +156,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         flex-direction: column;
         gap: 1px;
         padding: var(--wa-space-s) 0;
+        background: var(--wa-color-surface-raised);
       }
 
       .nav-section-label {
