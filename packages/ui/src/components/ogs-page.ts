@@ -113,6 +113,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       .header-content {
         block-size: 64px;
         width: 100%;
+        padding-block: 0;
         padding-inline: var(--wa-space-l);
         padding-inline-end: var(--wa-space-s);
         background: var(--wa-color-surface-raised);
@@ -392,6 +393,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
   private handleScroll() {
     const currentScrollY = window.scrollY;
     const delta = currentScrollY - this.lastScrollY;
+    this.lastScrollY = currentScrollY;
 
     if (Math.abs(delta) < this.scrollThreshold) return;
 
@@ -402,8 +404,6 @@ export class OgsPage extends SignalWatcher(LitElement) {
       // Scrolling up
       this.toggleAttribute('header-hidden', false);
     }
-
-    this.lastScrollY = currentScrollY;
   }
 
   render() {
@@ -522,7 +522,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
                     this.renderNavLink(storeUrl('/users'), 'users-gear', 'User Accounts', 'users'),
                   )}
                   ${when(this.canManageEvents, () =>
-                    this.renderNavLink(storeUrl('/event-management'), 'calendar-pen', 'Events', 'event-management'),
+                    this.renderNavLink(
+                      storeUrl('/event-management'),
+                      'calendar-check',
+                      'Event Management',
+                      'event-management',
+                    ),
                   )}
                 `,
               )}

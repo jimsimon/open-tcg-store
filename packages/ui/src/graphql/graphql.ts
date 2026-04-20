@@ -2272,21 +2272,21 @@ export type UpdateShopifyIntegrationMutation = { __typename?: 'Mutation', update
 export type GetAllStoreLocationsAdminQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAllStoreLocationsAdminQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> }> };
+export type GetAllStoreLocationsAdminQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> }> };
 
 export type AddStoreLocationMutationVariables = Exact<{
   input: AddStoreLocationInput;
 }>;
 
 
-export type AddStoreLocationMutation = { __typename?: 'Mutation', addStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+export type AddStoreLocationMutation = { __typename?: 'Mutation', addStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
 
 export type UpdateStoreLocationMutationVariables = Exact<{
   input: UpdateStoreLocationInput;
 }>;
 
 
-export type UpdateStoreLocationMutation = { __typename?: 'Mutation', updateStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, slug: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+export type UpdateStoreLocationMutation = { __typename?: 'Mutation', updateStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
 
 export type RemoveStoreLocationMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3612,7 +3612,6 @@ export const GetAllStoreLocationsAdminDocument = new TypedDocumentString(`
   getEmployeeStoreLocations {
     id
     name
-    slug
     street1
     street2
     city
@@ -3633,7 +3632,6 @@ export const AddStoreLocationDocument = new TypedDocumentString(`
   addStoreLocation(input: $input) {
     id
     name
-    slug
     street1
     street2
     city
@@ -3654,7 +3652,6 @@ export const UpdateStoreLocationDocument = new TypedDocumentString(`
   updateStoreLocation(input: $input) {
     id
     name
-    slug
     street1
     street2
     city

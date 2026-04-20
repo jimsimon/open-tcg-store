@@ -243,7 +243,7 @@ export const productGridStyles = css`
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem 0;
+    padding: 0.75rem;
     overflow: hidden;
   }
 

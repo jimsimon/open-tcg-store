@@ -17,6 +17,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { execute } from '../../lib/graphql';
 import { graphql } from '../../graphql/index.ts';
 import { US_STATES } from '../../lib/us-states';
+import { slugify } from '../../lib/slugify';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -35,7 +36,6 @@ interface StoreHours {
 interface StoreLocation {
   id: string;
   name: string;
-  slug: string;
   street1: string;
   street2: string | null;
   city: string;
@@ -51,7 +51,6 @@ const GetAllStoreLocationsAdminQuery = graphql(`
     getEmployeeStoreLocations {
       id
       name
-      slug
       street1
       street2
       city
@@ -73,7 +72,6 @@ const AddStoreLocationMutation = graphql(`
     addStoreLocation(input: $input) {
       id
       name
-      slug
       street1
       street2
       city
@@ -95,7 +93,6 @@ const UpdateStoreLocationMutation = graphql(`
     updateStoreLocation(input: $input) {
       id
       name
-      slug
       street1
       street2
       city
@@ -117,17 +114,6 @@ const RemoveStoreLocationMutation = graphql(`
     removeStoreLocation(id: $id)
   }
 `);
-
-// --- Helpers ---
-
-function toKebabCase(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
 
 // --- Component ---
 
@@ -425,7 +411,6 @@ export class SettingsLocationsPage extends OgsPageBase {
   // Add dialog
   @state() showAddDialog = false;
   @state() addName = '';
-  @state() addSlug = '';
   @state() addStreet1 = '';
   @state() addStreet2 = '';
   @state() addCity = '';
@@ -440,7 +425,6 @@ export class SettingsLocationsPage extends OgsPageBase {
   @state() showEditDialog = false;
   @state() editingLocation: StoreLocation | null = null;
   @state() editName = '';
-  @state() editSlug = '';
   @state() editStreet1 = '';
   @state() editStreet2 = '';
   @state() editCity = '';
@@ -478,7 +462,6 @@ export class SettingsLocationsPage extends OgsPageBase {
 
   private resetAddForm() {
     this.addName = '';
-    this.addSlug = '';
     this.addStreet1 = '';
     this.addStreet2 = '';
     this.addCity = '';
@@ -505,7 +488,6 @@ export class SettingsLocationsPage extends OgsPageBase {
   private isAddFormValid(): boolean {
     return !!(
       this.addName.trim() &&
-      this.addSlug.trim() &&
       this.addStreet1.trim() &&
       this.addCity.trim() &&
       this.addState &&
@@ -516,7 +498,6 @@ export class SettingsLocationsPage extends OgsPageBase {
   private isEditFormValid(): boolean {
     return !!(
       this.editName.trim() &&
-      this.editSlug.trim() &&
       this.editStreet1.trim() &&
       this.editCity.trim() &&
       this.editState &&
@@ -542,7 +523,7 @@ export class SettingsLocationsPage extends OgsPageBase {
         hours: { dayOfWeek: number; openTime: string | null; closeTime: string | null }[];
       } = {
         name: this.addName.trim(),
-        slug: this.addSlug.trim(),
+        slug: slugify(this.addName.trim()),
         street1: this.addStreet1.trim(),
         city: this.addCity.trim(),
         state: this.addState,
@@ -574,7 +555,6 @@ export class SettingsLocationsPage extends OgsPageBase {
   openEditDialog(location: StoreLocation) {
     this.editingLocation = location;
     this.editName = location.name;
-    this.editSlug = location.slug;
     this.editStreet1 = location.street1;
     this.editStreet2 = location.street2 ?? '';
     this.editCity = location.city;
@@ -609,7 +589,6 @@ export class SettingsLocationsPage extends OgsPageBase {
       const input: {
         id: string;
         name: string;
-        slug: string;
         street1: string;
         street2?: string;
         city: string;
@@ -620,7 +599,6 @@ export class SettingsLocationsPage extends OgsPageBase {
       } = {
         id: this.editingLocation.id,
         name: this.editName.trim(),
-        slug: this.editSlug.trim(),
         street1: this.editStreet1.trim(),
         city: this.editCity.trim(),
         state: this.editState,
@@ -909,20 +887,9 @@ export class SettingsLocationsPage extends OgsPageBase {
             .value="${this.addName}"
             @input="${(e: Event) => {
               this.addName = (e.target as HTMLInputElement).value;
-              this.addSlug = toKebabCase((e.target as HTMLInputElement).value);
             }}"
           >
             <wa-icon slot="prefix" name="store"></wa-icon>
-          </wa-input>
-          <wa-input
-            label="Slug"
-            required
-            .value="${this.addSlug}"
-            @input="${(e: Event) => {
-              this.addSlug = (e.target as HTMLInputElement).value;
-            }}"
-          >
-            <wa-icon slot="prefix" name="link"></wa-icon>
           </wa-input>
           <wa-input
             label="Street Address 1"
@@ -1053,16 +1020,6 @@ export class SettingsLocationsPage extends OgsPageBase {
                 }}"
               >
                 <wa-icon slot="prefix" name="store"></wa-icon>
-              </wa-input>
-              <wa-input
-                label="Slug"
-                required
-                .value="${this.editSlug}"
-                @input="${(e: Event) => {
-                  this.editSlug = (e.target as HTMLInputElement).value;
-                }}"
-              >
-                <wa-icon slot="prefix" name="link"></wa-icon>
               </wa-input>
               <wa-input
                 label="Street Address 1"
