@@ -43,8 +43,11 @@ describe('ogs-page', () => {
   });
 
   test('renders page component with navigation and Browse link', async () => {
-    const navigation = await screen.findByShadowRole('navigation');
-    expect(navigation).toBeInTheDocument();
+    element.canManageInventory = false;
+    await element.updateComplete;
+
+    const navContent = element.shadowRoot!.querySelector('.nav-content');
+    expect(navContent).toBeTruthy();
 
     const browseLink = await screen.findByShadowText('Browse');
     expect(browseLink).toBeInTheDocument();
@@ -359,7 +362,7 @@ describe('ogs-page', () => {
       await el.updateComplete;
 
       // Component should still render successfully
-      const navigation = el.shadowRoot!.querySelector('nav');
+      const navigation = el.shadowRoot!.querySelector('.nav-content');
       expect(navigation).toBeTruthy();
 
       el.remove();

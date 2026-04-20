@@ -11,6 +11,9 @@ export function render(pageDirectory: string, pageContent: unknown) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>TCG Store</title>
         <style>
+          html, body {
+            min-height: 100%;
+          }
           body {
             margin: 0;
             box-sizing: border-box;

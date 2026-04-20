@@ -16,6 +16,7 @@ import WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 // These components reference `document` at module scope, so they must be
 // loaded dynamically to avoid "document is not defined" during SSR.
 if (typeof globalThis.document !== 'undefined') {
+  import('@awesome.me/webawesome/dist/components/page/page.js');
   import('@awesome.me/webawesome/dist/components/dropdown/dropdown.js');
   import('@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js');
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -70,36 +71,50 @@ export class OgsPage extends SignalWatcher(LitElement) {
     css`
       :host {
         display: block;
-        box-sizing: border-box;
       }
 
-      :root {
-        height: 100%;
+      /* --- wa-page layout configuration --- */
+
+      wa-page {
+        --menu-width: 260px;
       }
 
-      #page {
-        display: flex;
-        min-height: calc(100vh - 64px);
+      wa-page[view='mobile'] {
+        --menu-width: auto;
       }
 
-      header {
-        box-sizing: border-box;
+      wa-page::part(header) {
         border-bottom: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
-        padding-inline: var(--wa-space-l);
-        padding-inline-end: var(--wa-space-s);
-        block-size: 64px;
         background: var(--wa-color-surface-raised);
-        position: sticky;
-        top: 0;
-        z-index: 10;
         transition: translate 0.3s ease;
       }
 
-      :host([header-hidden]) header {
+      :host([header-hidden]) wa-page::part(header) {
         translate: 0 -100%;
       }
 
-      header h1 {
+      wa-page::part(menu) {
+        background: var(--wa-color-surface-raised);
+        border-right: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
+      }
+
+      wa-page::part(main-content) {
+        max-width: 1600px;
+        margin-inline: auto;
+        padding-block: var(--wa-space-l);
+        padding-inline: clamp(1rem, 3vw, 3rem);
+      }
+
+      /* --- Header content --- */
+
+      .header-content {
+        block-size: 64px;
+        width: 100%;
+        padding-inline: var(--wa-space-l);
+        padding-inline-end: var(--wa-space-s);
+      }
+
+      .header-content h1 {
         display: flex;
         align-items: center;
         gap: var(--wa-space-xs);
@@ -120,31 +135,23 @@ export class OgsPage extends SignalWatcher(LitElement) {
         height: 100%;
       }
 
-      nav {
+      /* --- Mobile nav toggle (shown only on mobile via wa-page view) --- */
+
+      .nav-toggle {
+        display: none;
+      }
+
+      wa-page[view='mobile'] .nav-toggle {
+        display: inline-flex;
+      }
+
+      /* --- Navigation content --- */
+
+      .nav-content {
         display: flex;
         flex-direction: column;
         gap: 1px;
-        position: sticky;
-        top: 64px;
-        height: calc(100vh - 64px);
-        min-width: 260px;
-        max-width: 260px;
-        flex-shrink: 0;
-        box-sizing: border-box;
-        border-right: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
-        background: var(--wa-color-surface-raised);
         padding: var(--wa-space-s) 0;
-        overflow-x: hidden;
-        overflow-y: auto;
-        align-self: flex-start;
-        transition:
-          top 0.3s ease,
-          height 0.3s ease;
-      }
-
-      :host([header-hidden]) nav {
-        top: 0;
-        height: 100vh;
       }
 
       .nav-section-label {
@@ -225,13 +232,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         border-left-color: var(--wa-color-brand-text);
       }
 
-      section {
-        box-sizing: border-box;
-        margin-inline: auto;
-        max-width: 1200px;
-        flex: 1;
-        padding: var(--wa-space-l);
-      }
+      /* --- User menu & controls --- */
 
       [hidden] {
         display: none;
@@ -402,80 +403,85 @@ export class OgsPage extends SignalWatcher(LitElement) {
 
   render() {
     return html`
-      <header class="wa-split">
-        <h1><span class="logo">${this.renderLogo()}</span>OpenTCGS</h1>
-        <div class="wa-cluster">
-          ${this.showStoreSelector && storeList.get().length > 0
-            ? html`
-                <wa-select
-                  class="store-selector"
-                  appearance="filled"
-                  value="${activeStoreId.get() ?? ''}"
-                  placement="bottom"
-                  @change="${this.handleStoreChange}"
-                >
-                  <wa-icon slot="start" name="location-dot" variant="solid"></wa-icon>
-                  <span slot="label" class="wa-visually-hidden">Select Store</span>
-                  ${storeList.get().map((store) => html` <wa-option value="${store.id}">${store.name}</wa-option> `)}
-                </wa-select>
-              `
-            : nothing}
-          <wa-select
-            class="color-scheme-selector"
-            appearance="filled"
-            size="small"
-            value="${this.themePreference}"
-            title="Press  to toggle"
-            placement="bottom"
-            @change="${this.handleThemePreferenceChange}"
-          >
-            <span slot="label" class="wa-visually-hidden">Choose Theme</span>
-            <wa-icon
-              class="only-light"
-              slot="start"
-              name="sun"
-              variant="regular"
-              .hidden="${this.themeColor === 'dark'}"
-            ></wa-icon>
-            <wa-icon
-              class="only-dark"
-              slot="start"
-              name="moon"
-              variant="regular"
-              .hidden="${this.themeColor === 'light'}"
-            ></wa-icon>
-            <wa-option value="light">
-              <wa-icon slot="start" name="sun" variant="regular"></wa-icon>
-              Light
-            </wa-option>
-            <wa-option value="dark">
-              <wa-icon slot="start" name="moon" variant="regular"></wa-icon>
-              Dark
-            </wa-option>
-            <wa-divider role="separator" aria-orientation="horizontal" orientation="horizontal"></wa-divider>
-            <wa-option value="auto">
-              <wa-icon class="only-light" slot="start" name="sun" variant="regular"></wa-icon>
-              <wa-icon class="only-dark" slot="start" name="moon" variant="regular"></wa-icon>
-              System
-            </wa-option>
-          </wa-select>
-          ${this.showCartButton
-            ? html`
-                <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
-                  <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
-                  <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
-                </wa-button>
-                <wa-divider orientation="vertical"></wa-divider>
-              `
-            : nothing}
-          ${this.showUserMenu ? this.renderUserMenu() : nothing}
-        </div>
-      </header>
-      <div id="page">
+      <wa-page mobile-breakpoint="768">
+        <header slot="header" class="wa-split header-content">
+          <div class="wa-cluster">
+            <wa-button class="nav-toggle" data-toggle-nav appearance="text" size="small" aria-label="Toggle navigation">
+              <wa-icon name="bars"></wa-icon>
+            </wa-button>
+            <h1><span class="logo">${this.renderLogo()}</span>OpenTCGS</h1>
+          </div>
+          <div class="wa-cluster">
+            ${this.showStoreSelector && storeList.get().length > 0
+              ? html`
+                  <wa-select
+                    class="store-selector"
+                    appearance="filled"
+                    value="${activeStoreId.get() ?? ''}"
+                    placement="bottom"
+                    @change="${this.handleStoreChange}"
+                  >
+                    <wa-icon slot="start" name="location-dot" variant="solid"></wa-icon>
+                    <span slot="label" class="wa-visually-hidden">Select Store</span>
+                    ${storeList.get().map((store) => html` <wa-option value="${store.id}">${store.name}</wa-option> `)}
+                  </wa-select>
+                `
+              : nothing}
+            <wa-select
+              class="color-scheme-selector"
+              appearance="filled"
+              size="small"
+              value="${this.themePreference}"
+              title="Press  to toggle"
+              placement="bottom"
+              @change="${this.handleThemePreferenceChange}"
+            >
+              <span slot="label" class="wa-visually-hidden">Choose Theme</span>
+              <wa-icon
+                class="only-light"
+                slot="start"
+                name="sun"
+                variant="regular"
+                .hidden="${this.themeColor === 'dark'}"
+              ></wa-icon>
+              <wa-icon
+                class="only-dark"
+                slot="start"
+                name="moon"
+                variant="regular"
+                .hidden="${this.themeColor === 'light'}"
+              ></wa-icon>
+              <wa-option value="light">
+                <wa-icon slot="start" name="sun" variant="regular"></wa-icon>
+                Light
+              </wa-option>
+              <wa-option value="dark">
+                <wa-icon slot="start" name="moon" variant="regular"></wa-icon>
+                Dark
+              </wa-option>
+              <wa-divider role="separator" aria-orientation="horizontal" orientation="horizontal"></wa-divider>
+              <wa-option value="auto">
+                <wa-icon class="only-light" slot="start" name="sun" variant="regular"></wa-icon>
+                <wa-icon class="only-dark" slot="start" name="moon" variant="regular"></wa-icon>
+                System
+              </wa-option>
+            </wa-select>
+            ${this.showCartButton
+              ? html`
+                  <wa-button appearance="filled" aria-label="Shopping cart" @click="${this.openCartDrawer}">
+                    <wa-icon name="shopping-cart" label="Shopping cart"></wa-icon>
+                    <wa-badge pill>${cartState.get().items.reduce((total, item) => total + item.quantity, 0)}</wa-badge>
+                  </wa-button>
+                  <wa-divider orientation="vertical"></wa-divider>
+                `
+              : nothing}
+            ${this.showUserMenu ? this.renderUserMenu() : nothing}
+          </div>
+        </header>
         ${when(
           !this.hideNav,
           () => html`
-            <nav aria-label="Main navigation">
+            <div slot="navigation" class="nav-content">
               <div class="nav-section-label">Shop</div>
               ${this.renderNavLink(storeUrl('/products/singles'), 'bag-shopping', 'Browse', 'products')}
               ${this.renderNavSubLink(storeUrl('/products/singles'), 'Singles', 'products/singles')}
@@ -538,14 +544,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
                   )}
                 `,
               )}
-            </nav>
+            </div>
           `,
           () => nothing,
         )}
-        <section>
-          <slot></slot>
-        </section>
-      </div>
+        <slot></slot>
+      </wa-page>
       <ogs-auth-dialog
         ?open="${this.showAuthDialog}"
         @closed="${() => (this.showAuthDialog = false)}"

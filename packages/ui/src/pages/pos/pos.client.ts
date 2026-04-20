@@ -1,6 +1,7 @@
 import { css, html, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
+import { BP_TABLET } from '../../lib/breakpoints';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
@@ -305,6 +306,21 @@ export class PosPage extends OgsPageBase {
         gap: 1rem;
         max-height: calc(100vh - 200px);
         overflow-y: auto;
+      }
+
+      @media (max-width: ${unsafeCSS(BP_TABLET)}) {
+        .pos-container {
+          flex-direction: column;
+        }
+
+        .pos-right {
+          position: static;
+          border-left: none;
+          border-top: 1px solid var(--wa-color-surface-border);
+          padding-left: 0;
+          padding-top: 1.5rem;
+          max-height: unset;
+        }
       }
 
       /* --- Input Sections --- */
