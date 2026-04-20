@@ -18,6 +18,7 @@ import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import { CardCondition } from '../../graphql/graphql.ts';
+import { storeUrl } from '../../lib/store-url';
 import {
   type AddForm,
   type InventoryItem,
@@ -369,8 +370,7 @@ export class OgsInventorySealedPage extends OgsPageBase {
   // --- Navigation ---
 
   private navigateToDetail(item: InventoryItem) {
-    const url = `/inventory/sealed/${item.id}`;
-    window.location.href = url;
+    window.location.href = storeUrl(`/inventory/sealed/${item.id}`);
   }
 
   // --- Pagination handlers ---
@@ -505,11 +505,11 @@ export class OgsInventorySealedPage extends OgsPageBase {
           <wa-icon slot="start" name="plus"></wa-icon>
           Add
         </wa-button>
-        <wa-button variant="neutral" href="/lots/new">
+        <wa-button variant="neutral" href="${storeUrl('/lots/new')}">
           <wa-icon slot="start" name="layer-group"></wa-icon>
           Add Lot
         </wa-button>
-        <wa-button variant="neutral" href="/inventory/import">
+        <wa-button variant="neutral" href="${storeUrl('/inventory/import')}">
           <wa-icon slot="start" name="upload"></wa-icon>
           Import
         </wa-button>

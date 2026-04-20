@@ -15,6 +15,7 @@ import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
 import { formatEventType, formatEntryFee, formatTime, formatFullDate } from '../../lib/event-helpers.ts';
+import { storeUrl } from '../../lib/store-url';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 
 // --- Types ---
@@ -502,7 +503,7 @@ export class EventDetailsPage extends OgsPageBase {
           <wa-icon name="calendar-xmark"></wa-icon>
           <h3>Event Not Found</h3>
           <p>This event may have been cancelled or doesn't exist.</p>
-          <wa-button variant="brand" href="/events">Browse Events</wa-button>
+          <wa-button variant="brand" href="${storeUrl('/events')}">Browse Events</wa-button>
         </div>
       `;
     }
@@ -513,7 +514,7 @@ export class EventDetailsPage extends OgsPageBase {
 
     return html`
       <div class="breadcrumb">
-        <a href="/events">Events</a>
+        <a href="${storeUrl('/events')}">Events</a>
         <wa-icon name="chevron-right"></wa-icon>
         <span>${event.name}</span>
       </div>

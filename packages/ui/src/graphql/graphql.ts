@@ -2310,6 +2310,11 @@ export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type IsSetupPendingQuery = { __typename?: 'Query', isSetupPending: boolean };
 
+export type GetDefaultStoreIdQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetDefaultStoreIdQuery = { __typename?: 'Query', getAllStoreLocations: Array<{ __typename?: 'StoreLocation', id: string }> };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -3671,3 +3676,10 @@ export const IsSetupPendingDocument = new TypedDocumentString(`
   isSetupPending
 }
     `) as unknown as TypedDocumentString<IsSetupPendingQuery, IsSetupPendingQueryVariables>;
+export const GetDefaultStoreIdDocument = new TypedDocumentString(`
+    query GetDefaultStoreId {
+  getAllStoreLocations {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<GetDefaultStoreIdQuery, GetDefaultStoreIdQueryVariables>;

@@ -19,6 +19,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { roles, statement } from '../../../../api/src/lib/permissions';
 import { getAuthClient } from '../../lib/auth';
 import { roleLabel } from '../../lib/labels';
+import { storeUrl } from '../../lib/store-url';
 
 // --- Permission definitions ---
 
@@ -768,7 +769,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
   render() {
     return this.renderPage(
       html`
-        <a class="back-link" href="/users">
+        <a class="back-link" href="${storeUrl('/users')}">
           <wa-icon name="arrow-left"></wa-icon>
           Back to Users
         </a>
@@ -898,7 +899,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
         <p>
           This user is not assigned to the currently selected store. Go back to the users list and assign them first.
         </p>
-        <wa-button variant="brand" href="/users">
+        <wa-button variant="brand" href="${storeUrl('/users')}">
           <wa-icon slot="start" name="arrow-left"></wa-icon>
           Back to Users
         </wa-button>
@@ -967,7 +968,7 @@ export class OgsSettingsUserEditPage extends OgsPageBase {
   private renderFooter() {
     return html`
       <div class="footer-actions">
-        <wa-button variant="neutral" href="/users">Cancel</wa-button>
+        <wa-button variant="neutral" href="${storeUrl('/users')}">Cancel</wa-button>
         <wa-button variant="brand" ?loading="${this.saving}" @click="${this.handleSave}">
           <wa-icon slot="start" name="floppy-disk"></wa-icon>
           Save Changes

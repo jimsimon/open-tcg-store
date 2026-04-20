@@ -38,6 +38,12 @@ vi.mock('../../auth-client', () => ({
 
 vi.stubGlobal('fetch', mockFetch);
 
+const TEST_STORE_ID = 'test-store-id';
+vi.mock('../../lib/store-url', () => ({
+  storeUrl: (path: string) => `/stores/${TEST_STORE_ID}${path}`,
+  getStoreIdFromUrl: () => TEST_STORE_ID,
+}));
+
 import './settings-user-edit.client.ts';
 import { OgsSettingsUserEditPage } from './settings-user-edit.client.ts';
 
@@ -166,7 +172,7 @@ describe('ogs-settings-user-edit-page', () => {
   test('should display the back link', () => {
     const backLink = element.shadowRoot!.querySelector('.back-link');
     expect(backLink).toBeTruthy();
-    expect(backLink?.getAttribute('href')).toBe('/users');
+    expect(backLink?.getAttribute('href')).toBe(`/stores/${TEST_STORE_ID}/users`);
   });
 
   test('should display user info card', () => {
@@ -221,7 +227,7 @@ describe('ogs-settings-user-edit-page', () => {
     expect(buttons.length).toBe(2);
 
     const cancelBtn = footer!.querySelector('wa-button[variant="neutral"]');
-    expect(cancelBtn?.getAttribute('href')).toBe('/users');
+    expect(cancelBtn?.getAttribute('href')).toBe(`/stores/${TEST_STORE_ID}/users`);
 
     const saveBtn = footer!.querySelector('wa-button[variant="brand"]');
     expect(saveBtn?.textContent).toContain('Save Changes');

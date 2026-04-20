@@ -17,6 +17,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { activeStoreId } from '../../lib/store-context';
 import { getAuthClient } from '../../lib/auth';
 import { roleLabel } from '../../lib/labels';
+import { storeUrl } from '../../lib/store-url';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -699,7 +700,7 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
                     size="small"
                     variant="neutral"
                     appearance="outlined"
-                    href="/users/${encodeURIComponent(member.userId)}"
+                    href="${storeUrl(`/users/${encodeURIComponent(member.userId)}`)}"
                   >
                     <wa-icon slot="start" name="pen-to-square"></wa-icon>
                     Edit

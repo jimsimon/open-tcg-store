@@ -29,6 +29,12 @@ vi.mock('../../auth-client', () => ({
 
 vi.stubGlobal('fetch', mockFetch);
 
+const TEST_STORE_ID = 'test-store-id';
+vi.mock('../../lib/store-url', () => ({
+  storeUrl: (path: string) => `/stores/${TEST_STORE_ID}${path}`,
+  getStoreIdFromUrl: () => TEST_STORE_ID,
+}));
+
 import './settings-users.client.ts';
 import { OgsSettingsUsersPage } from './settings-users.client.ts';
 
@@ -211,6 +217,6 @@ describe('ogs-settings-users-page', () => {
 
     // Find an edit button for a non-owner member
     const editHrefs = Array.from(editButtons).map((b) => b.getAttribute('href'));
-    expect(editHrefs).toContain('/users/user-2');
+    expect(editHrefs).toContain(`/stores/${TEST_STORE_ID}/users/user-2`);
   });
 });
