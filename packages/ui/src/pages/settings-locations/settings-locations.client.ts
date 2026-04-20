@@ -17,6 +17,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { execute } from '../../lib/graphql';
 import { graphql } from '../../graphql/index.ts';
 import { US_STATES } from '../../lib/us-states';
+import { slugify } from '../../lib/slugify';
 
 if (typeof globalThis.document !== 'undefined') {
   import('@awesome.me/webawesome/dist/components/dialog/dialog.js');
@@ -113,17 +114,6 @@ const RemoveStoreLocationMutation = graphql(`
     removeStoreLocation(id: $id)
   }
 `);
-
-// --- Helpers ---
-
-function toKebabCase(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
 
 // --- Component ---
 
@@ -533,7 +523,7 @@ export class SettingsLocationsPage extends OgsPageBase {
         hours: { dayOfWeek: number; openTime: string | null; closeTime: string | null }[];
       } = {
         name: this.addName.trim(),
-        slug: toKebabCase(this.addName.trim()),
+        slug: slugify(this.addName.trim()),
         street1: this.addStreet1.trim(),
         city: this.addCity.trim(),
         state: this.addState,

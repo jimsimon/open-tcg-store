@@ -209,19 +209,28 @@ export async function addStoreLocation(
   input: AddStoreLocationInput,
   headers: Record<string, string>,
 ): Promise<StoreLocationData> {
-  const created = await auth.api.createOrganization({
-    body: {
-      name: input.name,
-      slug: input.slug,
-      street1: input.street1,
-      street2: input.street2 ?? '',
-      city: input.city,
-      state: input.state,
-      zip: input.zip,
-      phone: input.phone ?? '',
-    },
-    headers,
-  });
+  let created: Awaited<ReturnType<typeof auth.api.createOrganization>>;
+  try {
+    created = await auth.api.createOrganization({
+      body: {
+        name: input.name,
+        slug: input.slug,
+        street1: input.street1,
+        street2: input.street2 ?? '',
+        city: input.city,
+        state: input.state,
+        zip: input.zip,
+        phone: input.phone ?? '',
+      },
+      headers,
+    });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (message.includes('UNIQUE constraint') && message.includes('slug')) {
+      throw new Error('A store with a similar name already exists. Please choose a different name.');
+    }
+    throw e;
+  }
 
   if (input.hours && input.hours.length > 0) {
     await otcgs.insert(storeHours).values(
