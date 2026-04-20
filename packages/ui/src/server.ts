@@ -83,13 +83,30 @@ app.use(async (ctx, next) => {
   await next();
 });
 
+/**
+ * Build the standard headers every server-to-server auth call needs:
+ * - Cookie: so the API sees the browser's session tokens.
+ * - X-Forwarded-For: so the API's rate limiter counts against the real
+ *   client IP instead of the UI server's loopback address.
+ */
+function authHeaders(ctx: Context, extra?: Record<string, string>): Record<string, string> {
+  // Build the X-Forwarded-For chain: preserve any existing upstream entries
+  // and append the direct connection's address so the API sees the full path.
+  const existingXff = ctx.headers['x-forwarded-for'] as string | undefined;
+  const socketAddr = ctx.req.socket.remoteAddress ?? '';
+  const xff = existingXff ? `${existingXff}, ${socketAddr}` : ctx.ip;
+
+  return {
+    ...extra,
+    Cookie: (ctx.headers.cookie as string) ?? '',
+    'X-Forwarded-For': xff,
+  };
+}
+
 function getSession(ctx: Context) {
   return authClient.getSession({
     fetchOptions: {
-      headers: {
-        // We need to copy over any session cookies from the browser request to the API request
-        Cookie: ctx.headers.cookie,
-      } as Record<string, string>,
+      headers: authHeaders(ctx),
       onSuccess: (successCtx) => {
         // Forward any Set-Cookie headers (e.g. session token refresh) to the
         // browser so the client stays in sync with the server-side session.
@@ -111,10 +128,9 @@ async function hasPermission(ctx: Context, resource: string, action: string): Pr
     const result = await authClient.organization.hasPermission({
       permissions: { [resource]: [action] },
       fetchOptions: {
-        headers: {
-          Cookie: (ctx.headers.cookie as string) ?? '',
+        headers: authHeaders(ctx, {
           Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
-        },
+        }),
       },
     });
 
@@ -205,13 +221,10 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
     return;
   }
 
-  const origin = ctx.headers.origin || `${ctx.protocol}://${ctx.host}`;
+  const origin = (ctx.headers.origin as string) || `${ctx.protocol}://${ctx.host}`;
   const signInResult = await authClient.signIn.anonymous({
     fetchOptions: {
-      headers: {
-        Cookie: ctx.headers.cookie,
-        Origin: origin,
-      } as Record<string, string>,
+      headers: authHeaders(ctx, { Origin: origin }),
       onSuccess: (successCtx) => {
         forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
       },
@@ -252,10 +265,9 @@ async function syncStoreContext(ctx: Context, next: Next) {
         const result = await authClient.organization.setActive({
           organizationId: storeId,
           fetchOptions: {
-            headers: {
-              Cookie: (ctx.headers.cookie as string) ?? '',
+            headers: authHeaders(ctx, {
               Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
-            },
+            }),
             onSuccess: (successCtx) => {
               // Forward new cookies to the browser AND merge them into the
               // current request so that the subsequent getSession() call
