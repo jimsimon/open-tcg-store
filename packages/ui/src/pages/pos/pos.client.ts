@@ -99,6 +99,15 @@ const GetOpenOrdersQuery = graphql(`
   }
 `);
 
+const GetActiveStoreLocationQuery = graphql(`
+  query POSGetActiveStoreLocation {
+    getActiveStoreLocation {
+      id
+      state
+    }
+  }
+`);
+
 const GetPosConfigQuery = graphql(`
   query GetPosConfig($stateCode: String) {
     getPosConfig(stateCode: $stateCode) {
@@ -727,7 +736,18 @@ export class PosPage extends OgsPageBase {
 
   private async fetchPosConfig() {
     try {
-      const result = await execute(GetPosConfigQuery, { stateCode: null });
+      // Fetch the active store's state code for tax calculation
+      let stateCode: string | null = null;
+      try {
+        const storeResult = await execute(GetActiveStoreLocationQuery);
+        if (storeResult?.data?.getActiveStoreLocation?.state) {
+          stateCode = storeResult.data.getActiveStoreLocation.state;
+        }
+      } catch {
+        // If store location fetch fails, proceed without state code (tax rate will be 0)
+      }
+
+      const result = await execute(GetPosConfigQuery, { stateCode });
       if (result?.errors?.length) {
         this.error = result.errors.map((e: { message: string }) => e.message).join(', ');
       } else {
@@ -1134,7 +1154,7 @@ export class PosPage extends OgsPageBase {
           `,
         )}
       `,
-      { activePage: 'POS', showUserMenu: true },
+      { activePage: 'POS', showUserMenu: true, showStoreSelector: true },
     );
   }
 
