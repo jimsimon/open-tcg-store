@@ -1230,6 +1230,7 @@ export class OgsEventManagementPage extends OgsPageBase {
             <wa-button
               size="small"
               variant="neutral"
+              appearance="plain"
               ?disabled="${this.page === 1}"
               @click="${() => this.goToPage(this.page - 1)}"
             >
@@ -1249,6 +1250,7 @@ export class OgsEventManagementPage extends OgsPageBase {
             <wa-button
               size="small"
               variant="neutral"
+              appearance="plain"
               ?disabled="${this.page === this.totalPages}"
               @click="${() => this.goToPage(this.page + 1)}"
             >
