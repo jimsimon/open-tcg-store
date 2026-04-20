@@ -108,7 +108,7 @@ describe('ogs-settings-backup-page', () => {
   test('should display the page header', () => {
     const header = element.shadowRoot!.querySelector('.page-header h2');
     expect(header).toBeTruthy();
-    expect(header?.textContent).toContain('Backup Jobs');
+    expect(header?.textContent).toContain('Backup & Restore');
   });
 
   test('should display local backup job card', () => {
@@ -123,7 +123,7 @@ describe('ogs-settings-backup-page', () => {
     expect(titleTexts).toContain('Cloud Backup');
   });
 
-  test('should hide cloud backup card when no provider is connected', async () => {
+  test('should always show cloud backup card even when no provider is connected', async () => {
     element.remove();
     setupMock({
       settings: { googleDriveConnected: false, dropboxConnected: false, onedriveConnected: false },
@@ -132,7 +132,7 @@ describe('ogs-settings-backup-page', () => {
 
     const titles = element.shadowRoot!.querySelectorAll('.job-title');
     const titleTexts = Array.from(titles).map((t) => t.textContent?.trim());
-    expect(titleTexts).not.toContain('Cloud Backup');
+    expect(titleTexts).toContain('Cloud Backup');
     expect(titleTexts).toContain('Local Backup');
   });
 
@@ -142,22 +142,24 @@ describe('ogs-settings-backup-page', () => {
     expect(runBtns.length).toBeGreaterThan(0);
   });
 
-  test('should display View History buttons', () => {
+  test('should display schedule Edit buttons', () => {
     const buttons = element.shadowRoot!.querySelectorAll('wa-button');
-    const historyBtns = Array.from(buttons).filter((b) => b.textContent?.includes('View History'));
-    expect(historyBtns.length).toBeGreaterThan(0);
+    const editBtns = Array.from(buttons).filter((b) => b.textContent?.includes('Edit'));
+    expect(editBtns.length).toBeGreaterThan(0);
   });
 
-  test('should display Cloud Provider Setup section', () => {
-    const sections = element.shadowRoot!.querySelectorAll('.section-header h3');
-    const sectionTexts = Array.from(sections).map((s) => s.textContent?.trim());
-    expect(sectionTexts).toContain('Cloud Provider Setup');
+  test('should show cloud provider setup inline in cloud backup card', () => {
+    // Provider setup is now inline in the cloud backup card
+    const providerSection = element.shadowRoot!.querySelector('.cloud-provider-section');
+    expect(providerSection).toBeTruthy();
   });
 
-  test('should show provider card with connection status', () => {
-    // The provider card wrapper contains the selected config provider card
-    const providerCards = element.shadowRoot!.querySelectorAll('.provider-card-wrapper .provider-card');
-    expect(providerCards.length).toBe(1);
+  test('should show provider connection status in cloud card', () => {
+    // When provider is connected, show Connected badge and Disconnect button
+    const providerSetup = element.shadowRoot!.querySelector('.provider-setup');
+    expect(providerSetup).toBeTruthy();
+    const badge = providerSetup?.querySelector('wa-badge[variant="success"]');
+    expect(badge?.textContent).toContain('Connected');
   });
 
   test('should show running indicator when a job is running', async () => {

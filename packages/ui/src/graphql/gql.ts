@@ -84,6 +84,7 @@ type Documents = {
     "\n  mutation TriggerBackupCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": typeof types.TriggerBackupCronJobDocument,
     "\n  mutation EnableBackupCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.EnableBackupCronJobDocument,
     "\n  mutation DisableBackupCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.DisableBackupCronJobDocument,
+    "\n  mutation UpdateBackupCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": typeof types.UpdateBackupCronJobScheduleDocument,
     "\n  mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {\n    updateBackupSettings(input: $input) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": typeof types.UpdateBackupSettingsDocument,
     "\n  mutation TriggerRestore($provider: BackupProvider!) {\n    triggerRestore(provider: $provider) {\n      success\n      message\n    }\n  }\n": typeof types.TriggerRestoreDocument,
     "\n  mutation DisconnectBackupProvider($provider: BackupProvider!) {\n    disconnectBackupProvider(provider: $provider) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n      googleDriveHasClientSecret\n    }\n  }\n": typeof types.DisconnectBackupProviderDocument,
@@ -96,6 +97,10 @@ type Documents = {
     "\n  query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {\n    getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {\n      open\n      completed\n      cancelled\n      total\n    }\n  }\n": typeof types.GetDashboardOrderStatusDocument,
     "\n  query GetDataUpdateStatus {\n    getDataUpdateStatus {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": typeof types.GetDataUpdateStatusDocument,
     "\n  mutation TriggerDataUpdate {\n    triggerDataUpdate {\n      success\n      message\n      newVersion\n    }\n  }\n": typeof types.TriggerDataUpdateDocument,
+    "\n  query GetDataUpdateCronJobs {\n    getCronJobs {\n      id\n      name\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n    }\n  }\n": typeof types.GetDataUpdateCronJobsDocument,
+    "\n  mutation EnableDataUpdateCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.EnableDataUpdateCronJobDocument,
+    "\n  mutation DisableDataUpdateCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": typeof types.DisableDataUpdateCronJobDocument,
+    "\n  mutation UpdateDataUpdateSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": typeof types.UpdateDataUpdateScheduleDocument,
     "\n  query GetStoreSettings {\n    getStoreSettings {\n      companyName\n      ein\n    }\n  }\n": typeof types.GetStoreSettingsDocument,
     "\n  mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {\n    updateStoreSettings(input: $input) {\n      companyName\n      ein\n    }\n  }\n": typeof types.UpdateStoreSettingsDocument,
     "\n  query GetAvailableGamesForSettings {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": typeof types.GetAvailableGamesForSettingsDocument,
@@ -187,6 +192,7 @@ const documents: Documents = {
     "\n  mutation TriggerBackupCronJob($id: Int!) {\n    triggerCronJob(id: $id) {\n      id\n      status\n      summary\n      error\n      durationMs\n    }\n  }\n": types.TriggerBackupCronJobDocument,
     "\n  mutation EnableBackupCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.EnableBackupCronJobDocument,
     "\n  mutation DisableBackupCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.DisableBackupCronJobDocument,
+    "\n  mutation UpdateBackupCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": types.UpdateBackupCronJobScheduleDocument,
     "\n  mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {\n    updateBackupSettings(input: $input) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n": types.UpdateBackupSettingsDocument,
     "\n  mutation TriggerRestore($provider: BackupProvider!) {\n    triggerRestore(provider: $provider) {\n      success\n      message\n    }\n  }\n": types.TriggerRestoreDocument,
     "\n  mutation DisconnectBackupProvider($provider: BackupProvider!) {\n    disconnectBackupProvider(provider: $provider) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n      googleDriveClientId\n      dropboxClientId\n      onedriveClientId\n      googleDriveHasClientSecret\n    }\n  }\n": types.DisconnectBackupProviderDocument,
@@ -199,6 +205,10 @@ const documents: Documents = {
     "\n  query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {\n    getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {\n      open\n      completed\n      cancelled\n      total\n    }\n  }\n": types.GetDashboardOrderStatusDocument,
     "\n  query GetDataUpdateStatus {\n    getDataUpdateStatus {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": types.GetDataUpdateStatusDocument,
     "\n  mutation TriggerDataUpdate {\n    triggerDataUpdate {\n      success\n      message\n      newVersion\n    }\n  }\n": types.TriggerDataUpdateDocument,
+    "\n  query GetDataUpdateCronJobs {\n    getCronJobs {\n      id\n      name\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n    }\n  }\n": types.GetDataUpdateCronJobsDocument,
+    "\n  mutation EnableDataUpdateCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.EnableDataUpdateCronJobDocument,
+    "\n  mutation DisableDataUpdateCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n": types.DisableDataUpdateCronJobDocument,
+    "\n  mutation UpdateDataUpdateSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n": types.UpdateDataUpdateScheduleDocument,
     "\n  query GetStoreSettings {\n    getStoreSettings {\n      companyName\n      ein\n    }\n  }\n": types.GetStoreSettingsDocument,
     "\n  mutation UpdateStoreSettings($input: UpdateStoreSettingsInput!) {\n    updateStoreSettings(input: $input) {\n      companyName\n      ein\n    }\n  }\n": types.UpdateStoreSettingsDocument,
     "\n  query GetAvailableGamesForSettings {\n    getAvailableGames {\n      categoryId\n      name\n      displayName\n    }\n  }\n": types.GetAvailableGamesForSettingsDocument,
@@ -500,6 +510,10 @@ export function graphql(source: "\n  mutation DisableBackupCronJob($id: Int!) {\
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation UpdateBackupCronJobSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n"): typeof import('./graphql').UpdateBackupCronJobScheduleDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation UpdateBackupSettings($input: UpdateBackupSettingsInput!) {\n    updateBackupSettings(input: $input) {\n      provider\n      frequency\n      lastBackupAt\n      googleDriveConnected\n      dropboxConnected\n      onedriveConnected\n    }\n  }\n"): typeof import('./graphql').UpdateBackupSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -545,6 +559,22 @@ export function graphql(source: "\n  query GetDataUpdateStatus {\n    getDataUpd
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation TriggerDataUpdate {\n    triggerDataUpdate {\n      success\n      message\n      newVersion\n    }\n  }\n"): typeof import('./graphql').TriggerDataUpdateDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetDataUpdateCronJobs {\n    getCronJobs {\n      id\n      name\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n    }\n  }\n"): typeof import('./graphql').GetDataUpdateCronJobsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation EnableDataUpdateCronJob($id: Int!) {\n    enableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n"): typeof import('./graphql').EnableDataUpdateCronJobDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DisableDataUpdateCronJob($id: Int!) {\n    disableCronJob(id: $id) {\n      id\n      enabled\n    }\n  }\n"): typeof import('./graphql').DisableDataUpdateCronJobDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateDataUpdateSchedule($id: Int!, $cronExpression: String!) {\n    updateCronJobSchedule(id: $id, cronExpression: $cronExpression) {\n      id\n      cronExpression\n      nextRunAt\n    }\n  }\n"): typeof import('./graphql').UpdateDataUpdateScheduleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
