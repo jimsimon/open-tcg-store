@@ -537,23 +537,21 @@ export class OgsProductsSealedPage extends OgsPageBase {
                     </span>
                   </div>
                   <div class="product-card-cart">
-                    ${product.totalQuantity > 0
-                      ? html`
-                          <span class="product-card-availability"> ${product.totalQuantity} available </span>
-                          <wa-input type="number" min="1" max="${product.totalQuantity}" value="1">
-                            <span slot="label" class="wa-visually-hidden">Quantity</span>
-                          </wa-input>
-                          <wa-button
-                            appearance="filled"
-                            size="small"
-                            title="Add to cart"
-                            ?disabled="${this.addingToCart}"
-                            @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
-                          >
-                            <wa-icon name="cart-plus"></wa-icon>
-                          </wa-button>
-                        `
-                      : nothing}
+                    <span class="product-card-availability">
+                      ${product.totalQuantity > 0 ? `${product.totalQuantity} available` : 'Out of stock'}
+                    </span>
+                    <wa-input type="number" min="1" max="${Math.max(product.totalQuantity, 1)}" value="1">
+                      <span slot="label" class="wa-visually-hidden">Quantity</span>
+                    </wa-input>
+                    <wa-button
+                      appearance="filled"
+                      size="small"
+                      title="Add to cart"
+                      ?disabled="${this.addingToCart}"
+                      @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
+                    >
+                      <wa-icon name="cart-plus"></wa-icon>
+                    </wa-button>
                   </div>
                 </div>
               </div>
