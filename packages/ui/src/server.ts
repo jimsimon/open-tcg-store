@@ -97,9 +97,9 @@ function authHeaders(ctx: Context, extra?: Record<string, string>): Record<strin
   const xff = existingXff ? `${existingXff}, ${socketAddr}` : ctx.ip;
 
   return {
+    ...extra,
     Cookie: (ctx.headers.cookie as string) ?? '',
     'X-Forwarded-For': xff,
-    ...extra,
   };
 }
 
