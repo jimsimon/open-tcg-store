@@ -1,5 +1,5 @@
 import { css, html, unsafeCSS } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/button/button.js';
@@ -157,10 +157,14 @@ const CreatePaymentIntentMutation = graphql(`
 
 @customElement('ogs-pos-page')
 export class PosPage extends OgsPageBase {
+  // --- Store Selector ---
+  @property({ type: Boolean }) showStoreSelector = false;
+
   // --- Line Items ---
   @state() lineItems: PosLineItem[] = [];
   @state() taxRate = 0;
   @state() taxAmount = 0;
+  @state() taxWarning = '';
   @state() subtotal = 0;
   @state() paymentMethod: 'cash' | 'card' = 'cash';
   @state() stripeEnabled = false;
@@ -744,7 +748,14 @@ export class PosPage extends OgsPageBase {
           stateCode = storeResult.data.getActiveStoreLocation.state;
         }
       } catch {
-        // If store location fetch fails, proceed without state code (tax rate will be 0)
+        // Handled below via the stateCode null check
+      }
+
+      if (!stateCode) {
+        this.taxWarning =
+          'Could not determine store location — tax rate may be incorrect. Verify before completing sales.';
+      } else {
+        this.taxWarning = '';
       }
 
       const result = await execute(GetPosConfigQuery, { stateCode });
@@ -1146,6 +1157,15 @@ export class PosPage extends OgsPageBase {
                 </wa-callout>
               `,
             )}
+            ${when(
+              this.taxWarning,
+              () => html`
+                <wa-callout variant="warning" style="margin-bottom: 1rem;">
+                  <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+                  ${this.taxWarning}
+                </wa-callout>
+              `,
+            )}
             <div class="pos-container">
               <div class="pos-left">${this.renderProductSearch()} ${this.renderLineItems()}</div>
               <div class="pos-right">${this.renderTotals()} ${this.renderPaymentSection()}</div>
@@ -1154,7 +1174,7 @@ export class PosPage extends OgsPageBase {
           `,
         )}
       `,
-      { activePage: 'POS', showUserMenu: true, showStoreSelector: true },
+      { activePage: 'POS', showUserMenu: true, showStoreSelector: this.showStoreSelector },
     );
   }
 
