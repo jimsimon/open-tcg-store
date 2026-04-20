@@ -319,6 +319,12 @@ export const productGridStyles = css`
     flex-direction: column;
   }
 
+  .product-card-footer--oos .product-card-price-row {
+    /* Visually center the price row within the full footer height.
+       transform is layout-inert so card heights stay matched. */
+    transform: translateY(calc((0.5rem + var(--cart-row-height, 54px)) / 2));
+  }
+
   .product-card-footer--oos .product-card-cart {
     visibility: hidden;
   }
