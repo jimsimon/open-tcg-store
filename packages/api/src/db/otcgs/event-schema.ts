@@ -31,5 +31,8 @@ export const event = sqliteTable(
     index('event_start_time_idx').on(table.startTime),
     index('event_status_idx').on(table.status),
     index('event_recurrence_group_id_idx').on(table.recurrenceGroupId),
+    index('event_category_id_idx').on(table.categoryId),
+    index('event_event_type_idx').on(table.eventType),
+    index('event_is_recurrence_template_idx').on(table.isRecurrenceTemplate),
   ],
 );

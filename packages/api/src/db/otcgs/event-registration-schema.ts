@@ -19,7 +19,7 @@ export const eventRegistration = sqliteTable(
     createdBy: text('created_by'), // FK to user.id, null for anonymous self-registrations
   },
   (table) => [
-    index('event_registration_event_id_idx').on(table.eventId),
+    index('event_registration_event_status_idx').on(table.eventId, table.status),
     foreignKey({
       columns: [table.eventId],
       foreignColumns: [event.id],
