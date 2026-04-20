@@ -132,6 +132,52 @@ function requirePermission(resource: string, action: string) {
 }
 
 /**
+ * Forward Set-Cookie headers from an auth API response to the browser AND
+ * merge them into the current request's cookie header so that subsequent
+ * server-side calls (e.g. getSession) within the same request see the
+ * updated session token.
+ */
+function forwardAndMergeCookies(ctx: Context, responseCookies: string[]) {
+  // 1. Send the new cookies to the browser
+  for (const cookie of responseCookies) {
+    ctx.response.append('Set-Cookie', cookie);
+  }
+
+  // 2. Merge into ctx.request.headers.cookie so same-request reads pick them up
+  const newCookiePairs = responseCookies.map((c: string) => c.split(';')[0]);
+  const newCookieMap = new Map<string, string>();
+  for (const pair of newCookiePairs) {
+    const eqIndex = pair.indexOf('=');
+    if (eqIndex !== -1) {
+      newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
+    }
+  }
+
+  const existingRequestCookies = ctx.req.headers.cookie;
+  if (!existingRequestCookies) {
+    ctx.request.headers.cookie = newCookiePairs.join('; ');
+  } else {
+    const existingPairs = existingRequestCookies.split(';').map((c) => c.trim());
+    const updatedPairs = existingPairs.map((pair) => {
+      const eqIndex = pair.indexOf('=');
+      if (eqIndex !== -1) {
+        const name = pair.substring(0, eqIndex);
+        if (newCookieMap.has(name)) {
+          const newValue = newCookieMap.get(name);
+          newCookieMap.delete(name);
+          return `${name}=${newValue}`;
+        }
+      }
+      return pair;
+    });
+    for (const [name, value] of newCookieMap) {
+      updatedPairs.push(`${name}=${value}`);
+    }
+    ctx.request.headers.cookie = updatedPairs.join('; ');
+  }
+}
+
+/**
  * Middleware that ensures the user has a session, creating an anonymous one if needed.
  * Used on public-facing pages (e.g. card browsing) where guest users
  * need a session for shopping cart functionality.
@@ -159,49 +205,7 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
         Origin: origin,
       } as Record<string, string>,
       onSuccess: (successCtx) => {
-        // Copy Set-Cookie headers from the sign-in response to the browser response
-        const responseCookies = successCtx.response.headers.getSetCookie();
-        for (const cookie of responseCookies) {
-          ctx.response.append('Set-Cookie', cookie);
-        }
-
-        // Extract name=value pairs from Set-Cookie headers (strip attributes like Path, HttpOnly, etc.)
-        const newCookiePairs = responseCookies.map((c: string) => c.split(';')[0]);
-
-        // Build a map of cookie name -> value from the new cookies
-        const newCookieMap = new Map<string, string>();
-        for (const pair of newCookiePairs) {
-          const eqIndex = pair.indexOf('=');
-          if (eqIndex !== -1) {
-            newCookieMap.set(pair.substring(0, eqIndex), pair.substring(eqIndex + 1));
-          }
-        }
-
-        // Replace existing cookies with new values, or append new ones
-        const existingRequestCookies = ctx.req.headers.cookie;
-        if (!existingRequestCookies) {
-          ctx.request.headers.cookie = newCookiePairs.join('; ');
-        } else {
-          // Parse existing cookies and replace any that have new values
-          const existingPairs = existingRequestCookies.split(';').map((c) => c.trim());
-          const updatedPairs = existingPairs.map((pair) => {
-            const eqIndex = pair.indexOf('=');
-            if (eqIndex !== -1) {
-              const name = pair.substring(0, eqIndex);
-              if (newCookieMap.has(name)) {
-                const newValue = newCookieMap.get(name);
-                newCookieMap.delete(name); // Mark as handled
-                return `${name}=${newValue}`;
-              }
-            }
-            return pair;
-          });
-          // Append any remaining new cookies that weren't replacements
-          for (const [name, value] of newCookieMap) {
-            updatedPairs.push(`${name}=${value}`);
-          }
-          ctx.request.headers.cookie = updatedPairs.join('; ');
-        }
+        forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
       },
     },
   });
@@ -244,13 +248,10 @@ async function syncStoreContext(ctx: Context, next: Next) {
               Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
             },
             onSuccess: (successCtx) => {
-              // Propagate Set-Cookie headers so the browser's session stays in sync.
-              // Without this, the browser would keep sending the old session token and
-              // syncStoreContext would re-fire setActive on every subsequent page load.
-              const responseCookies = successCtx.response.headers.getSetCookie();
-              for (const cookie of responseCookies) {
-                ctx.response.append('Set-Cookie', cookie);
-              }
+              // Forward new cookies to the browser AND merge them into the
+              // current request so that the subsequent getSession() call
+              // within this same request sees the updated session token.
+              forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
             },
           },
         });
