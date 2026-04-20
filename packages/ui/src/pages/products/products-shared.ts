@@ -1,4 +1,5 @@
-import { css } from 'lit';
+import { css, unsafeCSS } from 'lit';
+import { BP_MOBILE } from '../../lib/breakpoints';
 
 // ============================================================
 // SHARED STYLES FOR PRODUCT PAGES
@@ -84,7 +85,7 @@ export const statsBarStyles = css`
     border-radius: 10px;
     min-width: 140px;
     flex: 1;
-    max-width: 200px;
+    max-width: 280px;
   }
 
   .stat-icon {
@@ -141,6 +142,18 @@ export const filterBarStyles = css`
 
   .filter-bar wa-select {
     min-width: 150px;
+  }
+
+  @media (max-width: ${unsafeCSS(BP_MOBILE)}) {
+    .filter-bar wa-input {
+      min-width: 0;
+      flex-basis: 100%;
+    }
+
+    .filter-bar wa-select {
+      min-width: 0;
+      flex-basis: 100%;
+    }
   }
 
   .in-stock-toggle {

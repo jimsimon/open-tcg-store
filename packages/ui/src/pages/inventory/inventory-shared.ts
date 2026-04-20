@@ -1,4 +1,5 @@
 import { css, html, nothing, unsafeCSS } from 'lit';
+import { BP_MOBILE } from '../../lib/breakpoints';
 import {
   type InventoryItem,
   type InventoryItemStock,
@@ -386,6 +387,18 @@ export const sharedInventoryStyles = [
       flex: 0 0 auto;
       min-width: 150px;
       width: auto;
+    }
+
+    @media (max-width: ${unsafeCSS(BP_MOBILE)}) {
+      .filter-bar wa-input {
+        min-width: 0;
+        flex-basis: 100%;
+      }
+
+      .filter-bar wa-select {
+        min-width: 0;
+        flex-basis: 100%;
+      }
     }
 
     /* --- Action Bar --- */
