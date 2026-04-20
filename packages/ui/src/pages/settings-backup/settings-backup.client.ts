@@ -745,10 +745,16 @@ export class OgsSettingsBackupPage extends OgsPageBase {
 
   private async handleProviderChange(e: Event) {
     const newProvider = (e.target as HTMLSelectElement).value as ProviderKey;
+    const previousProvider = this.provider;
     this.provider = newProvider;
 
     // Save the provider selection to the backend
-    await this.saveBackupProvider();
+    const saved = await this.saveBackupProvider();
+    if (!saved) {
+      // Revert on failure to prevent backend inconsistency
+      this.provider = previousProvider;
+      return;
+    }
 
     // If the newly selected provider is not connected, disable cloud backup cron
     if (!this.connectedProviders[newProvider]) {
@@ -765,13 +771,15 @@ export class OgsSettingsBackupPage extends OgsPageBase {
     }
   }
 
-  private async saveBackupProvider() {
+  private async saveBackupProvider(): Promise<boolean> {
     try {
       await execute(UpdateBackupSettingsMutation, {
         input: { provider: (this.provider as BackupProvider) || null },
       });
+      return true;
     } catch (e) {
       this.errorMessage = e instanceof Error ? e.message : 'Failed to save provider';
+      return false;
     }
   }
 
