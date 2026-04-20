@@ -29,7 +29,6 @@ import {
   paginationStyles,
   emptyStateStyles,
   loadingStateStyles,
-  getQuantityBadgeClass,
   formatCurrency,
 } from '../products/products-shared.ts';
 import { AddToCartMutation } from '../../lib/shared-queries';
@@ -521,42 +520,44 @@ export class OgsProductsSealedPage extends OgsPageBase {
                 <div class="product-card-content">
                   <div class="product-card-name">${product.name}</div>
                   <div class="product-card-meta">
-                    <span class="game-badge ${product.gameName.toLowerCase()}">${product.gameName}</span>
-                    <span>${product.setName}</span>
-                  </div>
-                  <div class="product-card-badges">
-                    <span class="quantity-badge ${getQuantityBadgeClass(product.totalQuantity)}">
-                      ${product.totalQuantity > 0 ? `${product.totalQuantity} avail` : 'Out of stock'}
-                    </span>
+                    <span class="product-card-set-name" title="${product.setName}">${product.setName}</span>
                   </div>
                 </div>
               </a>
               <div slot="footer">
-                <div class="product-card-price-row">
-                  <span class="product-price">
-                    ${product.lowestPrice != null
-                      ? formatCurrency(Number(product.lowestPrice))
-                      : html`<span class="out-of-stock-text">—</span>`}
-                  </span>
+                <div class="product-card-footer ${product.totalQuantity <= 0 ? 'product-card-footer--oos' : ''}">
+                  <div class="product-card-price-row">
+                    ${product.totalQuantity <= 0
+                      ? html`<span class="product-card-availability out-of-stock">Out of stock</span>`
+                      : nothing}
+                    <span class="product-price">
+                      ${product.lowestPrice != null
+                        ? formatCurrency(Number(product.lowestPrice))
+                        : html`<span class="out-of-stock-text">—</span>`}
+                    </span>
+                  </div>
+                  <div class="product-card-cart">
+                    <span class="product-card-availability">
+                      ${product.totalQuantity > 0 ? `${product.totalQuantity} available` : 'Out of stock'}
+                    </span>
+                    <wa-input type="number" min="1" max="${Math.max(product.totalQuantity, 1)}" value="1">
+                      <span slot="label" class="wa-visually-hidden">Quantity</span>
+                    </wa-input>
+                    <wa-button
+                      appearance="filled"
+                      size="small"
+                      title="Add to cart"
+                      ?disabled="${this.addingToCart || product.totalQuantity <= 0}"
+                      @click="${(e: Event) => {
+                        if (product.lowestPriceInventoryItemId != null) {
+                          this.handleAddToCart(product.lowestPriceInventoryItemId, e);
+                        }
+                      }}"
+                    >
+                      <wa-icon name="cart-plus"></wa-icon>
+                    </wa-button>
+                  </div>
                 </div>
-                ${product.totalQuantity > 0
-                  ? html`
-                      <div class="product-card-cart">
-                        <wa-input type="number" min="1" max="${product.totalQuantity}" value="1">
-                          <span slot="label" class="wa-visually-hidden">Quantity</span>
-                        </wa-input>
-                        <wa-button
-                          appearance="filled"
-                          size="small"
-                          ?disabled="${this.addingToCart}"
-                          @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
-                        >
-                          <wa-icon name="cart-plus" slot="prefix"></wa-icon>
-                          Add
-                        </wa-button>
-                      </div>
-                    `
-                  : nothing}
               </div>
             </wa-card>
           `,

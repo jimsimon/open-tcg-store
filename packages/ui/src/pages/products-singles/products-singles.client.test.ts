@@ -151,9 +151,8 @@ describe('ogs-products-singles-page', () => {
 
     const card = cards[0];
     expect(card.querySelector('.product-card-name')?.textContent).toContain('Black Lotus');
-    expect(card.querySelector('.game-badge')?.textContent).toContain('Magic');
-    expect(card.querySelector('.rarity-badge')?.textContent).toContain('Mythic Rare');
-    expect(card.querySelector('.quantity-badge')).toBeTruthy();
+    expect(card.querySelector('.rarity-badge')?.textContent).toContain('MR');
+    expect(card.querySelector('.product-card-availability')).toBeTruthy();
     expect(card.querySelector('.product-price')).toBeTruthy();
     expect(card.querySelector('.product-card-link')).toBeTruthy();
     expect(card.querySelector('[slot="footer"] wa-select')).toBeTruthy();

@@ -15,6 +15,15 @@ export function conditionLabel(condition: string): string {
   return CONDITION_LABELS[condition] ?? condition;
 }
 
+/** Abbreviate a rarity string by taking the first letter of each word, uppercased. e.g. "Special Illustration Rare" → "SIR" */
+export function rarityAbbrev(rarity: string): string {
+  return rarity
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
 /** Map a role value to a display label. */
 export function roleLabel(role: string | null, fallback?: string): string {
   switch (role) {
