@@ -24,6 +24,15 @@ import { formatCurrency } from '../../lib/currency.ts';
 import { debounce } from '../../lib/debounce';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 
+// How many ms of silence after the last keystroke before the barcode buffer is discarded.
+// 200ms gives slower Bluetooth/USB scanners enough headroom while still feeling instant.
+const BARCODE_TIMEOUT_MS = 200;
+
+// Web Awesome input-type component tags that should suppress barcode scanning while focused.
+// Intentionally excludes non-input elements (wa-button, wa-icon, etc.) so scans still work
+// after a cashier clicks a button.
+const WA_INPUT_TAGS = new Set(['wa-input', 'wa-textarea', 'wa-select', 'wa-combobox']);
+
 // --- Types ---
 
 interface PosLineItem {
@@ -141,7 +150,6 @@ const CreatePaymentIntentMutation = graphql(`
 export class PosPage extends OgsPageBase {
   // --- Line Items ---
   @state() lineItems: PosLineItem[] = [];
-  @state() customerName = '';
   @state() taxRate = 0;
   @state() taxAmount = 0;
   @state() subtotal = 0;
@@ -150,7 +158,6 @@ export class PosPage extends OgsPageBase {
   @state() stripePublishableKey: string | null = null;
 
   // --- Barcode / Search ---
-  @state() barcodeInput = '';
   @state() searchInput = '';
   @state() searchResults: any[] = [];
   @state() searchLoading = false;
@@ -177,15 +184,13 @@ export class PosPage extends OgsPageBase {
     this.performProductSearch();
   }, 300);
 
+  // --- Barcode buffer (page-level scanning, no visible input field) ---
+  private barcodeBuffer = '';
+  private barcodeBufferTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private boundHandleKeydown = this.handlePageKeydown.bind(this);
+
   // --- Input Handlers (avoid assignment-in-expression lint errors) ---
-
-  private handleBarcodeInput(e: Event) {
-    this.barcodeInput = (e.target as WaInput).value as string;
-  }
-
-  private handleCustomerNameInput(e: Event) {
-    this.customerName = (e.target as WaInput).value as string;
-  }
 
   private handleCashTenderedInput(e: Event) {
     this.cashTendered = (e.target as WaInput).value as string;
@@ -444,14 +449,6 @@ export class PosPage extends OgsPageBase {
 
       /* --- Right Panel --- */
 
-      .customer-section {
-        padding-bottom: 1rem;
-      }
-
-      .customer-section wa-input {
-        width: 100%;
-      }
-
       .totals-section {
         display: flex;
         flex-direction: column;
@@ -638,12 +635,6 @@ export class PosPage extends OgsPageBase {
         font-size: var(--wa-font-size-s);
       }
 
-      /* --- Pull Order Button --- */
-
-      .pull-order-section {
-        padding-top: 0.5rem;
-      }
-
       /* --- Order Search Dialog --- */
 
       .order-list {
@@ -721,6 +712,15 @@ export class PosPage extends OgsPageBase {
   connectedCallback() {
     super.connectedCallback();
     this.fetchPosConfig();
+    document.addEventListener('keydown', this.boundHandleKeydown, { passive: true });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener('keydown', this.boundHandleKeydown);
+    if (this.barcodeBufferTimer !== null) {
+      clearTimeout(this.barcodeBufferTimer);
+    }
   }
 
   // --- Data Fetching ---
@@ -759,11 +759,69 @@ export class PosPage extends OgsPageBase {
 
   // --- Barcode Handling ---
 
-  private async handleBarcodeScan(event: KeyboardEvent) {
-    if (event.key !== 'Enter') return;
-    const code = this.barcodeInput.trim();
-    if (!code) return;
+  /**
+   * Page-level keydown handler for barcode scanning.
+   *
+   * Hardware barcode scanners emulate keyboard input: they rapidly send one
+   * character per keydown event and finish with an Enter key. We accumulate
+   * those characters into a buffer and flush it when Enter is received.
+   *
+   * Keystrokes that originate from an interactive element (input, select,
+   * textarea, or a Web Awesome input/combobox shadow host) are ignored so that
+   * normal text typing is not intercepted.
+   */
+  private handlePageKeydown(event: KeyboardEvent) {
+    // Ignore when the user is typing in a real input / interactive element.
+    // Only block on actual text-entry elements — wa-button, wa-badge, wa-icon, etc. should
+    // NOT suppress scans (a common POS flow is: click a quantity button → scanner fires).
+    const target = event.target as HTMLElement;
+    const tag = target.tagName.toLowerCase();
+    if (
+      tag === 'input' ||
+      tag === 'textarea' ||
+      tag === 'select' ||
+      target.isContentEditable ||
+      WA_INPUT_TAGS.has(tag)
+    ) {
+      return;
+    }
 
+    // Ignore modifier-only keypresses and special keys that don't produce chars.
+    if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') {
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      // Flush the buffer.
+      if (this.barcodeBufferTimer !== null) {
+        clearTimeout(this.barcodeBufferTimer);
+        this.barcodeBufferTimer = null;
+      }
+      const code = this.barcodeBuffer.trim();
+      this.barcodeBuffer = '';
+      if (code) {
+        void this.processBarcodeCode(code);
+      }
+      return;
+    }
+
+    // Accumulate printable characters.
+    if (event.key.length === 1) {
+      this.barcodeBuffer += event.key;
+
+      // Reset the discard timer on each new character.
+      if (this.barcodeBufferTimer !== null) {
+        clearTimeout(this.barcodeBufferTimer);
+      }
+      this.barcodeBufferTimer = setTimeout(() => {
+        // If Enter never came (e.g. manual typing that stopped), discard.
+        this.barcodeBuffer = '';
+        this.barcodeBufferTimer = null;
+      }, BARCODE_TIMEOUT_MS);
+    }
+  }
+
+  private async processBarcodeCode(code: string) {
     try {
       const result = await execute(LookupBarcodeQuery, { code });
       if (result?.errors?.length) {
@@ -787,12 +845,6 @@ export class PosPage extends OgsPageBase {
       });
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Barcode lookup failed';
-    } finally {
-      this.barcodeInput = '';
-      this.requestUpdate();
-      await this.updateComplete;
-      const barcodeInput = this.renderRoot.querySelector<WaInput>('.barcode-input');
-      barcodeInput?.focus();
     }
   }
 
@@ -943,7 +995,6 @@ export class PosPage extends OgsPageBase {
       quantity: item.quantity,
       maxAvailable: item.quantity, // locked — cannot change existing order items
     }));
-    this.customerName = order.customerName ?? '';
     this.existingOrderId = order.id;
     this.existingOrderItems = order.items.map((item: any, index: number) => ({
       ...item,
@@ -1014,7 +1065,7 @@ export class PosPage extends OgsPageBase {
 
         result = await execute(SubmitPosOrderMutation, {
           input: {
-            customerName: this.customerName || 'Walk-in',
+            customerName: 'Walk-in',
             paymentMethod: this.paymentMethod,
             taxAmount: this.taxAmount,
             items,
@@ -1036,11 +1087,9 @@ export class PosPage extends OgsPageBase {
 
   private resetTransaction() {
     this.lineItems = [];
-    this.customerName = '';
     this.subtotal = 0;
     this.taxAmount = 0;
     this.paymentMethod = 'cash';
-    this.barcodeInput = '';
     this.searchInput = '';
     this.searchResults = [];
     this.searchLoading = false;
@@ -1051,6 +1100,11 @@ export class PosPage extends OgsPageBase {
     this.success = null;
     this.cashTendered = '';
     this.pendingPaymentIntentId = null;
+    this.barcodeBuffer = '';
+    if (this.barcodeBufferTimer !== null) {
+      clearTimeout(this.barcodeBufferTimer);
+      this.barcodeBufferTimer = null;
+    }
   }
 
   // --- Render ---
@@ -1073,13 +1127,8 @@ export class PosPage extends OgsPageBase {
               `,
             )}
             <div class="pos-container">
-              <div class="pos-left">
-                ${this.renderBarcodeInput()} ${this.renderProductSearch()} ${this.renderLineItems()}
-                ${this.renderPullOrderSection()}
-              </div>
-              <div class="pos-right">
-                ${this.renderCustomerSection()} ${this.renderTotals()} ${this.renderPaymentSection()}
-              </div>
+              <div class="pos-left">${this.renderProductSearch()} ${this.renderLineItems()}</div>
+              <div class="pos-right">${this.renderTotals()} ${this.renderPaymentSection()}</div>
             </div>
             ${this.renderOrderSearchDialog()}
           `,
@@ -1100,23 +1149,10 @@ export class PosPage extends OgsPageBase {
           <p>Process in-store transactions</p>
         </div>
         ${when(this.existingOrderId, () => html` <wa-badge variant="brand"> Completing Order </wa-badge> `)}
-      </div>
-    `;
-  }
-
-  private renderBarcodeInput() {
-    return html`
-      <div class="input-section">
-        <wa-input
-          class="barcode-input"
-          placeholder="Scan barcode or enter code..."
-          .value="${this.barcodeInput}"
-          @input="${this.handleBarcodeInput}"
-          @keydown="${this.handleBarcodeScan}"
-          autofocus
-        >
-          <wa-icon slot="prefix" name="barcode"></wa-icon>
-        </wa-input>
+        <wa-button variant="neutral" appearance="outlined" @click="${this.openOrderSearchDialog}">
+          <wa-icon slot="start" name="file-import"></wa-icon>
+          Open Pickup Order
+        </wa-button>
       </div>
     `;
   }
@@ -1236,32 +1272,6 @@ export class PosPage extends OgsPageBase {
           </wa-button>
         </td>
       </tr>
-    `;
-  }
-
-  private renderPullOrderSection() {
-    return html`
-      <div class="pull-order-section">
-        <wa-button variant="neutral" appearance="outlined" @click="${this.openOrderSearchDialog}">
-          <wa-icon slot="start" name="file-import"></wa-icon>
-          Pull in Existing Order
-        </wa-button>
-      </div>
-    `;
-  }
-
-  private renderCustomerSection() {
-    return html`
-      <div class="customer-section">
-        <wa-input
-          label="Customer Name"
-          placeholder="Walk-in customer"
-          .value="${this.customerName}"
-          @input="${this.handleCustomerNameInput}"
-        >
-          <wa-icon slot="prefix" name="user"></wa-icon>
-        </wa-input>
-      </div>
     `;
   }
 
@@ -1400,7 +1410,7 @@ export class PosPage extends OgsPageBase {
 
     return html`
       <wa-dialog
-        label="Pull in Existing Order"
+        label="Open Pickup Order"
         ?open="${this.showOrderSearch}"
         @wa-after-hide="${this.closeOrderSearchDialog}"
       >

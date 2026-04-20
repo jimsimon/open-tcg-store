@@ -79,6 +79,7 @@ export type BackupSettings = {
   frequency?: Maybe<Scalars['String']['output']>;
   googleDriveClientId?: Maybe<Scalars['String']['output']>;
   googleDriveConnected: Scalars['Boolean']['output'];
+  googleDriveHasClientSecret: Scalars['Boolean']['output'];
   lastBackupAt?: Maybe<Scalars['String']['output']>;
   onedriveClientId?: Maybe<Scalars['String']['output']>;
   onedriveConnected: Scalars['Boolean']['output'];
@@ -1941,6 +1942,7 @@ export type BackupSettingsResolvers<ContextType = any, ParentType extends Resolv
   frequency?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   googleDriveClientId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   googleDriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  googleDriveHasClientSecret?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastBackupAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   onedriveClientId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   onedriveConnected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;

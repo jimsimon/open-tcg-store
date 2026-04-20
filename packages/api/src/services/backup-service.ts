@@ -19,7 +19,13 @@ import { sql } from 'drizzle-orm';
 import { createClient } from '@libsql/client';
 import { databaseFilePath } from '../db/otcgs/drizzle.config';
 import { otcgs } from '../db/otcgs/index';
-import { storeOAuthTokens, getOAuthTokens, getOAuthClientId, updateLastBackupAt } from './settings-service';
+import {
+  storeOAuthTokens,
+  getOAuthTokens,
+  getOAuthClientId,
+  getOAuthClientSecret,
+  updateLastBackupAt,
+} from './settings-service';
 
 const DB_FILE_PATH = databaseFilePath;
 const BACKUP_FOLDER = 'otcgs-backups';
@@ -166,6 +172,7 @@ async function safeRestore(data: Buffer): Promise<void> {
 
 interface OAuthProviderConfig {
   clientId: string;
+  clientSecret: string | null;
   authorizationEndpoint: string;
   tokenEndpoint: string;
   scopes: string[];
@@ -176,12 +183,14 @@ interface OAuthProviderConfig {
 
 export async function getProviderConfig(provider: BackupProvider): Promise<OAuthProviderConfig> {
   const clientId = (await getOAuthClientId(provider)) ?? '';
+  const clientSecret = provider === 'google_drive' ? await getOAuthClientSecret(provider) : null;
   const baseUrl = process.env.APP_URL || 'http://localhost';
 
   switch (provider) {
     case 'google_drive':
       return {
         clientId,
+        clientSecret,
         authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenEndpoint: 'https://oauth2.googleapis.com/token',
         scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -191,6 +200,7 @@ export async function getProviderConfig(provider: BackupProvider): Promise<OAuth
     case 'dropbox':
       return {
         clientId,
+        clientSecret: null,
         authorizationEndpoint: 'https://www.dropbox.com/oauth2/authorize',
         tokenEndpoint: 'https://api.dropboxapi.com/oauth2/token',
         scopes: [],
@@ -200,6 +210,7 @@ export async function getProviderConfig(provider: BackupProvider): Promise<OAuth
     case 'onedrive':
       return {
         clientId,
+        clientSecret: null,
         authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
         tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
         scopes: ['Files.ReadWrite', 'offline_access'],
@@ -223,6 +234,14 @@ function getAuthorizationServer(config: OAuthProviderConfig): oauth.Authorizatio
 /** Build the oauth4webapi Client for a provider. */
 function getOAuthClient(config: OAuthProviderConfig): oauth.Client {
   return { client_id: config.clientId };
+}
+
+/** Return the appropriate client authentication method for a provider. */
+function getClientAuth(config: OAuthProviderConfig): oauth.ClientAuth {
+  if (config.clientSecret) {
+    return oauth.ClientSecretPost(config.clientSecret);
+  }
+  return oauth.None();
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +277,7 @@ export async function handleOAuthCallback(provider: BackupProvider, code: string
   const config = await getProviderConfig(provider);
   const as = getAuthorizationServer(config);
   const client = getOAuthClient(config);
-  const clientAuth = oauth.None();
+  const clientAuth = getClientAuth(config);
 
   // Build a fake callback URL so oauth4webapi can extract the code
   const callbackUrl = new URL(config.redirectUri);
@@ -274,7 +293,18 @@ export async function handleOAuthCallback(provider: BackupProvider, code: string
     codeVerifier,
   );
 
-  const result = await oauth.processAuthorizationCodeResponse(as, client, response);
+  let result: oauth.TokenEndpointResponse;
+  try {
+    result = await oauth.processAuthorizationCodeResponse(as, client, response);
+  } catch (err) {
+    // oauth4webapi throws ResponseBodyError with a generic message but the
+    // real OAuth error code and description are on the error object itself.
+    if (err instanceof oauth.ResponseBodyError) {
+      const detail = err.error_description ?? err.error ?? 'unknown error';
+      throw new Error(`${provider} token exchange failed: ${detail}`);
+    }
+    throw err;
+  }
 
   const accessToken = result.access_token;
   const refreshToken = result.refresh_token ?? '';
@@ -297,10 +327,19 @@ async function getRefreshedAccessToken(provider: BackupProvider): Promise<string
   const config = await getProviderConfig(provider);
   const as = getAuthorizationServer(config);
   const client = getOAuthClient(config);
-  const clientAuth = oauth.None();
+  const clientAuth = getClientAuth(config);
 
   const response = await oauth.refreshTokenGrantRequest(as, client, clientAuth, tokens.refreshToken);
-  const result = await oauth.processRefreshTokenResponse(as, client, response);
+  let result: oauth.TokenEndpointResponse;
+  try {
+    result = await oauth.processRefreshTokenResponse(as, client, response);
+  } catch (err) {
+    if (err instanceof oauth.ResponseBodyError) {
+      const detail = err.error_description ?? err.error ?? 'unknown error';
+      throw new Error(`${provider} token refresh failed: ${detail}. Please reconnect.`);
+    }
+    throw err;
+  }
 
   // Belt-and-suspenders: oauth4webapi guarantees access_token on success,
   // but guard against unexpected empty values defensively.
@@ -343,7 +382,7 @@ async function getGoogleDriveClient() {
   const accessToken = await getRefreshedAccessToken('google_drive');
   const config = await getProviderConfig('google_drive');
 
-  const oauth2Client = new google.auth.OAuth2(config.clientId, undefined, config.redirectUri);
+  const oauth2Client = new google.auth.OAuth2(config.clientId, config.clientSecret ?? undefined, config.redirectUri);
   oauth2Client.setCredentials({ access_token: accessToken });
 
   return google.drive({ version: 'v3', auth: oauth2Client });

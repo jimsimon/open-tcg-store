@@ -58,6 +58,7 @@ type BackupSettings {
   frequency: String
   googleDriveClientId: String
   googleDriveConnected: Boolean!
+  googleDriveHasClientSecret: Boolean!
   lastBackupAt: String
   onedriveClientId: String
   onedriveConnected: Boolean!
