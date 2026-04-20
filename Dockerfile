@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Install dependencies
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
@@ -22,7 +22,7 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 # Stage 2: Production image
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS app
+FROM node:24-alpine AS app
 
 # Install nginx and supervisor to manage multiple processes
 RUN apk add --no-cache nginx supervisor
