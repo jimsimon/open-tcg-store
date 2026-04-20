@@ -522,7 +522,12 @@ export class OgsPage extends SignalWatcher(LitElement) {
                     this.renderNavLink(storeUrl('/users'), 'users-gear', 'User Accounts', 'users'),
                   )}
                   ${when(this.canManageEvents, () =>
-                    this.renderNavLink(storeUrl('/event-management'), 'calendar-check', 'Event Management', 'event-management'),
+                    this.renderNavLink(
+                      storeUrl('/event-management'),
+                      'calendar-check',
+                      'Event Management',
+                      'event-management',
+                    ),
                   )}
                 `,
               )}
