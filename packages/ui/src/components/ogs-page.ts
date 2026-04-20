@@ -203,7 +203,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
         border-left: 2px solid var(--wa-color-surface-border);
         color: var(--wa-color-text-muted);
         text-decoration: none;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 400;
         border-radius: 0 var(--wa-border-radius-m) var(--wa-border-radius-m) 0;
         transition:
@@ -244,7 +244,7 @@ export class OgsPage extends SignalWatcher(LitElement) {
       .dropdown-user-label {
         padding: var(--wa-space-xs) var(--wa-space-m);
         font-weight: bold;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-normal);
       }
 

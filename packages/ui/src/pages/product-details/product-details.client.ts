@@ -134,7 +134,7 @@ export class ProductDetailsPage extends OgsPageBase {
         align-items: center;
         gap: 0.5rem;
         margin-bottom: 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
       }
 
@@ -186,7 +186,7 @@ export class ProductDetailsPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Section Header --- */
@@ -282,7 +282,7 @@ export class ProductDetailsPage extends OgsPageBase {
       }
 
       .sealed-available {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-quiet);
       }
 

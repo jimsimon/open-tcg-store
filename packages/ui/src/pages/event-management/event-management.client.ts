@@ -403,7 +403,7 @@ export class OgsEventManagementPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Stats Bar --- */
@@ -502,7 +502,7 @@ export class OgsEventManagementPage extends OgsPageBase {
       }
 
       .wa-table th {
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--wa-color-text-muted);
@@ -514,7 +514,7 @@ export class OgsEventManagementPage extends OgsPageBase {
 
       .wa-table td {
         padding: 0.875rem 1rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         border-bottom: 1px solid var(--wa-color-surface-border);
       }
 
@@ -553,7 +553,7 @@ export class OgsEventManagementPage extends OgsPageBase {
 
       .pagination-info {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .pagination-controls {
@@ -581,7 +581,7 @@ export class OgsEventManagementPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .empty-state {
@@ -635,7 +635,7 @@ export class OgsEventManagementPage extends OgsPageBase {
         flex-wrap: wrap;
         gap: 1.5rem;
         margin: 1rem 0;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
       }
 
@@ -647,7 +647,7 @@ export class OgsEventManagementPage extends OgsPageBase {
 
       .detail-description {
         margin: 1rem 0;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         line-height: 1.6;
         color: var(--wa-color-text-normal);
       }

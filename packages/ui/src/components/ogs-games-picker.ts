@@ -54,7 +54,7 @@ export class OgsGamesPicker extends LitElement {
     }
 
     .games-count {
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
       color: var(--wa-color-text-muted);
       white-space: nowrap;
       flex-shrink: 0;
@@ -95,12 +95,12 @@ export class OgsGamesPicker extends LitElement {
       text-align: center;
       padding: var(--wa-space-l);
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .no-games {
       color: var(--wa-color-text-muted);
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
   `;
 

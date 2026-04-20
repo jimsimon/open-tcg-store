@@ -56,7 +56,7 @@ export class OgsInventoryImportPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .import-container {
@@ -112,7 +112,7 @@ export class OgsInventoryImportPage extends OgsPageBase {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-secondary);
       }
 

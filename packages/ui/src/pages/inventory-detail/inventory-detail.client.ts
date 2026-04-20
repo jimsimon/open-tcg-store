@@ -758,7 +758,7 @@ export class OgsInventoryDetailPage extends OgsPageBase {
           this.barcodeLoading,
           () => html`
             <div
-              style="display: flex; align-items: center; gap: 0.5rem; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s);"
+              style="display: flex; align-items: center; gap: 0.5rem; color: var(--wa-color-text-muted); font-size: var(--wa-font-size-m);"
             >
               <wa-spinner></wa-spinner> Loading barcodes...
             </div>
@@ -786,7 +786,7 @@ export class OgsInventoryDetailPage extends OgsPageBase {
                 </div>
               `,
               () => html`
-                <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); margin: 0 0 0.75rem 0;">
+                <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-m); margin: 0 0 0.75rem 0;">
                   No barcodes assigned to this item.
                 </p>
               `,

@@ -179,7 +179,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       /* --- Job Cards --- */
@@ -215,7 +215,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
       .job-description {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         margin: 0.25rem 0 0 0;
       }
 
@@ -244,7 +244,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
       }
 
       .status-value {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 500;
       }
 
@@ -262,7 +262,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
       .schedule-display {
         font-family: var(--wa-font-family-mono, monospace);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         padding: 0.25rem 0.5rem;
         background: var(--wa-color-surface-alt);
         border: 1px solid var(--wa-color-surface-border);
@@ -270,7 +270,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
       }
 
       .schedule-description {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         color: var(--wa-color-text-muted);
         font-style: italic;
       }
@@ -311,7 +311,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
       .run-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .run-table th {
@@ -319,7 +319,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
         padding: 0.5rem 0.75rem;
         font-weight: 600;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-xs);
+        font-size: var(--wa-font-size-s);
         text-transform: uppercase;
         letter-spacing: 0.05em;
         border-bottom: 1px solid var(--wa-color-surface-border);
@@ -356,7 +356,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .empty-state {
@@ -371,7 +371,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
         gap: 0.5rem;
         padding: 1rem;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
     `,
   ];
@@ -695,7 +695,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
     if (this.jobRuns.length === 0) {
       return html`
         <div class="run-history">
-          <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-s); padding: 1rem 0;">
+          <p style="color: var(--wa-color-text-muted); font-size: var(--wa-font-size-m); padding: 1rem 0;">
             No runs recorded yet.
           </p>
         </div>

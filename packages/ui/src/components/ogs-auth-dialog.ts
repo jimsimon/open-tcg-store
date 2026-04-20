@@ -24,13 +24,13 @@ export class OgsAuthDialog extends LitElement {
     .auth-error {
       color: var(--wa-color-danger-text);
       margin: 0;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .auth-toggle {
       margin-top: var(--wa-space-m);
       text-align: center;
-      font-size: var(--wa-font-size-s);
+      font-size: var(--wa-font-size-m);
     }
 
     .auth-toggle a {

@@ -133,7 +133,7 @@ export class OgsSettingsBuyRatesPage extends OgsPageBase {
       .page-header p {
         margin: 0.25rem 0 0 0;
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .loading-container {
@@ -146,7 +146,7 @@ export class OgsSettingsBuyRatesPage extends OgsPageBase {
       }
       .loading-container span {
         color: var(--wa-color-text-muted);
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
       }
 
       .rate-table {
@@ -156,7 +156,7 @@ export class OgsSettingsBuyRatesPage extends OgsPageBase {
       .rate-table th {
         text-align: left;
         padding: 0.5rem 0.75rem;
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 600;
         color: var(--wa-color-text-muted);
         border-bottom: 2px solid var(--wa-color-surface-border);
@@ -181,7 +181,7 @@ export class OgsSettingsBuyRatesPage extends OgsPageBase {
       }
 
       .rarity-label {
-        font-size: var(--wa-font-size-s);
+        font-size: var(--wa-font-size-m);
         font-weight: 500;
         color: var(--wa-color-text-base);
       }
