@@ -14,5 +14,5 @@ export function slugify(value: string): string {
     .replace(/^-|-$/g, '');
 
   const suffix = Math.random().toString(36).substring(2, 8);
-  return `${base}-${suffix}`;
+  return base ? `${base}-${suffix}` : suffix;
 }

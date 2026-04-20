@@ -343,6 +343,42 @@ describe('store-location-service', () => {
       expect(mockOtcgs.insert).toHaveBeenCalled();
     });
 
+    it('should throw a user-friendly error when slug uniqueness constraint is violated', async () => {
+      mockAuth.api.createOrganization.mockRejectedValue(new Error('UNIQUE constraint failed: organization.slug'));
+
+      await expect(
+        addStoreLocation(
+          {
+            name: 'Duplicate Store',
+            slug: 'duplicate-store',
+            street1: '123 Main St',
+            city: 'Springfield',
+            state: 'IL',
+            zip: '62701',
+          },
+          testHeaders,
+        ),
+      ).rejects.toThrow('A store with a similar name already exists. Please choose a different name.');
+    });
+
+    it('should re-throw non-slug errors from createOrganization unchanged', async () => {
+      mockAuth.api.createOrganization.mockRejectedValue(new Error('Network failure'));
+
+      await expect(
+        addStoreLocation(
+          {
+            name: 'Some Store',
+            slug: 'some-store',
+            street1: '123 Main St',
+            city: 'Springfield',
+            state: 'IL',
+            zip: '62701',
+          },
+          testHeaders,
+        ),
+      ).rejects.toThrow('Network failure');
+    });
+
     it('should create a store location without hours', async () => {
       mockAuth.api.createOrganization.mockResolvedValue({
         id: 'org-new',
