@@ -13,8 +13,12 @@
  * ```
  */
 
-/** max-width for mobile layouts (below this value = mobile) */
-export const BP_MOBILE = '767px';
+/**
+ * max-width for mobile layouts — matches `wa-page mobile-breakpoint="768"`
+ * in ogs-page.ts so the page shell and component-level media queries
+ * transition at the same viewport width.
+ */
+export const BP_MOBILE = '768px';
 
 /** max-width for tablet layouts (below this value = tablet or smaller) */
 export const BP_TABLET = '960px';
