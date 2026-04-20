@@ -18,7 +18,7 @@ import utilityStyles from '@awesome.me/webawesome/dist/styles/utilities.css?inli
 import { OgsPageBase } from '../../components/ogs-page-base.ts';
 import { execute } from '../../lib/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
-import type { EventType } from '../../graphql/graphql.ts';
+import type { EventType, RecurrenceFrequency } from '../../graphql/graphql.ts';
 import { GetSupportedGamesQuery } from '../../lib/shared-queries.ts';
 import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js';
@@ -190,7 +190,7 @@ const CancelRecurringSeriesMutation = graphql(`
 `);
 
 const UpdateRecurrenceRuleMutation = graphql(`
-  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: String!) {
+  mutation UpdateRecurrenceRule($recurrenceGroupId: String!, $frequency: RecurrenceFrequency!) {
     updateRecurrenceRule(recurrenceGroupId: $recurrenceGroupId, frequency: $frequency) {
       id
       recurrenceRule {
@@ -243,6 +243,16 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 function formatEventType(type: string): string {
   return EVENT_TYPE_LABELS[type] ?? type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const RECURRENCE_LABELS: Record<string, string> = {
+  WEEKLY: 'Weekly',
+  BIWEEKLY: 'Biweekly',
+  MONTHLY: 'Monthly',
+};
+
+function formatRecurrenceFrequency(frequency: string): string {
+  return RECURRENCE_LABELS[frequency] ?? frequency;
 }
 
 function formatEntryFee(cents: number | null): string {
@@ -899,7 +909,7 @@ export class OgsEventManagementPage extends OgsPageBase {
           entryFeeInCents: this.formEntryFee ? Math.round(Number.parseFloat(this.formEntryFee) * 100) : null,
           recurrenceRule:
             this.formRecurrenceFrequency && this.formRecurrenceFrequency !== 'NONE'
-              ? { frequency: this.formRecurrenceFrequency }
+              ? { frequency: this.formRecurrenceFrequency as RecurrenceFrequency }
               : null,
         };
 
@@ -971,7 +981,7 @@ export class OgsEventManagementPage extends OgsPageBase {
     try {
       const result = await execute(UpdateRecurrenceRuleMutation, {
         recurrenceGroupId: this.selectedEvent.recurrenceGroupId,
-        frequency: this.editRecurrenceFrequency,
+        frequency: this.editRecurrenceFrequency as RecurrenceFrequency,
       });
 
       if (result?.errors?.length) {
@@ -1328,7 +1338,7 @@ export class OgsEventManagementPage extends OgsPageBase {
                                 variant="neutral"
                                 appearance="outlined"
                                 @click="${() => {
-                                  this.editRecurrenceFrequency = ev.recurrenceRule?.frequency.toUpperCase() ?? '';
+                                  this.editRecurrenceFrequency = ev.recurrenceRule?.frequency ?? '';
                                   this.editRecurrenceError = '';
                                   this.showEditRecurrenceDialog = true;
                                 }}"
@@ -1381,7 +1391,7 @@ export class OgsEventManagementPage extends OgsPageBase {
             ? html`
                 <div class="meta-item">
                   <wa-icon name="arrows-rotate" style="font-size: 1rem;"></wa-icon>
-                  Repeats: ${ev.recurrenceRule.frequency}
+                  Repeats: ${formatRecurrenceFrequency(ev.recurrenceRule.frequency)}
                 </div>
               `
             : nothing}

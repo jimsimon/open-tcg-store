@@ -841,7 +841,7 @@ export type MutationupdateOrderStatusArgs = {
 
 
 export type MutationupdateRecurrenceRuleArgs = {
-  frequency: Scalars['String']['input'];
+  frequency: RecurrenceFrequency;
   recurrenceGroupId: Scalars['String']['input'];
 };
 
@@ -1321,13 +1321,18 @@ export type QuerysearchProductsArgs = {
   searchTerm: Scalars['String']['input'];
 };
 
+export type RecurrenceFrequency =
+  | 'BIWEEKLY'
+  | 'MONTHLY'
+  | 'WEEKLY';
+
 export type RecurrenceRule = {
   __typename?: 'RecurrenceRule';
-  frequency: Scalars['String']['output'];
+  frequency: RecurrenceFrequency;
 };
 
 export type RecurrenceRuleInput = {
-  frequency: Scalars['String']['input'];
+  frequency: RecurrenceFrequency;
 };
 
 export type RegistrationStatus =
@@ -1718,7 +1723,7 @@ export type ResolversTypes = {
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: ResolverTypeWrapper<DataUpdateResult>;
   DataUpdateStatus: ResolverTypeWrapper<DataUpdateStatus>;
-  Event: ResolverTypeWrapper<Omit<Event, 'eventType' | 'registrations' | 'status'> & { eventType: ResolversTypes['EventType'], registrations?: Maybe<Array<ResolversTypes['EventRegistration']>>, status: ResolversTypes['EventStatus'] }>;
+  Event: ResolverTypeWrapper<Omit<Event, 'eventType' | 'recurrenceRule' | 'registrations' | 'status'> & { eventType: ResolversTypes['EventType'], recurrenceRule?: Maybe<ResolversTypes['RecurrenceRule']>, registrations?: Maybe<Array<ResolversTypes['EventRegistration']>>, status: ResolversTypes['EventStatus'] }>;
   EventFilters: EventFilters;
   EventPage: ResolverTypeWrapper<Omit<EventPage, 'items'> & { items: Array<ResolversTypes['Event']> }>;
   EventRegistration: ResolverTypeWrapper<Omit<EventRegistration, 'status'> & { status: ResolversTypes['RegistrationStatus'] }>;
@@ -1763,7 +1768,8 @@ export type ResolversTypes = {
   PublicBuyRates: ResolverTypeWrapper<Omit<PublicBuyRates, 'games'> & { games: Array<ResolversTypes['BuyRateTable']> }>;
   PublicEventRegistrationInput: PublicEventRegistrationInput;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
-  RecurrenceRule: ResolverTypeWrapper<RecurrenceRule>;
+  RecurrenceFrequency: ResolverTypeWrapper<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>;
+  RecurrenceRule: ResolverTypeWrapper<Omit<RecurrenceRule, 'frequency'> & { frequency: ResolversTypes['RecurrenceFrequency'] }>;
   RecurrenceRuleInput: RecurrenceRuleInput;
   RegistrationStatus: ResolverTypeWrapper<'REGISTERED' | 'CANCELLED'>;
   RemoveBarcodeInput: RemoveBarcodeInput;
@@ -1841,7 +1847,7 @@ export type ResolversParentTypes = {
   DashboardDateRange: DashboardDateRange;
   DataUpdateResult: DataUpdateResult;
   DataUpdateStatus: DataUpdateStatus;
-  Event: Omit<Event, 'registrations'> & { registrations?: Maybe<Array<ResolversParentTypes['EventRegistration']>> };
+  Event: Omit<Event, 'recurrenceRule' | 'registrations'> & { recurrenceRule?: Maybe<ResolversParentTypes['RecurrenceRule']>, registrations?: Maybe<Array<ResolversParentTypes['EventRegistration']>> };
   EventFilters: EventFilters;
   EventPage: Omit<EventPage, 'items'> & { items: Array<ResolversParentTypes['Event']> };
   EventRegistration: EventRegistration;
@@ -2487,8 +2493,10 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   userPermissions?: Resolver<ResolversTypes['UserPermissions'], ParentType, ContextType>;
 };
 
+export type RecurrenceFrequencyResolvers = EnumResolverSignature<{ BIWEEKLY?: any, MONTHLY?: any, WEEKLY?: any }, ResolversTypes['RecurrenceFrequency']>;
+
 export type RecurrenceRuleResolvers<ContextType = any, ParentType extends ResolversParentTypes['RecurrenceRule'] = ResolversParentTypes['RecurrenceRule']> = {
-  frequency?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  frequency?: Resolver<ResolversTypes['RecurrenceFrequency'], ParentType, ContextType>;
 };
 
 export type RegistrationStatusResolvers = EnumResolverSignature<{ CANCELLED?: any, REGISTERED?: any }, ResolversTypes['RegistrationStatus']>;
@@ -2672,6 +2680,7 @@ export type Resolvers<ContextType = any> = {
   ProductSearchResult?: ProductSearchResultResolvers<ContextType>;
   PublicBuyRates?: PublicBuyRatesResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  RecurrenceFrequency?: RecurrenceFrequencyResolvers;
   RecurrenceRule?: RecurrenceRuleResolvers<ContextType>;
   RegistrationStatus?: RegistrationStatusResolvers;
   ResourceType?: ResourceTypeResolvers;
