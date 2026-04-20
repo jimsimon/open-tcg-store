@@ -547,8 +547,12 @@ export class OgsProductsSealedPage extends OgsPageBase {
                       appearance="filled"
                       size="small"
                       title="Add to cart"
-                      ?disabled="${this.addingToCart}"
-                      @click="${(e: Event) => this.handleAddToCart(product.lowestPriceInventoryItemId!, e)}"
+                      ?disabled="${this.addingToCart || product.totalQuantity <= 0}"
+                      @click="${(e: Event) => {
+                        if (product.lowestPriceInventoryItemId != null) {
+                          this.handleAddToCart(product.lowestPriceInventoryItemId, e);
+                        }
+                      }}"
                     >
                       <wa-icon name="cart-plus"></wa-icon>
                     </wa-button>

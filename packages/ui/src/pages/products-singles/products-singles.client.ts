@@ -693,8 +693,12 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                       appearance="filled"
                       size="small"
                       title="Add to cart"
-                      ?disabled="${this.addingToCart}"
-                      @click="${(e: Event) => this.handleAddToCart(display.inventoryItemId, e)}"
+                      ?disabled="${this.addingToCart || display.quantity <= 0}"
+                      @click="${(e: Event) => {
+                        if (display.inventoryItemId) {
+                          this.handleAddToCart(display.inventoryItemId, e);
+                        }
+                      }}"
                     >
                       <wa-icon name="cart-plus"></wa-icon>
                     </wa-button>
