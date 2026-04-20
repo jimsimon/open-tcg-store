@@ -438,7 +438,9 @@ export async function cancelEvent(eventId: number, organizationId: string, _user
 
 /**
  * Update the recurrence frequency for an entire recurring series.
- * Cancels all future scheduled instances and regenerates them with the new frequency.
+ * Cancels all future scheduled instances, updates the template rule,
+ * then triggers the event-recurrence-generator cron job to regenerate
+ * instances (reusing the existing window/config logic).
  * Returns the updated template event.
  */
 export async function updateRecurrenceRule(
@@ -489,8 +491,10 @@ export async function updateRecurrenceRule(
     .where(eq(event.id, template.id))
     .returning();
 
-  // Regenerate instances with the new frequency for the next 8 weeks
-  await generateRecurrenceInstances(updatedTemplate, normalizedFrequency, 8);
+  // Trigger the recurrence generator job to create new instances
+  // using the centralized window/config logic
+  const { executeJobByName } = await import('./cron-service.ts');
+  await executeJobByName('event-recurrence-generator');
 
   return enrichEventWithGame(updatedTemplate);
 }
