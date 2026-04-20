@@ -255,21 +255,10 @@ async function executeJobInternal(jobId: number): Promise<typeof cronJobRun.$inf
 }
 
 /**
- * Manually trigger a job by ID. Returns the run record.
+ * Manually trigger a job. Returns the run record.
  */
 export async function executeJob(jobId: number): Promise<typeof cronJobRun.$inferSelect> {
   return executeJobInternal(jobId);
-}
-
-/**
- * Trigger a job by its unique name. Useful for programmatic triggers
- * (e.g. after updating a recurrence rule). Returns the run record,
- * or null if the job doesn't exist.
- */
-export async function executeJobByName(name: string): Promise<(typeof cronJobRun.$inferSelect) | null> {
-  const [job] = await otcgs.select({ id: cronJob.id }).from(cronJob).where(eq(cronJob.name, name)).limit(1);
-  if (!job) return null;
-  return executeJobInternal(job.id);
 }
 
 /**

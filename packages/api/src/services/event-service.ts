@@ -65,6 +65,9 @@ const DB_TO_GQL_EVENT_TYPE: Record<string, string> = Object.fromEntries(
 
 const VALID_FREQUENCIES = ['weekly', 'biweekly', 'monthly'];
 
+/** Default number of weeks into the future to generate recurring event instances. */
+export const DEFAULT_RECURRENCE_WINDOW_WEEKS = 8;
+
 // ---------------------------------------------------------------------------
 // Formatting helpers
 // ---------------------------------------------------------------------------
@@ -372,7 +375,7 @@ export async function createEvent(organizationId: string, input: CreateEventInpu
 
   // If recurring, generate initial batch of instances
   if (hasRecurrence && input.recurrenceRule) {
-    await generateRecurrenceInstances(created, input.recurrenceRule.frequency, 8);
+    await generateRecurrenceInstances(created, input.recurrenceRule.frequency, DEFAULT_RECURRENCE_WINDOW_WEEKS);
   }
 
   return enrichEventWithGame(created);
@@ -491,10 +494,8 @@ export async function updateRecurrenceRule(
     .where(eq(event.id, template.id))
     .returning();
 
-  // Trigger the recurrence generator job to create new instances
-  // using the centralized window/config logic
-  const { executeJobByName } = await import('./cron-service.ts');
-  await executeJobByName('event-recurrence-generator');
+  // Regenerate instances for this template with the new frequency
+  await generateRecurrenceInstances(updatedTemplate, normalizedFrequency, DEFAULT_RECURRENCE_WINDOW_WEEKS);
 
   return enrichEventWithGame(updatedTemplate);
 }
