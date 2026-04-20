@@ -931,7 +931,6 @@ export class OrdersPage extends OgsPageBase {
                         <wa-button
                           size="small"
                           variant="success"
-                          appearance="outlined"
                           ?loading="${this.updatingStatusOrderId === order.id}"
                           ?disabled="${this.updatingStatusOrderId !== null}"
                           @click="${(e: Event) => this.handleUpdateStatus(order.id, 'completed', e)}"
@@ -944,7 +943,6 @@ export class OrdersPage extends OgsPageBase {
                         <wa-button
                           size="small"
                           variant="neutral"
-                          appearance="outlined"
                           ?loading="${this.updatingStatusOrderId === order.id}"
                           ?disabled="${this.updatingStatusOrderId !== null}"
                           @click="${(e: Event) => this.handleUpdateStatus(order.id, 'open', e)}"
@@ -958,7 +956,6 @@ export class OrdersPage extends OgsPageBase {
                         <wa-button
                           size="small"
                           variant="danger"
-                          appearance="outlined"
                           ?loading="${this.cancellingOrderId === order.id}"
                           ?disabled="${this.cancellingOrderId !== null}"
                           @click="${(e: Event) => this.openCancelDialog(order, e)}"

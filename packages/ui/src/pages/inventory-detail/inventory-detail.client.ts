@@ -676,7 +676,7 @@ export class OgsInventoryDetailPage extends OgsPageBase {
                       </wa-button>
                       <wa-button
                         size="small"
-                        variant="neutral"
+                        variant="danger"
                         title="Delete"
                         @click="${() => this.openDeleteDialog(stock)}"
                       >
@@ -774,7 +774,8 @@ export class OgsInventoryDetailPage extends OgsPageBase {
                         ${barcode.code}
                         <wa-button
                           size="small"
-                          variant="text"
+                          variant="neutral"
+                          appearance="plain"
                           style="margin-inline-start: 0.25rem; font-size: 0.75rem;"
                           @click="${() => this.handleRemoveBarcode(barcode.id)}"
                         >

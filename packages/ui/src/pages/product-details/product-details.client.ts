@@ -549,7 +549,7 @@ export class ProductDetailsPage extends OgsPageBase {
                   <span slot="label" class="wa-visually-hidden">Quantity</span>
                 </wa-input>
                 <wa-button
-                  appearance="filled"
+                  variant="brand"
                   ?disabled="${this.addingToCart}"
                   @click="${(e: Event) => this.handleAddToCart(p.inventoryRecords[0].inventoryItemId, e.currentTarget)}"
                 >
@@ -653,7 +653,7 @@ export class ProductDetailsPage extends OgsPageBase {
                                 <span slot="label" class="wa-visually-hidden">Quantity</span>
                               </wa-input>
                               <wa-button
-                                appearance="filled"
+                                variant="brand"
                                 ?disabled="${this.addingToCart}"
                                 @click="${(e: Event) => this.handleAddToCart(data.inventoryItemId, e.currentTarget)}"
                               >
@@ -700,7 +700,7 @@ export class ProductDetailsPage extends OgsPageBase {
                               <span slot="label" class="wa-visually-hidden">Quantity</span>
                             </wa-input>
                             <wa-button
-                              appearance="filled"
+                              variant="brand"
                               ?disabled="${this.addingToCart}"
                               @click="${(e: Event) => this.handleAddToCart(record.inventoryItemId, e.currentTarget)}"
                             >

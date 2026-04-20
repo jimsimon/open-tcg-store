@@ -79,6 +79,40 @@ GitHub Actions on PRs/pushes to `main`: lint + format check, API tests + coverag
 2. Auto-generate migrations if `*-schema.ts` changed
 3. lint-staged (oxlint + oxfmt)
 
+## Button Guidelines
+
+All buttons use `<wa-button>` from Web Awesome. Only use valid attribute values.
+
+**Valid API**: `variant` = `neutral` | `brand` | `success` | `warning` | `danger`. `appearance` = `accent` (default) | `filled` | `outlined` | `plain`. `size` = `small` | `medium` (default) | `large`. Icon slots: `start`, `end`, or default.
+
+**Appearance hierarchy** (most → least prominent): `accent` (default) → `filled` → `outlined` → `plain`.
+
+| Action Type                                 | variant   | appearance       | size    | Icon                         | Notes                                           |
+| ------------------------------------------- | --------- | ---------------- | ------- | ---------------------------- | ----------------------------------------------- |
+| Primary page CTA (Add, Create)              | `brand`   | accent (default) | default | `plus slot="start"`          | —                                               |
+| Form save (Save, Update)                    | `brand`   | accent (default) | default | `floppy-disk slot="start"`   | Use `?loading`                                  |
+| Destructive confirm (Delete, Remove dialog) | `danger`  | accent (default) | default | `trash`/`xmark slot="start"` | —                                               |
+| Dialog cancel/dismiss                       | `neutral` | accent (default) | default | none                         | Use `autofocus` when cancel is the safe default |
+| Table row Edit                              | `neutral` | accent (default) | `small` | `pen-to-square slot="start"` | —                                               |
+| Table row Delete/Remove                     | `danger`  | accent (default) | `small` | `trash`/`xmark slot="start"` | —                                               |
+| Table row Complete                          | `success` | accent (default) | `small` | `check slot="start"`         | —                                               |
+| Table row Re-open                           | `neutral` | accent (default) | `small` | `rotate-left slot="start"`   | —                                               |
+| Warning confirm                             | `warning` | accent (default) | default | —                            | e.g., "Keep $0 Cost Basis"                      |
+| Inline remove (editable list row)           | `danger`  | `plain`          | `small` | `trash`                      | Minimal styling                                 |
+| Inline reset/utility                        | `neutral` | `plain`          | `small` | varies                       | Minimal styling                                 |
+| Nav arrows & calendar controls              | `neutral` | `plain`          | `small` | chevron icons                | —                                               |
+| Back/Previous navigation                    | `neutral` | `outlined`       | default | `arrow-left slot="start"`    | Subtle is appropriate                           |
+| Quantity stepper (+/−)                      | `neutral` | `outlined`       | `small` | `minus`/`plus`               | —                                               |
+| Pagination active page                      | `brand`   | accent (default) | `small` | —                            | —                                               |
+| Pagination inactive page                    | `neutral` | accent (default) | `small` | —                            | —                                               |
+| Pagination prev/next                        | `neutral` | `plain`          | `small` | chevron icons                | —                                               |
+| Toggle group selected                       | `brand`   | `filled`         | `small` | —                            | In `<wa-button-group>`                          |
+| Toggle group unselected                     | `neutral` | `filled`         | `small` | —                            | In `<wa-button-group>`                          |
+| Storefront Add to Cart                      | `brand`   | accent (default) | varies  | `cart-plus`                  | Icon-only on grid cards                         |
+| Inline edit cancel (not dialog)             | `neutral` | `outlined`       | `small` | none                         | Pairs with Save/primary                         |
+
+**Key rules**: Never use `appearance="outlined"` on action buttons (too subtle). Never use invalid values (`variant="text"`, `variant="ghost"`, `variant="default"`, `appearance="text"`). Always specify `variant` explicitly. Use `slot="start"` for icons (never `slot="prefix"`).
+
 ## Code Owner
 
 `@jimsimon`

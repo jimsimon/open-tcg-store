@@ -1002,7 +1002,8 @@ export class OgsLotPage extends OgsPageBase {
               ? html`
                   <wa-button
                     class="reset-btn"
-                    variant="text"
+                    variant="neutral"
+                    appearance="plain"
                     size="small"
                     @click="${() => this.resetCost(item.clientId, isSingle)}"
                     title="Reset to auto-calculated"
@@ -1017,7 +1018,12 @@ export class OgsLotPage extends OgsPageBase {
         <td class="market-cell">${item.productId ? formatCurrency(item.marketPrice) : '-'}</td>
         <td class="total-cell">${item.productId ? formatCurrency(item.marketPrice * item.quantity) : '-'}</td>
         <td class="actions-cell-td">
-          <wa-button variant="text" size="small" @click="${() => this.removeRow(item.clientId, isSingle)}">
+          <wa-button
+            variant="danger"
+            appearance="plain"
+            size="small"
+            @click="${() => this.removeRow(item.clientId, isSingle)}"
+          >
             <wa-icon name="trash"></wa-icon>
           </wa-button>
         </td>

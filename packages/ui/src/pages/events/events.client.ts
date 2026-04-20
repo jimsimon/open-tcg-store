@@ -608,10 +608,10 @@ export class EventsPage extends OgsPageBase {
         <div class="calendar-toolbar-left">
           <wa-button size="small" variant="neutral" appearance="outlined" @click="${this.goToToday}">Today</wa-button>
           <div class="calendar-nav">
-            <wa-button size="small" variant="neutral" appearance="text" @click="${() => this.navigateMonth(-1)}">
+            <wa-button size="small" variant="neutral" appearance="plain" @click="${() => this.navigateMonth(-1)}">
               <wa-icon name="chevron-left"></wa-icon>
             </wa-button>
-            <wa-button size="small" variant="neutral" appearance="text" @click="${() => this.navigateMonth(1)}">
+            <wa-button size="small" variant="neutral" appearance="plain" @click="${() => this.navigateMonth(1)}">
               <wa-icon name="chevron-right"></wa-icon>
             </wa-button>
           </div>
