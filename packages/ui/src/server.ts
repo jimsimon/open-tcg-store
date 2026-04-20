@@ -30,6 +30,9 @@ type AppState = {
 };
 
 const app = new Koa<AppState>();
+// Trust X-Forwarded-* headers from the reverse proxy so ctx.protocol and
+// ctx.ip reflect the real client values instead of the proxy's.
+app.proxy = true;
 
 // Global error handler — prevent stack traces from leaking to clients
 app.on('error', (err) => {
@@ -211,10 +214,11 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   });
 
   if (signInResult.error) {
-    console.error('Anonymous sign-in failed:', signInResult.error);
-    throw new Error(
-      `Anonymous sign-in failed: ${signInResult.error.message ?? signInResult.error.code ?? 'unknown error'}`,
-    );
+    const err = signInResult.error;
+    const detail =
+      err.message ?? err.code ?? ('status' in err ? `HTTP ${(err as { status: number }).status}` : 'unknown error');
+    console.error('Anonymous sign-in failed:', err);
+    throw new Error(`Anonymous sign-in failed: ${detail}`);
   }
 
   const getSessionResponse = await getSession(ctx);
