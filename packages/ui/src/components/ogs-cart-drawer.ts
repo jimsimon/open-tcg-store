@@ -334,6 +334,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
           <div class="cart-item-qty">
             <wa-button
               size="small"
+              variant="neutral"
               appearance="outlined"
               ?disabled="${item.quantity <= 1 || this.updatingCartItem}"
               @click="${() => this.handleUpdateQuantity(item, item.quantity - 1)}"
@@ -358,6 +359,7 @@ export class OgsCartDrawer extends SignalWatcher(LitElement) {
             </wa-input>
             <wa-button
               size="small"
+              variant="neutral"
               appearance="outlined"
               ?disabled="${item.quantity >= item.maxAvailable || this.updatingCartItem}"
               @click="${() => this.handleUpdateQuantity(item, item.quantity + 1)}"

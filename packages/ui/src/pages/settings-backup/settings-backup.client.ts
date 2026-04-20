@@ -1056,7 +1056,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-button
             size="small"
             variant="brand"
-            appearance="outlined"
             ?disabled="${!job.enabled || isRunning}"
             ?loading="${isRunning}"
             @click="${() => this.triggerJob(job.id)}"
@@ -1150,7 +1149,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-button
             size="small"
             variant="brand"
-            appearance="outlined"
             ?disabled="${!job.enabled || isRunning || !this.isSelectedProviderConnected}"
             ?loading="${isRunning}"
             @click="${() => this.triggerJob(job.id)}"
@@ -1161,7 +1159,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-button
             size="small"
             variant="danger"
-            appearance="outlined"
             ?loading="${this.restoring}"
             ?disabled="${!this.isSelectedProviderConnected || isRunning}"
             @click="${() => {
@@ -1199,7 +1196,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
       <div class="schedule-row">
         <span class="schedule-display">${job.cronExpression}</span>
         <span class="schedule-description">${describeCron(job.cronExpression) ?? ''}</span>
-        <wa-button size="small" variant="neutral" appearance="outlined" @click="${() => this.startEditSchedule(job)}">
+        <wa-button size="small" variant="neutral" @click="${() => this.startEditSchedule(job)}">
           <wa-icon slot="start" name="pen-to-square"></wa-icon>
           Edit
         </wa-button>
@@ -1249,12 +1246,7 @@ export class OgsSettingsBackupPage extends OgsPageBase {
         <div class="provider-setup">
           <div class="provider-connected-row">
             <wa-badge variant="success">Connected</wa-badge>
-            <wa-button
-              size="small"
-              variant="danger"
-              appearance="outlined"
-              @click="${() => this.disconnectProvider(providerKey)}"
-            >
+            <wa-button size="small" variant="danger" @click="${() => this.disconnectProvider(providerKey)}">
               <wa-icon slot="start" name="link-slash"></wa-icon>
               Disconnect
             </wa-button>
@@ -1307,7 +1299,6 @@ export class OgsSettingsBackupPage extends OgsPageBase {
           <wa-button
             size="small"
             variant="brand"
-            appearance="outlined"
             ?disabled="${!clientId.trim() || (providerKey === 'google_drive' && !this.googleDriveClientSecret.trim())}"
             @click="${() => this.connectProvider(providerKey)}"
           >

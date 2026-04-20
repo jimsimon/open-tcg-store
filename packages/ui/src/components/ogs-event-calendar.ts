@@ -232,10 +232,10 @@ export class OgsEventCalendar extends LitElement {
         <div class="calendar-header">
           <span class="calendar-title">${MONTH_NAMES[this.currentMonth]} ${this.currentYear}</span>
           <div class="calendar-nav">
-            <wa-button size="small" variant="neutral" appearance="text" @click="${() => this.navigateMonth(-1)}">
+            <wa-button size="small" variant="neutral" appearance="plain" @click="${() => this.navigateMonth(-1)}">
               <wa-icon name="chevron-left"></wa-icon>
             </wa-button>
-            <wa-button size="small" variant="neutral" appearance="text" @click="${() => this.navigateMonth(1)}">
+            <wa-button size="small" variant="neutral" appearance="plain" @click="${() => this.navigateMonth(1)}">
               <wa-icon name="chevron-right"></wa-icon>
             </wa-button>
           </div>

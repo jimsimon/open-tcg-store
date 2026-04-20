@@ -699,18 +699,12 @@ export class OgsSettingsUsersPage extends SignalWatcher(OgsPageBase) {
                   <wa-button
                     size="small"
                     variant="neutral"
-                    appearance="outlined"
                     href="${storeUrl(`/users/${encodeURIComponent(member.userId)}`)}"
                   >
                     <wa-icon slot="start" name="pen-to-square"></wa-icon>
                     Edit
                   </wa-button>
-                  <wa-button
-                    size="small"
-                    variant="danger"
-                    appearance="outlined"
-                    @click="${() => this.confirmRemoveMember(member)}"
-                  >
+                  <wa-button size="small" variant="danger" @click="${() => this.confirmRemoveMember(member)}">
                     <wa-icon slot="start" name="xmark"></wa-icon>
                     Remove
                   </wa-button>

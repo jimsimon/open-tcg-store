@@ -690,7 +690,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
                       <span slot="label" class="wa-visually-hidden">Quantity</span>
                     </wa-input>
                     <wa-button
-                      appearance="filled"
+                      variant="brand"
                       size="small"
                       title="Add to cart"
                       ?disabled="${this.addingToCart || display.quantity <= 0}"
@@ -750,7 +750,7 @@ export class OgsProductsSinglesPage extends OgsPageBase {
             (p) => html`
               <wa-button
                 size="small"
-                variant="${p === this.currentPage ? 'neutral' : 'ghost'}"
+                variant="${p === this.currentPage ? 'brand' : 'neutral'}"
                 ?data-current="${p === this.currentPage}"
                 @click="${() => this.goToPage(p)}"
               >

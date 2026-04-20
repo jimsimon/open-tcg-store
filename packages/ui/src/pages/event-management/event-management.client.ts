@@ -1267,7 +1267,7 @@ export class OgsEventManagementPage extends OgsPageBase {
       <wa-button
         size="small"
         variant="neutral"
-        appearance="text"
+        appearance="plain"
         style="margin-bottom: 1rem;"
         @click="${this.handleBackToList}"
       >
@@ -1316,16 +1316,11 @@ export class OgsEventManagementPage extends OgsPageBase {
           <div class="detail-actions">
             ${ev.status === 'SCHEDULED'
               ? html`
-                  <wa-button size="small" variant="neutral" appearance="outlined" @click="${this.openEditDialog}">
+                  <wa-button size="small" variant="neutral" @click="${this.openEditDialog}">
                     <wa-icon slot="start" name="pen-to-square"></wa-icon>
                     Edit
                   </wa-button>
-                  <wa-button
-                    size="small"
-                    variant="danger"
-                    appearance="outlined"
-                    @click="${() => (this.showCancelEventDialog = true)}"
-                  >
+                  <wa-button size="small" variant="danger" @click="${() => (this.showCancelEventDialog = true)}">
                     <wa-icon slot="start" name="xmark"></wa-icon>
                     Cancel Event
                   </wa-button>
@@ -1336,7 +1331,6 @@ export class OgsEventManagementPage extends OgsPageBase {
                               <wa-button
                                 size="small"
                                 variant="neutral"
-                                appearance="outlined"
                                 @click="${() => {
                                   this.editRecurrenceFrequency = ev.recurrenceRule?.frequency ?? '';
                                   this.editRecurrenceError = '';
@@ -1348,12 +1342,7 @@ export class OgsEventManagementPage extends OgsPageBase {
                               </wa-button>
                             `
                           : nothing}
-                        <wa-button
-                          size="small"
-                          variant="danger"
-                          appearance="outlined"
-                          @click="${() => (this.showCancelSeriesDialog = true)}"
-                        >
+                        <wa-button size="small" variant="danger" @click="${() => (this.showCancelSeriesDialog = true)}">
                           <wa-icon slot="start" name="xmark"></wa-icon>
                           Cancel Recurring Series
                         </wa-button>
@@ -1500,7 +1489,6 @@ export class OgsEventManagementPage extends OgsPageBase {
                                           <wa-button
                                             size="small"
                                             variant="success"
-                                            appearance="outlined"
                                             @click="${() => this.handleCheckIn(reg.id)}"
                                           >
                                             <wa-icon slot="start" name="check"></wa-icon>
@@ -1511,7 +1499,6 @@ export class OgsEventManagementPage extends OgsPageBase {
                                     <wa-button
                                       size="small"
                                       variant="danger"
-                                      appearance="outlined"
                                       @click="${() => this.handleCancelRegistration(reg.id)}"
                                     >
                                       <wa-icon slot="start" name="xmark"></wa-icon>

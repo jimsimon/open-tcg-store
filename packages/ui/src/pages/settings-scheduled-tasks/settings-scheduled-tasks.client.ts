@@ -645,12 +645,7 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
                 <div class="schedule-row">
                   <span class="schedule-display">${job.cronExpression}</span>
                   <span class="schedule-description">${describeCron(job.cronExpression) ?? ''}</span>
-                  <wa-button
-                    size="small"
-                    variant="neutral"
-                    appearance="outlined"
-                    @click="${() => this.startEditSchedule(job)}"
-                  >
+                  <wa-button size="small" variant="neutral" @click="${() => this.startEditSchedule(job)}">
                     <wa-icon slot="start" name="pen-to-square"></wa-icon>
                     Edit
                   </wa-button>
@@ -660,22 +655,11 @@ export class OgsSettingsScheduledTasksPage extends OgsPageBase {
 
         <!-- Actions -->
         <div class="job-actions">
-          <wa-button
-            size="small"
-            variant="brand"
-            appearance="outlined"
-            ?disabled="${!job.enabled}"
-            @click="${() => this.triggerJob(job.id)}"
-          >
+          <wa-button size="small" variant="brand" ?disabled="${!job.enabled}" @click="${() => this.triggerJob(job.id)}">
             <wa-icon slot="start" name="play"></wa-icon>
             Run Now
           </wa-button>
-          <wa-button
-            size="small"
-            variant="neutral"
-            appearance="outlined"
-            @click="${() => this.toggleRunHistory(job.id)}"
-          >
+          <wa-button size="small" variant="neutral" @click="${() => this.toggleRunHistory(job.id)}">
             <wa-icon slot="start" name="${isExpanded ? 'chevron-up' : 'chevron-down'}"></wa-icon>
             ${isExpanded ? 'Hide History' : 'View History'}
           </wa-button>

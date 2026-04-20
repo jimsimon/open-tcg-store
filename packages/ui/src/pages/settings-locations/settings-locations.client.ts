@@ -797,19 +797,13 @@ export class SettingsLocationsPage extends OgsPageBase {
                     </td>
                     <td class="actions-cell">
                       <div class="actions-cell-inner">
-                        <wa-button
-                          size="small"
-                          variant="neutral"
-                          appearance="outlined"
-                          @click="${() => this.openEditDialog(loc)}"
-                        >
+                        <wa-button size="small" variant="neutral" @click="${() => this.openEditDialog(loc)}">
                           <wa-icon slot="start" name="pen-to-square"></wa-icon>
                           Edit
                         </wa-button>
                         <wa-button
                           size="small"
                           variant="danger"
-                          appearance="outlined"
                           ?disabled="${onlyOne}"
                           title="${onlyOne ? 'Cannot remove the only store location' : 'Remove this store location'}"
                           @click="${() => this.openRemoveDialog(loc)}"

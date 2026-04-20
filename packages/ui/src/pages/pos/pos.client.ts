@@ -1320,7 +1320,7 @@ export class PosPage extends OgsPageBase {
           <wa-button
             size="small"
             variant="danger"
-            appearance="text"
+            appearance="plain"
             class="remove-btn"
             @click="${() => this.removeItem(index)}"
           >

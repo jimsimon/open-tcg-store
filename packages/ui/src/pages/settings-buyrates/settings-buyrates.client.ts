@@ -666,7 +666,12 @@ export class OgsSettingsBuyRatesPage extends OgsPageBase {
             ${isRarityDefault
               ? nothing
               : html`
-                  <wa-button variant="text" size="small" @click="${() => this.handleRemoveRow(categoryId, index)}">
+                  <wa-button
+                    variant="danger"
+                    appearance="plain"
+                    size="small"
+                    @click="${() => this.handleRemoveRow(categoryId, index)}"
+                  >
                     <wa-icon name="trash"></wa-icon>
                   </wa-button>
                 `}

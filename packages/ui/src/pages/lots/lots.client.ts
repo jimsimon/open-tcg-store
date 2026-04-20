@@ -728,11 +728,17 @@ export class OgsLotsPage extends OgsPageBase {
                     <td>${lot.acquisitionDate}</td>
                     <td>
                       <div class="actions-cell" @click="${(e: Event) => e.stopPropagation()}">
-                        <wa-button variant="text" size="small" href="${storeUrl(`/lots/${lot.id}`)}">
+                        <wa-button
+                          variant="neutral"
+                          appearance="plain"
+                          size="small"
+                          href="${storeUrl(`/lots/${lot.id}`)}"
+                        >
                           <wa-icon name="pen-to-square"></wa-icon>
                         </wa-button>
                         <wa-button
-                          variant="text"
+                          variant="danger"
+                          appearance="plain"
                           size="small"
                           @click="${() => {
                             this.deleteConfirmLotId = lot.id;

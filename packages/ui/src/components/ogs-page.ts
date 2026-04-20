@@ -411,7 +411,13 @@ export class OgsPage extends SignalWatcher(LitElement) {
       <wa-page mobile-breakpoint="768">
         <header slot="header" class="wa-split header-content">
           <div class="wa-cluster">
-            <wa-button class="nav-toggle" data-toggle-nav appearance="text" size="small" aria-label="Toggle navigation">
+            <wa-button
+              class="nav-toggle"
+              data-toggle-nav
+              appearance="plain"
+              size="small"
+              aria-label="Toggle navigation"
+            >
               <wa-icon name="bars"></wa-icon>
             </wa-button>
             <h1><span class="logo">${this.renderLogo()}</span>OpenTCGS</h1>

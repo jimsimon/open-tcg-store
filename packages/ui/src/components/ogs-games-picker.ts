@@ -179,7 +179,7 @@ export class OgsGamesPicker extends LitElement {
         <div class="toolbar-actions">
           <wa-button
             size="small"
-            variant="default"
+            variant="neutral"
             @click="${this.handleSelectAll}"
             ?disabled="${this.cachedAllFilteredSelected}"
           >
@@ -187,7 +187,7 @@ export class OgsGamesPicker extends LitElement {
           </wa-button>
           <wa-button
             size="small"
-            variant="default"
+            variant="neutral"
             @click="${this.handleDeselectAll}"
             ?disabled="${!this.cachedAnyFilteredSelected}"
           >
