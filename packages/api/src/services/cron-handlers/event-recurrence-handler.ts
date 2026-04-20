@@ -10,8 +10,7 @@ import {
  * Maintains a rolling window (configurable via `windowWeeks` in job config).
  */
 export async function eventRecurrenceHandler(config: Record<string, unknown>): Promise<JobResult> {
-  const windowWeeks =
-    typeof config.windowWeeks === 'number' ? config.windowWeeks : DEFAULT_RECURRENCE_WINDOW_WEEKS;
+  const windowWeeks = typeof config.windowWeeks === 'number' ? config.windowWeeks : DEFAULT_RECURRENCE_WINDOW_WEEKS;
 
   try {
     const templates = await getRecurrenceTemplates();
