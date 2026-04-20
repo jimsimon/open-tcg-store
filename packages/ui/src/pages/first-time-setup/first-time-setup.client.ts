@@ -15,6 +15,7 @@ import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import { graphql } from '../../graphql/index.ts';
 import { execute } from '../../lib/graphql.ts';
 import { US_STATES } from '../../lib/us-states';
+import { slugify } from '../../lib/slugify';
 
 const GetAvailableGamesQuery = graphql(`
   query GetAvailableGames {
@@ -328,13 +329,6 @@ export class FirstTimeSetupPage extends LitElement {
     `;
   }
 
-  private toSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  }
-
   async handleSaveClick() {
     this.error = '';
 
@@ -388,7 +382,7 @@ export class FirstTimeSetupPage extends LitElement {
         },
         store: {
           name: this.store.name!,
-          slug: this.toSlug(this.store.name!),
+          slug: slugify(this.store.name!),
           street1: this.store.street1!,
           street2: this.store.street2 || undefined,
           city: this.store.city!,
