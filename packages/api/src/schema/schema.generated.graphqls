@@ -787,7 +787,6 @@ type Query {
   getDashboardOpenOrders(limit: Int, organizationId: String!): [OpenOrder!]!
   getDashboardOrderStatus(dateRange: DashboardDateRange!, organizationId: String!): OrderStatusBreakdown!
   getDashboardSales(dateRange: DashboardDateRange!, organizationId: String!): SalesBreakdown!
-  getDataUpdateStatus: DataUpdateStatus!
   getDistinctRarities(categoryId: Int!): [String!]!
 
   """

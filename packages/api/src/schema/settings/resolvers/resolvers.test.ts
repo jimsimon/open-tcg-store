@@ -15,7 +15,7 @@ const {
   mockUpdateShopifyIntegration,
   mockPerformBackup,
   mockPerformRestore,
-  mockGetDataUpdateStatus,
+  mockRefreshUpdateStatus,
   mockTriggerManualUpdate,
   mockAssertPermission,
   mockGetUserId,
@@ -30,7 +30,7 @@ const {
   mockUpdateShopifyIntegration: vi.fn(),
   mockPerformBackup: vi.fn(),
   mockPerformRestore: vi.fn(),
-  mockGetDataUpdateStatus: vi.fn(),
+  mockRefreshUpdateStatus: vi.fn(),
   mockTriggerManualUpdate: vi.fn(),
   mockAssertPermission: vi.fn(),
   mockGetUserId: vi.fn().mockReturnValue('admin-1'),
@@ -53,7 +53,7 @@ vi.mock('../../../services/backup-service', () => ({
 }));
 
 vi.mock('../../../services/tcg-data-update-service', () => ({
-  getDataUpdateStatus: mockGetDataUpdateStatus,
+  refreshUpdateStatus: mockRefreshUpdateStatus,
   triggerManualUpdate: mockTriggerManualUpdate,
 }));
 
@@ -77,7 +77,7 @@ import { triggerBackup as _triggerBackup } from './Mutation/triggerBackup';
 import { triggerRestore as _triggerRestore } from './Mutation/triggerRestore';
 import { updateStripeIntegration as _updateStripeIntegration } from './Mutation/updateStripeIntegration';
 import { updateShopifyIntegration as _updateShopifyIntegration } from './Mutation/updateShopifyIntegration';
-import { getDataUpdateStatus as _getDataUpdateStatus } from './Query/getDataUpdateStatus';
+import { checkForDataUpdates as _checkForDataUpdates } from './Query/checkForDataUpdates';
 import { triggerDataUpdate as _triggerDataUpdate } from './Mutation/triggerDataUpdate';
 
 // Cast to callable functions
@@ -91,7 +91,7 @@ const triggerBackup = _triggerBackup as (...args: unknown[]) => Promise<unknown>
 const triggerRestore = _triggerRestore as (...args: unknown[]) => Promise<unknown>;
 const updateStripeIntegration = _updateStripeIntegration as (...args: unknown[]) => Promise<unknown>;
 const updateShopifyIntegration = _updateShopifyIntegration as (...args: unknown[]) => Promise<unknown>;
-const getDataUpdateStatus = _getDataUpdateStatus as (...args: unknown[]) => Promise<unknown>;
+const checkForDataUpdates = _checkForDataUpdates as (...args: unknown[]) => Promise<unknown>;
 const triggerDataUpdate = _triggerDataUpdate as (...args: unknown[]) => Promise<unknown>;
 
 // ---------------------------------------------------------------------------
@@ -211,8 +211,8 @@ describe('settings resolvers', () => {
       );
     });
 
-    it('should reject non-admin users for getDataUpdateStatus', async () => {
-      await expect(getDataUpdateStatus({}, {}, employeeContext(), {})).rejects.toThrow(
+    it('should reject non-admin users for checkForDataUpdates', async () => {
+      await expect(checkForDataUpdates({}, {}, employeeContext(), {})).rejects.toThrow(
         'Unauthorized: Insufficient permissions',
       );
     });
@@ -383,7 +383,7 @@ describe('settings resolvers', () => {
     });
   });
 
-  describe('getDataUpdateStatus resolver', () => {
+  describe('checkForDataUpdates resolver', () => {
     it('should return data update status for admin', async () => {
       const mockResult = {
         currentVersion: '2026-04-05T12:00:00.000Z',
@@ -391,12 +391,12 @@ describe('settings resolvers', () => {
         updateAvailable: true,
         isUpdating: false,
       };
-      mockGetDataUpdateStatus.mockResolvedValue(mockResult);
+      mockRefreshUpdateStatus.mockResolvedValue(mockResult);
 
-      const result = await getDataUpdateStatus({}, {}, adminContext(), {});
+      const result = await checkForDataUpdates({}, {}, adminContext(), {});
 
       expect(result).toEqual(mockResult);
-      expect(mockGetDataUpdateStatus).toHaveBeenCalled();
+      expect(mockRefreshUpdateStatus).toHaveBeenCalled();
     });
 
     it('should return up-to-date status when no update available', async () => {
@@ -406,9 +406,9 @@ describe('settings resolvers', () => {
         updateAvailable: false,
         isUpdating: false,
       };
-      mockGetDataUpdateStatus.mockResolvedValue(mockResult);
+      mockRefreshUpdateStatus.mockResolvedValue(mockResult);
 
-      const result = await getDataUpdateStatus({}, {}, adminContext(), {});
+      const result = await checkForDataUpdates({}, {}, adminContext(), {});
 
       expect(result).toEqual(mockResult);
     });

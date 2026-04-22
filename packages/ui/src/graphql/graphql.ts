@@ -1108,7 +1108,6 @@ export type Query = {
   getDashboardOpenOrders: Array<OpenOrder>;
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
-  getDataUpdateStatus: DataUpdateStatus;
   getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;

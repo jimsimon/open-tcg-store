@@ -470,35 +470,9 @@ export async function getCreatedAt(): Promise<string | null> {
   }
 }
 
-// Cache the latest release info from the last check so the UI can query it
-// without hitting the GitHub API on every page load.
-let _cachedLatestRelease: GitHubRelease | null = null;
-
 /**
- * Return the current data update status for the settings UI.
- * Reads the creation timestamp from the database itself.
- * Uses cached release info from the last scheduler check to avoid
- * hitting the GitHub API on every page load.
- */
-export async function getDataUpdateStatus(): Promise<{
-  currentVersion: string | null;
-  latestVersion: string | null;
-  updateAvailable: boolean;
-  isUpdating: boolean;
-}> {
-  const createdAt = await getCreatedAt();
-  const updateAvailable = _cachedLatestRelease !== null;
-  return {
-    currentVersion: createdAt,
-    latestVersion: _cachedLatestRelease?.tag_name ?? null,
-    updateAvailable,
-    isUpdating: _isCheckRunning,
-  };
-}
-
-/**
- * Check for updates by querying GitHub (refreshes the cached release info).
- * Returns the updated status.
+ * Check for updates by querying GitHub and return the current status.
+ * Always performs a live check — no caching.
  */
 export async function refreshUpdateStatus(): Promise<{
   currentVersion: string | null;
@@ -506,13 +480,20 @@ export async function refreshUpdateStatus(): Promise<{
   updateAvailable: boolean;
   isUpdating: boolean;
 }> {
+  let latestRelease: GitHubRelease | null = null;
   try {
     const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
+    latestRelease = result?.release ?? null;
   } catch (err) {
-    console.error('[tcg-data-update] Failed to refresh update status:', err);
+    console.error('[tcg-data-update] Failed to check for updates:', err);
   }
-  return getDataUpdateStatus();
+  const createdAt = await getCreatedAt();
+  return {
+    currentVersion: createdAt,
+    latestVersion: latestRelease?.tag_name ?? null,
+    updateAvailable: latestRelease !== null,
+    isUpdating: _isCheckRunning,
+  };
 }
 
 /**
@@ -530,9 +511,7 @@ export async function triggerManualUpdate(): Promise<{
 
   _isCheckRunning = true;
   try {
-    // Refresh the cached release info first
     const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
     if (!result) {
       return { success: false, message: 'No update available', newVersion: null };
     }
@@ -560,7 +539,6 @@ export async function triggerManualUpdate(): Promise<{
     }
 
     await applyUpdate(release);
-    _cachedLatestRelease = null; // Clear cache since we just applied the update
     return { success: true, message: `Successfully updated to ${release.tag_name}`, newVersion: release.tag_name };
   } catch (err) {
     cleanupTempFile();
@@ -587,7 +565,6 @@ export async function performUpdateCheck(): Promise<void> {
   try {
     console.log('[tcg-data-update] Checking for updates...');
     const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
     if (!result) return;
 
     const { release, expectedHash } = result;
@@ -615,7 +592,6 @@ export async function performUpdateCheck(): Promise<void> {
     }
 
     await applyUpdate(release);
-    _cachedLatestRelease = null; // Clear cache after successful update
   } catch (err) {
     console.error('[tcg-data-update] Update check failed:', err);
     cleanupTempFile();
