@@ -6,7 +6,8 @@ const fileName = 'otcgs.sqlite';
 const defaultPath = join(workspaceRootSync() ?? '', 'sqlite-data');
 const databasePath = process.env.OTCGS_DATABASE_PATH ?? defaultPath;
 
-export const databaseFile = join(databasePath, fileName);
+export const databaseFilePath = join(databasePath, fileName);
+export const databaseFile = join('file:', databaseFilePath);
 
 export default defineConfig({
   out: './src/db/otcgs/migrations',

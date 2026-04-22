@@ -2,7 +2,7 @@ import { mkdirSync, existsSync, readdirSync, unlinkSync, copyFileSync } from 'no
 import { join, dirname } from 'node:path';
 import type { JobResult } from '../cron-service.ts';
 import { createSafeBackupFile, cleanupTempBackup } from '../backup-service.ts';
-import { databaseFile } from '../../db/otcgs/drizzle.config.ts';
+import { databaseFilePath } from '../../db/otcgs/drizzle.config.ts';
 
 /** Default number of local backup files to keep. Configurable via job config `maxBackups`. */
 const DEFAULT_MAX_BACKUPS = 10;
@@ -18,7 +18,7 @@ export async function localBackupHandler(config: Record<string, unknown>): Promi
 
   try {
     // Ensure the backups directory exists next to the database file
-    const backupsDir = join(dirname(databaseFile), 'backups');
+    const backupsDir = join(dirname(databaseFilePath), 'backups');
     if (!existsSync(backupsDir)) {
       mkdirSync(backupsDir, { recursive: true });
     }

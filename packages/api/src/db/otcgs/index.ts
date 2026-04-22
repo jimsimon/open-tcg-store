@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import { databaseFile } from './drizzle.config';
-import { databaseFile as tcgDataDatabaseFile } from '../tcg-data/drizzle.config';
+import { databaseFilePath as tcgDataDatabaseFilePath } from '../tcg-data/drizzle.config';
 import * as schema from './schema';
 import * as tcgDataSchema from '../tcg-data/schema';
 import * as tcgDataRelations from '../tcg-data/relations';
@@ -21,9 +21,7 @@ import * as eventRelations from './event-relations';
 export * from './schema';
 
 const client = createClient({ url: databaseFile });
-// Strip the "file:" prefix for ATTACH DATABASE since it expects a plain file path
-export const tcgDataFilePath = tcgDataDatabaseFile;
-await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+await client.execute(`ATTACH DATABASE '${tcgDataDatabaseFilePath}' AS tcg_data;`);
 
 // Workaround: The libsql sqlite3 driver sets its internal connection to null
 // when transaction() is called, causing a new connection to be lazily created
@@ -44,7 +42,7 @@ async function ensureTcgDataAttached(): Promise<void> {
       const result = await client.execute(`SELECT 1 FROM pragma_database_list WHERE name = 'tcg_data'`);
       if (result.rows.length > 0) return;
 
-      await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
+      await client.execute(`ATTACH DATABASE '${tcgDataDatabaseFilePath}' AS tcg_data;`);
       return;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
