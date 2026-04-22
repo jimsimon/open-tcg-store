@@ -1080,6 +1080,7 @@ export type PublicEventRegistrationInput = {
 
 export type Query = {
   __typename?: 'Query';
+  checkForDataUpdates: DataUpdateStatus;
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
@@ -2478,6 +2479,7 @@ export type PublicBuyRatesResolvers<ContextType = any, ParentType extends Resolv
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  checkForDataUpdates?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
   getActiveStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAvailableGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType>;

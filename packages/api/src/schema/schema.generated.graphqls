@@ -760,6 +760,7 @@ input PublicEventRegistrationInput {
 }
 
 type Query {
+  checkForDataUpdates: DataUpdateStatus!
   getActiveStoreLocation: StoreLocation
 
   """

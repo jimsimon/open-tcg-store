@@ -1086,6 +1086,7 @@ export type PublicEventRegistrationInput = {
 
 export type Query = {
   __typename?: 'Query';
+  checkForDataUpdates: DataUpdateStatus;
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
@@ -2213,6 +2214,11 @@ export type GetDataUpdateStatusQueryVariables = Exact<{ [key: string]: never; }>
 
 
 export type GetDataUpdateStatusQuery = { __typename?: 'Query', getDataUpdateStatus: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
+
+export type CheckForDataUpdatesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CheckForDataUpdatesQuery = { __typename?: 'Query', checkForDataUpdates: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
 
 export type TriggerDataUpdateMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3510,6 +3516,16 @@ export const GetDataUpdateStatusDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetDataUpdateStatusQuery, GetDataUpdateStatusQueryVariables>;
+export const CheckForDataUpdatesDocument = new TypedDocumentString(`
+    query CheckForDataUpdates {
+  checkForDataUpdates {
+    currentVersion
+    latestVersion
+    updateAvailable
+    isUpdating
+  }
+}
+    `) as unknown as TypedDocumentString<CheckForDataUpdatesQuery, CheckForDataUpdatesQueryVariables>;
 export const TriggerDataUpdateDocument = new TypedDocumentString(`
     mutation TriggerDataUpdate {
   triggerDataUpdate {

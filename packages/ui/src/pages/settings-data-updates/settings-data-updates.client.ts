@@ -31,6 +31,17 @@ const GetDataUpdateStatusQuery = graphql(`
   }
 `);
 
+const CheckForDataUpdatesQuery = graphql(`
+  query CheckForDataUpdates {
+    checkForDataUpdates {
+      currentVersion
+      latestVersion
+      updateAvailable
+      isUpdating
+    }
+  }
+`);
+
 const TriggerDataUpdateMutation = graphql(`
   mutation TriggerDataUpdate {
     triggerDataUpdate {
@@ -391,7 +402,17 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
     this.errorMessage = '';
 
     try {
-      await this.fetchStatus();
+      // Use checkForDataUpdates which actually queries GitHub for the latest release,
+      // unlike getDataUpdateStatus which only reads from cache.
+      const result = await execute(CheckForDataUpdatesQuery);
+      if (result?.data?.checkForDataUpdates) {
+        const s = result.data.checkForDataUpdates;
+        this.currentVersion = s.currentVersion as string | null;
+        this.latestVersion = s.latestVersion as string | null;
+        this.updateAvailable = s.updateAvailable;
+        this.isUpdating = s.isUpdating;
+      }
+
       if (this.updateAvailable) {
         this.successMessage = 'A new update is available!';
       } else {
