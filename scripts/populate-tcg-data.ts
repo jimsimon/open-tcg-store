@@ -131,7 +131,7 @@ interface TcgTrackingPricingResponse {
   prices: Record<
     string,
     {
-      tcg: Record<string, { low?: number; market?: number }>;
+      tcg?: Record<string, { low?: number; market?: number }>;
       manapool?: Record<string, number>;
       mp_qty?: number;
     }
@@ -590,14 +590,17 @@ async function stage1_tcgtracking() {
         if (internalProductId == null) continue;
 
         // TCG prices (per subtype: Normal, Foil, etc.)
-        for (const [subType, priceData] of Object.entries(pdata.tcg)) {
-          priceValues.push({
-            tcgpProductId: tcgpId,
-            productId: internalProductId,
-            subTypeName: subType,
-            lowPrice: priceData.low != null ? Math.round(priceData.low * 100) : null,
-            marketPrice: priceData.market != null ? Math.round(priceData.market * 100) : null,
-          });
+        // Some products only have manapool data with no tcg prices
+        if (pdata.tcg) {
+          for (const [subType, priceData] of Object.entries(pdata.tcg)) {
+            priceValues.push({
+              tcgpProductId: tcgpId,
+              productId: internalProductId,
+              subTypeName: subType,
+              lowPrice: priceData.low != null ? Math.round(priceData.low * 100) : null,
+              marketPrice: priceData.market != null ? Math.round(priceData.market * 100) : null,
+            });
+          }
         }
 
         // Manapool prices (per variant: normal, foil, etched)
