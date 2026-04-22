@@ -292,6 +292,7 @@ async function fetchJson<T>(url: string): Promise<T> {
       headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
     });
     if (response.status === 429) {
+      await response.body?.cancel();
       if (attempt === MAX_RETRIES) {
         throw new Error(`Failed to fetch ${url}: 429 Too Many Requests (after ${MAX_RETRIES} retries)`);
       }
