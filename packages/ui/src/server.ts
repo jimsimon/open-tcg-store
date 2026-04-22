@@ -78,6 +78,13 @@ app.use(async (ctx, next) => {
 
   if (getSessionResponse.data) {
     ctx.state.auth = getSessionResponse.data;
+  } else if (ctx.headers.cookie?.includes('better-auth.session_token')) {
+    // The user has a session cookie but the session fetch failed — likely a
+    // transient issue (503 during a brief database update, network hiccup, etc.).
+    // Invalidate the DB-updating cache so the router's maintenance check makes a
+    // fresh API call, closing the race window between a 503 from the session
+    // fetch and a stale cache that would skip the maintenance redirect.
+    dbUpdatingCache = null;
   }
 
   await next();
