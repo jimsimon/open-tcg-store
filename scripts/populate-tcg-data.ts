@@ -530,7 +530,14 @@ async function stage1_tcgtracking() {
 
     // --- Prefetch all set data concurrently (products + pricing + SKUs) ---
     console.log(`Prefetching data for ${sets.length} sets (concurrency=${API_CONCURRENCY})...`);
-    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) => prefetchSetData(cat.id, set, !skipSkus));
+    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, async (set) => {
+      try {
+        return await prefetchSetData(cat.id, set, !skipSkus);
+      } catch (err) {
+        console.error(`Failed to prefetch set "${set.name}" (id=${set.id}): ${err}`);
+        return null;
+      }
+    });
 
     // --- Process prefetched data (DB writes are sequential for SQLite) ---
     for (const data of prefetchedSets) {
@@ -804,10 +811,19 @@ async function stage2_tcgcsv() {
 
     // --- Prefetch all group data concurrently ---
     console.log(`Prefetching ${groups.length} groups (concurrency=${API_CONCURRENCY})...`);
-    const prefetchedGroups = await parallelMap(groups, API_CONCURRENCY, (g) => prefetchGroupData(tcgpCategoryId, g));
+    const prefetchedGroups = await parallelMap(groups, API_CONCURRENCY, async (g) => {
+      try {
+        return await prefetchGroupData(tcgpCategoryId, g);
+      } catch (err) {
+        console.error(`Failed to prefetch group "${g.name}" (id=${g.groupId}): ${err}`);
+        return null;
+      }
+    });
 
     // --- Process prefetched group data ---
-    for (const { products, prices: groupPrices } of prefetchedGroups) {
+    for (const groupData of prefetchedGroups) {
+      if (!groupData) continue;
+      const { products, prices: groupPrices } = groupData;
       if (products.length === 0) continue;
 
       // --- Batch product updates using raw SQL CASE for extendedData flattening ---
