@@ -95,7 +95,6 @@ type Documents = {
     "\n  query GetDashboardBestSellers(\n    $organizationId: String!\n    $dateRange: DashboardDateRange!\n    $sortBy: BestSellerSortBy!\n    $limit: Int\n  ) {\n    getDashboardBestSellers(organizationId: $organizationId, dateRange: $dateRange, sortBy: $sortBy, limit: $limit) {\n      productId\n      productName\n      totalQuantity\n      totalRevenue\n    }\n  }\n": typeof types.GetDashboardBestSellersDocument,
     "\n  query GetDashboardInventorySummary($organizationId: String!) {\n    getDashboardInventorySummary(organizationId: $organizationId) {\n      totalSkus\n      totalUnits\n      totalCostValue\n      totalRetailValue\n    }\n  }\n": typeof types.GetDashboardInventorySummaryDocument,
     "\n  query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {\n    getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {\n      open\n      completed\n      cancelled\n      total\n    }\n  }\n": typeof types.GetDashboardOrderStatusDocument,
-    "\n  query GetDataUpdateStatus {\n    getDataUpdateStatus {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": typeof types.GetDataUpdateStatusDocument,
     "\n  query CheckForDataUpdates {\n    checkForDataUpdates {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": typeof types.CheckForDataUpdatesDocument,
     "\n  mutation TriggerDataUpdate {\n    triggerDataUpdate {\n      success\n      message\n      newVersion\n    }\n  }\n": typeof types.TriggerDataUpdateDocument,
     "\n  query GetDataUpdateCronJobs {\n    getCronJobs {\n      id\n      name\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n    }\n  }\n": typeof types.GetDataUpdateCronJobsDocument,
@@ -204,7 +203,6 @@ const documents: Documents = {
     "\n  query GetDashboardBestSellers(\n    $organizationId: String!\n    $dateRange: DashboardDateRange!\n    $sortBy: BestSellerSortBy!\n    $limit: Int\n  ) {\n    getDashboardBestSellers(organizationId: $organizationId, dateRange: $dateRange, sortBy: $sortBy, limit: $limit) {\n      productId\n      productName\n      totalQuantity\n      totalRevenue\n    }\n  }\n": types.GetDashboardBestSellersDocument,
     "\n  query GetDashboardInventorySummary($organizationId: String!) {\n    getDashboardInventorySummary(organizationId: $organizationId) {\n      totalSkus\n      totalUnits\n      totalCostValue\n      totalRetailValue\n    }\n  }\n": types.GetDashboardInventorySummaryDocument,
     "\n  query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {\n    getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {\n      open\n      completed\n      cancelled\n      total\n    }\n  }\n": types.GetDashboardOrderStatusDocument,
-    "\n  query GetDataUpdateStatus {\n    getDataUpdateStatus {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": types.GetDataUpdateStatusDocument,
     "\n  query CheckForDataUpdates {\n    checkForDataUpdates {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n": types.CheckForDataUpdatesDocument,
     "\n  mutation TriggerDataUpdate {\n    triggerDataUpdate {\n      success\n      message\n      newVersion\n    }\n  }\n": types.TriggerDataUpdateDocument,
     "\n  query GetDataUpdateCronJobs {\n    getCronJobs {\n      id\n      name\n      cronExpression\n      enabled\n      lastRunAt\n      lastRunStatus\n      lastRunDurationMs\n      lastRunError\n      nextRunAt\n    }\n  }\n": types.GetDataUpdateCronJobsDocument,
@@ -553,10 +551,6 @@ export function graphql(source: "\n  query GetDashboardInventorySummary($organiz
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetDashboardOrderStatus($organizationId: String!, $dateRange: DashboardDateRange!) {\n    getDashboardOrderStatus(organizationId: $organizationId, dateRange: $dateRange) {\n      open\n      completed\n      cancelled\n      total\n    }\n  }\n"): typeof import('./graphql').GetDashboardOrderStatusDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query GetDataUpdateStatus {\n    getDataUpdateStatus {\n      currentVersion\n      latestVersion\n      updateAvailable\n      isUpdating\n    }\n  }\n"): typeof import('./graphql').GetDataUpdateStatusDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

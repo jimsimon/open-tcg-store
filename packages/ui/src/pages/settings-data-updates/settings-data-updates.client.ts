@@ -20,17 +20,6 @@ import { graphql } from '../../graphql/index.ts';
 // GraphQL
 // ---------------------------------------------------------------------------
 
-const GetDataUpdateStatusQuery = graphql(`
-  query GetDataUpdateStatus {
-    getDataUpdateStatus {
-      currentVersion
-      latestVersion
-      updateAvailable
-      isUpdating
-    }
-  }
-`);
-
 const CheckForDataUpdatesQuery = graphql(`
   query CheckForDataUpdates {
     checkForDataUpdates {
@@ -365,9 +354,10 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
   }
 
   private async fetchStatus() {
-    const result = await execute(GetDataUpdateStatusQuery);
-    if (result?.data?.getDataUpdateStatus) {
-      const s = result.data.getDataUpdateStatus;
+    // Always do a live check against GitHub so the page shows current state
+    const result = await execute(CheckForDataUpdatesQuery);
+    if (result?.data?.checkForDataUpdates) {
+      const s = result.data.checkForDataUpdates;
       this.currentVersion = s.currentVersion as string | null;
       this.latestVersion = s.latestVersion as string | null;
       this.updateAvailable = s.updateAvailable;
@@ -402,17 +392,7 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
     this.errorMessage = '';
 
     try {
-      // Use checkForDataUpdates which actually queries GitHub for the latest release,
-      // unlike getDataUpdateStatus which only reads from cache.
-      const result = await execute(CheckForDataUpdatesQuery);
-      if (result?.data?.checkForDataUpdates) {
-        const s = result.data.checkForDataUpdates;
-        this.currentVersion = s.currentVersion as string | null;
-        this.latestVersion = s.latestVersion as string | null;
-        this.updateAvailable = s.updateAvailable;
-        this.isUpdating = s.isUpdating;
-      }
-
+      await this.fetchStatus();
       if (this.updateAvailable) {
         this.successMessage = 'A new update is available!';
       } else {

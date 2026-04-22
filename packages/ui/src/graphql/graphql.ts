@@ -2210,11 +2210,6 @@ export type GetDashboardOrderStatusQueryVariables = Exact<{
 
 export type GetDashboardOrderStatusQuery = { __typename?: 'Query', getDashboardOrderStatus: { __typename?: 'OrderStatusBreakdown', open: number, completed: number, cancelled: number, total: number } };
 
-export type GetDataUpdateStatusQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetDataUpdateStatusQuery = { __typename?: 'Query', getDataUpdateStatus: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
-
 export type CheckForDataUpdatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3506,16 +3501,6 @@ export const GetDashboardOrderStatusDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetDashboardOrderStatusQuery, GetDashboardOrderStatusQueryVariables>;
-export const GetDataUpdateStatusDocument = new TypedDocumentString(`
-    query GetDataUpdateStatus {
-  getDataUpdateStatus {
-    currentVersion
-    latestVersion
-    updateAvailable
-    isUpdating
-  }
-}
-    `) as unknown as TypedDocumentString<GetDataUpdateStatusQuery, GetDataUpdateStatusQueryVariables>;
 export const CheckForDataUpdatesDocument = new TypedDocumentString(`
     query CheckForDataUpdates {
   checkForDataUpdates {
