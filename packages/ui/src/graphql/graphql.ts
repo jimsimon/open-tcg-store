@@ -1086,6 +1086,7 @@ export type PublicEventRegistrationInput = {
 
 export type Query = {
   __typename?: 'Query';
+  checkForDataUpdates: DataUpdateStatus;
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
@@ -1107,7 +1108,6 @@ export type Query = {
   getDashboardOpenOrders: Array<OpenOrder>;
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
-  getDataUpdateStatus: DataUpdateStatus;
   getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
@@ -2209,10 +2209,10 @@ export type GetDashboardOrderStatusQueryVariables = Exact<{
 
 export type GetDashboardOrderStatusQuery = { __typename?: 'Query', getDashboardOrderStatus: { __typename?: 'OrderStatusBreakdown', open: number, completed: number, cancelled: number, total: number } };
 
-export type GetDataUpdateStatusQueryVariables = Exact<{ [key: string]: never; }>;
+export type CheckForDataUpdatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetDataUpdateStatusQuery = { __typename?: 'Query', getDataUpdateStatus: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
+export type CheckForDataUpdatesQuery = { __typename?: 'Query', checkForDataUpdates: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
 
 export type TriggerDataUpdateMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -3500,16 +3500,16 @@ export const GetDashboardOrderStatusDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GetDashboardOrderStatusQuery, GetDashboardOrderStatusQueryVariables>;
-export const GetDataUpdateStatusDocument = new TypedDocumentString(`
-    query GetDataUpdateStatus {
-  getDataUpdateStatus {
+export const CheckForDataUpdatesDocument = new TypedDocumentString(`
+    query CheckForDataUpdates {
+  checkForDataUpdates {
     currentVersion
     latestVersion
     updateAvailable
     isUpdating
   }
 }
-    `) as unknown as TypedDocumentString<GetDataUpdateStatusQuery, GetDataUpdateStatusQueryVariables>;
+    `) as unknown as TypedDocumentString<CheckForDataUpdatesQuery, CheckForDataUpdatesQueryVariables>;
 export const TriggerDataUpdateDocument = new TypedDocumentString(`
     mutation TriggerDataUpdate {
   triggerDataUpdate {

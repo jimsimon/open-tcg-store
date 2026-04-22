@@ -1080,6 +1080,7 @@ export type PublicEventRegistrationInput = {
 
 export type Query = {
   __typename?: 'Query';
+  checkForDataUpdates: DataUpdateStatus;
   getActiveStoreLocation?: Maybe<StoreLocation>;
   /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
   getAllStoreLocations: Array<StoreLocation>;
@@ -1101,7 +1102,6 @@ export type Query = {
   getDashboardOpenOrders: Array<OpenOrder>;
   getDashboardOrderStatus: OrderStatusBreakdown;
   getDashboardSales: SalesBreakdown;
-  getDataUpdateStatus: DataUpdateStatus;
   getDistinctRarities: Array<Scalars['String']['output']>;
   /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
   getEmployeeStoreLocations: Array<StoreLocation>;
@@ -2478,6 +2478,7 @@ export type PublicBuyRatesResolvers<ContextType = any, ParentType extends Resolv
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  checkForDataUpdates?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
   getActiveStoreLocation?: Resolver<Maybe<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAllStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getAvailableGames?: Resolver<Array<ResolversTypes['SupportedGame']>, ParentType, ContextType>;
@@ -2493,7 +2494,6 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getDashboardOpenOrders?: Resolver<Array<ResolversTypes['OpenOrder']>, ParentType, ContextType, RequireFields<QuerygetDashboardOpenOrdersArgs, 'organizationId'>>;
   getDashboardOrderStatus?: Resolver<ResolversTypes['OrderStatusBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardOrderStatusArgs, 'dateRange' | 'organizationId'>>;
   getDashboardSales?: Resolver<ResolversTypes['SalesBreakdown'], ParentType, ContextType, RequireFields<QuerygetDashboardSalesArgs, 'dateRange' | 'organizationId'>>;
-  getDataUpdateStatus?: Resolver<ResolversTypes['DataUpdateStatus'], ParentType, ContextType>;
   getDistinctRarities?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType, RequireFields<QuerygetDistinctRaritiesArgs, 'categoryId'>>;
   getEmployeeStoreLocations?: Resolver<Array<ResolversTypes['StoreLocation']>, ParentType, ContextType>;
   getEvent?: Resolver<Maybe<ResolversTypes['Event']>, ParentType, ContextType, RequireFields<QuerygetEventArgs, 'id'>>;

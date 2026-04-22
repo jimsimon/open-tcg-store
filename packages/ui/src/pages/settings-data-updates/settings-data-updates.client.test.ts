@@ -27,10 +27,10 @@ function setupDefaultMock(overrides: Record<string, unknown> = {}) {
   // so execute is called twice in parallel. Use mockResolvedValue for both.
   mockExecute.mockImplementation((query: unknown) => {
     const queryStr = String(query);
-    if (queryStr.includes('GetDataUpdateStatus') || queryStr.includes('getDataUpdateStatus')) {
+    if (queryStr.includes('CheckForDataUpdates') || queryStr.includes('checkForDataUpdates')) {
       return Promise.resolve({
         data: {
-          getDataUpdateStatus: {
+          checkForDataUpdates: {
             currentVersion: '2026-04-05T12:00:00.000Z',
             latestVersion: null,
             updateAvailable: false,

@@ -470,35 +470,24 @@ export async function getCreatedAt(): Promise<string | null> {
   }
 }
 
-// Cache the latest release info from the last check so the UI can query it
-// without hitting the GitHub API on every page load.
-let _cachedLatestRelease: GitHubRelease | null = null;
+// ---------------------------------------------------------------------------
+// TTL cache for refreshUpdateStatus — avoids exhausting the unauthenticated
+// GitHub API rate limit (60 req/hr) when the settings page is loaded frequently.
+// ---------------------------------------------------------------------------
+const REFRESH_STATUS_TTL_MS = 30_000; // 30 seconds
+let _cachedCheckResult: { latestRelease: GitHubRelease | null } | null = null;
+let _cachedCheckTimestamp = 0;
 
-/**
- * Return the current data update status for the settings UI.
- * Reads the creation timestamp from the database itself.
- * Uses cached release info from the last scheduler check to avoid
- * hitting the GitHub API on every page load.
- */
-export async function getDataUpdateStatus(): Promise<{
-  currentVersion: string | null;
-  latestVersion: string | null;
-  updateAvailable: boolean;
-  isUpdating: boolean;
-}> {
-  const createdAt = await getCreatedAt();
-  const updateAvailable = _cachedLatestRelease !== null;
-  return {
-    currentVersion: createdAt,
-    latestVersion: _cachedLatestRelease?.tag_name ?? null,
-    updateAvailable,
-    isUpdating: _isCheckRunning,
-  };
+/** Clear the cached GitHub check result so the next call fetches fresh data. */
+export function invalidateStatusCache(): void {
+  _cachedCheckResult = null;
+  _cachedCheckTimestamp = 0;
 }
 
 /**
- * Check for updates by querying GitHub (refreshes the cached release info).
- * Returns the updated status.
+ * Check for updates by querying GitHub and return the current status.
+ * Results are cached for 30 seconds to avoid rate-limit exhaustion on rapid
+ * page loads. The cache is invalidated automatically after a successful update.
  */
 export async function refreshUpdateStatus(): Promise<{
   currentVersion: string | null;
@@ -506,13 +495,29 @@ export async function refreshUpdateStatus(): Promise<{
   updateAvailable: boolean;
   isUpdating: boolean;
 }> {
-  try {
-    const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
-  } catch (err) {
-    console.error('[tcg-data-update] Failed to refresh update status:', err);
+  const now = Date.now();
+  let latestRelease: GitHubRelease | null = null;
+
+  if (_cachedCheckResult && now - _cachedCheckTimestamp < REFRESH_STATUS_TTL_MS) {
+    latestRelease = _cachedCheckResult.latestRelease;
+  } else {
+    try {
+      const result = await checkForUpdate();
+      latestRelease = result?.release ?? null;
+    } catch (err) {
+      console.error('[tcg-data-update] Failed to check for updates:', err);
+    }
+    _cachedCheckResult = { latestRelease };
+    _cachedCheckTimestamp = now;
   }
-  return getDataUpdateStatus();
+
+  const createdAt = await getCreatedAt();
+  return {
+    currentVersion: createdAt,
+    latestVersion: latestRelease?.tag_name ?? null,
+    updateAvailable: latestRelease !== null,
+    isUpdating: _isCheckRunning,
+  };
 }
 
 /**
@@ -530,9 +535,7 @@ export async function triggerManualUpdate(): Promise<{
 
   _isCheckRunning = true;
   try {
-    // Refresh the cached release info first
     const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
     if (!result) {
       return { success: false, message: 'No update available', newVersion: null };
     }
@@ -560,7 +563,7 @@ export async function triggerManualUpdate(): Promise<{
     }
 
     await applyUpdate(release);
-    _cachedLatestRelease = null; // Clear cache since we just applied the update
+    invalidateStatusCache();
     return { success: true, message: `Successfully updated to ${release.tag_name}`, newVersion: release.tag_name };
   } catch (err) {
     cleanupTempFile();
@@ -573,24 +576,42 @@ export async function triggerManualUpdate(): Promise<{
 
 let _isCheckRunning = false;
 
+interface PerformUpdateCheckOptions {
+  /**
+   * When true, sets the database-updating flag (triggering the maintenance page)
+   * before downloading, not just during the hot-swap. Use this on startup when
+   * the local database may not exist or may be schema-incompatible with the
+   * running code. For post-startup checks (cron, manual), leave false so users
+   * can keep using the app during the download phase.
+   */
+  showMaintenanceDuringDownload?: boolean;
+}
+
 /**
  * Orchestrate a full update check: check -> download -> verify hash -> validate -> apply.
  * Guarded against concurrent execution — if a check is already in progress,
  * subsequent calls are silently skipped.
  */
-export async function performUpdateCheck(): Promise<void> {
+export async function performUpdateCheck(options?: PerformUpdateCheckOptions): Promise<void> {
   if (_isCheckRunning) {
     console.log('[tcg-data-update] Update check already in progress, skipping');
     return;
   }
   _isCheckRunning = true;
+  const blockDuringDownload = options?.showMaintenanceDuringDownload === true;
   try {
     console.log('[tcg-data-update] Checking for updates...');
     const result = await checkForUpdate();
-    _cachedLatestRelease = result?.release ?? null;
     if (!result) return;
 
     const { release, expectedHash } = result;
+
+    // On startup, show the maintenance page during download so users don't
+    // hit a schema-incompatible database. applyUpdate will set it again
+    // internally (harmless double-set) and clear it in its finally block.
+    if (blockDuringDownload) {
+      setDatabaseUpdating(true);
+    }
 
     // Try delta update first (smaller, faster)
     const localHash = await computeFileHash(databaseFilePath);
@@ -615,11 +636,14 @@ export async function performUpdateCheck(): Promise<void> {
     }
 
     await applyUpdate(release);
-    _cachedLatestRelease = null; // Clear cache after successful update
+    invalidateStatusCache();
   } catch (err) {
     console.error('[tcg-data-update] Update check failed:', err);
     cleanupTempFile();
   } finally {
+    if (blockDuringDownload) {
+      setDatabaseUpdating(false);
+    }
     _isCheckRunning = false;
   }
 }

@@ -99,7 +99,7 @@ extend type Query {
   getBackupSettings: BackupSettings!
   getIntegrationSettings: IntegrationSettings!
   lookupSalesTax(countryCode: String!, stateCode: String!): SalesTaxLookupResult!
-  getDataUpdateStatus: DataUpdateStatus!
+  checkForDataUpdates: DataUpdateStatus!
 }
 
 extend type Mutation {

@@ -20,9 +20,9 @@ import { graphql } from '../../graphql/index.ts';
 // GraphQL
 // ---------------------------------------------------------------------------
 
-const GetDataUpdateStatusQuery = graphql(`
-  query GetDataUpdateStatus {
-    getDataUpdateStatus {
+const CheckForDataUpdatesQuery = graphql(`
+  query CheckForDataUpdates {
+    checkForDataUpdates {
       currentVersion
       latestVersion
       updateAvailable
@@ -354,9 +354,10 @@ export class OgsSettingsDataUpdatesPage extends OgsPageBase {
   }
 
   private async fetchStatus() {
-    const result = await execute(GetDataUpdateStatusQuery);
-    if (result?.data?.getDataUpdateStatus) {
-      const s = result.data.getDataUpdateStatus;
+    // Always do a live check against GitHub so the page shows current state
+    const result = await execute(CheckForDataUpdatesQuery);
+    if (result?.data?.checkForDataUpdates) {
+      const s = result.data.checkForDataUpdates;
       this.currentVersion = s.currentVersion as string | null;
       this.latestVersion = s.latestVersion as string | null;
       this.updateAvailable = s.updateAvailable;
