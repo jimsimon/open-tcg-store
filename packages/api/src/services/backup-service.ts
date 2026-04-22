@@ -17,7 +17,7 @@ import { Dropbox } from 'dropbox';
 import oneDriveAPI from 'onedrive-api';
 import { sql } from 'drizzle-orm';
 import { createClient } from '@libsql/client';
-import { databaseFilePath } from '../db/otcgs/drizzle.config';
+import { databaseFile } from '../db/otcgs/drizzle.config';
 import { otcgs } from '../db/otcgs/index';
 import {
   storeOAuthTokens,
@@ -27,7 +27,7 @@ import {
   updateLastBackupAt,
 } from './settings-service';
 
-const DB_FILE_PATH = databaseFilePath;
+const DB_FILE_PATH = databaseFile;
 const BACKUP_FOLDER = 'otcgs-backups';
 
 // ---------------------------------------------------------------------------

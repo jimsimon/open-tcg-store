@@ -22,7 +22,7 @@ export * from './schema';
 
 const client = createClient({ url: databaseFile });
 // Strip the "file:" prefix for ATTACH DATABASE since it expects a plain file path
-export const tcgDataFilePath = tcgDataDatabaseFile.replace(/^file:/, '');
+export const tcgDataFilePath = tcgDataDatabaseFile;
 await client.execute(`ATTACH DATABASE '${tcgDataFilePath}' AS tcg_data;`);
 
 // Workaround: The libsql sqlite3 driver sets its internal connection to null

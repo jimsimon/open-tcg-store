@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto';
 import { renameSync, existsSync, unlinkSync, createWriteStream, createReadStream, copyFileSync } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
-import { client, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
+import { client, setDatabaseUpdating } from '../db/otcgs/index.ts';
+import { databaseFile as tcgDataFilePath } from '../db/tcg-data/drizzle.config.ts';
 import { reconnectTcgData } from '../db/tcg-data/index.ts';
 
 const GITHUB_REPO = 'jimsimon/open-tcg-store';

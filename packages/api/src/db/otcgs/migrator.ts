@@ -3,7 +3,7 @@ import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { copyFileSync, existsSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
-import { databaseFilePath } from './drizzle.config';
+import { databaseFile } from './drizzle.config';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type { Client } from '@libsql/client';
 
@@ -55,7 +55,7 @@ async function hasPendingMigrations(db: LibSQLDatabase<Record<string, unknown>>)
 
 function createLocalBackupPath(): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  return resolve(dirname(databaseFilePath), `otcgs.pre-migration-${timestamp}.sqlite`);
+  return resolve(dirname(databaseFile), `otcgs.pre-migration-${timestamp}.sqlite`);
 }
 
 async function createLocalBackup(db: LibSQLDatabase<Record<string, unknown>>): Promise<string> {
@@ -108,11 +108,11 @@ async function handleMigrationFailure(
 
   console.log(`[migrator] Restoring database from backup: ${backupPath}`);
   try {
-    copyFileSync(backupPath, databaseFilePath);
+    copyFileSync(backupPath, databaseFile);
 
     // Remove WAL and SHM auxiliary files to prevent inconsistent state
-    const walPath = `${databaseFilePath}-wal`;
-    const shmPath = `${databaseFilePath}-shm`;
+    const walPath = `${databaseFile}-wal`;
+    const shmPath = `${databaseFile}-shm`;
     if (existsSync(walPath)) unlinkSync(walPath);
     if (existsSync(shmPath)) unlinkSync(shmPath);
 
