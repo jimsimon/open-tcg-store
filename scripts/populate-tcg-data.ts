@@ -564,9 +564,7 @@ async function stage1_tcgtracking() {
     // --- Prefetch all set data concurrently (products + pricing + SKUs) ---
     // Errors (including SKU fetch failures) propagate immediately to abort the run.
     console.log(`Prefetching data for ${sets.length} sets (concurrency=${API_CONCURRENCY})...`);
-    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) =>
-      prefetchSetData(cat.id, set, !skipSkus),
-    );
+    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) => prefetchSetData(cat.id, set, !skipSkus));
 
     // --- Process prefetched data (DB writes are sequential for SQLite) ---
     for (const data of prefetchedSets) {
