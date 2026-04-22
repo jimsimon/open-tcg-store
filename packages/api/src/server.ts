@@ -27,6 +27,7 @@ import {
 import { storeOAuthClientId, storeOAuthClientSecret } from './services/settings-service.ts';
 import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
 import { registerJobHandler, seedDefaultJobs, startScheduler, executeOverdueJobs } from './services/cron-service.ts';
+import { performUpdateCheck } from './services/tcg-data-update-service.ts';
 import { tcgDataUpdateHandler } from './services/cron-handlers/tcg-data-update-handler.ts';
 import { backupHandler } from './services/cron-handlers/backup-handler.ts';
 import { localBackupHandler } from './services/cron-handlers/local-backup-handler.ts';
@@ -751,4 +752,9 @@ app
       .then(() => startScheduler())
       .then(() => executeOverdueJobs())
       .catch((err) => console.error('[cron] Failed to start scheduler:', err));
+
+    // Always check for TCG data updates on startup (independent of cron schedule).
+    // This ensures the app picks up new releases immediately after a restart,
+    // rather than waiting until the next cron window (e.g., 3 AM).
+    performUpdateCheck().catch((err) => console.error('[tcg-data-update] Startup check failed:', err));
   });
