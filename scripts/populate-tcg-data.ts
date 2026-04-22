@@ -455,25 +455,19 @@ async function prefetchSetData(
   if (set.product_count === 0) return null;
 
   // Fetch products, pricing, and SKUs concurrently for this set.
-  // SKU fetch is isolated so a failure doesn't discard products/pricing.
   const productsUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}`;
   const pricingUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/pricing`;
   const skusUrl = fetchSkus ? `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/skus` : null;
 
-  const [productsData, pricingData, skusResult] = await Promise.all([
+  const [productsData, pricingData, skusData] = await Promise.all([
     fetchJson<TcgTrackingSetProductsResponse>(productsUrl),
     fetchJson<TcgTrackingPricingResponse>(pricingUrl),
-    skusUrl
-      ? fetchJson<TcgTrackingSkusResponse>(skusUrl).catch((err): null => {
-          console.error(`Failed to fetch SKUs for set "${set.name}" (id=${set.id}): ${err}`);
-          return null;
-        })
-      : Promise.resolve(null),
+    skusUrl ? fetchJson<TcgTrackingSkusResponse>(skusUrl) : Promise.resolve(null),
   ]);
 
   if (productsData.products.length === 0) return null;
 
-  return { set, products: productsData.products, pricing: pricingData, skus: skusResult };
+  return { set, products: productsData.products, pricing: pricingData, skus: skusData };
 }
 
 // =========================================================================
@@ -568,33 +562,11 @@ async function stage1_tcgtracking() {
     }
 
     // --- Prefetch all set data concurrently (products + pricing + SKUs) ---
+    // Errors (including SKU fetch failures) propagate immediately to abort the run.
     console.log(`Prefetching data for ${sets.length} sets (concurrency=${API_CONCURRENCY})...`);
-    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, async (set) => {
-      try {
-        return await prefetchSetData(cat.id, set, !skipSkus);
-      } catch (err) {
-        console.error(`Failed to prefetch set "${set.name}" (id=${set.id}): ${err}`);
-        return null;
-      }
-    });
-
-    // --- Abort if too many sets are missing SKU data ---
-    if (!skipSkus) {
-      const setsWithProducts = prefetchedSets.filter((d) => d != null);
-      const setsWithSkus = setsWithProducts.filter((d) => d.skus != null);
-      const skuFailures = setsWithProducts.length - setsWithSkus.length;
-      if (skuFailures > 0) {
-        const pct = Math.round((skuFailures / setsWithProducts.length) * 100);
-        console.error(
-          `${skuFailures}/${setsWithProducts.length} sets (${pct}%) are missing SKU data for category "${cat.name}"`,
-        );
-        if (pct > 10) {
-          throw new Error(
-            `Aborting: ${pct}% of sets are missing SKU data for category "${cat.name}". This exceeds the 10% threshold.`,
-          );
-        }
-      }
-    }
+    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) =>
+      prefetchSetData(cat.id, set, !skipSkus),
+    );
 
     // --- Process prefetched data (DB writes are sequential for SQLite) ---
     for (const data of prefetchedSets) {
