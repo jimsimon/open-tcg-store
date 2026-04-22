@@ -285,12 +285,35 @@ app.use(async (ctx, next) => {
   return next();
 });
 
-// Apply rate limiting to auth endpoints
+// Apply rate limiting to auth endpoints.
+// Only rate limit actual authentication attempts (sign-in, sign-up, password
+// reset). Read-only endpoints (get-session, has-permission) and internal
+// operations (set-active) are called by the UI server on every page navigation
+// (2-4 calls per page) and must NOT share the strict auth-attempt limit.
+const authAttemptPaths = new Set([
+  '/api/auth/sign-in',
+  '/api/auth/sign-up',
+  '/api/auth/forget-password',
+  '/api/auth/reset-password',
+]);
+
+function isAuthAttemptEndpoint(pathname: string): boolean {
+  for (const prefix of authAttemptPaths) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
+  }
+  return false;
+}
+
 app.use(async (ctx, next) => {
   if (ctx.URL.pathname.startsWith('/api/auth')) {
-    await authRateLimit(ctx, async () => {
+    const handler = async () => {
       await toNodeHandler(auth)(ctx.req, ctx.res);
-    });
+    };
+    if (isAuthAttemptEndpoint(ctx.URL.pathname)) {
+      await authRateLimit(ctx, handler);
+    } else {
+      await handler();
+    }
   } else {
     return next();
   }
