@@ -225,7 +225,7 @@ const TCGCSV_ARCHIVE_BASE = 'https://tcgcsv.com/archive/tcgplayer';
 const EARLIEST_ARCHIVE_DATE = '2024-02-08';
 
 /** Max concurrent HTTP fetches to avoid overwhelming the API servers. */
-const API_CONCURRENCY = 6;
+const API_CONCURRENCY = 3;
 
 /**
  * Per tcgcsv.com/faq — these categories should be skipped.
