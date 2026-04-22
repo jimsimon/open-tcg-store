@@ -134,7 +134,9 @@ function buildConflictUpdateColumns<T extends SQLiteTable, Q extends keyof T['_'
 // ---------------------------------------------------------------------------
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: { "User-Agent": "OpenTCGStore/1.0.0" },
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
   }
