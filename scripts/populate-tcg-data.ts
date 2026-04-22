@@ -288,9 +288,19 @@ function buildConflictUpdateColumns<T extends SQLiteTable, Q extends keyof T['_'
 async function fetchJson<T>(url: string): Promise<T> {
   const MAX_RETRIES = 5;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
+      });
+    } catch (err) {
+      // Network-level errors (socket closed, DNS failure, timeout, etc.)
+      if (attempt === MAX_RETRIES) throw err;
+      const delaySec = Math.min(2 ** attempt, 30);
+      console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}): ${err}`);
+      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+      continue;
+    }
     if (response.status === 429) {
       await response.body?.cancel();
       if (attempt === MAX_RETRIES) {
