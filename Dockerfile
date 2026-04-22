@@ -47,6 +47,10 @@ COPY . .
 # Create directory for SQLite data files (mount a volume here at runtime)
 RUN mkdir -p /app/sqlite-data
 
+# Point drizzle configs at the container's SQLite data directory
+ENV OTCGS_DATABASE_PATH=/app/sqlite-data
+ENV TCG_DATA_DATABASE_PATH=/app/sqlite-data
+
 # Create nginx runtime directories and set ownership so the app user can write them
 RUN mkdir -p /var/log/nginx /var/lib/nginx/tmp /run/nginx \
     && chown -R app:app /var/log/nginx /var/lib/nginx /run/nginx /app
