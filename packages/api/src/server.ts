@@ -747,17 +747,18 @@ app
     registerJobHandler('backup', backupHandler);
     registerJobHandler('event-recurrence-generator', eventRecurrenceHandler);
 
-    // Seed default job definitions, start the cron scheduler, and run overdue jobs
-    seedDefaultJobs()
+    // Check for TCG data updates on startup, then start the cron scheduler.
+    // This ordering ensures the startup check completes before overdue jobs
+    // run — preventing a race where both the startup check and an overdue
+    // tcg-data-update cron job attempt performUpdateCheck() concurrently
+    // (the loser would silently no-op without being marked complete).
+    // showMaintenanceDuringDownload keeps the maintenance page visible during
+    // the entire check + download, not just the hot-swap, because the local
+    // database may not exist or may be schema-incompatible with the running code.
+    performUpdateCheck({ showMaintenanceDuringDownload: true })
+      .catch((err) => console.error('[tcg-data-update] Startup check failed:', err))
+      .then(() => seedDefaultJobs())
       .then(() => startScheduler())
       .then(() => executeOverdueJobs())
       .catch((err) => console.error('[cron] Failed to start scheduler:', err));
-
-    // Check for TCG data updates on startup. showMaintenanceDuringDownload
-    // keeps the maintenance page visible during the entire check + download,
-    // not just the hot-swap, because the local database may not exist or may
-    // be schema-incompatible with the running code.
-    performUpdateCheck({ showMaintenanceDuringDownload: true }).catch((err) =>
-      console.error('[tcg-data-update] Startup check failed:', err),
-    );
   });

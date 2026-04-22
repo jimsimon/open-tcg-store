@@ -96,6 +96,7 @@ import {
   getCreatedAt,
   refreshUpdateStatus,
   triggerManualUpdate,
+  invalidateStatusCache,
 } from './tcg-data-update-service';
 import type { GitHubRelease } from './tcg-data-update-service';
 
@@ -199,6 +200,9 @@ describe('tcg-data-update-service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.useFakeTimers();
+
+    // Reset the TTL cache between tests so each starts fresh
+    invalidateStatusCache();
 
     // Default: global fetch is our mock
     vi.stubGlobal('fetch', mockFetch);
@@ -758,6 +762,91 @@ describe('tcg-data-update-service', () => {
 
       // Should not crash, returns current status
       expect(status.currentVersion).toBe('2026-04-05T12:00:00.000Z');
+    });
+
+    it('should return cached result within 30s TTL without hitting GitHub', async () => {
+      mockExistsSync.mockReturnValue(true);
+      setupFileHashMock(DIFFERENT_HASH);
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      mockOtcgsExecute.mockResolvedValue({ rows: [{ value: '2026-04-04T12:00:00.000Z' }] });
+
+      // First call — hits GitHub
+      const status1 = await refreshUpdateStatus();
+      expect(status1.updateAvailable).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(2); // releases + hash asset
+
+      // Advance 10 seconds (within 30s TTL)
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      // Second call — should use cache, no new fetch calls
+      const status2 = await refreshUpdateStatus();
+      expect(status2.updateAvailable).toBe(true);
+      expect(status2.latestVersion).toBe('tcg-data-20260405');
+      expect(mockFetch).toHaveBeenCalledTimes(2); // still only 2
+    });
+
+    it('should re-fetch from GitHub after TTL expires', async () => {
+      mockExistsSync.mockReturnValue(true);
+      setupFileHashMock(DIFFERENT_HASH);
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      mockOtcgsExecute.mockResolvedValue({ rows: [{ value: '2026-04-04T12:00:00.000Z' }] });
+
+      // First call
+      await refreshUpdateStatus();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      // Advance past the 30s TTL
+      await vi.advanceTimersByTimeAsync(31_000);
+
+      // Set up new fetch mocks for the re-fetch
+      const newReleases = [makeRelease('tcg-data-20260406')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(newReleases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      // Second call — should hit GitHub again
+      const status = await refreshUpdateStatus();
+      expect(status.latestVersion).toBe('tcg-data-20260406');
+      expect(mockFetch).toHaveBeenCalledTimes(4); // 2 original + 2 re-fetch
+    });
+
+    it('should return fresh data after invalidateStatusCache()', async () => {
+      mockExistsSync.mockReturnValue(true);
+      setupFileHashMock(DIFFERENT_HASH);
+
+      const releases = [makeRelease('tcg-data-20260405')];
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse(releases))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      mockOtcgsExecute.mockResolvedValue({ rows: [{ value: '2026-04-04T12:00:00.000Z' }] });
+
+      // First call — populates cache
+      await refreshUpdateStatus();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      // Invalidate without advancing time
+      invalidateStatusCache();
+
+      // Set up new fetch mocks
+      mockFetch
+        .mockResolvedValueOnce(mockFetchResponse([makeRelease('tcg-data-20260406')]))
+        .mockResolvedValueOnce(mockHashFetchResponse(FAKE_HASH));
+
+      // Should hit GitHub again despite being within original TTL window
+      const status = await refreshUpdateStatus();
+      expect(status.latestVersion).toBe('tcg-data-20260406');
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
   });
 

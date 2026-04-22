@@ -470,9 +470,24 @@ export async function getCreatedAt(): Promise<string | null> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// TTL cache for refreshUpdateStatus — avoids exhausting the unauthenticated
+// GitHub API rate limit (60 req/hr) when the settings page is loaded frequently.
+// ---------------------------------------------------------------------------
+const REFRESH_STATUS_TTL_MS = 30_000; // 30 seconds
+let _cachedCheckResult: { latestRelease: GitHubRelease | null } | null = null;
+let _cachedCheckTimestamp = 0;
+
+/** Clear the cached GitHub check result so the next call fetches fresh data. */
+export function invalidateStatusCache(): void {
+  _cachedCheckResult = null;
+  _cachedCheckTimestamp = 0;
+}
+
 /**
  * Check for updates by querying GitHub and return the current status.
- * Always performs a live check — no caching.
+ * Results are cached for 30 seconds to avoid rate-limit exhaustion on rapid
+ * page loads. The cache is invalidated automatically after a successful update.
  */
 export async function refreshUpdateStatus(): Promise<{
   currentVersion: string | null;
@@ -480,13 +495,22 @@ export async function refreshUpdateStatus(): Promise<{
   updateAvailable: boolean;
   isUpdating: boolean;
 }> {
+  const now = Date.now();
   let latestRelease: GitHubRelease | null = null;
-  try {
-    const result = await checkForUpdate();
-    latestRelease = result?.release ?? null;
-  } catch (err) {
-    console.error('[tcg-data-update] Failed to check for updates:', err);
+
+  if (_cachedCheckResult && now - _cachedCheckTimestamp < REFRESH_STATUS_TTL_MS) {
+    latestRelease = _cachedCheckResult.latestRelease;
+  } else {
+    try {
+      const result = await checkForUpdate();
+      latestRelease = result?.release ?? null;
+    } catch (err) {
+      console.error('[tcg-data-update] Failed to check for updates:', err);
+    }
+    _cachedCheckResult = { latestRelease };
+    _cachedCheckTimestamp = now;
   }
+
   const createdAt = await getCreatedAt();
   return {
     currentVersion: createdAt,
@@ -539,6 +563,7 @@ export async function triggerManualUpdate(): Promise<{
     }
 
     await applyUpdate(release);
+    invalidateStatusCache();
     return { success: true, message: `Successfully updated to ${release.tag_name}`, newVersion: release.tag_name };
   } catch (err) {
     cleanupTempFile();
@@ -611,6 +636,7 @@ export async function performUpdateCheck(options?: PerformUpdateCheckOptions): P
     }
 
     await applyUpdate(release);
+    invalidateStatusCache();
   } catch (err) {
     console.error('[tcg-data-update] Update check failed:', err);
     cleanupTempFile();
