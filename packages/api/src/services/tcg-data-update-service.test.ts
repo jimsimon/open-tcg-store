@@ -66,7 +66,10 @@ vi.mock('node:crypto', () => ({
 vi.mock('../db/otcgs/index', () => ({
   client: { execute: mockOtcgsExecute },
   setDatabaseUpdating: mockSetDatabaseUpdating,
-  tcgDataFilePath: '/fake/workspace/sqlite-data/tcg-data.sqlite',
+}));
+
+vi.mock('../db/tcg-data/drizzle.config', () => ({
+  databaseFilePath: '/fake/workspace/sqlite-data/tcg-data.sqlite',
 }));
 
 vi.mock('../db/tcg-data/index', () => ({

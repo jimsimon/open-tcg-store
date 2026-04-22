@@ -101,9 +101,8 @@ vi.mock('./settings-service', () => ({
   updateLastBackupAt: mockUpdateLastBackupAt,
 }));
 
-// Mock drizzle config (provides databaseFilePath)
+// Mock drizzle config (provides databaseFilePath for filesystem operations)
 vi.mock('../db/otcgs/drizzle.config', () => ({
-  databaseFile: 'file:/fake/workspace/sqlite-data/otcgs.sqlite',
   databaseFilePath: '/fake/workspace/sqlite-data/otcgs.sqlite',
 }));
 
