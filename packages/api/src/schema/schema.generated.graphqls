@@ -651,6 +651,16 @@ input PosLineItemInput {
   quantity: Int!
 }
 
+type PriceHistoryEntry {
+  date: String!
+  directLowPrice: Int
+  highPrice: Int
+  lowPrice: Int
+  marketPrice: Int
+  midPrice: Int
+  subTypeName: String!
+}
+
 type ProductConditionPrice {
   condition: CardCondition!
   inventoryItemId: Int!
@@ -795,6 +805,7 @@ type Query {
   getLots(filters: LotFilters, pagination: PaginationInput): LotPage!
   getOrders(filters: OrderFilters, pagination: PaginationInput): OrderPage!
   getPosConfig(stateCode: String): PosConfig!
+  getPriceHistory(endDate: String, productId: String!, startDate: String, subTypeName: String): [PriceHistoryEntry!]!
   getProduct(organizationId: String, productId: String!): ProductDetail!
   getProductListings(filters: ProductListingFilters, organizationId: String, pagination: ProductListingPagination): ProductListingPage!
 

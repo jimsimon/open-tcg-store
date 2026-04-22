@@ -113,6 +113,16 @@ type ProductInventoryRecord {
   price: Int! # cents
 }
 
+type PriceHistoryEntry {
+  date: String!
+  lowPrice: Int
+  midPrice: Int
+  highPrice: Int
+  marketPrice: Int
+  directLowPrice: Int
+  subTypeName: String!
+}
+
 # extend type Mutation {}
 
 extend type Query {
@@ -125,4 +135,5 @@ extend type Query {
     organizationId: String
   ): ProductListingPage!
   getProduct(productId: String!, organizationId: String): ProductDetail!
+  getPriceHistory(productId: String!, subTypeName: String, startDate: String, endDate: String): [PriceHistoryEntry!]!
 }

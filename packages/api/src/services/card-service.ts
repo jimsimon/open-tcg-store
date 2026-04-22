@@ -1,6 +1,6 @@
-import { sql, and, eq, exists, isNull, gt, inArray } from 'drizzle-orm';
+import { sql, and, eq, exists, isNull, gt, gte, lte, inArray } from 'drizzle-orm';
 import { otcgs } from '../db';
-import { product, productExtendedData } from '../db/tcg-data/schema';
+import { product, priceHistory } from '../db/tcg-data/schema';
 import { inventoryItem } from '../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../db/otcgs/inventory-stock-schema';
 import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
@@ -47,17 +47,6 @@ function buildImageUrls(tcgpProductId: number | null) {
   };
 }
 
-/** Convert extended data rows to a Record<name, value>. */
-function buildExtendedDataMap(data: { name: string; value: string }[]): Record<string, string> {
-  return data.reduce(
-    (map, { name, value }) => {
-      map[name] = value;
-      return map;
-    },
-    {} as Record<string, string>,
-  );
-}
-
 /** Get inventory for a condition using actual data with market-price fallback. */
 function getConditionInventory(
   inventoryMap: Map<string, { quantity: number; price: number | null }>,
@@ -84,11 +73,22 @@ export async function getCardById(
   organizationId: string | null,
 ): Promise<NonNullable<Card>> {
   const result = await otcgs.query.product.findFirst({
-    columns: { id: true, name: true, tcgpProductId: true },
+    columns: {
+      id: true,
+      name: true,
+      tcgpProductId: true,
+      rarityDisplay: true,
+      subType: true,
+      cardType: true,
+      oracleText: true,
+      cardText: true,
+      flavorText: true,
+      number: true,
+      productType: true,
+    },
     with: {
       group: { columns: { name: true } },
       prices: { columns: { marketPrice: true, midPrice: true, subTypeName: true } },
-      extendedData: { columns: { name: true, value: true } },
     },
     where: (p, { eq, and }) => and(eq(p.id, cardId), eq(p.categoryId, categoryId)),
   });
@@ -117,17 +117,16 @@ export async function getCardById(
   const inventoryMap = new Map(
     inventoryData.map((row) => [row.condition, { quantity: row.totalQuantity, price: row.lowestPrice }]),
   );
-  const extendedDataMap = buildExtendedDataMap(result.extendedData);
 
   return {
     id: result.id.toString(),
     name: result.name,
     finishes: result.prices.map((p) => p.subTypeName),
     setName: result.group?.name || 'Unknown Set',
-    rarity: extendedDataMap.Rarity,
-    type: extendedDataMap.SubType ?? extendedDataMap['Card Type'],
-    text: extendedDataMap.OracleText ?? extendedDataMap.CardText,
-    flavorText: extendedDataMap.FlavorText,
+    rarity: result.rarityDisplay,
+    type: result.subType ?? result.cardType,
+    text: result.oracleText ?? result.cardText,
+    flavorText: result.flavorText,
     images: buildImageUrls(result.tcgpProductId),
     inventory: result.prices.map((p) => ({
       type: p.subTypeName,
@@ -146,20 +145,30 @@ export async function getCardById(
 
 export async function getProductById(productId: number, organizationId: string | null) {
   const result = await otcgs.query.product.findFirst({
-    columns: { id: true, name: true, tcgpProductId: true, categoryId: true },
+    columns: {
+      id: true,
+      name: true,
+      tcgpProductId: true,
+      categoryId: true,
+      rarityDisplay: true,
+      subType: true,
+      cardType: true,
+      oracleText: true,
+      cardText: true,
+      flavorText: true,
+      productType: true,
+    },
     with: {
       group: { columns: { name: true } },
       category: { columns: { name: true } },
       prices: { columns: { marketPrice: true, midPrice: true, subTypeName: true } },
-      extendedData: { columns: { name: true, value: true } },
     },
     where: (p, { eq }) => eq(p.id, productId),
   });
 
   if (!result) throw new Error(`Product not found: ${productId}`);
 
-  const hasRarityOrNumber = result.extendedData.some((d) => d.name === 'Rarity' || d.name === 'Number');
-  const extendedDataMap = buildExtendedDataMap(result.extendedData);
+  const isSingle = result.productType === 'single';
 
   const inventoryRecords = await otcgs
     .select({
@@ -190,13 +199,13 @@ export async function getProductById(productId: number, organizationId: string |
     name: result.name,
     setName: result.group?.name ?? 'Unknown Set',
     gameName: result.category?.name ?? 'Unknown',
-    rarity: extendedDataMap.Rarity ?? null,
-    type: extendedDataMap.SubType ?? extendedDataMap['Card Type'] ?? null,
-    text: extendedDataMap.OracleText ?? extendedDataMap.CardText ?? null,
-    flavorText: extendedDataMap.FlavorText ?? null,
+    rarity: result.rarityDisplay ?? null,
+    type: result.subType ?? result.cardType ?? null,
+    text: result.oracleText ?? result.cardText ?? null,
+    flavorText: result.flavorText ?? null,
     finishes: result.prices.map((p) => p.subTypeName),
-    isSingle: hasRarityOrNumber,
-    isSealed: !hasRarityOrNumber,
+    isSingle,
+    isSealed: !isSingle,
     images: buildImageUrls(result.tcgpProductId),
     inventoryRecords: inventoryRecords.map((r) => ({
       inventoryItemId: r.id,
@@ -248,33 +257,15 @@ export async function getSingleCardInventory(
       group: { columns: { name: true } },
       prices: { columns: { marketPrice: true, midPrice: true, subTypeName: true } },
     },
-    where: (p, { and, eq, exists }) =>
+    where: (p, { and, eq }) =>
       and(
         eq(p.categoryId, categoryId),
         filters?.searchTerm && filters.searchTerm.trim().length > 0
           ? likeEscaped(sql`lower(${p.name})`, filters.searchTerm.toLowerCase())
           : undefined,
         filters?.setCode ? eq(p.groupId, parseInt(filters.setCode, 10)) : undefined,
-        includeSingles === true && includeSealed !== true
-          ? exists(
-              otcgs
-                .select({ one: sql`1` })
-                .from(productExtendedData)
-                .where(
-                  and(
-                    eq(productExtendedData.productId, p.id),
-                    sql`(${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')`,
-                  ),
-                ),
-            )
-          : undefined,
-        includeSealed === true && includeSingles !== true
-          ? sql`NOT EXISTS (
-              SELECT 1 FROM ${productExtendedData}
-              WHERE ${productExtendedData.productId} = ${p.id}
-                AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-            )`
-          : undefined,
+        includeSingles === true && includeSealed !== true ? eq(p.productType, 'single') : undefined,
+        includeSealed === true && includeSingles !== true ? eq(p.productType, 'sealed') : undefined,
       ),
     orderBy: (p, { asc }) => asc(p.name),
     limit: 10,
@@ -453,29 +444,11 @@ async function queryProductListings(
   }
 
   if (includeSingles === true && includeSealed !== true) {
-    conditions.push(
-      exists(
-        otcgs
-          .select({ one: sql`1` })
-          .from(productExtendedData)
-          .where(
-            and(
-              eq(productExtendedData.productId, product.id),
-              sql`(${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')`,
-            ),
-          ),
-      ),
-    );
+    conditions.push(eq(product.productType, 'single'));
   }
 
   if (includeSealed === true && includeSingles !== true) {
-    conditions.push(
-      sql`NOT EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-      )`,
-    );
+    conditions.push(eq(product.productType, 'sealed'));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -539,12 +512,18 @@ async function queryProductListings(
 
   // Fetch full product data for results
   const productsWithGroups = await otcgs.query.product.findMany({
-    columns: { id: true, name: true, tcgpProductId: true, categoryId: true },
+    columns: {
+      id: true,
+      name: true,
+      tcgpProductId: true,
+      categoryId: true,
+      rarityDisplay: true,
+      productType: true,
+    },
     with: {
       group: { columns: { name: true } },
       category: { columns: { name: true } },
       prices: { columns: { subTypeName: true, marketPrice: true } },
-      extendedData: { columns: { name: true, value: true } },
     },
     where: (p, { inArray }) => inArray(p.id, productIds),
   });
@@ -635,7 +614,6 @@ async function queryProductListings(
 
   const items = results.map((r) => {
     const productData = productMap.get(r.id);
-    const extendedDataMap = buildExtendedDataMap(productData?.extendedData ?? []);
     const finishes = productData?.prices?.map((p) => p.subTypeName) ?? [];
 
     let lowestPrice: number | null = null;
@@ -660,7 +638,7 @@ async function queryProductListings(
       name: r.name,
       setName: productData?.group?.name ?? 'Unknown Set',
       gameName: productData?.category?.name ?? 'Unknown',
-      rarity: extendedDataMap.Rarity ?? null,
+      rarity: productData?.rarityDisplay ?? null,
       finishes,
       images: buildImageUrls(r.tcgpProductId),
       totalQuantity: r.totalQuantity,
@@ -671,4 +649,51 @@ async function queryProductListings(
   });
 
   return { items, totalCount };
+}
+
+// ---------------------------------------------------------------------------
+// getPriceHistory
+// ---------------------------------------------------------------------------
+
+export async function getPriceHistory(
+  productId: number,
+  subTypeName?: string | null,
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  const conditions = [eq(priceHistory.productId, productId)];
+
+  if (subTypeName) {
+    conditions.push(eq(priceHistory.subTypeName, subTypeName));
+  }
+  if (startDate) {
+    conditions.push(gte(priceHistory.date, startDate));
+  }
+  if (endDate) {
+    conditions.push(lte(priceHistory.date, endDate));
+  }
+
+  const rows = await otcgs
+    .select({
+      date: priceHistory.date,
+      lowPrice: priceHistory.lowPrice,
+      midPrice: priceHistory.midPrice,
+      highPrice: priceHistory.highPrice,
+      marketPrice: priceHistory.marketPrice,
+      directLowPrice: priceHistory.directLowPrice,
+      subTypeName: priceHistory.subTypeName,
+    })
+    .from(priceHistory)
+    .where(and(...conditions))
+    .orderBy(priceHistory.date);
+
+  return rows.map((r) => ({
+    date: r.date,
+    lowPrice: r.lowPrice ?? null,
+    midPrice: r.midPrice ?? null,
+    highPrice: r.highPrice ?? null,
+    marketPrice: r.marketPrice ?? null,
+    directLowPrice: r.directLowPrice ?? null,
+    subTypeName: r.subTypeName,
+  }));
 }

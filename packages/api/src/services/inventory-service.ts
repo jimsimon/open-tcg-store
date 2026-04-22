@@ -1,6 +1,6 @@
 import { eq, and, sql, inArray, isNull, gt } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
-import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
+import { product, group, category, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { addBarcodes } from './barcode-service';
 import { likeEscaped, normalizePagination } from '../lib/sql-utils';
@@ -73,7 +73,7 @@ function buildFilterConditions(organizationId: string, filters?: InventoryFilter
   conditions.push(eq(inventoryItem.organizationId, organizationId));
 
   if (filters?.gameName) {
-    conditions.push(likeEscaped(category.seoCategoryName, filters.gameName.toLowerCase(), 'startsWith'));
+    conditions.push(likeEscaped(sql`lower(${category.name})`, filters.gameName.toLowerCase(), 'startsWith'));
   }
   if (filters?.setName) {
     conditions.push(eq(group.name, filters.setName));
@@ -85,14 +85,7 @@ function buildFilterConditions(organizationId: string, filters?: InventoryFilter
     conditions.push(likeEscaped(product.name, filters.searchTerm));
   }
   if (filters?.rarity) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-          AND ${productExtendedData.value} = ${filters.rarity}
-      )`,
-    );
+    conditions.push(eq(product.rarityDisplay, filters.rarity));
   }
 
   // Product type filtering (singles vs sealed)
@@ -100,21 +93,9 @@ function buildFilterConditions(organizationId: string, filters?: InventoryFilter
   const includeSealed = filters?.includeSealed;
 
   if (includeSingles === true && includeSealed !== true) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-      )`,
-    );
+    conditions.push(eq(product.productType, 'single'));
   } else if (includeSealed === true && includeSingles !== true) {
-    conditions.push(
-      sql`NOT EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-      )`,
-    );
+    conditions.push(eq(product.productType, 'sealed'));
   }
 
   return conditions;
@@ -155,20 +136,8 @@ export async function getInventoryItems(
         sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as(
           'entry_count',
         ),
-      rarity: sql<string | null>`(
-        SELECT ${productExtendedData.value}
-        FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-        LIMIT 1
-      )`.as('rarity'),
-      isSingle: sql<boolean>`(
-        EXISTS (
-          SELECT 1 FROM ${productExtendedData}
-          WHERE ${productExtendedData.productId} = ${product.id}
-            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-        )
-      )`.as('is_single'),
+      rarity: product.rarityDisplay,
+      isSingle: product.productType,
     })
     .from(inventoryItem)
     .innerJoin(product, eq(inventoryItem.productId, product.id))
@@ -203,7 +172,7 @@ export async function getInventoryItems(
   const rows = await dataQuery.limit(pageSize).offset(offset);
 
   const items: InventoryItem[] = rows.map((r) => {
-    const isSingle = Boolean(r.isSingle);
+    const isSingle = r.isSingle === 'single';
     return {
       id: r.id,
       organizationId: r.organizationId,
@@ -312,20 +281,8 @@ export async function getInventoryItemById(id: number, organizationId: string): 
         sql<number>`COALESCE(SUM(CASE WHEN ${inventoryItemStock.deletedAt} IS NULL AND ${inventoryItemStock.quantity} > 0 THEN 1 ELSE 0 END), 0)`.as(
           'entry_count',
         ),
-      rarity: sql<string | null>`(
-        SELECT ${productExtendedData.value}
-        FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-        LIMIT 1
-      )`.as('rarity'),
-      isSingle: sql<boolean>`(
-        EXISTS (
-          SELECT 1 FROM ${productExtendedData}
-          WHERE ${productExtendedData.productId} = ${product.id}
-            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-        )
-      )`.as('is_single'),
+      rarity: product.rarityDisplay,
+      isSingle: product.productType,
     })
     .from(inventoryItem)
     .innerJoin(product, eq(inventoryItem.productId, product.id))
@@ -339,7 +296,7 @@ export async function getInventoryItemById(id: number, organizationId: string): 
   if (rows.length === 0) return null;
 
   const r = rows[0];
-  const isSingle = Boolean(r.isSingle);
+  const isSingle = r.isSingle === 'single';
 
   return {
     id: r.id,
@@ -1085,26 +1042,14 @@ export async function searchProducts(
   const conditions: ReturnType<typeof eq>[] = [likeEscaped(product.name, searchTerm)];
 
   if (game) {
-    conditions.push(likeEscaped(category.seoCategoryName, game.toLowerCase(), 'startsWith'));
+    conditions.push(likeEscaped(sql`lower(${category.name})`, game.toLowerCase(), 'startsWith'));
   }
 
-  // Filter by product type (singles have Rarity or Number extended data; sealed do not)
+  // Filter by product type
   if (isSingle === true) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-      )`,
-    );
+    conditions.push(eq(product.productType, 'single'));
   } else if (isSealed === true) {
-    conditions.push(
-      sql`NOT EXISTS (
-        SELECT 1 FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-      )`,
-    );
+    conditions.push(eq(product.productType, 'sealed'));
   }
 
   const rows = await otcgs
@@ -1114,20 +1059,8 @@ export async function searchProducts(
       gameName: category.name,
       setName: group.name,
       imageUrl: product.imageUrl,
-      rarity: sql<string | null>`(
-        SELECT ${productExtendedData.value}
-        FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-        LIMIT 1
-      )`.as('rarity'),
-      isSingle: sql<boolean>`(
-        EXISTS (
-          SELECT 1 FROM ${productExtendedData}
-          WHERE ${productExtendedData.productId} = ${product.id}
-            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-        )
-      )`.as('is_single'),
+      rarity: product.rarityDisplay,
+      isSingle: product.productType,
     })
     .from(product)
     .leftJoin(group, eq(product.groupId, group.id))
@@ -1163,7 +1096,7 @@ export async function searchProducts(
   }
 
   return rows.map((r) => {
-    const isSingle = Boolean(r.isSingle);
+    const isSingle = r.isSingle === 'single';
     const productPrices = pricesByProductId.get(r.id) ?? [];
 
     return {
