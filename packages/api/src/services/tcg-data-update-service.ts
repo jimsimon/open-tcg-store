@@ -1,6 +1,7 @@
 import { createClient } from '@libsql/client';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { renameSync, existsSync, unlinkSync, createWriteStream, createReadStream } from 'node:fs';
+import { renameSync, existsSync, unlinkSync, createWriteStream, createReadStream, copyFileSync } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { client, setDatabaseUpdating, tcgDataFilePath } from '../db/otcgs/index.ts';
@@ -16,11 +17,27 @@ const RELEASE_HASH_ASSET_NAME = 'tcg-data.sqlite.sha256';
 const databaseFilePath = tcgDataFilePath;
 const sqliteDataDir = databaseFilePath.substring(0, databaseFilePath.lastIndexOf('/'));
 const tempDatabaseFilePath = `${sqliteDataDir}/tcg-data.sqlite.new`;
+const RELEASE_DELTA_ASSET_NAME = 'tcg-data.delta.xd3';
+const RELEASE_FROM_HASH_ASSET_NAME = 'tcg-data.from.sha256';
+const MAX_DELTA_CHAIN = 7;
 
 // Check interval was used by the old setInterval scheduler, now managed by cron-service.
 
 /** Tables that must exist in a valid tcg-data database. */
-const REQUIRED_TABLES = ['category', 'group', 'product', 'price'] as const;
+const REQUIRED_TABLES = [
+  'category',
+  'group',
+  'product',
+  'price',
+  'product_presale_info',
+  'metadata',
+  'manapool_price',
+  'sku',
+  'cardtrader_blueprint',
+  'price_history',
+  'sku_history',
+  'price_history_log',
+] as const;
 
 export interface GitHubRelease {
   tag_name: string;
@@ -37,6 +54,7 @@ export interface GitHubAsset {
 export interface UpdateCheckResult {
   release: GitHubRelease;
   expectedHash: string;
+  allReleases: GitHubRelease[];
 }
 
 /**
@@ -119,7 +137,8 @@ export async function checkForUpdate(): Promise<UpdateCheckResult | null> {
   }
 
   console.log(`[tcg-data-update] New version available: ${latestRelease.tag_name}`);
-  return { release: latestRelease, expectedHash };
+  const allReleases = releases.filter((r) => r.tag_name.startsWith(RELEASE_TAG_PREFIX));
+  return { release: latestRelease, expectedHash, allReleases };
 }
 
 /**
@@ -259,6 +278,168 @@ export async function applyUpdate(release: GitHubRelease): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// xdelta3 binary diff support
+// ---------------------------------------------------------------------------
+
+function checkXdelta3Available(): boolean {
+  try {
+    execFileSync('xdelta3', ['-V'], { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchFromHash(release: GitHubRelease): Promise<string | null> {
+  const asset = release.assets.find((a) => a.name === RELEASE_FROM_HASH_ASSET_NAME);
+  if (!asset) return null;
+
+  const response = await fetch(asset.browser_download_url, {
+    headers: { 'User-Agent': 'open-tcg-store' },
+  });
+  if (!response.ok) return null;
+
+  const text = await response.text();
+  const hash = text.trim().split(/\s+/)[0] ?? null;
+  if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) return null;
+  return hash;
+}
+
+async function downloadDelta(release: GitHubRelease): Promise<string | null> {
+  const asset = release.assets.find((a) => a.name === RELEASE_DELTA_ASSET_NAME);
+  if (!asset) return null;
+
+  console.log(`[tcg-data-update] Downloading delta (${(asset.size / 1024).toFixed(1)} KB)...`);
+  const response = await fetch(asset.browser_download_url, {
+    headers: { 'User-Agent': 'open-tcg-store' },
+  });
+  if (!response.ok) return null;
+  if (!response.body) return null;
+
+  const deltaPath = `${sqliteDataDir}/tcg-data.delta.xd3`;
+  const fileStream = createWriteStream(deltaPath);
+  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+  return deltaPath;
+}
+
+function applyXdelta3(sourcePath: string, deltaPath: string, outputPath: string): boolean {
+  try {
+    execFileSync('xdelta3', ['-d', '-s', sourcePath, deltaPath, outputPath, '-B', '4096'], {
+      stdio: 'pipe',
+      timeout: 300_000,
+    });
+    return true;
+  } catch (err) {
+    console.error('[tcg-data-update] xdelta3 patch failed:', err instanceof Error ? err.message : err);
+    return false;
+  }
+}
+
+/**
+ * Pre-fetch all from/to hashes for releases in parallel to avoid
+ * sequential HTTP requests when building delta chains.
+ */
+async function buildReleaseHashIndex(
+  releases: GitHubRelease[],
+): Promise<Map<string, { release: GitHubRelease; toHash: string }>> {
+  const entries = await Promise.all(
+    releases.map(async (release) => {
+      const [fromHash, toHash] = await Promise.all([fetchFromHash(release), fetchReleaseHash(release)]);
+      return { release, fromHash, toHash };
+    }),
+  );
+
+  const index = new Map<string, { release: GitHubRelease; toHash: string }>();
+  for (const { release, fromHash, toHash } of entries) {
+    if (fromHash && toHash) {
+      index.set(fromHash, { release, toHash });
+    }
+  }
+  return index;
+}
+
+/**
+ * Try to build the new database via xdelta3 delta chain.
+ * Returns true if successful (file written to tempDatabaseFilePath), false to fall back.
+ */
+async function tryBuildViaDelta(releases: GitHubRelease[], localHash: string, targetHash: string): Promise<boolean> {
+  if (!checkXdelta3Available()) {
+    console.log('[tcg-data-update] xdelta3 not available, falling back to full download');
+    return false;
+  }
+
+  // Pre-fetch all release hashes in one pass (O(N) requests instead of O(N*M))
+  const hashIndex = await buildReleaseHashIndex(releases);
+
+  // Build delta chain: find sequential releases that patch from localHash → targetHash
+  const chain: GitHubRelease[] = [];
+  let currentHash = localHash;
+
+  for (let i = 0; i < MAX_DELTA_CHAIN && currentHash !== targetHash; i++) {
+    const next = hashIndex.get(currentHash);
+    if (!next) break;
+    chain.push(next.release);
+    currentHash = next.toHash;
+  }
+
+  if (currentHash !== targetHash || chain.length === 0) {
+    if (chain.length > 0) {
+      console.log(`[tcg-data-update] Delta chain incomplete after ${chain.length} steps`);
+    }
+    return false;
+  }
+
+  console.log(`[tcg-data-update] Applying ${chain.length}-step delta chain`);
+
+  const workingPath = `${sqliteDataDir}/tcg-data.sqlite.work`;
+  copyFileSync(databaseFilePath, workingPath);
+
+  try {
+    for (const release of chain) {
+      const deltaPath = await downloadDelta(release);
+      if (!deltaPath) {
+        console.error('[tcg-data-update] Failed to download delta');
+        return false;
+      }
+
+      const outputPath = `${sqliteDataDir}/tcg-data.sqlite.out`;
+      const ok = applyXdelta3(workingPath, deltaPath, outputPath);
+      try {
+        unlinkSync(deltaPath);
+      } catch {
+        /* ignore */
+      }
+      if (!ok) return false;
+
+      try {
+        unlinkSync(workingPath);
+      } catch {
+        /* ignore */
+      }
+      renameSync(outputPath, workingPath);
+    }
+
+    // Move to expected temp location for the existing verify+apply pipeline
+    renameSync(workingPath, tempDatabaseFilePath);
+    return true;
+  } catch (err) {
+    console.error('[tcg-data-update] Delta application error:', err);
+    return false;
+  } finally {
+    try {
+      unlinkSync(workingPath);
+    } catch {
+      /* ignore */
+    }
+    try {
+      unlinkSync(`${sqliteDataDir}/tcg-data.sqlite.out`);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 /**
  * Clean up the temp file if it exists.
  */
@@ -356,7 +537,15 @@ export async function triggerManualUpdate(): Promise<{
     }
 
     const { release, expectedHash } = result;
-    const tempPath = await downloadUpdate(release);
+
+    // Try delta update first (smaller, faster)
+    const localHash = await computeFileHash(databaseFilePath);
+    const deltaOk = localHash ? await tryBuildViaDelta(result.allReleases, localHash, expectedHash) : false;
+
+    if (!deltaOk) {
+      await downloadUpdate(release);
+    }
+    const tempPath = tempDatabaseFilePath;
 
     if (!(await verifyDownloadHash(tempPath, expectedHash))) {
       cleanupTempFile();
@@ -401,7 +590,15 @@ export async function performUpdateCheck(): Promise<void> {
     if (!result) return;
 
     const { release, expectedHash } = result;
-    const tempPath = await downloadUpdate(release);
+
+    // Try delta update first (smaller, faster)
+    const localHash = await computeFileHash(databaseFilePath);
+    const deltaOk = localHash ? await tryBuildViaDelta(result.allReleases, localHash, expectedHash) : false;
+
+    if (!deltaOk) {
+      await downloadUpdate(release);
+    }
+    const tempPath = tempDatabaseFilePath;
 
     if (!(await verifyDownloadHash(tempPath, expectedHash))) {
       console.error('[tcg-data-update] Downloaded file hash does not match release, skipping update');

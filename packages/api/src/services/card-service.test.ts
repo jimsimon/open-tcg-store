@@ -29,11 +29,7 @@ vi.mock('../db/tcg-data/schema', () => ({
     categoryId: 'product.category_id',
     groupId: 'product.group_id',
     tcgpProductId: 'product.tcgp_product_id',
-  },
-  productExtendedData: {
-    productId: 'product_extended_data.product_id',
-    name: 'product_extended_data.name',
-    value: 'product_extended_data.value',
+    productType: 'product.product_type',
   },
 }));
 
@@ -130,12 +126,11 @@ describe('card-service', () => {
       tcgpProductId: 9999,
       group: { name: 'Alpha' },
       prices: [{ marketPrice: 5000000, midPrice: 4500000, subTypeName: 'Normal' }], // cents
-      extendedData: [
-        { name: 'Rarity', value: 'Rare' },
-        { name: 'SubType', value: 'Artifact' },
-        { name: 'OracleText', value: 'Sacrifice...' },
-        { name: 'FlavorText', value: '' },
-      ],
+      rarityDisplay: 'Rare',
+      subType: 'Artifact',
+      oracleText: 'Sacrifice...',
+      flavorText: '',
+      productType: 'single',
     };
 
     it('should return a fully formed card with inventory', async () => {
@@ -218,10 +213,9 @@ describe('card-service', () => {
       group: { name: 'Commander' },
       category: { name: 'Magic' },
       prices: [{ marketPrice: 500, midPrice: 400, subTypeName: 'Normal' }], // cents
-      extendedData: [
-        { name: 'Rarity', value: 'Uncommon' },
-        { name: 'SubType', value: 'Artifact' },
-      ],
+      rarityDisplay: 'Uncommon',
+      subType: 'Artifact',
+      productType: 'single',
     };
 
     it('should return a single product as a card', async () => {
@@ -244,7 +238,10 @@ describe('card-service', () => {
     it('should classify sealed products correctly', async () => {
       mockOtcgs.query.product.findFirst.mockResolvedValue({
         ...fakeProduct,
-        extendedData: [{ name: 'Description', value: 'Booster box' }],
+        rarityDisplay: null,
+        subType: null,
+        description: 'Booster box',
+        productType: 'sealed',
       });
       mockOtcgs.select.mockReturnValue(chainable([]));
 
@@ -421,7 +418,8 @@ describe('card-service', () => {
           group: { name: 'Alpha' },
           category: { name: 'Magic' },
           prices: [{ subTypeName: 'Normal', marketPrice: 1000 }], // cents
-          extendedData: [{ name: 'Rarity', value: 'Rare' }],
+          rarityDisplay: 'Rare',
+          productType: 'single',
         },
       ]);
 
@@ -460,7 +458,7 @@ describe('card-service', () => {
           group: { name: 'Set' },
           category: { name: 'Magic' },
           prices: [{ subTypeName: 'Normal', marketPrice: 1550 }], // cents
-          extendedData: [],
+          productType: 'sealed',
         },
       ]);
 
@@ -492,7 +490,7 @@ describe('card-service', () => {
           group: null,
           category: null,
           prices: [],
-          extendedData: [],
+          productType: 'sealed',
         },
       ]);
 

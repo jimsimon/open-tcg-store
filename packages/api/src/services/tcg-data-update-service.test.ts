@@ -206,7 +206,20 @@ describe('tcg-data-update-service', () => {
 
     // Default mock for libsql createClient (used in validateDatabase)
     mockValidationExecute.mockResolvedValue({
-      rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+      rows: [
+        { name: 'category' },
+        { name: 'group' },
+        { name: 'product' },
+        { name: 'price' },
+        { name: 'product_presale_info' },
+        { name: 'metadata' },
+        { name: 'manapool_price' },
+        { name: 'sku' },
+        { name: 'cardtrader_blueprint' },
+        { name: 'price_history' },
+        { name: 'sku_history' },
+        { name: 'price_history_log' },
+      ],
     });
     mockCreateClient.mockReturnValue({
       execute: mockValidationExecute,
@@ -478,7 +491,20 @@ describe('tcg-data-update-service', () => {
   describe('validateDatabase', () => {
     it('should return true when all required tables exist', async () => {
       mockValidationExecute.mockResolvedValue({
-        rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+        rows: [
+          { name: 'category' },
+          { name: 'group' },
+          { name: 'product' },
+          { name: 'price' },
+          { name: 'product_presale_info' },
+          { name: 'metadata' },
+          { name: 'manapool_price' },
+          { name: 'sku' },
+          { name: 'cardtrader_blueprint' },
+          { name: 'price_history' },
+          { name: 'sku_history' },
+          { name: 'price_history_log' },
+        ],
       });
 
       const result = await validateDatabase('/fake/path/db.sqlite');
@@ -795,7 +821,20 @@ describe('tcg-data-update-service', () => {
         .mockResolvedValueOnce({ ok: true, body: { readable: true } }); // download
 
       mockValidationExecute.mockResolvedValue({
-        rows: [{ name: 'category' }, { name: 'group' }, { name: 'product' }, { name: 'price' }],
+        rows: [
+          { name: 'category' },
+          { name: 'group' },
+          { name: 'product' },
+          { name: 'price' },
+          { name: 'product_presale_info' },
+          { name: 'metadata' },
+          { name: 'manapool_price' },
+          { name: 'sku' },
+          { name: 'cardtrader_blueprint' },
+          { name: 'price_history' },
+          { name: 'sku_history' },
+          { name: 'price_history_log' },
+        ],
       });
 
       const promise = triggerManualUpdate();

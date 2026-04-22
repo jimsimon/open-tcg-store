@@ -961,6 +961,17 @@ export type PosLineItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type PriceHistoryEntry = {
+  __typename?: 'PriceHistoryEntry';
+  date: Scalars['String']['output'];
+  directLowPrice?: Maybe<Scalars['Int']['output']>;
+  highPrice?: Maybe<Scalars['Int']['output']>;
+  lowPrice?: Maybe<Scalars['Int']['output']>;
+  marketPrice?: Maybe<Scalars['Int']['output']>;
+  midPrice?: Maybe<Scalars['Int']['output']>;
+  subTypeName: Scalars['String']['output'];
+};
+
 export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
   condition: CardCondition;
@@ -1106,6 +1117,7 @@ export type Query = {
   getLots: LotPage;
   getOrders: OrderPage;
   getPosConfig: PosConfig;
+  getPriceHistory: Array<PriceHistoryEntry>;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
   /**
@@ -1253,6 +1265,14 @@ export type QuerygetOrdersArgs = {
 
 export type QuerygetPosConfigArgs = {
   stateCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QuerygetPriceHistoryArgs = {
+  endDate?: InputMaybe<Scalars['String']['input']>;
+  productId: Scalars['String']['input'];
+  startDate?: InputMaybe<Scalars['String']['input']>;
+  subTypeName?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1757,6 +1777,7 @@ export type ResolversTypes = {
   PaymentIntentResult: ResolverTypeWrapper<PaymentIntentResult>;
   PosConfig: ResolverTypeWrapper<PosConfig>;
   PosLineItemInput: PosLineItemInput;
+  PriceHistoryEntry: ResolverTypeWrapper<PriceHistoryEntry>;
   ProductConditionPrice: ResolverTypeWrapper<Omit<ProductConditionPrice, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
   ProductDetail: ResolverTypeWrapper<Omit<ProductDetail, 'inventoryRecords'> & { inventoryRecords: Array<ResolversTypes['ProductInventoryRecord']> }>;
   ProductInventoryRecord: ResolverTypeWrapper<Omit<ProductInventoryRecord, 'condition'> & { condition: ResolversTypes['CardCondition'] }>;
@@ -1877,6 +1898,7 @@ export type ResolversParentTypes = {
   PaymentIntentResult: PaymentIntentResult;
   PosConfig: PosConfig;
   PosLineItemInput: PosLineItemInput;
+  PriceHistoryEntry: PriceHistoryEntry;
   ProductConditionPrice: ProductConditionPrice;
   ProductDetail: Omit<ProductDetail, 'inventoryRecords'> & { inventoryRecords: Array<ResolversParentTypes['ProductInventoryRecord']> };
   ProductInventoryRecord: ProductInventoryRecord;
@@ -2368,6 +2390,16 @@ export type PosConfigResolvers<ContextType = any, ParentType extends ResolversPa
   taxRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
 };
 
+export type PriceHistoryEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['PriceHistoryEntry'] = ResolversParentTypes['PriceHistoryEntry']> = {
+  date?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  directLowPrice?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  highPrice?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  lowPrice?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  marketPrice?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  midPrice?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  subTypeName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
 export type ProductConditionPriceResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProductConditionPrice'] = ResolversParentTypes['ProductConditionPrice']> = {
   condition?: Resolver<ResolversTypes['CardCondition'], ParentType, ContextType>;
   inventoryItemId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2476,6 +2508,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   getLots?: Resolver<ResolversTypes['LotPage'], ParentType, ContextType, Partial<QuerygetLotsArgs>>;
   getOrders?: Resolver<ResolversTypes['OrderPage'], ParentType, ContextType, Partial<QuerygetOrdersArgs>>;
   getPosConfig?: Resolver<ResolversTypes['PosConfig'], ParentType, ContextType, Partial<QuerygetPosConfigArgs>>;
+  getPriceHistory?: Resolver<Array<ResolversTypes['PriceHistoryEntry']>, ParentType, ContextType, RequireFields<QuerygetPriceHistoryArgs, 'productId'>>;
   getProduct?: Resolver<ResolversTypes['ProductDetail'], ParentType, ContextType, RequireFields<QuerygetProductArgs, 'productId'>>;
   getProductListings?: Resolver<ResolversTypes['ProductListingPage'], ParentType, ContextType, Partial<QuerygetProductListingsArgs>>;
   getPublicBuyRates?: Resolver<ResolversTypes['PublicBuyRates'], ParentType, ContextType>;
@@ -2673,6 +2706,7 @@ export type Resolvers<ContextType = any> = {
   OrderStatusBreakdown?: OrderStatusBreakdownResolvers<ContextType>;
   PaymentIntentResult?: PaymentIntentResultResolvers<ContextType>;
   PosConfig?: PosConfigResolvers<ContextType>;
+  PriceHistoryEntry?: PriceHistoryEntryResolvers<ContextType>;
   ProductConditionPrice?: ProductConditionPriceResolvers<ContextType>;
   ProductDetail?: ProductDetailResolvers<ContextType>;
   ProductInventoryRecord?: ProductInventoryRecordResolvers<ContextType>;

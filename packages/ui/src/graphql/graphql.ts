@@ -967,6 +967,17 @@ export type PosLineItemInput = {
   quantity: Scalars['Int']['input'];
 };
 
+export type PriceHistoryEntry = {
+  __typename?: 'PriceHistoryEntry';
+  date: Scalars['String']['output'];
+  directLowPrice?: Maybe<Scalars['Int']['output']>;
+  highPrice?: Maybe<Scalars['Int']['output']>;
+  lowPrice?: Maybe<Scalars['Int']['output']>;
+  marketPrice?: Maybe<Scalars['Int']['output']>;
+  midPrice?: Maybe<Scalars['Int']['output']>;
+  subTypeName: Scalars['String']['output'];
+};
+
 export type ProductConditionPrice = {
   __typename?: 'ProductConditionPrice';
   condition: CardCondition;
@@ -1112,6 +1123,7 @@ export type Query = {
   getLots: LotPage;
   getOrders: OrderPage;
   getPosConfig: PosConfig;
+  getPriceHistory: Array<PriceHistoryEntry>;
   getProduct: ProductDetail;
   getProductListings: ProductListingPage;
   /**
@@ -1259,6 +1271,14 @@ export type QueryGetOrdersArgs = {
 
 export type QueryGetPosConfigArgs = {
   stateCode?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryGetPriceHistoryArgs = {
+  endDate?: InputMaybe<Scalars['String']['input']>;
+  productId: Scalars['String']['input'];
+  startDate?: InputMaybe<Scalars['String']['input']>;
+  subTypeName?: InputMaybe<Scalars['String']['input']>;
 };
 
 

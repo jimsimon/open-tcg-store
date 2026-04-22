@@ -64,10 +64,11 @@ vi.mock('../db/tcg-data/schema', () => ({
     groupId: 'product.group_id',
     categoryId: 'product.category_id',
     imageUrl: 'product.image_url',
+    rarityDisplay: 'product.rarity_display',
+    productType: 'product.product_type',
   },
   group: { id: 'group.id', name: 'group.name' },
   category: { id: 'category.id', name: 'category.name', seoCategoryName: 'category.seo_category_name' },
-  productExtendedData: { productId: 'ped.product_id', name: 'ped.name', value: 'ped.value' },
   price: {
     productId: 'price.product_id',
     subTypeName: 'price.sub_type_name',
@@ -155,7 +156,7 @@ function fakeInventoryRow(overrides: Record<string, unknown> = {}) {
     totalQuantity: 4,
     entryCount: 1,
     rarity: 'Mythic Rare',
-    isSingle: 1,
+    isSingle: 'single',
     ...overrides,
   };
 }
@@ -542,7 +543,7 @@ describe('inventory-service', () => {
           setName: 'Base Set',
           imageUrl: null,
           rarity: 'Rare',
-          isSingle: 1,
+          isSingle: 'single',
         },
       ];
       const priceRows = [
@@ -578,7 +579,7 @@ describe('inventory-service', () => {
           setName: 'Base Set',
           imageUrl: null,
           rarity: 'Rare',
-          isSingle: 1,
+          isSingle: 'single',
         },
       ];
       const priceRows: unknown[] = [];
@@ -604,7 +605,7 @@ describe('inventory-service', () => {
           setName: 'Commander',
           imageUrl: null,
           rarity: 'Uncommon',
-          isSingle: 1,
+          isSingle: 'single',
         },
       ];
       const priceRows = [
@@ -816,7 +817,7 @@ describe('inventory-service', () => {
     });
 
     it('should return item with isSingle/isSealed computed', async () => {
-      const row = fakeInventoryRow({ id: 1, isSingle: 1 });
+      const row = fakeInventoryRow({ id: 1, isSingle: 'single' });
       const dataChain = chainable([row]);
       mockOtcgs.select.mockReturnValue(dataChain);
 
@@ -828,7 +829,7 @@ describe('inventory-service', () => {
     });
 
     it('should return isSealed=true for non-single items', async () => {
-      const row = fakeInventoryRow({ id: 2, isSingle: 0 });
+      const row = fakeInventoryRow({ id: 2, isSingle: 'sealed' });
       const dataChain = chainable([row]);
       mockOtcgs.select.mockReturnValue(dataChain);
 

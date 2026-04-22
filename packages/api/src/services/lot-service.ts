@@ -2,7 +2,7 @@ import { eq, and, sql, inArray } from 'drizzle-orm';
 import { otcgs, inventoryItem, inventoryItemStock } from '../db/otcgs/index';
 import { lot } from '../db/otcgs/lot-schema';
 import { lotItem } from '../db/otcgs/lot-item-schema';
-import { product, group, category, productExtendedData, price } from '../db/tcg-data/schema';
+import { product, group, category, price } from '../db/tcg-data/schema';
 import { logTransaction } from './transaction-log-service';
 import { likeEscaped, normalizePagination } from '../lib/sql-utils';
 import { formatDate, isValidDateString } from '../lib/date-utils';
@@ -124,20 +124,8 @@ async function buildLotItemResults(lotId: number): Promise<LotItemResult[]> {
       quantity: lotItem.quantity,
       costBasis: lotItem.costBasis,
       costOverridden: lotItem.costOverridden,
-      rarity: sql<string | null>`(
-        SELECT ${productExtendedData.value}
-        FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-        LIMIT 1
-      )`.as('rarity'),
-      isSingle: sql<boolean>`(
-        EXISTS (
-          SELECT 1 FROM ${productExtendedData}
-          WHERE ${productExtendedData.productId} = ${product.id}
-            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-        )
-      )`.as('is_single'),
+      rarity: product.rarityDisplay,
+      isSingle: product.productType,
     })
     .from(lotItem)
     .innerJoin(product, eq(lotItem.productId, product.id))
@@ -172,7 +160,7 @@ async function buildLotItemResults(lotId: number): Promise<LotItemResult[]> {
   }
 
   return items.map((item) => {
-    const isSingle = Boolean(item.isSingle);
+    const isSingle = item.isSingle === 'single';
     const unitMarketValue = marketValueByProduct.get(item.productId) ?? null;
     return {
       id: item.id,
@@ -245,20 +233,8 @@ async function buildLotResults(lotRows: (typeof lot.$inferSelect)[]): Promise<Lo
       quantity: lotItem.quantity,
       costBasis: lotItem.costBasis,
       costOverridden: lotItem.costOverridden,
-      rarity: sql<string | null>`(
-        SELECT ${productExtendedData.value}
-        FROM ${productExtendedData}
-        WHERE ${productExtendedData.productId} = ${product.id}
-          AND ${productExtendedData.name} = 'Rarity'
-        LIMIT 1
-      )`.as('rarity'),
-      isSingle: sql<boolean>`(
-        EXISTS (
-          SELECT 1 FROM ${productExtendedData}
-          WHERE ${productExtendedData.productId} = ${product.id}
-            AND (${productExtendedData.name} = 'Rarity' OR ${productExtendedData.name} = 'Number')
-        )
-      )`.as('is_single'),
+      rarity: product.rarityDisplay,
+      isSingle: product.productType,
     })
     .from(lotItem)
     .innerJoin(product, eq(lotItem.productId, product.id))
@@ -302,7 +278,7 @@ async function buildLotResults(lotRows: (typeof lot.$inferSelect)[]): Promise<Lo
   return lotRows.map((lotRow) => {
     const rawItems = itemsByLot.get(lotRow.id) ?? [];
     const items: LotItemResult[] = rawItems.map((item) => {
-      const isSingle = Boolean(item.isSingle);
+      const isSingle = item.isSingle === 'single';
       const unitMarketValue = marketValueByProduct.get(item.productId) ?? null;
       return {
         id: item.id,
@@ -929,13 +905,12 @@ export async function getLot(id: number, organizationId: string): Promise<LotRes
 export async function getDistinctRarities(categoryId: number): Promise<string[]> {
   const rows = await otcgs
     .select({
-      value: productExtendedData.value,
+      value: product.rarityDisplay,
     })
-    .from(productExtendedData)
-    .innerJoin(product, eq(productExtendedData.productId, product.id))
-    .where(and(eq(product.categoryId, categoryId), eq(productExtendedData.name, 'Rarity')))
-    .groupBy(productExtendedData.value)
-    .orderBy(productExtendedData.value);
+    .from(product)
+    .where(and(eq(product.categoryId, categoryId), sql`${product.rarityDisplay} IS NOT NULL`))
+    .groupBy(product.rarityDisplay)
+    .orderBy(product.rarityDisplay);
 
   return rows.map((r) => r.value).filter(Boolean) as string[];
 }

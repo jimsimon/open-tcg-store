@@ -98,10 +98,11 @@ vi.mock('../db/tcg-data/schema', () => ({
     groupId: 'product.group_id',
     categoryId: 'product.category_id',
     imageUrl: 'product.image_url',
+    rarityDisplay: 'product.rarity_display',
+    productType: 'product.product_type',
   },
   group: { id: 'group.id', name: 'group.name' },
   category: { id: 'category.id', name: 'category.name', seoCategoryName: 'category.seo_category_name' },
-  productExtendedData: { productId: 'ped.product_id', name: 'ped.name', value: 'ped.value' },
   price: {
     productId: 'price.product_id',
     subTypeName: 'price.sub_type_name',
@@ -186,7 +187,7 @@ function fakeLotItemRow(overrides: Record<string, unknown> = {}) {
     costBasis: 500,
     costOverridden: false,
     rarity: 'Rare',
-    isSingle: true,
+    isSingle: 'single',
     ...overrides,
   };
 }
