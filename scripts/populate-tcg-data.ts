@@ -131,7 +131,7 @@ interface TcgTrackingPricingResponse {
   prices: Record<
     string,
     {
-      tcg: Record<string, { low?: number; market?: number }>;
+      tcg?: Record<string, { low?: number; market?: number }>;
       manapool?: Record<string, number>;
       mp_qty?: number;
     }
