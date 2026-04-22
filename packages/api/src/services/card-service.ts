@@ -5,6 +5,7 @@ import { inventoryItem } from '../db/otcgs/inventory-schema';
 import { inventoryItemStock } from '../db/otcgs/inventory-stock-schema';
 import { storeSupportedGame } from '../db/otcgs/store-supported-game-schema';
 import { likeEscaped } from '../lib/sql-utils';
+import { isValidDateString } from '../lib/date-utils';
 
 import type {
   Card,
@@ -655,12 +656,22 @@ async function queryProductListings(
 // getPriceHistory
 // ---------------------------------------------------------------------------
 
+/** Maximum number of price history rows returned per query. */
+const MAX_PRICE_HISTORY_ROWS = 2000;
+
 export async function getPriceHistory(
   productId: number,
   subTypeName?: string | null,
   startDate?: string | null,
   endDate?: string | null,
 ) {
+  if (startDate && !isValidDateString(startDate)) {
+    throw new Error('startDate must be a valid date in YYYY-MM-DD format');
+  }
+  if (endDate && !isValidDateString(endDate)) {
+    throw new Error('endDate must be a valid date in YYYY-MM-DD format');
+  }
+
   const conditions = [eq(priceHistory.productId, productId)];
 
   if (subTypeName) {
@@ -685,7 +696,8 @@ export async function getPriceHistory(
     })
     .from(priceHistory)
     .where(and(...conditions))
-    .orderBy(priceHistory.date);
+    .orderBy(priceHistory.date)
+    .limit(MAX_PRICE_HISTORY_ROWS);
 
   return rows.map((r) => ({
     date: r.date,

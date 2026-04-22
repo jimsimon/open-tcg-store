@@ -337,15 +337,21 @@ function applyXdelta3(sourcePath: string, deltaPath: string, outputPath: string)
 }
 
 /**
- * Pre-fetch all from/to hashes for releases in a single pass to avoid
- * O(N*M) HTTP requests when building delta chains.
+ * Pre-fetch all from/to hashes for releases in parallel to avoid
+ * sequential HTTP requests when building delta chains.
  */
 async function buildReleaseHashIndex(
   releases: GitHubRelease[],
 ): Promise<Map<string, { release: GitHubRelease; toHash: string }>> {
+  const entries = await Promise.all(
+    releases.map(async (release) => {
+      const [fromHash, toHash] = await Promise.all([fetchFromHash(release), fetchReleaseHash(release)]);
+      return { release, fromHash, toHash };
+    }),
+  );
+
   const index = new Map<string, { release: GitHubRelease; toHash: string }>();
-  for (const release of releases) {
-    const [fromHash, toHash] = await Promise.all([fetchFromHash(release), fetchReleaseHash(release)]);
+  for (const { release, fromHash, toHash } of entries) {
     if (fromHash && toHash) {
       index.set(fromHash, { release, toHash });
     }
