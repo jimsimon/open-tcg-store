@@ -225,7 +225,7 @@ const TCGCSV_ARCHIVE_BASE = 'https://tcgcsv.com/archive/tcgplayer';
 const EARLIEST_ARCHIVE_DATE = '2024-02-08';
 
 /** Max concurrent HTTP fetches to avoid overwhelming the API servers. */
-const API_CONCURRENCY = 6;
+const API_CONCURRENCY = 3;
 
 /**
  * Per tcgcsv.com/faq — these categories should be skipped.
@@ -286,13 +286,28 @@ function buildConflictUpdateColumns<T extends SQLiteTable, Q extends keyof T['_'
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  const MAX_RETRIES = 5;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
+    });
+    if (response.status === 429) {
+      await response.body?.cancel();
+      if (attempt === MAX_RETRIES) {
+        throw new Error(`Failed to fetch ${url}: 429 Too Many Requests (after ${MAX_RETRIES} retries)`);
+      }
+      const retryAfter = response.headers.get('Retry-After');
+      const delaySec = retryAfter ? Math.min(Number(retryAfter) || 5, 60) : Math.min(2 ** attempt, 30);
+      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+      continue;
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+    }
+    return response.json() as Promise<T>;
   }
-  return response.json() as Promise<T>;
+  // Unreachable, but satisfies TypeScript
+  throw new Error(`Failed to fetch ${url}: exhausted retries`);
 }
 
 /**
@@ -440,7 +455,7 @@ async function prefetchSetData(
 ): Promise<PrefetchedSetData | null> {
   if (set.product_count === 0) return null;
 
-  // Fetch products, pricing, and SKUs concurrently for this set
+  // Fetch products, pricing, and SKUs concurrently for this set.
   const productsUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}`;
   const pricingUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/pricing`;
   const skusUrl = fetchSkus ? `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/skus` : null;
@@ -548,15 +563,9 @@ async function stage1_tcgtracking() {
     }
 
     // --- Prefetch all set data concurrently (products + pricing + SKUs) ---
+    // Errors (including SKU fetch failures) propagate immediately to abort the run.
     console.log(`Prefetching data for ${sets.length} sets (concurrency=${API_CONCURRENCY})...`);
-    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, async (set) => {
-      try {
-        return await prefetchSetData(cat.id, set, !skipSkus);
-      } catch (err) {
-        console.error(`Failed to prefetch set "${set.name}" (id=${set.id}): ${err}`);
-        return null;
-      }
-    });
+    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) => prefetchSetData(cat.id, set, !skipSkus));
 
     // --- Process prefetched data (DB writes are sequential for SQLite) ---
     for (const data of prefetchedSets) {
@@ -1354,6 +1363,7 @@ async function stage4_dailyCapture() {
 async function main() {
   // Enable WAL mode for faster writes during population.
   // The main() epilogue switches back to DELETE mode for xdelta3 compatibility.
+  await tcgData.run(sql`PRAGMA busy_timeout=30000`);
   await tcgData.run(sql`PRAGMA journal_mode=WAL`);
   await tcgData.run(sql`PRAGMA synchronous=NORMAL`);
 
@@ -1379,7 +1389,9 @@ async function main() {
     .onConflictDoUpdate({ target: metadata.key, set: { value: createdAt } });
   console.log(`Recorded created_at: ${createdAt}`);
 
-  // Finalize for xdelta3 compatibility: ensure no WAL/SHM files
+  // Finalize for xdelta3 compatibility: ensure no WAL/SHM files.
+  // Checkpoint must complete before switching journal mode to avoid SQLITE_BUSY.
+  await tcgData.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);
   await tcgData.run(sql`PRAGMA journal_mode=DELETE`);
 
   console.log('\nDone!');
