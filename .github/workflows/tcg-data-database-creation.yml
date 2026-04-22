@@ -109,7 +109,6 @@ jobs:
           OLD_DB="./sqlite-data/tcg-data.sqlite.old"
           NEW_DB="./sqlite-data/tcg-data.sqlite"
           DELTA="./sqlite-data/tcg-data.delta.xd3"
-          FROM_HASH="./sqlite-data/tcg-data.from.sha256"
 
           if [ ! -f "$OLD_DB" ]; then
             echo "No old DB to diff against (was deleted due to migration failure)"
@@ -117,8 +116,8 @@ jobs:
             exit 0
           fi
 
-          # Generate delta with page-aligned buffer for SQLite compatibility
-          xdelta3 -e -s "$OLD_DB" -B 4096 "$NEW_DB" "$DELTA"
+          # Generate binary delta between old and new database
+          xdelta3 -e -s "$OLD_DB" "$NEW_DB" "$DELTA"
           echo "has_delta=true" >> $GITHUB_OUTPUT
 
           # Clean up old DB copy

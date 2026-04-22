@@ -325,7 +325,7 @@ async function downloadDelta(release: GitHubRelease): Promise<string | null> {
 
 function applyXdelta3(sourcePath: string, deltaPath: string, outputPath: string): boolean {
   try {
-    execFileSync('xdelta3', ['-d', '-s', sourcePath, deltaPath, outputPath, '-B', '4096'], {
+    execFileSync('xdelta3', ['-d', '-s', sourcePath, deltaPath, outputPath], {
       stdio: 'pipe',
       timeout: 300_000,
     });
