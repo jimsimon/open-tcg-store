@@ -138,12 +138,22 @@ interface TcgTrackingPricingResponse {
   >;
 }
 
+interface TcgTrackingSkuData {
+  cnd: string;
+  var: string;
+  lng: string;
+  mkt?: number; // market price (dollars)
+  low?: number; // lowest listing price (dollars)
+  hi?: number; // highest listing price (dollars)
+  cnt?: number; // listing count
+}
+
 interface TcgTrackingSkusResponse {
   set_id: number;
   updated: string;
   sku_count: number;
   product_count: number;
-  products: Record<string, Record<string, { cnd: string; var: string; lng: string }>>;
+  products: Record<string, Record<string, TcgTrackingSkuData>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -401,7 +411,16 @@ const bpUpdateCols = buildConflictUpdateColumns(cardtraderBlueprint, [
   'ctGroupId',
 ]);
 
-const skuUpdateCols = buildConflictUpdateColumns(dbSku, ['productId', 'condition', 'variant', 'language']);
+const skuUpdateCols = buildConflictUpdateColumns(dbSku, [
+  'productId',
+  'condition',
+  'variant',
+  'language',
+  'marketPrice',
+  'lowPrice',
+  'highPrice',
+  'listingCount',
+]);
 
 // ---------------------------------------------------------------------------
 // Prefetched set data (fetch all 3 endpoints concurrently per set)
@@ -713,6 +732,10 @@ async function stage1_tcgtracking() {
                 condition: skuData.cnd,
                 variant: skuData.var,
                 language: skuData.lng,
+                marketPrice: skuData.mkt != null ? Math.round(skuData.mkt * 100) : null,
+                lowPrice: skuData.low != null ? Math.round(skuData.low * 100) : null,
+                highPrice: skuData.hi != null ? Math.round(skuData.hi * 100) : null,
+                listingCount: skuData.cnt ?? null,
               });
             }
           }
@@ -723,6 +746,96 @@ async function stage1_tcgtracking() {
                 target: dbSku.tcgpSkuId,
                 set: skuUpdateCols,
               });
+            }
+
+            // --- SKU History snapshot using the API's actual updated date ---
+            // This uses the date tcgtracking.com last refreshed pricing from
+            // TCGplayer, not the date the script runs. Critical for historical
+            // market value and cost basis tracking (taxes).
+            const skuUpdatedDate = skus.updated.split('T')[0]; // YYYY-MM-DD
+
+            // Build tcgpSkuId → internal sku.id map
+            const tcgpSkuIds = skuValues.map((v) => v.tcgpSkuId!);
+            const skuInternalIdMap = new Map<number, number>();
+            for (const idBatch of batchify(tcgpSkuIds, BATCH_SIZE)) {
+              const rows = await tx
+                .select({ id: dbSku.id, tcgpSkuId: dbSku.tcgpSkuId })
+                .from(dbSku)
+                .where(inArray(dbSku.tcgpSkuId, idBatch));
+              for (const row of rows) {
+                skuInternalIdMap.set(row.tcgpSkuId, row.id);
+              }
+            }
+
+            // Get most recent history per SKU for change detection
+            const internalSkuIds = [...skuInternalIdMap.values()];
+            const latestSkuMap = new Map<
+              number,
+              {
+                marketPrice: number | null;
+                lowPrice: number | null;
+                highPrice: number | null;
+                listingCount: number | null;
+              }
+            >();
+            for (const idBatch of batchify(internalSkuIds, BATCH_SIZE)) {
+              const rows = await tx
+                .select({
+                  skuId: skuHistory.skuId,
+                  marketPrice: skuHistory.marketPrice,
+                  lowPrice: skuHistory.lowPrice,
+                  highPrice: skuHistory.highPrice,
+                  listingCount: skuHistory.listingCount,
+                })
+                .from(skuHistory)
+                .where(
+                  and(
+                    inArray(skuHistory.skuId, idBatch),
+                    sql`${skuHistory.date} = (
+                      SELECT MAX(sh2.date) FROM ${skuHistory} sh2
+                      WHERE sh2.sku_id = ${skuHistory.skuId}
+                    )`,
+                  ),
+                );
+              for (const row of rows) {
+                latestSkuMap.set(row.skuId, row);
+              }
+            }
+
+            // Insert history rows where pricing changed
+            const skuHistoryBatch: (typeof skuHistory.$inferInsert)[] = [];
+            for (const sv of skuValues) {
+              const internalSkuId = skuInternalIdMap.get(sv.tcgpSkuId!);
+              if (internalSkuId == null) continue;
+
+              const prev = latestSkuMap.get(internalSkuId);
+              const changed =
+                !prev ||
+                prev.marketPrice !== sv.marketPrice ||
+                prev.lowPrice !== sv.lowPrice ||
+                prev.highPrice !== sv.highPrice ||
+                prev.listingCount !== sv.listingCount;
+
+              if (changed) {
+                skuHistoryBatch.push({
+                  skuId: internalSkuId,
+                  productId: sv.productId!,
+                  condition: sv.condition!,
+                  variant: sv.variant!,
+                  language: sv.language!,
+                  marketPrice: sv.marketPrice ?? null,
+                  lowPrice: sv.lowPrice ?? null,
+                  highPrice: sv.highPrice ?? null,
+                  listingCount: sv.listingCount ?? null,
+                  date: skuUpdatedDate,
+                });
+              }
+            }
+
+            if (skuHistoryBatch.length > 0) {
+              for (const batch of batchify(skuHistoryBatch, BATCH_SIZE)) {
+                await tx.insert(skuHistory).values(batch).onConflictDoNothing();
+              }
             }
           }
         }
@@ -1226,81 +1339,8 @@ async function stage4_dailyCapture() {
     });
   }
 
-  // --- SKU history ---
-  if (!skipSkus) {
-    console.log('Capturing SKU history...');
-
-    const allSkus = await tcgData
-      .select({
-        id: dbSku.id,
-        productId: dbSku.productId,
-        condition: dbSku.condition,
-        variant: dbSku.variant,
-        language: dbSku.language,
-        marketPrice: dbSku.marketPrice,
-        lowPrice: dbSku.lowPrice,
-        highPrice: dbSku.highPrice,
-        listingCount: dbSku.listingCount,
-      })
-      .from(dbSku);
-
-    // Get only the most recent sku_history entry per sku_id
-    const recentSkuHistory = await tcgData
-      .select({
-        skuId: skuHistory.skuId,
-        marketPrice: skuHistory.marketPrice,
-        lowPrice: skuHistory.lowPrice,
-        highPrice: skuHistory.highPrice,
-        listingCount: skuHistory.listingCount,
-      })
-      .from(skuHistory)
-      .where(
-        sql`${skuHistory.date} = (
-          SELECT MAX(sh2.date) FROM ${skuHistory} sh2
-          WHERE sh2.sku_id = ${skuHistory.skuId}
-        )`,
-      );
-
-    const latestSkuMap = new Map<number, (typeof recentSkuHistory)[0]>();
-    for (const row of recentSkuHistory) {
-      latestSkuMap.set(row.skuId, row);
-    }
-
-    const skuHistoryBatch: (typeof skuHistory.$inferInsert)[] = [];
-    for (const s of allSkus) {
-      const prev = latestSkuMap.get(s.id);
-      const changed =
-        !prev ||
-        prev.marketPrice !== s.marketPrice ||
-        prev.lowPrice !== s.lowPrice ||
-        prev.highPrice !== s.highPrice ||
-        prev.listingCount !== s.listingCount;
-
-      if (changed) {
-        skuHistoryBatch.push({
-          skuId: s.id,
-          productId: s.productId,
-          condition: s.condition,
-          variant: s.variant,
-          language: s.language,
-          marketPrice: s.marketPrice,
-          lowPrice: s.lowPrice,
-          highPrice: s.highPrice,
-          listingCount: s.listingCount,
-          date: today,
-        });
-      }
-    }
-
-    if (skuHistoryBatch.length > 0) {
-      console.log(`Inserting ${skuHistoryBatch.length} SKU history changes`);
-      await tcgData.transaction(async (tx) => {
-        for (const batch of batchify(skuHistoryBatch, BATCH_SIZE)) {
-          await tx.insert(skuHistory).values(batch).onConflictDoNothing();
-        }
-      });
-    }
-  }
+  // NOTE: SKU history is captured in Stage 1 using the API's actual updated
+  // date (not today's date) for accurate historical market value tracking.
 
   // Mark today as complete (commit marker for the entire date)
   await tcgData.insert(priceHistoryLog).values({ date: today, source: 'tcgcsv_api' }).onConflictDoNothing();
@@ -1327,8 +1367,9 @@ async function main() {
 
   if (!skipHistory) {
     await stage3_historyBackfill();
-    await stage4_dailyCapture();
   }
+
+  await stage4_dailyCapture();
 
   // Record creation timestamp
   const createdAt = new Date().toISOString();
