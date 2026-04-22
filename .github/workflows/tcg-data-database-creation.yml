@@ -30,7 +30,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full xdelta3
+
       - name: Download previous release DB
+        id: download
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -44,8 +48,8 @@ jobs:
             | jq -r '[.[] | select(.tag_name | (startswith("tcg-data-") or startswith("initial-db-")))] | sort_by(.created_at) | reverse | .[0].tag_name // empty')
 
           if [ -z "$LATEST_TAG" ]; then
-            echo "No previous release found, creating empty database"
-            touch ./sqlite-data/tcg-data.sqlite
+            echo "No previous release found, starting fresh"
+            echo "has_previous=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -59,8 +63,9 @@ jobs:
             | jq -r '.assets[] | select(.name == "tcg-data.sqlite") | .id // empty')
 
           if [ -z "$ASSET_ID" ]; then
-            echo "::error::Release $LATEST_TAG has no tcg-data.sqlite asset"
-            exit 1
+            echo "::warning::Release $LATEST_TAG has no tcg-data.sqlite asset, starting fresh"
+            echo "has_previous=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
           curl -sfL \
@@ -69,17 +74,55 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
             -o ./sqlite-data/tcg-data.sqlite
 
+          # Save hash of the previous DB for xdelta3 delta generation
+          sha256sum ./sqlite-data/tcg-data.sqlite | cut -d' ' -f1 > ./sqlite-data/tcg-data.from.sha256
+
+          # Keep a copy of the old DB for delta computation later
+          cp ./sqlite-data/tcg-data.sqlite ./sqlite-data/tcg-data.sqlite.old
+          echo "has_previous=true" >> $GITHUB_OUTPUT
+
       - name: Run database migrations
-        run: pnpm --filter @open-tcgs/api db:migrate:tcg-data
+        run: |
+          # Try running migrations against the downloaded DB.
+          # If the migration history is incompatible (e.g., after a schema
+          # rewrite that regenerated migrations from scratch), start fresh.
+          if ! pnpm --filter @open-tcgs/api db:migrate:tcg-data 2>&1; then
+            echo "::warning::Migration failed on previous DB — incompatible schema. Starting fresh."
+            rm -f ./sqlite-data/tcg-data.sqlite
+            rm -f ./sqlite-data/tcg-data.sqlite.old
+            pnpm --filter @open-tcgs/api db:migrate:tcg-data
+          fi
 
       - name: Populate database
-        run: ./scripts/populate-tcg-data.ts
+        run: ./scripts/populate-tcg-data.ts --skip-history
 
       - name: Compute database hash
         id: hash
         run: |
           sha256sum ./sqlite-data/tcg-data.sqlite > ./sqlite-data/tcg-data.sqlite.sha256
           echo "sha256=$(cut -d' ' -f1 ./sqlite-data/tcg-data.sqlite.sha256)" >> $GITHUB_OUTPUT
+
+      - name: Generate xdelta3 patch
+        id: delta
+        if: steps.download.outputs.has_previous == 'true'
+        run: |
+          OLD_DB="./sqlite-data/tcg-data.sqlite.old"
+          NEW_DB="./sqlite-data/tcg-data.sqlite"
+          DELTA="./sqlite-data/tcg-data.delta.xd3"
+          FROM_HASH="./sqlite-data/tcg-data.from.sha256"
+
+          if [ ! -f "$OLD_DB" ]; then
+            echo "No old DB to diff against (was deleted due to migration failure)"
+            echo "has_delta=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Generate delta with page-aligned buffer for SQLite compatibility
+          xdelta3 -e -s "$OLD_DB" -B 4096 "$NEW_DB" "$DELTA"
+          echo "has_delta=true" >> $GITHUB_OUTPUT
+
+          # Clean up old DB copy
+          rm -f "$OLD_DB"
 
       - name: Check if release already exists
         id: check_release
@@ -93,6 +136,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare release assets
+        if: steps.check_release.outputs.exists == 'false'
+        id: assets
+        run: |
+          # Build the asset list
+          ASSETS="./sqlite-data/tcg-data.sqlite
+          ./sqlite-data/tcg-data.sqlite.sha256"
+
+          if [ "${{ steps.delta.outputs.has_delta }}" = "true" ]; then
+            ASSETS="$ASSETS
+          ./sqlite-data/tcg-data.delta.xd3
+          ./sqlite-data/tcg-data.from.sha256"
+          fi
+
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$ASSETS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
@@ -103,11 +164,10 @@ jobs:
             Daily TCG data database update
             - SHA-256: ${{ steps.hash.outputs.sha256 }}
             - Run number: ${{ github.run_number }}
+            - Delta available: ${{ steps.delta.outputs.has_delta || 'false' }}
 
             This release contains the latest database preloaded with all TCG data in SQLite format.
-          files: |
-            ./sqlite-data/tcg-data.sqlite
-            ./sqlite-data/tcg-data.sqlite.sha256
+          files: ${{ steps.assets.outputs.files }}
           draft: false
           prerelease: false
           generate_release_notes: false
