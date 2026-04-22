@@ -25,7 +25,7 @@ import {
   validateOAuthState,
 } from './services/backup-service.ts';
 import { storeOAuthClientId, storeOAuthClientSecret } from './services/settings-service.ts';
-import { isDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
+import { isDatabaseUpdating, setDatabaseUpdating, otcgs } from './db/otcgs/index.ts';
 import { registerJobHandler, seedDefaultJobs, startScheduler, executeOverdueJobs } from './services/cron-service.ts';
 import { performUpdateCheck } from './services/tcg-data-update-service.ts';
 import { tcgDataUpdateHandler } from './services/cron-handlers/tcg-data-update-handler.ts';
@@ -753,8 +753,11 @@ app
       .then(() => executeOverdueJobs())
       .catch((err) => console.error('[cron] Failed to start scheduler:', err));
 
-    // Always check for TCG data updates on startup (independent of cron schedule).
-    // This ensures the app picks up new releases immediately after a restart,
-    // rather than waiting until the next cron window (e.g., 3 AM).
-    performUpdateCheck().catch((err) => console.error('[tcg-data-update] Startup check failed:', err));
+    // Check for TCG data updates on startup. The database-updating flag shows
+    // the maintenance page to users until the check (and possible download +
+    // hot-swap) completes, preventing errors from schema/code mismatches.
+    setDatabaseUpdating(true);
+    performUpdateCheck()
+      .catch((err) => console.error('[tcg-data-update] Startup check failed:', err))
+      .finally(() => setDatabaseUpdating(false));
   });
