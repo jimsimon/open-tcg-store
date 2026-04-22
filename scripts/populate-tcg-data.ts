@@ -208,11 +208,14 @@ interface ApiResponse<T> {
 // Constants
 // ---------------------------------------------------------------------------
 
-const BATCH_SIZE = 500;
+const BATCH_SIZE = 1000;
 const TCGTRACKING_BASE = 'https://tcgtracking.com/tcgapi/v1';
 const TCGCSV_BASE = 'https://tcgcsv.com/tcgplayer';
 const TCGCSV_ARCHIVE_BASE = 'https://tcgcsv.com/archive/tcgplayer';
 const EARLIEST_ARCHIVE_DATE = '2024-02-08';
+
+/** Max concurrent HTTP fetches to avoid overwhelming the API servers. */
+const API_CONCURRENCY = 6;
 
 /**
  * Per tcgcsv.com/faq — these categories should be skipped.
@@ -280,6 +283,25 @@ async function fetchJson<T>(url: string): Promise<T> {
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
   }
   return response.json() as Promise<T>;
+}
+
+/**
+ * Run async tasks with a concurrency limit.
+ * Returns results in the same order as the input items.
+ */
+async function parallelMap<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = Array.from({ length: items.length }) as R[];
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const idx = nextIndex++;
+      results[idx] = await fn(items[idx]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
 }
 
 function todayDateString(): string {
@@ -356,6 +378,64 @@ const productUpdateColumns = buildConflictUpdateColumns(dbProduct, [
   'borderColor',
   'finishes',
 ]);
+
+const bpUpdateCols = buildConflictUpdateColumns(cardtraderBlueprint, [
+  'name',
+  'matchType',
+  'matchConfidence',
+  'expansion',
+  'expansionCode',
+  'collectorNumber',
+  'rarity',
+  'finishes',
+  'languages',
+  'properties',
+  'cardmarketIds',
+  'imageUrl',
+  'scryfallId',
+  'tcgPlayerId',
+  'gameId',
+  'ctCategoryId',
+  'ctCategoryName',
+  'productType',
+  'ctGroupId',
+]);
+
+const skuUpdateCols = buildConflictUpdateColumns(dbSku, ['productId', 'condition', 'variant', 'language']);
+
+// ---------------------------------------------------------------------------
+// Prefetched set data (fetch all 3 endpoints concurrently per set)
+// ---------------------------------------------------------------------------
+
+interface PrefetchedSetData {
+  set: TcgTrackingSet;
+  products: TcgTrackingProduct[];
+  pricing: TcgTrackingPricingResponse;
+  skus: TcgTrackingSkusResponse | null;
+}
+
+async function prefetchSetData(
+  catId: number,
+  set: TcgTrackingSet,
+  fetchSkus: boolean,
+): Promise<PrefetchedSetData | null> {
+  if (set.product_count === 0) return null;
+
+  // Fetch products, pricing, and SKUs concurrently for this set
+  const productsUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}`;
+  const pricingUrl = `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/pricing`;
+  const skusUrl = fetchSkus ? `${TCGTRACKING_BASE}/${catId}/sets/${set.id}/skus` : null;
+
+  const [productsData, pricingData, skusData] = await Promise.all([
+    fetchJson<TcgTrackingSetProductsResponse>(productsUrl),
+    fetchJson<TcgTrackingPricingResponse>(pricingUrl),
+    skusUrl ? fetchJson<TcgTrackingSkusResponse>(skusUrl) : Promise.resolve(null),
+  ]);
+
+  if (productsData.products.length === 0) return null;
+
+  return { set, products: productsData.products, pricing: pricingData, skus: skusData };
+}
 
 // =========================================================================
 // Stage 1: tcgtracking.com (primary source)
@@ -448,58 +528,58 @@ async function stage1_tcgtracking() {
       groupIdMap.set(row.tcgpGroupId, row.id);
     }
 
-    // --- Process each set's products, pricing, and SKUs ---
-    for (const set of sets) {
-      if (set.product_count === 0) continue;
+    // --- Prefetch all set data concurrently (products + pricing + SKUs) ---
+    console.log(`Prefetching data for ${sets.length} sets (concurrency=${API_CONCURRENCY})...`);
+    const prefetchedSets = await parallelMap(sets, API_CONCURRENCY, (set) => prefetchSetData(cat.id, set, !skipSkus));
+
+    // --- Process prefetched data (DB writes are sequential for SQLite) ---
+    for (const data of prefetchedSets) {
+      if (!data) continue;
+      const { set, products, pricing, skus } = data;
 
       const internalGroupId = groupIdMap.get(set.id);
       if (internalGroupId == null) continue;
 
-      // --- Products ---
-      const productsUrl = `${TCGTRACKING_BASE}/${cat.id}/sets/${set.id}`;
-      console.log(`Fetching products for ${set.name}: ${productsUrl}`);
-      const productsData = await fetchJson<TcgTrackingSetProductsResponse>(productsUrl);
-      const products = productsData.products;
-
-      if (products.length === 0) continue;
-
-      console.log(`Upserting ${products.length} products`);
-      for (const batch of batchify(products, BATCH_SIZE)) {
-        await tcgData
-          .insert(dbProduct)
-          .values(
-            batch.map((p) => ({
-              tcgpProductId: p.id,
-              tcgpGroupId: set.id,
-              tcgpCategoryId: cat.id,
-              name: p.name,
-              cleanName: p.clean_name,
-              imageUrl: p.image_url,
-              imageCount: p.image_count,
-              categoryId: internalCategoryId,
-              groupId: internalGroupId,
-              number: p.number,
-              rarity: p.rarity,
-              rarityDisplay: mapRarity(p.rarity),
-              productType: p.rarity != null || p.number != null ? 'single' : 'sealed',
-              tcgplayerUrl: p.tcgplayer_url,
-              manapoolUrl: p.manapool_url,
-              scryfallId: p.scryfall_id,
-              mtgjsonUuid: p.mtgjson_uuid,
-              cardmarketId: p.cardmarket_id,
-              cardtraderId: p.cardtrader_id,
-              colors: p.colors ? JSON.stringify(p.colors) : null,
-              colorIdentity: p.color_identity ? JSON.stringify(p.color_identity) : null,
-              manaValue: p.mana_value ?? null,
-              borderColor: p.border_color ?? null,
-              finishes: p.finishes ? JSON.stringify(p.finishes) : null,
-            })),
-          )
-          .onConflictDoUpdate({
-            target: dbProduct.tcgpProductId,
-            set: productUpdateColumns,
-          });
-      }
+      // --- Upsert products ---
+      console.log(`Upserting ${products.length} products for ${set.name}`);
+      await tcgData.transaction(async (tx) => {
+        for (const batch of batchify(products, BATCH_SIZE)) {
+          await tx
+            .insert(dbProduct)
+            .values(
+              batch.map((p) => ({
+                tcgpProductId: p.id,
+                tcgpGroupId: set.id,
+                tcgpCategoryId: cat.id,
+                name: p.name,
+                cleanName: p.clean_name,
+                imageUrl: p.image_url,
+                imageCount: p.image_count,
+                categoryId: internalCategoryId,
+                groupId: internalGroupId,
+                number: p.number,
+                rarity: p.rarity,
+                rarityDisplay: mapRarity(p.rarity),
+                productType: p.rarity != null || p.number != null ? 'single' : 'sealed',
+                tcgplayerUrl: p.tcgplayer_url,
+                manapoolUrl: p.manapool_url,
+                scryfallId: p.scryfall_id,
+                mtgjsonUuid: p.mtgjson_uuid,
+                cardmarketId: p.cardmarket_id,
+                cardtraderId: p.cardtrader_id,
+                colors: p.colors ? JSON.stringify(p.colors) : null,
+                colorIdentity: p.color_identity ? JSON.stringify(p.color_identity) : null,
+                manaValue: p.mana_value ?? null,
+                borderColor: p.border_color ?? null,
+                finishes: p.finishes ? JSON.stringify(p.finishes) : null,
+              })),
+            )
+            .onConflictDoUpdate({
+              target: dbProduct.tcgpProductId,
+              set: productUpdateColumns,
+            });
+        }
+      });
 
       // Build tcgpProductId → internal ID map for this group
       const productIdMap = new Map<number, number>();
@@ -511,62 +591,42 @@ async function stage1_tcgtracking() {
         productIdMap.set(row.tcgpProductId, row.id);
       }
 
-      // --- CardTrader Blueprints ---
-      const blueprintValues: (typeof cardtraderBlueprint.$inferInsert)[] = [];
-      for (const p of products) {
-        const internalProductId = productIdMap.get(p.id);
-        if (internalProductId == null || !p.cardtrader) continue;
-        for (const ct of p.cardtrader) {
-          blueprintValues.push({
-            cardtraderId: ct.id,
-            productId: internalProductId,
-            name: ct.name,
-            matchType: ct.match_type,
-            matchConfidence: ct.match_confidence,
-            expansion: ct.expansion,
-            expansionCode: ct.expansion_code,
-            collectorNumber: ct.collector_number,
-            rarity: ct.rarity,
-            finishes: JSON.stringify(ct.finishes),
-            languages: JSON.stringify(ct.languages),
-            properties: JSON.stringify(ct.properties),
-            cardmarketIds: JSON.stringify(ct.cardmarket_ids),
-            imageUrl: ct.image_url,
-            scryfallId: ct.scryfall_id,
-            tcgPlayerId: ct.tcg_player_id,
-            gameId: ct.game_id,
-            ctCategoryId: ct.category_id,
-            ctCategoryName: ct.category_name,
-            productType: ct.product_type,
-            ctGroupId: ct.group_id,
-          });
+      // --- CardTrader Blueprints, Pricing, Manapool, SKUs — all in one transaction ---
+      await tcgData.transaction(async (tx) => {
+        // CardTrader Blueprints
+        const blueprintValues: (typeof cardtraderBlueprint.$inferInsert)[] = [];
+        for (const p of products) {
+          const internalProductId = productIdMap.get(p.id);
+          if (internalProductId == null || !p.cardtrader) continue;
+          for (const ct of p.cardtrader) {
+            blueprintValues.push({
+              cardtraderId: ct.id,
+              productId: internalProductId,
+              name: ct.name,
+              matchType: ct.match_type,
+              matchConfidence: ct.match_confidence,
+              expansion: ct.expansion,
+              expansionCode: ct.expansion_code,
+              collectorNumber: ct.collector_number,
+              rarity: ct.rarity,
+              finishes: JSON.stringify(ct.finishes),
+              languages: JSON.stringify(ct.languages),
+              properties: JSON.stringify(ct.properties),
+              cardmarketIds: JSON.stringify(ct.cardmarket_ids),
+              imageUrl: ct.image_url,
+              scryfallId: ct.scryfall_id,
+              tcgPlayerId: ct.tcg_player_id,
+              gameId: ct.game_id,
+              ctCategoryId: ct.category_id,
+              ctCategoryName: ct.category_name,
+              productType: ct.product_type,
+              ctGroupId: ct.group_id,
+            });
+          }
         }
-      }
 
-      if (blueprintValues.length > 0) {
-        const bpUpdateCols = buildConflictUpdateColumns(cardtraderBlueprint, [
-          'name',
-          'matchType',
-          'matchConfidence',
-          'expansion',
-          'expansionCode',
-          'collectorNumber',
-          'rarity',
-          'finishes',
-          'languages',
-          'properties',
-          'cardmarketIds',
-          'imageUrl',
-          'scryfallId',
-          'tcgPlayerId',
-          'gameId',
-          'ctCategoryId',
-          'ctCategoryName',
-          'productType',
-          'ctGroupId',
-        ]);
         for (const batch of batchify(blueprintValues, BATCH_SIZE)) {
-          await tcgData
+          await tx
             .insert(cardtraderBlueprint)
             .values(batch)
             .onConflictDoUpdate({
@@ -574,51 +634,41 @@ async function stage1_tcgtracking() {
               set: bpUpdateCols,
             });
         }
-      }
 
-      // --- Pricing ---
-      const pricingUrl = `${TCGTRACKING_BASE}/${cat.id}/sets/${set.id}/pricing`;
-      console.log(`Fetching pricing: ${pricingUrl}`);
-      const pricingData = await fetchJson<TcgTrackingPricingResponse>(pricingUrl);
+        // Pricing
+        const priceValues: (typeof price.$inferInsert)[] = [];
+        const mpValues: (typeof manapoolPrice.$inferInsert)[] = [];
 
-      const priceValues: (typeof price.$inferInsert)[] = [];
-      const mpValues: (typeof manapoolPrice.$inferInsert)[] = [];
+        for (const [tcgpIdStr, pdata] of Object.entries(pricing.prices)) {
+          const tcgpId = Number(tcgpIdStr);
+          const internalProductId = productIdMap.get(tcgpId);
+          if (internalProductId == null) continue;
 
-      for (const [tcgpIdStr, pdata] of Object.entries(pricingData.prices)) {
-        const tcgpId = Number(tcgpIdStr);
-        const internalProductId = productIdMap.get(tcgpId);
-        if (internalProductId == null) continue;
+          if (pdata.tcg) {
+            for (const [subType, priceData] of Object.entries(pdata.tcg)) {
+              priceValues.push({
+                tcgpProductId: tcgpId,
+                productId: internalProductId,
+                subTypeName: subType,
+                lowPrice: priceData.low != null ? Math.round(priceData.low * 100) : null,
+                marketPrice: priceData.market != null ? Math.round(priceData.market * 100) : null,
+              });
+            }
+          }
 
-        // TCG prices (per subtype: Normal, Foil, etc.)
-        // Some products only have manapool data with no tcg prices
-        if (pdata.tcg) {
-          for (const [subType, priceData] of Object.entries(pdata.tcg)) {
-            priceValues.push({
-              tcgpProductId: tcgpId,
-              productId: internalProductId,
-              subTypeName: subType,
-              lowPrice: priceData.low != null ? Math.round(priceData.low * 100) : null,
-              marketPrice: priceData.market != null ? Math.round(priceData.market * 100) : null,
-            });
+          if (pdata.manapool) {
+            for (const [variant, mpPrice] of Object.entries(pdata.manapool)) {
+              mpValues.push({
+                productId: internalProductId,
+                variant,
+                price: mpPrice != null ? Math.round(mpPrice * 100) : null,
+              });
+            }
           }
         }
 
-        // Manapool prices (per variant: normal, foil, etched)
-        if (pdata.manapool) {
-          for (const [variant, mpPrice] of Object.entries(pdata.manapool)) {
-            mpValues.push({
-              productId: internalProductId,
-              variant,
-              price: mpPrice != null ? Math.round(mpPrice * 100) : null,
-            });
-          }
-        }
-      }
-
-      if (priceValues.length > 0) {
-        console.log(`Upserting ${priceValues.length} prices`);
         for (const batch of batchify(priceValues, BATCH_SIZE)) {
-          await tcgData
+          await tx
             .insert(price)
             .values(batch)
             .onConflictDoUpdate({
@@ -630,11 +680,9 @@ async function stage1_tcgtracking() {
               },
             });
         }
-      }
 
-      if (mpValues.length > 0) {
         for (const batch of batchify(mpValues, BATCH_SIZE)) {
-          await tcgData
+          await tx
             .insert(manapoolPrice)
             .values(batch)
             .onConflictDoUpdate({
@@ -642,42 +690,36 @@ async function stage1_tcgtracking() {
               set: { price: sql.raw('excluded.price') },
             });
         }
-      }
 
-      // --- SKUs ---
-      if (!skipSkus) {
-        const skusUrl = `${TCGTRACKING_BASE}/${cat.id}/sets/${set.id}/skus`;
-        console.log(`Fetching SKUs: ${skusUrl}`);
-        const skusData = await fetchJson<TcgTrackingSkusResponse>(skusUrl);
+        // SKUs
+        if (skus) {
+          const skuValues: (typeof dbSku.$inferInsert)[] = [];
+          for (const [tcgpIdStr, skuMap] of Object.entries(skus.products)) {
+            const tcgpId = Number(tcgpIdStr);
+            const internalProductId = productIdMap.get(tcgpId);
+            if (internalProductId == null) continue;
 
-        const skuValues: (typeof dbSku.$inferInsert)[] = [];
-        for (const [tcgpIdStr, skuMap] of Object.entries(skusData.products)) {
-          const tcgpId = Number(tcgpIdStr);
-          const internalProductId = productIdMap.get(tcgpId);
-          if (internalProductId == null) continue;
+            for (const [skuIdStr, skuData] of Object.entries(skuMap)) {
+              skuValues.push({
+                tcgpSkuId: Number(skuIdStr),
+                productId: internalProductId,
+                condition: skuData.cnd,
+                variant: skuData.var,
+                language: skuData.lng,
+              });
+            }
+          }
 
-          for (const [skuIdStr, skuData] of Object.entries(skuMap)) {
-            skuValues.push({
-              tcgpSkuId: Number(skuIdStr),
-              productId: internalProductId,
-              condition: skuData.cnd,
-              variant: skuData.var,
-              language: skuData.lng,
-            });
+          if (skuValues.length > 0) {
+            for (const batch of batchify(skuValues, BATCH_SIZE)) {
+              await tx.insert(dbSku).values(batch).onConflictDoUpdate({
+                target: dbSku.tcgpSkuId,
+                set: skuUpdateCols,
+              });
+            }
           }
         }
-
-        if (skuValues.length > 0) {
-          console.log(`Upserting ${skuValues.length} SKUs`);
-          const skuUpdateCols = buildConflictUpdateColumns(dbSku, ['productId', 'condition', 'variant', 'language']);
-          for (const batch of batchify(skuValues, BATCH_SIZE)) {
-            await tcgData.insert(dbSku).values(batch).onConflictDoUpdate({
-              target: dbSku.tcgpSkuId,
-              set: skuUpdateCols,
-            });
-          }
-        }
-      }
+      });
     }
   }
 }
@@ -685,6 +727,21 @@ async function stage1_tcgtracking() {
 // =========================================================================
 // Stage 2: tcgcsv.com (supplemental data)
 // =========================================================================
+
+/** Prefetched group data for Stage 2. */
+interface PrefetchedGroupData {
+  group: TcgCsvGroup;
+  products: TcgCsvProduct[];
+  prices: TcgCsvPrice[];
+}
+
+async function prefetchGroupData(tcgpCategoryId: number, group: TcgCsvGroup): Promise<PrefetchedGroupData> {
+  const [productsData, pricesData] = await Promise.all([
+    fetchJson<ApiResponse<TcgCsvProduct>>(`${TCGCSV_BASE}/${tcgpCategoryId}/${group.groupId}/products`),
+    fetchJson<ApiResponse<TcgCsvPrice>>(`${TCGCSV_BASE}/${tcgpCategoryId}/${group.groupId}/prices`),
+  ]);
+  return { group, products: productsData.results, prices: pricesData.results };
+}
 
 async function stage2_tcgcsv() {
   console.log('\n=== Stage 2: tcgcsv.com (supplemental data) ===\n');
@@ -726,20 +783,18 @@ async function stage2_tcgcsv() {
       });
   }
 
-  // Build tcgpCategoryId → internal ID map
-  const categoryIdMap = new Map<number, number>();
-  const categoryRows = await tcgData
-    .select({ id: dbCategory.id, tcgpCategoryId: dbCategory.tcgpCategoryId })
-    .from(dbCategory);
-  for (const row of categoryRows) {
-    categoryIdMap.set(row.tcgpCategoryId, row.id);
+  // Build global product ID map (tcgpProductId → internal ID) once
+  const globalProductIdMap = new Map<number, number>();
+  const allProductRows = await tcgData
+    .select({ id: dbProduct.id, tcgpProductId: dbProduct.tcgpProductId })
+    .from(dbProduct);
+  for (const row of allProductRows) {
+    globalProductIdMap.set(row.tcgpProductId, row.id);
   }
 
   // --- Process each category ---
   for (const cat of categories) {
     const tcgpCategoryId = cat.categoryId;
-    const internalCategoryId = categoryIdMap.get(tcgpCategoryId);
-    if (internalCategoryId == null) continue;
 
     // Fetch groups
     const groupsUrl = `${TCGCSV_BASE}/${tcgpCategoryId}/groups`;
@@ -747,42 +802,19 @@ async function stage2_tcgcsv() {
     const groupsData = await fetchJson<ApiResponse<TcgCsvGroup>>(groupsUrl);
     const groups = groupsData.results.sort((a, b) => a.groupId - b.groupId);
 
-    // Build group ID map
-    const groupIdMap = new Map<number, number>();
-    const groupRows = await tcgData
-      .select({ id: dbGroup.id, tcgpGroupId: dbGroup.tcgpGroupId })
-      .from(dbGroup)
-      .where(eq(dbGroup.categoryId, internalCategoryId));
-    for (const row of groupRows) {
-      groupIdMap.set(row.tcgpGroupId, row.id);
-    }
+    // --- Prefetch all group data concurrently ---
+    console.log(`Prefetching ${groups.length} groups (concurrency=${API_CONCURRENCY})...`);
+    const prefetchedGroups = await parallelMap(groups, API_CONCURRENCY, (g) => prefetchGroupData(tcgpCategoryId, g));
 
-    for (const grp of groups) {
-      const tcgpGroupId = grp.groupId;
-      const internalGroupId = groupIdMap.get(tcgpGroupId);
-      if (internalGroupId == null) continue;
-
-      // --- Products ---
-      const productsUrl = `${TCGCSV_BASE}/${tcgpCategoryId}/${tcgpGroupId}/products`;
-      console.log(`Fetching products for ${grp.name}: ${productsUrl}`);
-      const productsData = await fetchJson<ApiResponse<TcgCsvProduct>>(productsUrl);
-      const products = productsData.results;
-
+    // --- Process prefetched group data ---
+    for (const { products, prices: groupPrices } of prefetchedGroups) {
       if (products.length === 0) continue;
 
-      // Build tcgpProductId → internal ID map
-      const productIdMap = new Map<number, number>();
-      const productRows = await tcgData
-        .select({ id: dbProduct.id, tcgpProductId: dbProduct.tcgpProductId })
-        .from(dbProduct)
-        .where(eq(dbProduct.groupId, internalGroupId));
-      for (const row of productRows) {
-        productIdMap.set(row.tcgpProductId, row.id);
-      }
-
-      // Update products with supplemental fields + flatten extendedData
+      // --- Batch product updates using raw SQL CASE for extendedData flattening ---
+      // Collect all update data first, then write in a single transaction
+      const productUpdates: { id: number; data: Record<string, unknown> }[] = [];
       for (const p of products) {
-        const internalProductId = productIdMap.get(p.productId);
+        const internalProductId = globalProductIdMap.get(p.productId);
         if (internalProductId == null) continue;
 
         const updateData: Record<string, unknown> = {
@@ -791,7 +823,6 @@ async function stage2_tcgcsv() {
           imageCount: p.imageCount,
         };
 
-        // Flatten extendedData
         if (p.extendedData) {
           for (const ed of p.extendedData) {
             if (ed.name === 'Rarity' || ed.name === 'Number') continue;
@@ -804,53 +835,61 @@ async function stage2_tcgcsv() {
           }
         }
 
-        await tcgData.update(dbProduct).set(updateData).where(eq(dbProduct.id, internalProductId));
+        productUpdates.push({ id: internalProductId, data: updateData });
       }
 
-      // --- Presale Info ---
-      const presaleInfoValues = products
-        .map((p) => {
-          const internalId = productIdMap.get(p.productId);
-          if (internalId == null) return null;
-          return {
-            productId: internalId,
-            isPresale: p.presaleInfo.isPresale,
-            releasedOn: p.presaleInfo.releasedOn ? new Date(p.presaleInfo.releasedOn) : null,
-            note: p.presaleInfo.note,
-          };
-        })
-        .filter((v): v is NonNullable<typeof v> => v != null);
-
-      // Delete + reinsert presale info
-      const internalIds = products.map((p) => productIdMap.get(p.productId)).filter((id): id is number => id != null);
-
-      if (internalIds.length > 0) {
-        for (const idBatch of batchify(internalIds, BATCH_SIZE)) {
-          await tcgData.delete(productPresaleInfo).where(inArray(productPresaleInfo.productId, idBatch));
+      // Write batched product updates + presale + prices in one transaction
+      await tcgData.transaction(async (tx) => {
+        // Product updates (batched — one UPDATE per product but in a transaction)
+        for (const batch of batchify(productUpdates, BATCH_SIZE)) {
+          for (const { id, data } of batch) {
+            await tx.update(dbProduct).set(data).where(eq(dbProduct.id, id));
+          }
         }
-        for (const batch of batchify(presaleInfoValues, BATCH_SIZE)) {
-          await tcgData.insert(productPresaleInfo).values(batch);
+
+        // Presale info: delete + reinsert
+        const internalIds = products
+          .map((p) => globalProductIdMap.get(p.productId))
+          .filter((id): id is number => id != null);
+
+        if (internalIds.length > 0) {
+          for (const idBatch of batchify(internalIds, BATCH_SIZE)) {
+            await tx.delete(productPresaleInfo).where(inArray(productPresaleInfo.productId, idBatch));
+          }
+
+          const presaleInfoValues = products
+            .map((p) => {
+              const internalId = globalProductIdMap.get(p.productId);
+              if (internalId == null) return null;
+              return {
+                productId: internalId,
+                isPresale: p.presaleInfo.isPresale,
+                releasedOn: p.presaleInfo.releasedOn ? new Date(p.presaleInfo.releasedOn) : null,
+                note: p.presaleInfo.note,
+              };
+            })
+            .filter((v): v is NonNullable<typeof v> => v != null);
+
+          for (const batch of batchify(presaleInfoValues, BATCH_SIZE)) {
+            await tx.insert(productPresaleInfo).values(batch);
+          }
         }
-      }
 
-      // --- Supplemental pricing (mid, high, directLow) ---
-      const pricesUrl = `${TCGCSV_BASE}/${tcgpCategoryId}/${tcgpGroupId}/prices`;
-      console.log(`Fetching supplemental prices: ${pricesUrl}`);
-      const pricesData = await fetchJson<ApiResponse<TcgCsvPrice>>(pricesUrl);
+        // Supplemental pricing (mid, high, directLow) — batched in transaction
+        for (const p of groupPrices) {
+          const internalProductId = globalProductIdMap.get(p.productId);
+          if (internalProductId == null) continue;
 
-      for (const p of pricesData.results) {
-        const internalProductId = productIdMap.get(p.productId);
-        if (internalProductId == null) continue;
-
-        await tcgData
-          .update(price)
-          .set({
-            midPrice: p.midPrice != null ? Math.round(p.midPrice * 100) : null,
-            highPrice: p.highPrice != null ? Math.round(p.highPrice * 100) : null,
-            directLowPrice: p.directLowPrice != null ? Math.round(p.directLowPrice * 100) : null,
-          })
-          .where(and(eq(price.productId, internalProductId), eq(price.subTypeName, p.subTypeName)));
-      }
+          await tx
+            .update(price)
+            .set({
+              midPrice: p.midPrice != null ? Math.round(p.midPrice * 100) : null,
+              highPrice: p.highPrice != null ? Math.round(p.highPrice * 100) : null,
+              directLowPrice: p.directLowPrice != null ? Math.round(p.directLowPrice * 100) : null,
+            })
+            .where(and(eq(price.productId, internalProductId), eq(price.subTypeName, p.subTypeName)));
+        }
+      });
     }
   }
 
@@ -915,7 +954,6 @@ async function stage3_historyBackfill() {
   >();
 
   // Seed the map from existing price_history (most recent entry per product+subtype)
-  // This is only needed if we have some history already
   if (completedDates.size > 0) {
     const existingHistory = await tcgData
       .select({
@@ -1034,11 +1072,13 @@ async function stage3_historyBackfill() {
         }
       }
 
-      // Insert history batch
+      // Insert history batch in a transaction
       if (historyBatch.length > 0) {
-        for (const batch of batchify(historyBatch, BATCH_SIZE)) {
-          await tcgData.insert(priceHistory).values(batch).onConflictDoNothing();
-        }
+        await tcgData.transaction(async (tx) => {
+          for (const batch of batchify(historyBatch, BATCH_SIZE)) {
+            await tx.insert(priceHistory).values(batch).onConflictDoNothing();
+          }
+        });
         changesRecorded += historyBatch.length;
       }
 
@@ -1107,7 +1147,6 @@ async function stage4_dailyCapture() {
     .from(price);
 
   // Get only the most recent history entry per (productId, subTypeName)
-  // Uses a correlated subquery to find the max date per group
   const recentHistoryRows = await tcgData
     .select({
       productId: priceHistory.productId,
@@ -1164,9 +1203,11 @@ async function stage4_dailyCapture() {
 
   if (priceHistoryBatch.length > 0) {
     console.log(`Inserting ${priceHistoryBatch.length} price history changes`);
-    for (const batch of batchify(priceHistoryBatch, BATCH_SIZE)) {
-      await tcgData.insert(priceHistory).values(batch).onConflictDoNothing();
-    }
+    await tcgData.transaction(async (tx) => {
+      for (const batch of batchify(priceHistoryBatch, BATCH_SIZE)) {
+        await tx.insert(priceHistory).values(batch).onConflictDoNothing();
+      }
+    });
   }
 
   // --- SKU history ---
@@ -1237,9 +1278,11 @@ async function stage4_dailyCapture() {
 
     if (skuHistoryBatch.length > 0) {
       console.log(`Inserting ${skuHistoryBatch.length} SKU history changes`);
-      for (const batch of batchify(skuHistoryBatch, BATCH_SIZE)) {
-        await tcgData.insert(skuHistory).values(batch).onConflictDoNothing();
-      }
+      await tcgData.transaction(async (tx) => {
+        for (const batch of batchify(skuHistoryBatch, BATCH_SIZE)) {
+          await tx.insert(skuHistory).values(batch).onConflictDoNothing();
+        }
+      });
     }
   }
 
@@ -1253,6 +1296,11 @@ async function stage4_dailyCapture() {
 // =========================================================================
 
 async function main() {
+  // Enable WAL mode for faster writes during population.
+  // The main() epilogue switches back to DELETE mode for xdelta3 compatibility.
+  await tcgData.run(sql`PRAGMA journal_mode=WAL`);
+  await tcgData.run(sql`PRAGMA synchronous=NORMAL`);
+
   if (!historyOnly) {
     await stage1_tcgtracking();
 
