@@ -25,18 +25,16 @@ RUN pnpm install --frozen-lockfile
 FROM node:24-alpine AS app
 
 # Install nginx and supervisor to manage multiple processes
-RUN apk add --no-cache nginx supervisor xdelta3 p7zip
+# shadow provides usermod/groupmod for runtime UID/GID changes
+# su-exec is used by the entrypoint to drop privileges
+RUN apk add --no-cache nginx supervisor xdelta3 p7zip shadow su-exec
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Create a non-root user to run all processes.
-# UID/GID default to 568 (TrueNAS Scale "apps" user) but can be overridden
-# at build time to match the host volume owner:
-#   docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 .
-ARG APP_UID=568
-ARG APP_GID=568
-RUN addgroup -g "$APP_GID" -S app && adduser -u "$APP_UID" -G app -S app
+# The entrypoint will adjust UID/GID at runtime via PUID/PGID env vars.
+RUN addgroup -g 568 -S app && adduser -u 568 -G app -S app
 
 WORKDIR /app
 
@@ -56,6 +54,12 @@ RUN mkdir -p /app/sqlite-data
 ENV OTCGS_DATABASE_PATH=/app/sqlite-data
 ENV TCG_DATA_DATABASE_PATH=/app/sqlite-data
 
+# PUID/PGID default to 568 (TrueNAS Scale "apps" user). Override at runtime
+# to match your host volume owner:
+#   docker run -e PUID=1000 -e PGID=1000 ...
+ENV PUID=568
+ENV PGID=568
+
 # Create nginx runtime directories and set ownership so the app user can write them
 RUN mkdir -p /var/log/nginx /var/lib/nginx/tmp /run/nginx \
     && chown -R app:app /var/log/nginx /var/lib/nginx /run/nginx /app
@@ -66,14 +70,19 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # nginx production config (listens on port 8080 — no root required)
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-VOLUME ["/app/sqlite-data"]
+# Entrypoint adjusts the app user UID/GID to match PUID/PGID, fixes
+# ownership of writable directories, then drops to app via su-exec.
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-USER app
+VOLUME ["/app/sqlite-data"]
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -q --spider http://127.0.0.1:8080/api/status || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Use supervisor to manage nginx + API server + UI server
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
