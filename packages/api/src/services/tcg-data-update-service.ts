@@ -19,6 +19,7 @@ const RELEASE_HASH_ASSET_NAME = 'tcg-data.sqlite.sha256';
 const databaseFilePath = tcgDataFilePath;
 const sqliteDataDir = databaseFilePath.substring(0, databaseFilePath.lastIndexOf('/'));
 const tempDatabaseFilePath = `${sqliteDataDir}/tcg-data.sqlite.new`;
+const RELEASE_DELTA_ASSET_NAME_COMPRESSED = 'tcg-data.delta.xd3.7z';
 const RELEASE_DELTA_ASSET_NAME = 'tcg-data.delta.xd3';
 const RELEASE_FROM_HASH_ASSET_NAME = 'tcg-data.from.sha256';
 const MAX_DELTA_CHAIN = 7;
@@ -341,10 +342,12 @@ export async function fetchFromHash(release: GitHubRelease): Promise<string | nu
 }
 
 async function downloadDelta(release: GitHubRelease): Promise<string | null> {
-  const asset = release.assets.find((a) => a.name === RELEASE_DELTA_ASSET_NAME);
+  const compressedAsset = release.assets.find((a) => a.name === RELEASE_DELTA_ASSET_NAME_COMPRESSED);
+  const uncompressedAsset = release.assets.find((a) => a.name === RELEASE_DELTA_ASSET_NAME);
+  const asset = compressedAsset ?? uncompressedAsset;
   if (!asset) return null;
 
-  console.log(`[tcg-data-update] Downloading delta (${(asset.size / 1024).toFixed(1)} KB)...`);
+  console.log(`[tcg-data-update] Downloading delta ${asset.name} (${(asset.size / 1024).toFixed(1)} KB)...`);
   const response = await fetch(asset.browser_download_url, {
     headers: { 'User-Agent': 'open-tcg-store' },
   });
@@ -352,8 +355,28 @@ async function downloadDelta(release: GitHubRelease): Promise<string | null> {
   if (!response.body) return null;
 
   const deltaPath = `${sqliteDataDir}/tcg-data.delta.xd3`;
-  const fileStream = createWriteStream(deltaPath);
-  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+
+  if (compressedAsset && asset === compressedAsset) {
+    // Download compressed delta, then extract.
+    const compressedPath = `${deltaPath}.7z`;
+    const fileStream = createWriteStream(compressedPath);
+    await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+
+    console.log('[tcg-data-update] Decompressing delta...');
+    try {
+      execFileSync('7z', ['e', compressedPath, `-o${sqliteDataDir}`, '-y'], { stdio: 'pipe', timeout: 60_000 });
+    } finally {
+      try {
+        unlinkSync(compressedPath);
+      } catch {
+        /* ignore cleanup errors */
+      }
+    }
+  } else {
+    const fileStream = createWriteStream(deltaPath);
+    await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+  }
+
   return deltaPath;
 }
 
