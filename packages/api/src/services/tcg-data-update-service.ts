@@ -364,7 +364,7 @@ async function downloadDelta(release: GitHubRelease): Promise<string | null> {
 
     console.log('[tcg-data-update] Decompressing delta...');
     try {
-      execFileSync('7z', ['x', compressedPath, `-o${sqliteDataDir}`, '-y'], { stdio: 'pipe', timeout: 60_000 });
+      execFileSync('7z', ['e', compressedPath, `-o${sqliteDataDir}`, '-y'], { stdio: 'pipe', timeout: 60_000 });
     } finally {
       try {
         unlinkSync(compressedPath);

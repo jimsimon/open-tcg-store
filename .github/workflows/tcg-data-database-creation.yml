@@ -138,8 +138,9 @@ jobs:
           xdelta3 -e -s "$OLD_DB" "$NEW_DB" "$DELTA"
           echo "has_delta=true" >> $GITHUB_OUTPUT
 
-          # Compress delta for smaller downloads
-          7z a -mx=9 "${DELTA}.7z" "$DELTA"
+          # Compress delta for smaller downloads (cd into dir so the archive
+          # stores just the filename, not the directory prefix)
+          (cd sqlite-data && 7z a -mx=9 tcg-data.delta.xd3.7z tcg-data.delta.xd3)
           echo "Delta size: $(du -h "$DELTA" | cut -f1)"
           echo "Compressed delta size: $(du -h "${DELTA}.7z" | cut -f1)"
 
