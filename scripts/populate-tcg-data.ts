@@ -329,12 +329,12 @@ async function fetchJson<T>(url: string): Promise<T> {
     } catch (err) {
       // Network-level errors (socket closed, DNS failure, timeout, etc.)
       if (shutdownSignal.aborted || attempt === MAX_RETRIES) {
-        console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, giving up): ${err}`);
+        console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES + 1}, giving up): ${err}`);
         throw err;
       }
       const delaySec = Math.min(2 ** attempt, 30);
       console.error(
-        `Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s): ${err}`,
+        `Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES + 1}, retrying in ${delaySec}s): ${err}`,
       );
       await sleep(delaySec * 1000);
       continue;
@@ -342,13 +342,13 @@ async function fetchJson<T>(url: string): Promise<T> {
     if (response.status === 429) {
       await response.body?.cancel();
       if (attempt === MAX_RETRIES) {
-        console.error(`429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, giving up)`);
+        console.error(`429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES + 1}, giving up)`);
         throw new Error(`Failed to fetch ${url}: 429 Too Many Requests (after ${MAX_RETRIES} retries)`);
       }
       const retryAfter = response.headers.get('Retry-After');
       const delaySec = retryAfter ? Math.min(Number(retryAfter) || 5, 60) : Math.min(2 ** attempt, 30);
       console.error(
-        `429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s)`,
+        `429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES + 1}, retrying in ${delaySec}s)`,
       );
       await sleep(delaySec * 1000);
       continue;
