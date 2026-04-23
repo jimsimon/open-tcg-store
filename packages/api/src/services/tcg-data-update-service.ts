@@ -1,7 +1,7 @@
 import { createClient } from '@libsql/client';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { renameSync, existsSync, unlinkSync, createWriteStream, createReadStream, copyFileSync } from 'node:fs';
+import { renameSync, existsSync, unlinkSync, rmSync, createWriteStream, createReadStream, copyFileSync } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { client, setDatabaseUpdating } from '../db/otcgs/index.ts';
@@ -10,6 +10,7 @@ import { reconnectTcgData } from '../db/tcg-data/index.ts';
 
 const GITHUB_REPO = 'jimsimon/open-tcg-store';
 const RELEASE_TAG_PREFIX = 'tcg-data-';
+const RELEASE_ASSET_NAME_COMPRESSED = 'tcg-data.sqlite.7z';
 const RELEASE_ASSET_NAME = 'tcg-data.sqlite';
 const RELEASE_HASH_ASSET_NAME = 'tcg-data.sqlite.sha256';
 
@@ -144,11 +145,16 @@ export async function checkForUpdate(): Promise<UpdateCheckResult | null> {
 
 /**
  * Download the database asset from a release to a temp file.
+ * Tries the compressed .7z asset first (smaller download), falling back to the
+ * uncompressed .sqlite asset for backward compatibility with older releases.
  */
 export async function downloadUpdate(release: GitHubRelease): Promise<string> {
-  const asset = release.assets.find((a) => a.name === RELEASE_ASSET_NAME);
+  const compressedAsset = release.assets.find((a) => a.name === RELEASE_ASSET_NAME_COMPRESSED);
+  const uncompressedAsset = release.assets.find((a) => a.name === RELEASE_ASSET_NAME);
+  const asset = compressedAsset ?? uncompressedAsset;
+
   if (!asset) {
-    throw new Error(`Release ${release.tag_name} does not contain a ${RELEASE_ASSET_NAME} asset`);
+    throw new Error(`Release ${release.tag_name} does not contain a database asset`);
   }
 
   console.log(`[tcg-data-update] Downloading ${asset.name} (${(asset.size / 1024 / 1024).toFixed(1)} MB)...`);
@@ -161,12 +167,39 @@ export async function downloadUpdate(release: GitHubRelease): Promise<string> {
     throw new Error(`Failed to download asset: ${response.status} ${response.statusText}`);
   }
 
-  // Stream the response body to disk to avoid buffering the entire file in memory
   if (!response.body) {
     throw new Error('Response body is null — cannot stream download');
   }
-  const fileStream = createWriteStream(tempDatabaseFilePath);
-  await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+
+  if (compressedAsset && asset === compressedAsset) {
+    // Download compressed archive, then extract the database.
+    // Extract to a temp directory to avoid overwriting the live database file.
+    const compressedPath = `${tempDatabaseFilePath}.7z`;
+    const extractDir = `${sqliteDataDir}/tcg-data-extract`;
+    const fileStream = createWriteStream(compressedPath);
+    await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+
+    console.log('[tcg-data-update] Decompressing database...');
+    try {
+      execFileSync('7z', ['x', compressedPath, `-o${extractDir}`, '-y'], { stdio: 'pipe', timeout: 300_000 });
+      renameSync(`${extractDir}/tcg-data.sqlite`, tempDatabaseFilePath);
+    } finally {
+      try {
+        unlinkSync(compressedPath);
+      } catch {
+        /* ignore cleanup errors */
+      }
+      try {
+        rmSync(extractDir, { recursive: true, force: true });
+      } catch {
+        /* ignore cleanup errors */
+      }
+    }
+  } else {
+    // Stream the uncompressed response body directly to disk
+    const fileStream = createWriteStream(tempDatabaseFilePath);
+    await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), fileStream);
+  }
 
   console.log(`[tcg-data-update] Downloaded to ${tempDatabaseFilePath}`);
   return tempDatabaseFilePath;

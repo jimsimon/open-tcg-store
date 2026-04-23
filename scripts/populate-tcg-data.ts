@@ -1443,8 +1443,10 @@ async function main() {
   console.log(`Recorded created_at: ${createdAt}`);
 
   // Finalize for xdelta3 compatibility: ensure no WAL/SHM files.
-  // The WAL checkpoint and journal mode switch can fail with SQLITE_BUSY if the
-  // database is still processing after a large batch insert, so retry with backoff.
+  // First do a PASSIVE checkpoint (never blocks) to flush as much of the WAL
+  // as possible, then TRUNCATE to clear it and switch to DELETE journal mode.
+  console.log('Checkpointing WAL...');
+  await tcgData.run(sql`PRAGMA wal_checkpoint(PASSIVE)`);
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
       await tcgData.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);

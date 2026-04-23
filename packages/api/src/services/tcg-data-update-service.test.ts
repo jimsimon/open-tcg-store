@@ -9,7 +9,9 @@ const {
   mockCreateReadStream,
   mockRenameSync,
   mockUnlinkSync,
+  mockRmSync,
   mockCreateWriteStream,
+  mockExecFileSync,
   mockSetDatabaseUpdating,
   mockReconnectTcgData,
   mockCreateClient,
@@ -24,7 +26,9 @@ const {
   mockCreateReadStream: vi.fn(),
   mockRenameSync: vi.fn(),
   mockUnlinkSync: vi.fn(),
+  mockRmSync: vi.fn(),
   mockCreateWriteStream: vi.fn(),
+  mockExecFileSync: vi.fn(),
   mockSetDatabaseUpdating: vi.fn(),
   mockReconnectTcgData: vi.fn(),
   mockCreateClient: vi.fn(),
@@ -42,7 +46,13 @@ vi.mock('node:fs', () => ({
   createReadStream: mockCreateReadStream,
   renameSync: mockRenameSync,
   unlinkSync: mockUnlinkSync,
+  rmSync: mockRmSync,
   createWriteStream: mockCreateWriteStream,
+}));
+
+// Mock node:child_process
+vi.mock('node:child_process', () => ({
+  execFileSync: mockExecFileSync,
 }));
 
 // Mock node:stream/promises
@@ -203,6 +213,11 @@ describe('tcg-data-update-service', () => {
 
     // Reset the TTL cache between tests so each starts fresh
     invalidateStatusCache();
+
+    // Default: xdelta3 is not available (throw simulates command not found)
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('command not found');
+    });
 
     // Default: global fetch is our mock
     vi.stubGlobal('fetch', mockFetch);
@@ -466,7 +481,7 @@ describe('tcg-data-update-service', () => {
     it('should throw when release has no matching asset', async () => {
       const release = makeRelease('tcg-data-20260405', false);
 
-      await expect(downloadUpdate(release)).rejects.toThrow('does not contain a tcg-data.sqlite asset');
+      await expect(downloadUpdate(release)).rejects.toThrow('does not contain a database asset');
     });
 
     it('should throw when download fetch fails', async () => {
@@ -488,6 +503,67 @@ describe('tcg-data-update-service', () => {
       });
 
       await expect(downloadUpdate(release)).rejects.toThrow('Response body is null');
+    });
+
+    it('should prefer compressed .7z asset and decompress', async () => {
+      const release = makeRelease('tcg-data-20260405');
+      release.assets.push({
+        name: 'tcg-data.sqlite.7z',
+        browser_download_url: 'https://github.com/download/tcg-data-20260405/tcg-data.sqlite.7z',
+        size: 512 * 1024,
+      });
+      const fakeBody = { readable: true };
+      mockFetch.mockResolvedValue({ ok: true, body: fakeBody });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
+      mockExecFileSync.mockReturnValue(undefined);
+      mockRenameSync.mockReturnValue(undefined);
+
+      const result = await downloadUpdate(release);
+
+      expect(result).toBe('/fake/workspace/sqlite-data/tcg-data.sqlite.new');
+      // Should download the .7z URL
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://github.com/download/tcg-data-20260405/tcg-data.sqlite.7z',
+        expect.objectContaining({ headers: { 'User-Agent': 'open-tcg-store' } }),
+      );
+      // Should stream to .7z temp file
+      expect(mockCreateWriteStream).toHaveBeenCalledWith('/fake/workspace/sqlite-data/tcg-data.sqlite.new.7z');
+      // Should call 7z to extract
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        '7z',
+        [
+          'x',
+          '/fake/workspace/sqlite-data/tcg-data.sqlite.new.7z',
+          '-o/fake/workspace/sqlite-data/tcg-data-extract',
+          '-y',
+        ],
+        expect.objectContaining({ stdio: 'pipe', timeout: 300_000 }),
+      );
+      // Should rename extracted file to temp path
+      expect(mockRenameSync).toHaveBeenCalledWith(
+        '/fake/workspace/sqlite-data/tcg-data-extract/tcg-data.sqlite',
+        '/fake/workspace/sqlite-data/tcg-data.sqlite.new',
+      );
+    });
+
+    it('should fall back to uncompressed asset when .7z is absent', async () => {
+      const release = makeRelease('tcg-data-20260405');
+      // No .7z asset — only the default tcg-data.sqlite from makeRelease
+      const fakeBody = { readable: true };
+      mockFetch.mockResolvedValue({ ok: true, body: fakeBody });
+      mockPipeline.mockResolvedValue(undefined);
+      mockCreateWriteStream.mockReturnValue({});
+
+      const result = await downloadUpdate(release);
+
+      expect(result).toBe('/fake/workspace/sqlite-data/tcg-data.sqlite.new');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://github.com/download/tcg-data-20260405/tcg-data.sqlite',
+        expect.objectContaining({ headers: { 'User-Agent': 'open-tcg-store' } }),
+      );
+      // Should NOT call 7z
+      expect(mockExecFileSync).not.toHaveBeenCalled();
     });
   });
 

@@ -25,7 +25,7 @@ RUN pnpm install --frozen-lockfile
 FROM node:24-alpine AS app
 
 # Install nginx and supervisor to manage multiple processes
-RUN apk add --no-cache nginx supervisor xdelta3
+RUN apk add --no-cache nginx supervisor xdelta3 p7zip
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
