@@ -40,10 +40,8 @@ fi
 # even when PUID/PGID match the build-time defaults.
 chown -R app:app /app/sqlite-data
 
-# Ensure supervisord child processes can write to container stdout/stderr.
-# On many runtimes /dev/stdout and /dev/stderr are symlinks to /proc/self/fd/*
-# which become inaccessible after dropping privileges via su-exec.
-chmod 0666 /dev/stdout /dev/stderr 2>/dev/null || true
-
-# Drop privileges and exec the main command (supervisord by default)
-exec su-exec app "$@"
+# Exec the main command (supervisord by default) as root.
+# Supervisord needs root to open /dev/stdout and /dev/stderr for child log
+# dispatchers. Each child program drops to the app user via supervisord's
+# user= directive in supervisord.conf.
+exec "$@"

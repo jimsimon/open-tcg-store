@@ -26,8 +26,7 @@ FROM node:24-alpine AS app
 
 # Install nginx and supervisor to manage multiple processes
 # shadow provides usermod/groupmod for runtime UID/GID changes
-# su-exec is used by the entrypoint to drop privileges
-RUN apk add --no-cache nginx supervisor xdelta3 p7zip shadow su-exec
+RUN apk add --no-cache nginx supervisor xdelta3 p7zip shadow
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
@@ -70,8 +69,10 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # nginx production config (listens on port 8080 — no root required)
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# Entrypoint adjusts the app user UID/GID to match PUID/PGID, fixes
-# ownership of writable directories, then drops to app via su-exec.
+# Entrypoint adjusts the app user UID/GID to match PUID/PGID and fixes
+# ownership of writable directories. Supervisord runs as root so it can
+# open /dev/stdout and /dev/stderr for child log dispatchers; each child
+# program drops to the app user via supervisord's user= directive.
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
