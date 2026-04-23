@@ -214,6 +214,11 @@ describe('tcg-data-update-service', () => {
     // Reset the TTL cache between tests so each starts fresh
     invalidateStatusCache();
 
+    // Default: xdelta3 is not available (throw simulates command not found)
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('command not found');
+    });
+
     // Default: global fetch is our mock
     vi.stubGlobal('fetch', mockFetch);
 
