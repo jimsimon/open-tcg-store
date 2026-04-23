@@ -308,6 +308,9 @@ async function fetchJson<T>(url: string): Promise<T> {
       }
       const retryAfter = response.headers.get('Retry-After');
       const delaySec = retryAfter ? Math.min(Number(retryAfter) || 5, 60) : Math.min(2 ** attempt, 30);
+      console.error(
+        `429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s)`,
+      );
       await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
       continue;
     }
