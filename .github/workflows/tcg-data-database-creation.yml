@@ -2,8 +2,8 @@ name: Daily Release Management - TCG Data Database
 
 on:
   schedule:
-    # Run daily at 9 PM UTC (5 PM EDT / 4 PM EST)
-    - cron: '0 21 * * *'
+    # Run daily at 12:30 PM UTC (8:30 AM EDT / 7:30 AM EST)
+    - cron: '30 12 * * *'
   workflow_dispatch: # Allow manual triggering
 
 permissions:
