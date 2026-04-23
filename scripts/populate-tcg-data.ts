@@ -1400,9 +1400,20 @@ async function main() {
   console.log(`Recorded created_at: ${createdAt}`);
 
   // Finalize for xdelta3 compatibility: ensure no WAL/SHM files.
-  // Checkpoint must complete before switching journal mode to avoid SQLITE_BUSY.
-  await tcgData.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);
-  await tcgData.run(sql`PRAGMA journal_mode=DELETE`);
+  // The WAL checkpoint and journal mode switch can fail with SQLITE_BUSY if the
+  // database is still processing after a large batch insert, so retry with backoff.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      await tcgData.run(sql`PRAGMA wal_checkpoint(TRUNCATE)`);
+      await tcgData.run(sql`PRAGMA journal_mode=DELETE`);
+      break;
+    } catch (err) {
+      if (attempt === 9 || !(err instanceof Error) || !err.message.includes('SQLITE_BUSY')) throw err;
+      const delaySec = Math.min(2 ** attempt, 30);
+      console.error(`PRAGMA finalization attempt ${attempt + 1} failed (retrying in ${delaySec}s): ${err}`);
+      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+    }
+  }
 
   console.log('\nDone!');
 }
