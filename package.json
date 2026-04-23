@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tilt up",
+    "build:client": "vite build --config vite.build.config.ts",
     "docker:build": "docker build -t open-tcgs .",
     "docker:run": "docker run -p 8080:8080 -v open-tcgs-data:/app/sqlite-data --env-file .env open-tcgs",
     "lint": "oxlint --fix",

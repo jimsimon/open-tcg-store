@@ -20,7 +20,20 @@ COPY packages/shared/package.json ./packages/shared/
 RUN pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------------------
-# Stage 2: Production image
+# Stage 2: Build client assets (Vite)
+# ---------------------------------------------------------------------------
+FROM deps AS build
+
+WORKDIR /app
+
+# Copy full source so Vite can resolve all imports
+COPY . .
+
+# Build client-side bundles — produces dist/client/ with hashed assets + manifest
+RUN npx vite build --config vite.build.config.ts
+
+# ---------------------------------------------------------------------------
+# Stage 3: Production image
 # ---------------------------------------------------------------------------
 FROM node:24-alpine AS app
 
@@ -45,6 +58,9 @@ COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
 
 # Copy source code
 COPY . .
+
+# Copy Vite client build output (hashed JS/CSS bundles + manifest)
+COPY --from=build /app/dist/client ./dist/client
 
 # Create directory for SQLite data files (mount a volume here at runtime)
 RUN mkdir -p /app/sqlite-data

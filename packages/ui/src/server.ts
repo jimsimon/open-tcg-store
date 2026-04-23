@@ -10,6 +10,14 @@ import { RateLimitStore } from './lib/rate-limit-store.ts';
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// In production, resolve the workspace root once for serving static assets.
+// The Vite client build output lives at <workspaceRoot>/dist/client/.
+let workspaceRoot: string | undefined;
+if (isProd) {
+  const { workspaceRootSync } = await import('workspace-root');
+  workspaceRoot = workspaceRootSync() ?? undefined;
+}
+
 // Hoisted to module scope to avoid re-parsing on every call
 const IsSetupPendingQuery = graphql(`
   query IsSetupPending {
@@ -68,8 +76,60 @@ if (!isProd) {
   // Use vite's connect instance as middleware for HMR and asset serving.
   app.use(koaConnect(vite.middlewares));
 } else {
-  // In production, static assets are served by a reverse proxy (nginx) or CDN.
-  // The Node server only handles SSR page rendering and API proxying.
+  // In production, nginx serves /assets/ directly. As a fallback the Koa server
+  // also serves from dist/client/ so the app works even without the nginx layer.
+  if (workspaceRoot) {
+    const { resolve: pathResolve } = await import('node:path');
+    const { stat, readFile } = await import('node:fs/promises');
+
+    const distClientDir = pathResolve(workspaceRoot, 'dist/client');
+
+    app.use(async (ctx, next) => {
+      // Only intercept GET/HEAD requests that look like static asset paths
+      if (ctx.method !== 'GET' && ctx.method !== 'HEAD') return next();
+
+      // Serve files under /assets/ (hashed Vite output)
+      if (!ctx.path.startsWith('/assets/')) return next();
+
+      const filePath = pathResolve(distClientDir, ctx.path.slice(1));
+      // Prevent directory traversal
+      if (!filePath.startsWith(distClientDir)) return next();
+
+      try {
+        const fileStat = await stat(filePath);
+        if (!fileStat.isFile()) return next();
+
+        // Hashed assets are immutable — cache aggressively
+        ctx.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+        // Set content type based on extension
+        const ext = filePath.split('.').pop();
+        const mimeTypes: Record<string, string> = {
+          js: 'application/javascript',
+          mjs: 'application/javascript',
+          css: 'text/css',
+          svg: 'image/svg+xml',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          gif: 'image/gif',
+          webp: 'image/webp',
+          woff: 'font/woff',
+          woff2: 'font/woff2',
+          ttf: 'font/ttf',
+          eot: 'application/vnd.ms-fontobject',
+          json: 'application/json',
+        };
+        if (ext && mimeTypes[ext]) {
+          ctx.type = mimeTypes[ext];
+        }
+
+        ctx.body = await readFile(filePath);
+      } catch {
+        return next();
+      }
+    });
+  }
 }
 app.use(bodyParser());
 app.use(async (ctx, next) => {
