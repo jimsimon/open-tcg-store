@@ -138,6 +138,11 @@ jobs:
           xdelta3 -e -s "$OLD_DB" "$NEW_DB" "$DELTA"
           echo "has_delta=true" >> $GITHUB_OUTPUT
 
+          # Compress delta for smaller downloads
+          7z a -mx=9 "${DELTA}.7z" "$DELTA"
+          echo "Delta size: $(du -h "$DELTA" | cut -f1)"
+          echo "Compressed delta size: $(du -h "${DELTA}.7z" | cut -f1)"
+
           # Clean up old DB copy
           rm -f "$OLD_DB"
 
@@ -170,6 +175,7 @@ jobs:
 
           if [ "${{ steps.delta.outputs.has_delta }}" = "true" ]; then
             ASSETS="$ASSETS
+          ./sqlite-data/tcg-data.delta.xd3.7z
           ./sqlite-data/tcg-data.delta.xd3
           ./sqlite-data/tcg-data.from.sha256"
           fi
