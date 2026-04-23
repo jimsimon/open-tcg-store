@@ -23,6 +23,38 @@ import {
 import { mapRarity } from './lib/rarity';
 
 // ---------------------------------------------------------------------------
+// Process signal handling
+// ---------------------------------------------------------------------------
+
+const shutdownController = new AbortController();
+const shutdownSignal = shutdownController.signal;
+
+for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(sig, () => {
+    console.error(`\nReceived ${sig}, shutting down...`);
+    shutdownController.abort();
+    // Give in-flight operations a moment to react to the abort, then force exit
+    setTimeout(() => process.exit(1), 5000).unref();
+  });
+}
+
+/** Sleep that rejects immediately if the process is shutting down. */
+function sleep(ms: number): Promise<void> {
+  if (shutdownSignal.aborted) return Promise.reject(new Error('Process is shutting down'));
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    shutdownSignal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        reject(new Error('Process is shutting down'));
+      },
+      { once: true },
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // CLI flags
 // ---------------------------------------------------------------------------
 
@@ -292,10 +324,11 @@ async function fetchJson<T>(url: string): Promise<T> {
     try {
       response = await fetch(url, {
         headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
+        signal: shutdownSignal,
       });
     } catch (err) {
       // Network-level errors (socket closed, DNS failure, timeout, etc.)
-      if (attempt === MAX_RETRIES) {
+      if (shutdownSignal.aborted || attempt === MAX_RETRIES) {
         console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, giving up): ${err}`);
         throw err;
       }
@@ -303,7 +336,7 @@ async function fetchJson<T>(url: string): Promise<T> {
       console.error(
         `Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s): ${err}`,
       );
-      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+      await sleep(delaySec * 1000);
       continue;
     }
     if (response.status === 429) {
@@ -317,7 +350,7 @@ async function fetchJson<T>(url: string): Promise<T> {
       console.error(
         `429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s)`,
       );
-      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+      await sleep(delaySec * 1000);
       continue;
     }
     if (!response.ok) {
@@ -1153,6 +1186,7 @@ async function stage3_historyBackfill() {
       // Download archive
       const response = await fetch(archiveUrl, {
         headers: { 'User-Agent': 'OpenTCGStore/2.0.0' },
+        signal: shutdownSignal,
       });
       if (!response.ok) {
         console.log(`Skipping ${date}: HTTP ${response.status}`);
@@ -1424,7 +1458,7 @@ async function main() {
       if (attempt === 9 || !isBusy) throw err;
       const delaySec = Math.min(2 ** attempt, 30);
       console.error(`PRAGMA finalization attempt ${attempt + 1} failed (retrying in ${delaySec}s): ${err}`);
-      await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
+      await sleep(delaySec * 1000);
     }
   }
 
