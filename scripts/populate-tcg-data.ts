@@ -295,15 +295,21 @@ async function fetchJson<T>(url: string): Promise<T> {
       });
     } catch (err) {
       // Network-level errors (socket closed, DNS failure, timeout, etc.)
-      if (attempt === MAX_RETRIES) throw err;
+      if (attempt === MAX_RETRIES) {
+        console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, giving up): ${err}`);
+        throw err;
+      }
       const delaySec = Math.min(2 ** attempt, 30);
-      console.error(`Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}): ${err}`);
+      console.error(
+        `Network error fetching ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, retrying in ${delaySec}s): ${err}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, delaySec * 1000));
       continue;
     }
     if (response.status === 429) {
       await response.body?.cancel();
       if (attempt === MAX_RETRIES) {
+        console.error(`429 Too Many Requests for ${url} (attempt ${attempt + 1}/${MAX_RETRIES}, giving up)`);
         throw new Error(`Failed to fetch ${url}: 429 Too Many Requests (after ${MAX_RETRIES} retries)`);
       }
       const retryAfter = response.headers.get('Retry-After');
