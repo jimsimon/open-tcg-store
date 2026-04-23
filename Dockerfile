@@ -25,7 +25,8 @@ RUN pnpm install --frozen-lockfile
 FROM node:24-alpine AS app
 
 # Install nginx and supervisor to manage multiple processes
-RUN apk add --no-cache nginx supervisor xdelta3 p7zip
+# su-exec is used by the entrypoint to drop from root to the app user
+RUN apk add --no-cache nginx supervisor xdelta3 p7zip su-exec
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
@@ -61,14 +62,19 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # nginx production config (listens on port 8080 — no root required)
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-VOLUME ["/app/sqlite-data"]
+# Entrypoint ensures /app/sqlite-data is writable by the app user, then
+# drops privileges via su-exec before starting the main command.
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-USER app
+VOLUME ["/app/sqlite-data"]
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -q --spider http://127.0.0.1:8080/api/status || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Use supervisor to manage nginx + API server + UI server
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
