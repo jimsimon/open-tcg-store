@@ -142,10 +142,11 @@ jobs:
           rm -f "$OLD_DB"
 
       - name: Compress database
+        working-directory: ./sqlite-data
         run: |
-          echo "Uncompressed size: $(du -h ./sqlite-data/tcg-data.sqlite | cut -f1)"
-          7z a -mx=9 ./sqlite-data/tcg-data.sqlite.7z ./sqlite-data/tcg-data.sqlite
-          echo "Compressed size: $(du -h ./sqlite-data/tcg-data.sqlite.7z | cut -f1)"
+          echo "Uncompressed size: $(du -h tcg-data.sqlite | cut -f1)"
+          7z a -mx=9 tcg-data.sqlite.7z tcg-data.sqlite
+          echo "Compressed size: $(du -h tcg-data.sqlite.7z | cut -f1)"
 
       - name: Check if release already exists
         id: check_release
