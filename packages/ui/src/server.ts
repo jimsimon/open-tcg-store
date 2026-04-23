@@ -68,11 +68,12 @@ let vite: Awaited<ReturnType<typeof import('vite').createServer>> | null = null;
 
 if (!isProd) {
   const { createServer: createViteServer } = await import('vite');
-  const viteConfig = (await import('../../../vite.config.ts')).default;
   // Create Vite server in middleware mode and configure the app type as
   // 'custom', disabling Vite's own HTML serving logic so parent server
-  // can take control
-  vite = await createViteServer(viteConfig);
+  // can take control.  We point at the config file (rather than importing
+  // its export) so Vite resolves the config function internally with the
+  // correct command/mode context.
+  vite = await createViteServer({ configFile: new URL('../../../vite.config.ts', import.meta.url).pathname });
   // Use vite's connect instance as middleware for HMR and asset serving.
   app.use(koaConnect(vite.middlewares));
 } else {

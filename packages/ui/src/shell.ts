@@ -22,7 +22,11 @@ type Manifest = Record<string, ManifestChunk>;
 let manifest: Manifest | null = null;
 if (isProd) {
   const manifestPath = resolve(workspaceRoot, 'dist/client/.vite/manifest.json');
-  manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as Manifest;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as Manifest;
+  } catch (err) {
+    throw new Error(`Vite manifest not found at ${manifestPath}. Was the client build step run?`, { cause: err });
+  }
 }
 
 /**
@@ -44,26 +48,25 @@ function manifestAsset(srcKey: string): string {
 }
 
 /**
- * Collect CSS files for a manifest entry (the entry's own CSS + imported chunks' CSS).
+ * Collect CSS files for a manifest entry, recursively traversing all
+ * transitive imports so deeply nested CSS is never missed.
  */
 function manifestCss(srcKey: string): string[] {
   if (!manifest) return [];
   const key = srcKey.startsWith('/') ? srcKey.slice(1) : srcKey;
-  const chunk = manifest[key];
-  if (!chunk) return [];
-
   const cssFiles: string[] = [];
-  if (chunk.css) cssFiles.push(...chunk.css.map((c) => `/${c}`));
+  const visited = new Set<string>();
 
-  // Collect CSS from imported chunks
-  if (chunk.imports) {
-    for (const imp of chunk.imports) {
-      const importedChunk = manifest[imp];
-      if (importedChunk?.css) {
-        cssFiles.push(...importedChunk.css.map((c) => `/${c}`));
-      }
-    }
+  function collect(k: string) {
+    if (visited.has(k)) return;
+    visited.add(k);
+    const chunk = manifest![k];
+    if (!chunk) return;
+    if (chunk.css) cssFiles.push(...chunk.css.map((c) => `/${c}`));
+    if (chunk.imports) chunk.imports.forEach(collect);
   }
+
+  collect(key);
   return cssFiles;
 }
 

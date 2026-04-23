@@ -30,7 +30,7 @@ WORKDIR /app
 COPY . .
 
 # Build client-side bundles — produces dist/client/ with hashed assets + manifest
-RUN npx vite build
+RUN pnpm run build:client
 
 # ---------------------------------------------------------------------------
 # Stage 3: Production image
