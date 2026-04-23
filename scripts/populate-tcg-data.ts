@@ -42,15 +42,15 @@ for (const sig of ['SIGTERM', 'SIGINT'] as const) {
 function sleep(ms: number): Promise<void> {
   if (shutdownSignal.aborted) return Promise.reject(new Error('Process is shutting down'));
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    shutdownSignal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer);
-        reject(new Error('Process is shutting down'));
-      },
-      { once: true },
-    );
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new Error('Process is shutting down'));
+    };
+    const timer = setTimeout(() => {
+      shutdownSignal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    shutdownSignal.addEventListener('abort', onAbort, { once: true });
   });
 }
 
