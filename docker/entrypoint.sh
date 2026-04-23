@@ -9,6 +9,12 @@ set -e
 # Defaults are set in the Dockerfile (568 for TrueNAS Scale "apps" user).
 # ---------------------------------------------------------------------------
 
+# Prevent accidentally running the app as root
+if [ "$PUID" = "0" ] || [ "$PGID" = "0" ]; then
+  echo "[entrypoint] ERROR: PUID/PGID must not be 0 (root)" >&2
+  exit 1
+fi
+
 CURRENT_UID=$(id -u app)
 CURRENT_GID=$(id -g app)
 
@@ -23,7 +29,7 @@ if [ "$PUID" != "$CURRENT_UID" ]; then
 fi
 
 # Fix ownership of writable directories after UID/GID change
-chown app:app /app/sqlite-data
+chown -R app:app /app/sqlite-data
 chown -R app:app /var/log/nginx /var/lib/nginx /run/nginx
 
 # Drop privileges and exec the main command (supervisord by default)
