@@ -38,7 +38,9 @@ if (isProd) {
   try {
     manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as Manifest;
   } catch (err) {
-    throw new Error(`Vite manifest not found at ${manifestPath}. Was the client build step run?`, { cause: err });
+    throw new Error(`Vite manifest not found at ${manifestPath}. Was the client build step run?`, {
+      cause: err,
+    });
   }
 
   manifestByName = new Map();
@@ -138,9 +140,7 @@ const hydrateSupportJs = isProd
   ? manifestByInputName('lit-hydrate-support')
   : resolveModulePath('@lit-labs/ssr-client/lit-element-hydrate-support.js');
 
-const webawesomeInitJs = isProd
-  ? manifestByInputName('webawesome-init')
-  : null;
+const webawesomeInitJs = isProd ? manifestByInputName('webawesome-init') : null;
 
 export function render(pageDirectory: string, pageContent: unknown) {
   const clientEntrySrc = `packages/ui/src/pages/${pageDirectory}/${pageDirectory}.client.ts`;
