@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@awesome.me/webawesome':
-        specifier: 3.5.0
-        version: 3.5.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)
+        specifier: 3.6.0
+        version: 3.6.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)
       '@better-auth/cli':
         specifier: ^1.4.21
         version: 1.4.21(@better-fetch/fetch@1.1.21)(@libsql/client@0.17.3)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-call@1.1.8(zod@4.4.3))(drizzle-kit@0.31.10)(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)(prisma@5.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.5)
@@ -225,8 +225,8 @@ packages:
     peerDependencies:
       graphql: '*'
 
-  '@awesome.me/webawesome@3.5.0':
-    resolution: {integrity: sha512-/hJOe5vsKu9GejyTB3xFyQvvGRzXCLqdOGtBa4a+ifDNPRwzQLR3bzxcEpJsLmVfOhhem1XGbyOD9cMwefuAlA==}
+  '@awesome.me/webawesome@3.6.0':
+    resolution: {integrity: sha512-cUQWAq5KwQzy1fsMFUSJqGL6z/s9/VFOqnypOZOXZdpsfnD7gVFKnY6if9EbgzxtCXiHTOnEZ8N3mnwW2Z/Sww==}
     engines: {node: '>=14.17.0'}
 
   '@babel/code-frame@7.29.0':
@@ -2443,8 +2443,8 @@ packages:
   '@shoelace-style/animations@1.2.0':
     resolution: {integrity: sha512-avvo1xxkLbv2dgtabdewBbqcJfV0e0zCwFqkPMnHFGbJbBHorRFfMAHh1NG9ymmXn0jW95ibUVH03E1NYXD6Gw==}
 
-  '@shoelace-style/localize@3.2.1':
-    resolution: {integrity: sha512-r4C9C/5kSfMBIr0D9imvpRdCNXtUNgyYThc4YlS6K5Hchv1UyxNQ9mxwj+BTRH2i1Neits260sR3OjKMnplsFA==}
+  '@shoelace-style/localize@3.2.2':
+    resolution: {integrity: sha512-h3+2/cFWGaw3KQUwintkP4Cy3PtrVW//ysr9DM5nOfIXYekgrHwsELk/nyxc8hmjVP/Kcon7KCzvUtSwUBipfQ==}
 
   '@sindresorhus/is@5.6.0':
     resolution: {integrity: sha512-TV7t8GKYaJWsn00tFDqBw8+Uqmr8A0fRU1tvTQhyZzGv0sJCGRQL3JGMI3ucuKo3XIZdUP+Lx7/gh2t3lewy7g==}
@@ -5448,13 +5448,13 @@ snapshots:
       immutable: 5.1.5
       invariant: 2.2.4
 
-  '@awesome.me/webawesome@3.5.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)':
+  '@awesome.me/webawesome@3.6.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)':
     dependencies:
       '@ctrl/tinycolor': 4.1.0
       '@floating-ui/dom': 1.7.6
       '@lit/react': 1.0.8(@types/react@19.1.12)
       '@shoelace-style/animations': 1.2.0
-      '@shoelace-style/localize': 3.2.1
+      '@shoelace-style/localize': 3.2.2
       composed-offset-position: 0.0.6(@floating-ui/utils@0.2.11)
       lit: 3.3.2
       marked: 11.2.0
@@ -7630,7 +7630,7 @@ snapshots:
 
   '@shoelace-style/animations@1.2.0': {}
 
-  '@shoelace-style/localize@3.2.1': {}
+  '@shoelace-style/localize@3.2.2': {}
 
   '@sindresorhus/is@5.6.0': {}
 
@@ -7685,7 +7685,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 24.3.1
+      '@types/node': 25.6.0
     optional: true
 
   '@types/body-parser@1.19.6':
@@ -7745,7 +7745,7 @@ snapshots:
 
   '@types/interpret@1.1.4':
     dependencies:
-      '@types/node': 22.19.17
+      '@types/node': 25.6.0
 
   '@types/js-cookie@3.0.6': {}
 
