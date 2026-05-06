@@ -103,7 +103,7 @@ importers:
         version: 2.21.0
       stripe:
         specifier: ^22.0.2
-        version: 22.0.2(@types/node@24.3.1)
+        version: 22.1.1(@types/node@24.3.1)
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -5037,8 +5037,8 @@ packages:
     resolution: {integrity: sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==}
     engines: {node: '>=0.10.0'}
 
-  stripe@22.0.2:
-    resolution: {integrity: sha512-2/BLrQ3oB1zlNfeL/LfHFjTGx6EQn0j+ztrrTJHuDjV5VVIpk92oSDaxyKLUr3pG3dnee2LZqhFUv2Bf0G1/3g==}
+  stripe@22.1.1:
+    resolution: {integrity: sha512-cmodIYP27tBkJ8G7DuGgWw0PFuemlFZbuF3Wwr1TrjFjUa3T7NIgCe6TVwX8BO2ynu+xtTuDGfHafNDCPt9lXA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -10116,7 +10116,7 @@ snapshots:
 
   strip-json-comments@2.0.1: {}
 
-  stripe@22.0.2(@types/node@24.3.1):
+  stripe@22.1.1(@types/node@24.3.1):
     optionalDependencies:
       '@types/node': 24.3.1
 
