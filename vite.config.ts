@@ -7,7 +7,8 @@ import { join, resolve } from 'node:path';
 // ---------------------------------------------------------------------------
 // Client build entry points (used by `vite build`)
 // ---------------------------------------------------------------------------
-const uiSrcDir = resolve('packages/ui/src');
+const root = workspaceRootSync() || process.cwd();
+const uiSrcDir = resolve(root, 'packages/ui/src');
 const pagesDir = join(uiSrcDir, 'pages');
 
 const pageEntries: Record<string, string> = {};
@@ -48,13 +49,13 @@ export default defineConfig(({ command }) => ({
       input: {
         ...pageEntries,
         // CSS assets referenced by shell.ts
-        'fontsource-inconsolata': resolve('node_modules/@fontsource/inconsolata/index.css'),
-        'webawesome-styles': resolve('node_modules/@awesome.me/webawesome/dist/styles/webawesome.css'),
-        'webawesome-theme': resolve('node_modules/@awesome.me/webawesome/dist/styles/themes/awesome.css'),
+        'fontsource-inconsolata': resolve(root, 'node_modules/@fontsource/inconsolata/index.css'),
+        'webawesome-styles': resolve(root, 'node_modules/@awesome.me/webawesome/dist/styles/webawesome.css'),
+        'webawesome-theme': resolve(root, 'node_modules/@awesome.me/webawesome/dist/styles/themes/awesome.css'),
         // JS assets referenced by shell.ts
-        'lit-hydrate-support': resolve('node_modules/@lit-labs/ssr-client/lit-element-hydrate-support.js'),
+        'lit-hydrate-support': resolve(root, 'node_modules/@lit-labs/ssr-client/lit-element-hydrate-support.js'),
         // Web Awesome base path initializer (setBasePath)
-        'webawesome-init': resolve('packages/ui/src/webawesome-init.ts'),
+        'webawesome-init': resolve(root, 'packages/ui/src/webawesome-init.ts'),
       },
     },
     cssCodeSplit: true,
