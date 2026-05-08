@@ -26,7 +26,7 @@ for (const dir of readdirSync(pagesDir)) {
 export default defineConfig(({ command }) => ({
   server: { middlewareMode: true },
   appType: 'custom',
-  root: workspaceRootSync() || undefined,
+  root: root,
   resolve: {
     // In dev the Vite server needs 'development' to load dev-mode bundles;
     // the production build should only use 'browser'.
