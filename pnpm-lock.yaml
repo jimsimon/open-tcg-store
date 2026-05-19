@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@awesome.me/webawesome':
-        specifier: 3.6.0
-        version: 3.6.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)
+        specifier: 3.7.0
+        version: 3.7.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)
       '@better-auth/cli':
         specifier: ^1.4.21
         version: 1.4.21(@better-fetch/fetch@1.1.21)(@libsql/client@0.17.3)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-call@1.3.5(zod@4.4.3))(drizzle-kit@0.31.10)(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)(prisma@5.22.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.5)
@@ -228,8 +228,8 @@ packages:
     peerDependencies:
       graphql: '*'
 
-  '@awesome.me/webawesome@3.6.0':
-    resolution: {integrity: sha512-cUQWAq5KwQzy1fsMFUSJqGL6z/s9/VFOqnypOZOXZdpsfnD7gVFKnY6if9EbgzxtCXiHTOnEZ8N3mnwW2Z/Sww==}
+  '@awesome.me/webawesome@3.7.0':
+    resolution: {integrity: sha512-rAhTpJsJShv/4JWWGh+d7yQZ3pmk9j+YbwZjWWbgnPQPA+9I2/BrTUgNY+bOLehUovIbDd11J6+myGwGh0hl2w==}
     engines: {node: '>=14.17.0'}
 
   '@babel/code-frame@7.29.0':
@@ -5460,7 +5460,7 @@ snapshots:
       immutable: 5.1.5
       invariant: 2.2.4
 
-  '@awesome.me/webawesome@3.6.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)':
+  '@awesome.me/webawesome@3.7.0(@floating-ui/utils@0.2.11)(@types/react@19.1.12)':
     dependencies:
       '@ctrl/tinycolor': 4.1.0
       '@floating-ui/dom': 1.7.6
