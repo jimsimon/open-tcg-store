@@ -9,7 +9,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "@lit-labs/signals": "^0.2.0",
+    "@lit-labs/signals": "^0.3.0",
     "@open-tcgs/shared": "workspace:*",
     "chart.js": "^4.5.1"
   }
