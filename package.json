@@ -87,10 +87,5 @@
     "node": "^24.0.0",
     "pnpm": ">=10"
   },
-  "packageManager": "pnpm@11.5.0",
-  "pnpm": {
-    "overrides": {
-      "better-call": "2.0.3"
-    }
-  }
+  "packageManager": "pnpm@11.5.0"
 }

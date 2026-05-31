@@ -1,8 +1,13 @@
 packages:
   - packages/*
 
-onlyBuiltDependencies:
-  - esbuild
+overrides:
+  better-call: 2.0.3
 
 publicHoistPattern:
   - '@lit-labs/*'
+
+allowBuilds:
+  esbuild: true
+  better-sqlite3: false
+  '@prisma/client': false
