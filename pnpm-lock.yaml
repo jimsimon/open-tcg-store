@@ -103,7 +103,7 @@ importers:
         version: 2.0.0(@types/node@24.3.1)(@types/react@19.1.12)(graphile-config@0.0.1-beta.18)(graphql-ws@6.0.8(graphql@16.14.0)(ws@8.20.0))(graphql@16.14.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
       sales-tax:
         specifier: ^2.21.0
-        version: 2.22.0
+        version: 2.23.0
       stripe:
         specifier: ^22.0.2
         version: 22.1.1(@types/node@24.3.1)
@@ -4062,9 +4062,8 @@ packages:
   jsonc-parser@3.3.1:
     resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
 
-  jsvat@2.5.3:
-    resolution: {integrity: sha512-jra/1qujP+vrrCgLcGRRHwLrKj69cLvWUMeFwhwoD/AeHSZ9BY9Bf59GNOtDdDmGhchNwasrWjnKBTbL19FHsg==}
-    deprecated: Package is unmaintained. It may still work, but no updates or security fixes are planned.
+  jsvat-next@3.0.4:
+    resolution: {integrity: sha512-Q9wV2xfBG8yaD4WkskQMLKWXy9vbU5GUABp9tIPldjp7eyLCGK4BLyIYxUP+lXr1E6pIbI0HlSBocF5YSqZduw==}
 
   jwa@2.0.1:
     resolution: {integrity: sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==}
@@ -4882,8 +4881,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sales-tax@2.22.0:
-    resolution: {integrity: sha512-RQbyI0G0OPjfgU7lnGjhP87ieIOMCFYvMD7VMbFDYZrTQU0oe2Iv9jiM0zizWezcjLIzIlclIlEmAxp1vieliA==}
+  sales-tax@2.23.0:
+    resolution: {integrity: sha512-dr0VcnZMGzgvxlP5hN1xXFUrE+/axY47ZxSTDJ8KMJvLyt9VYk2kZaYwU/71uAzOgFmO8oOZuD9UERbkha08zA==}
     engines: {node: '>= 10.0.0'}
 
   scheduler@0.27.0:
@@ -9172,7 +9171,7 @@ snapshots:
 
   jsonc-parser@3.3.1: {}
 
-  jsvat@2.5.3: {}
+  jsvat-next@3.0.4: {}
 
   jwa@2.0.1:
     dependencies:
@@ -9993,10 +9992,10 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sales-tax@2.22.0:
+  sales-tax@2.23.0:
     dependencies:
       ein-validator: 1.0.1
-      jsvat: 2.5.3
+      jsvat-next: 3.0.4
       validate-vat: 0.9.0
 
   scheduler@0.27.0: {}
