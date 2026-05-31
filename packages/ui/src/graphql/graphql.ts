@@ -1,1644 +1,373 @@
 /* eslint-disable */
-import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
-export type Maybe<T> = T | null;
-export type InputMaybe<T> = T | null | undefined;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+/** Internal type. DO NOT USE DIRECTLY. */
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+/** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
-/** All built-in and custom scalars, mapped to their actual values */
-export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
-};
-
+import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type AddBarcodeInput = {
-  code: Scalars['String']['input'];
-  inventoryItemId: Scalars['Int']['input'];
+  code: string;
+  inventoryItemId: number;
 };
 
 export type AddInventoryItemInput = {
-  acquisitionDate: Scalars['String']['input'];
-  barcodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  acquisitionDate: string;
+  barcodes?: Array<string> | null | undefined;
   condition: CardCondition;
-  costBasis: Scalars['Int']['input'];
-  notes?: InputMaybe<Scalars['String']['input']>;
-  price: Scalars['Int']['input'];
-  productId: Scalars['Int']['input'];
-  quantity: Scalars['Int']['input'];
+  costBasis: number;
+  notes?: string | null | undefined;
+  price: number;
+  productId: number;
+  quantity: number;
 };
 
 export type AddStockInput = {
-  acquisitionDate: Scalars['String']['input'];
-  costBasis: Scalars['Int']['input'];
-  inventoryItemId: Scalars['Int']['input'];
-  notes?: InputMaybe<Scalars['String']['input']>;
-  quantity: Scalars['Int']['input'];
+  acquisitionDate: string;
+  costBasis: number;
+  inventoryItemId: number;
+  notes?: string | null | undefined;
+  quantity: number;
 };
 
 export type AddStoreLocationInput = {
-  city: Scalars['String']['input'];
-  hours?: InputMaybe<Array<StoreHoursInput>>;
-  name: Scalars['String']['input'];
-  phone?: InputMaybe<Scalars['String']['input']>;
-  slug: Scalars['String']['input'];
-  state: Scalars['String']['input'];
-  street1: Scalars['String']['input'];
-  street2?: InputMaybe<Scalars['String']['input']>;
-  zip: Scalars['String']['input'];
+  city: string;
+  hours?: Array<StoreHoursInput> | null | undefined;
+  name: string;
+  phone?: string | null | undefined;
+  slug: string;
+  state: string;
+  street1: string;
+  street2?: string | null | undefined;
+  zip: string;
 };
 
 export type AdminEventRegistrationInput = {
-  registrantEmail?: InputMaybe<Scalars['String']['input']>;
-  registrantName: Scalars['String']['input'];
-  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+  registrantEmail?: string | null | undefined;
+  registrantName: string;
+  registrantPhone?: string | null | undefined;
 };
 
-export enum BackupProvider {
-  Dropbox = 'dropbox',
-  GoogleDrive = 'google_drive',
-  Onedrive = 'onedrive'
-}
+export type BackupProvider =
+  | 'dropbox'
+  | 'google_drive'
+  | 'onedrive';
 
-export type BackupResult = {
-  __typename?: 'BackupResult';
-  message?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
-  timestamp?: Maybe<Scalars['String']['output']>;
-};
-
-export type BackupSettings = {
-  __typename?: 'BackupSettings';
-  dropboxClientId?: Maybe<Scalars['String']['output']>;
-  dropboxConnected: Scalars['Boolean']['output'];
-  frequency?: Maybe<Scalars['String']['output']>;
-  googleDriveClientId?: Maybe<Scalars['String']['output']>;
-  googleDriveConnected: Scalars['Boolean']['output'];
-  googleDriveHasClientSecret: Scalars['Boolean']['output'];
-  lastBackupAt?: Maybe<Scalars['String']['output']>;
-  onedriveClientId?: Maybe<Scalars['String']['output']>;
-  onedriveConnected: Scalars['Boolean']['output'];
-  provider?: Maybe<BackupProvider>;
-};
-
-export type Barcode = {
-  __typename?: 'Barcode';
-  code: Scalars['String']['output'];
-  createdAt: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  inventoryItemId: Scalars['Int']['output'];
-};
-
-export type BarcodeLookupResult = {
-  __typename?: 'BarcodeLookupResult';
-  availableQuantity: Scalars['Int']['output'];
-  condition: CardCondition;
-  gameName: Scalars['String']['output'];
-  imageUrl?: Maybe<Scalars['String']['output']>;
-  inventoryItemId: Scalars['Int']['output'];
-  price: Scalars['Int']['output'];
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  setName: Scalars['String']['output'];
-};
-
-export type BestSeller = {
-  __typename?: 'BestSeller';
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  totalQuantity: Scalars['Int']['output'];
-  totalRevenue: Scalars['Int']['output'];
-};
-
-export enum BestSellerSortBy {
-  Quantity = 'quantity',
-  Revenue = 'revenue'
-}
+export type BestSellerSortBy =
+  | 'quantity'
+  | 'revenue';
 
 export type BulkDeleteStockInput = {
-  ids: Array<Scalars['Int']['input']>;
+  ids: Array<number>;
 };
 
 export type BulkUpdateStockInput = {
-  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
-  costBasis?: InputMaybe<Scalars['Int']['input']>;
-  ids: Array<Scalars['Int']['input']>;
-  notes?: InputMaybe<Scalars['String']['input']>;
-  quantity?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type BuyRateEntry = {
-  __typename?: 'BuyRateEntry';
-  description: Scalars['String']['output'];
-  fixedRateCents?: Maybe<Scalars['Int']['output']>;
-  hidden: Scalars['Boolean']['output'];
-  id: Scalars['Int']['output'];
-  percentageRate?: Maybe<Scalars['Float']['output']>;
-  rarity?: Maybe<Scalars['String']['output']>;
-  sortOrder: Scalars['Int']['output'];
-  type: BuyRateType;
+  acquisitionDate?: string | null | undefined;
+  costBasis?: number | null | undefined;
+  ids: Array<number>;
+  notes?: string | null | undefined;
+  quantity?: number | null | undefined;
 };
 
 export type BuyRateEntryInput = {
-  description: Scalars['String']['input'];
-  fixedRateCents?: InputMaybe<Scalars['Int']['input']>;
-  hidden?: InputMaybe<Scalars['Boolean']['input']>;
-  percentageRate?: InputMaybe<Scalars['Float']['input']>;
-  rarity?: InputMaybe<Scalars['String']['input']>;
-  sortOrder: Scalars['Int']['input'];
+  description: string;
+  fixedRateCents?: number | null | undefined;
+  hidden?: boolean | null | undefined;
+  percentageRate?: number | null | undefined;
+  rarity?: string | null | undefined;
+  sortOrder: number;
   type: BuyRateType;
 };
 
-export type BuyRateTable = {
-  __typename?: 'BuyRateTable';
-  categoryId: Scalars['Int']['output'];
-  entries: Array<BuyRateEntry>;
-  gameDisplayName: Scalars['String']['output'];
-  gameName: Scalars['String']['output'];
-};
+export type BuyRateType =
+  | 'fixed'
+  | 'percentage';
 
-export enum BuyRateType {
-  Fixed = 'fixed',
-  Percentage = 'percentage'
-}
-
-export type Card = {
-  __typename?: 'Card';
-  finishes: Array<Scalars['String']['output']>;
-  flavorText?: Maybe<Scalars['String']['output']>;
-  id: Scalars['String']['output'];
-  images?: Maybe<CardImages>;
-  inventory: Array<Maybe<ConditionInventories>>;
-  name: Scalars['String']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-  text?: Maybe<Scalars['String']['output']>;
-  type?: Maybe<Scalars['String']['output']>;
-};
-
-export enum CardCondition {
-  D = 'D',
-  Hp = 'HP',
-  Lp = 'LP',
-  Mp = 'MP',
-  Nm = 'NM'
-}
-
-export type CardImages = {
-  __typename?: 'CardImages';
-  large?: Maybe<Scalars['String']['output']>;
-  small?: Maybe<Scalars['String']['output']>;
-};
+export type CardCondition =
+  | 'D'
+  | 'HP'
+  | 'LP'
+  | 'MP'
+  | 'NM';
 
 export type CartItemInput = {
-  inventoryItemId: Scalars['Int']['input'];
-  quantity: Scalars['Int']['input'];
-};
-
-export type CartItemOutput = {
-  __typename?: 'CartItemOutput';
-  condition: CardCondition;
-  inventoryItemId: Scalars['Int']['output'];
-  maxAvailable: Scalars['Int']['output'];
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  quantity: Scalars['Int']['output'];
-  unitPrice: Scalars['Int']['output'];
+  inventoryItemId: number;
+  quantity: number;
 };
 
 export type CompanySettings = {
-  companyName: Scalars['String']['input'];
-  ein: Scalars['String']['input'];
+  companyName: string;
+  ein: string;
 };
 
 export type CompletePosOrderInput = {
-  newItems?: InputMaybe<Array<PosLineItemInput>>;
-  orderId: Scalars['Int']['input'];
-  paymentMethod: Scalars['String']['input'];
-  stripePaymentIntentId?: InputMaybe<Scalars['String']['input']>;
-  taxAmount: Scalars['Int']['input'];
-};
-
-export type ConditionInventories = {
-  __typename?: 'ConditionInventories';
-  D?: Maybe<ConditionInventory>;
-  HP?: Maybe<ConditionInventory>;
-  LP: ConditionInventory;
-  MP: ConditionInventory;
-  NM: ConditionInventory;
-  type: Scalars['String']['output'];
-};
-
-export type ConditionInventory = {
-  __typename?: 'ConditionInventory';
-  price: Scalars['Int']['output'];
-  quantity: Scalars['Int']['output'];
+  newItems?: Array<PosLineItemInput> | null | undefined;
+  orderId: number;
+  paymentMethod: string;
+  stripePaymentIntentId?: string | null | undefined;
+  taxAmount: number;
 };
 
 export type CreateEventInput = {
-  capacity?: InputMaybe<Scalars['Int']['input']>;
-  categoryId?: InputMaybe<Scalars['Int']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  endTime?: InputMaybe<Scalars['String']['input']>;
-  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
+  capacity?: number | null | undefined;
+  categoryId?: number | null | undefined;
+  description?: string | null | undefined;
+  endTime?: string | null | undefined;
+  entryFeeInCents?: number | null | undefined;
   eventType: EventType;
-  name: Scalars['String']['input'];
-  recurrenceRule?: InputMaybe<RecurrenceRuleInput>;
-  startTime: Scalars['String']['input'];
+  name: string;
+  recurrenceRule?: RecurrenceRuleInput | null | undefined;
+  startTime: string;
 };
 
 export type CreateLotInput = {
-  acquisitionDate: Scalars['String']['input'];
-  amountPaid: Scalars['Int']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
+  acquisitionDate: string;
+  amountPaid: number;
+  description?: string | null | undefined;
   items: Array<LotItemInput>;
-  name: Scalars['String']['input'];
-};
-
-export type CronJob = {
-  __typename?: 'CronJob';
-  config?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['String']['output'];
-  cronExpression: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  displayName: Scalars['String']['output'];
-  enabled: Scalars['Boolean']['output'];
-  id: Scalars['Int']['output'];
-  lastRunAt?: Maybe<Scalars['String']['output']>;
-  lastRunDurationMs?: Maybe<Scalars['Int']['output']>;
-  lastRunError?: Maybe<Scalars['String']['output']>;
-  lastRunStatus?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  nextRunAt?: Maybe<Scalars['String']['output']>;
-  updatedAt: Scalars['String']['output'];
-};
-
-export type CronJobRun = {
-  __typename?: 'CronJobRun';
-  completedAt?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['String']['output'];
-  cronJobId: Scalars['Int']['output'];
-  durationMs?: Maybe<Scalars['Int']['output']>;
-  error?: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  startedAt: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  summary?: Maybe<Scalars['String']['output']>;
-};
-
-export type CronJobRunPage = {
-  __typename?: 'CronJobRunPage';
-  items: Array<CronJobRun>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
+  name: string;
 };
 
 export type DashboardDateRange = {
-  endDate: Scalars['String']['input'];
-  startDate: Scalars['String']['input'];
-};
-
-export type DataUpdateResult = {
-  __typename?: 'DataUpdateResult';
-  message?: Maybe<Scalars['String']['output']>;
-  newVersion?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
-};
-
-export type DataUpdateStatus = {
-  __typename?: 'DataUpdateStatus';
-  currentVersion?: Maybe<Scalars['String']['output']>;
-  isUpdating: Scalars['Boolean']['output'];
-  latestVersion?: Maybe<Scalars['String']['output']>;
-  updateAvailable: Scalars['Boolean']['output'];
-};
-
-export type Event = {
-  __typename?: 'Event';
-  capacity?: Maybe<Scalars['Int']['output']>;
-  categoryId?: Maybe<Scalars['Int']['output']>;
-  createdAt: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  endTime?: Maybe<Scalars['String']['output']>;
-  entryFeeInCents?: Maybe<Scalars['Int']['output']>;
-  eventType: EventType;
-  gameDisplayName?: Maybe<Scalars['String']['output']>;
-  gameName?: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  isRecurrenceTemplate: Scalars['Boolean']['output'];
-  name: Scalars['String']['output'];
-  organizationId: Scalars['String']['output'];
-  recurrenceGroupId?: Maybe<Scalars['String']['output']>;
-  recurrenceRule?: Maybe<RecurrenceRule>;
-  registrationCount: Scalars['Int']['output'];
-  registrations?: Maybe<Array<EventRegistration>>;
-  startTime: Scalars['String']['output'];
-  status: EventStatus;
-  updatedAt: Scalars['String']['output'];
+  endDate: string;
+  startDate: string;
 };
 
 export type EventFilters = {
-  categoryId?: InputMaybe<Scalars['Int']['input']>;
-  dateFrom?: InputMaybe<Scalars['String']['input']>;
-  dateTo?: InputMaybe<Scalars['String']['input']>;
-  eventType?: InputMaybe<EventType>;
-  status?: InputMaybe<EventStatus>;
+  categoryId?: number | null | undefined;
+  dateFrom?: string | null | undefined;
+  dateTo?: string | null | undefined;
+  eventType?: EventType | null | undefined;
+  status?: EventStatus | null | undefined;
 };
 
-export type EventPage = {
-  __typename?: 'EventPage';
-  items: Array<Event>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
+export type EventStatus =
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'SCHEDULED';
 
-export type EventRegistration = {
-  __typename?: 'EventRegistration';
-  checkedIn: Scalars['Boolean']['output'];
-  checkedInAt?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['String']['output'];
-  eventId: Scalars['Int']['output'];
-  id: Scalars['Int']['output'];
-  registrantEmail?: Maybe<Scalars['String']['output']>;
-  registrantName: Scalars['String']['output'];
-  registrantPhone?: Maybe<Scalars['String']['output']>;
-  status: RegistrationStatus;
-};
+export type EventType =
+  | 'CASUAL_PLAY'
+  | 'DRAFT'
+  | 'LEAGUE'
+  | 'OTHER'
+  | 'PRERELEASE'
+  | 'RELEASE_EVENT'
+  | 'TOURNAMENT';
 
-export enum EventStatus {
-  Cancelled = 'CANCELLED',
-  Completed = 'COMPLETED',
-  Scheduled = 'SCHEDULED'
-}
-
-export enum EventType {
-  CasualPlay = 'CASUAL_PLAY',
-  Draft = 'DRAFT',
-  League = 'LEAGUE',
-  Other = 'OTHER',
-  Prerelease = 'PRERELEASE',
-  ReleaseEvent = 'RELEASE_EVENT',
-  Tournament = 'TOURNAMENT'
-}
-
-export enum Granularity {
-  Day = 'day',
-  Hour = 'hour',
-  Month = 'month'
-}
+export type Granularity =
+  | 'day'
+  | 'hour'
+  | 'month';
 
 export type InitialStoreLocation = {
-  city: Scalars['String']['input'];
-  name: Scalars['String']['input'];
-  phone?: InputMaybe<Scalars['String']['input']>;
-  slug: Scalars['String']['input'];
-  state: Scalars['String']['input'];
-  street1: Scalars['String']['input'];
-  street2?: InputMaybe<Scalars['String']['input']>;
-  zip: Scalars['String']['input'];
-};
-
-export type IntegrationSettings = {
-  __typename?: 'IntegrationSettings';
-  shopify: ShopifyIntegration;
-  stripe: StripeIntegration;
+  city: string;
+  name: string;
+  phone?: string | null | undefined;
+  slug: string;
+  state: string;
+  street1: string;
+  street2?: string | null | undefined;
+  zip: string;
 };
 
 export type InventoryFilters = {
-  condition?: InputMaybe<CardCondition>;
-  gameName?: InputMaybe<Scalars['String']['input']>;
-  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
-  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
-  organizationId?: InputMaybe<Scalars['String']['input']>;
-  rarity?: InputMaybe<Scalars['String']['input']>;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  setName?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type InventoryItem = {
-  __typename?: 'InventoryItem';
-  condition: CardCondition;
-  createdAt: Scalars['String']['output'];
-  entryCount: Scalars['Int']['output'];
-  gameName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  isSealed: Scalars['Boolean']['output'];
-  isSingle: Scalars['Boolean']['output'];
-  organizationId: Scalars['String']['output'];
-  price: Scalars['Int']['output'];
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-  totalQuantity: Scalars['Int']['output'];
-  updatedAt: Scalars['String']['output'];
-};
-
-export type InventoryItemStock = {
-  __typename?: 'InventoryItemStock';
-  acquisitionDate: Scalars['String']['output'];
-  costBasis: Scalars['Int']['output'];
-  createdAt: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  inventoryItemId: Scalars['Int']['output'];
-  notes?: Maybe<Scalars['String']['output']>;
-  quantity: Scalars['Int']['output'];
-  updatedAt: Scalars['String']['output'];
-};
-
-export type InventoryPage = {
-  __typename?: 'InventoryPage';
-  items: Array<InventoryItem>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
-
-export type InventoryStockPage = {
-  __typename?: 'InventoryStockPage';
-  items: Array<InventoryItemStock>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
-
-export type InventorySummary = {
-  __typename?: 'InventorySummary';
-  totalCostValue: Scalars['Int']['output'];
-  totalRetailValue: Scalars['Int']['output'];
-  totalSkus: Scalars['Int']['output'];
-  totalUnits: Scalars['Int']['output'];
-};
-
-export type Lot = {
-  __typename?: 'Lot';
-  acquisitionDate: Scalars['String']['output'];
-  amountPaid: Scalars['Int']['output'];
-  createdAt: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  items: Array<LotItem>;
-  name: Scalars['String']['output'];
-  organizationId: Scalars['String']['output'];
-  projectedProfitLoss: Scalars['Int']['output'];
-  projectedProfitMargin: Scalars['Float']['output'];
-  totalCost: Scalars['Int']['output'];
-  totalMarketValue: Scalars['Int']['output'];
-  updatedAt: Scalars['String']['output'];
+  condition?: CardCondition | null | undefined;
+  gameName?: string | null | undefined;
+  includeSealed?: boolean | null | undefined;
+  includeSingles?: boolean | null | undefined;
+  organizationId?: string | null | undefined;
+  rarity?: string | null | undefined;
+  searchTerm?: string | null | undefined;
+  setName?: string | null | undefined;
 };
 
 export type LotFilters = {
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type LotItem = {
-  __typename?: 'LotItem';
-  condition?: Maybe<CardCondition>;
-  costBasis: Scalars['Int']['output'];
-  costOverridden: Scalars['Boolean']['output'];
-  gameName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  isSealed: Scalars['Boolean']['output'];
-  isSingle: Scalars['Boolean']['output'];
-  lotId: Scalars['Int']['output'];
-  marketValue?: Maybe<Scalars['Int']['output']>;
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  quantity: Scalars['Int']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
+  searchTerm?: string | null | undefined;
 };
 
 export type LotItemInput = {
-  condition?: InputMaybe<CardCondition>;
-  costBasis: Scalars['Int']['input'];
-  costOverridden: Scalars['Boolean']['input'];
-  id?: InputMaybe<Scalars['Int']['input']>;
-  productId: Scalars['Int']['input'];
-  quantity: Scalars['Int']['input'];
-};
-
-export type LotPage = {
-  __typename?: 'LotPage';
-  items: Array<Lot>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
-
-export type LotStats = {
-  __typename?: 'LotStats';
-  totalInvested: Scalars['Int']['output'];
-  totalLots: Scalars['Int']['output'];
-  totalMarketValue: Scalars['Int']['output'];
-  totalProfitLoss: Scalars['Int']['output'];
-};
-
-export type Mutation = {
-  __typename?: 'Mutation';
-  addBarcode: Barcode;
-  addEventRegistration: EventRegistration;
-  addInventoryItem: InventoryItem;
-  addStock: InventoryItemStock;
-  addStoreLocation: StoreLocation;
-  addToCart: ShoppingCart;
-  bulkDeleteStock: Scalars['Boolean']['output'];
-  bulkUpdateStock: Array<InventoryItemStock>;
-  cancelEvent: Event;
-  cancelEventRegistration: EventRegistration;
-  cancelOrder: Order;
-  cancelPosPaymentIntent: Scalars['Boolean']['output'];
-  cancelRecurringSeries: Scalars['Int']['output'];
-  checkInEventRegistration: EventRegistration;
-  checkoutWithCart: ShoppingCart;
-  clearCart: ShoppingCart;
-  completePosOrder: Order;
-  createEvent: Event;
-  createLot: Lot;
-  createPosPaymentIntent: PaymentIntentResult;
-  createTerminalConnectionToken: TerminalConnectionToken;
-  /** Admin mutation - delete all buy rates for a game. */
-  deleteBuyRates: Scalars['Boolean']['output'];
-  deleteInventoryItem: Scalars['Boolean']['output'];
-  deleteLot: Scalars['Boolean']['output'];
-  deleteStock: Scalars['Boolean']['output'];
-  disableCronJob: CronJob;
-  disconnectBackupProvider: BackupSettings;
-  enableCronJob: CronJob;
-  firstTimeSetup: Scalars['String']['output'];
-  registerForEvent: EventRegistration;
-  removeBarcode: Scalars['Boolean']['output'];
-  removeFromCart: ShoppingCart;
-  removeStoreLocation: Scalars['Boolean']['output'];
-  /** Admin mutation - save the buy rate table for a game (replaces all entries). */
-  saveBuyRates: Array<BuyRateEntry>;
-  setActiveStoreLocation: Scalars['Boolean']['output'];
-  /**
-   * Admin mutation - set which games the store supports.
-   * Removing a game also deletes its buy rates.
-   */
-  setSupportedGames: Array<SupportedGame>;
-  submitOrder: Order;
-  submitPosOrder: Order;
-  triggerBackup: BackupResult;
-  triggerCronJob: CronJobRun;
-  triggerDataUpdate: DataUpdateResult;
-  triggerRestore: RestoreResult;
-  updateBackupSettings: BackupSettings;
-  updateCronJobConfig: CronJob;
-  updateCronJobSchedule: CronJob;
-  updateEvent: Event;
-  updateInventoryItem: InventoryItem;
-  updateItemInCart: ShoppingCart;
-  updateLot: Lot;
-  updateOrderStatus: Order;
-  updateRecurrenceRule: Event;
-  updateShopifyIntegration: ShopifyIntegration;
-  updateStock: InventoryItemStock;
-  updateStoreLocation: StoreLocation;
-  updateStoreSettings: StoreSettings;
-  updateStripeIntegration: StripeIntegration;
-};
-
-
-export type MutationAddBarcodeArgs = {
-  input: AddBarcodeInput;
-};
-
-
-export type MutationAddEventRegistrationArgs = {
-  eventId: Scalars['Int']['input'];
-  input: AdminEventRegistrationInput;
-};
-
-
-export type MutationAddInventoryItemArgs = {
-  input: AddInventoryItemInput;
-};
-
-
-export type MutationAddStockArgs = {
-  input: AddStockInput;
-};
-
-
-export type MutationAddStoreLocationArgs = {
-  input: AddStoreLocationInput;
-};
-
-
-export type MutationAddToCartArgs = {
-  cartItem: CartItemInput;
-};
-
-
-export type MutationBulkDeleteStockArgs = {
-  input: BulkDeleteStockInput;
-};
-
-
-export type MutationBulkUpdateStockArgs = {
-  input: BulkUpdateStockInput;
-};
-
-
-export type MutationCancelEventArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationCancelEventRegistrationArgs = {
-  registrationId: Scalars['Int']['input'];
-};
-
-
-export type MutationCancelOrderArgs = {
-  orderId: Scalars['Int']['input'];
-};
-
-
-export type MutationCancelPosPaymentIntentArgs = {
-  paymentIntentId: Scalars['String']['input'];
-};
-
-
-export type MutationCancelRecurringSeriesArgs = {
-  recurrenceGroupId: Scalars['String']['input'];
-};
-
-
-export type MutationCheckInEventRegistrationArgs = {
-  registrationId: Scalars['Int']['input'];
-};
-
-
-export type MutationCompletePosOrderArgs = {
-  input: CompletePosOrderInput;
-};
-
-
-export type MutationCreateEventArgs = {
-  input: CreateEventInput;
-};
-
-
-export type MutationCreateLotArgs = {
-  input: CreateLotInput;
-};
-
-
-export type MutationCreatePosPaymentIntentArgs = {
-  amount: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteBuyRatesArgs = {
-  categoryId: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteInventoryItemArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteLotArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteStockArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationDisableCronJobArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationDisconnectBackupProviderArgs = {
-  provider: BackupProvider;
-};
-
-
-export type MutationEnableCronJobArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationFirstTimeSetupArgs = {
-  company: CompanySettings;
-  store: InitialStoreLocation;
-  supportedGameCategoryIds: Array<Scalars['Int']['input']>;
-  userDetails: UserDetails;
-};
-
-
-export type MutationRegisterForEventArgs = {
-  eventId: Scalars['Int']['input'];
-  input: PublicEventRegistrationInput;
-};
-
-
-export type MutationRemoveBarcodeArgs = {
-  input: RemoveBarcodeInput;
-};
-
-
-export type MutationRemoveFromCartArgs = {
-  cartItem: CartItemInput;
-};
-
-
-export type MutationRemoveStoreLocationArgs = {
-  id: Scalars['String']['input'];
-};
-
-
-export type MutationSaveBuyRatesArgs = {
-  input: SaveBuyRatesInput;
-};
-
-
-export type MutationSetActiveStoreLocationArgs = {
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type MutationSetSupportedGamesArgs = {
-  categoryIds: Array<Scalars['Int']['input']>;
-};
-
-
-export type MutationSubmitOrderArgs = {
-  input: SubmitOrderInput;
-};
-
-
-export type MutationSubmitPosOrderArgs = {
-  input: SubmitPosOrderInput;
-};
-
-
-export type MutationTriggerCronJobArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationTriggerRestoreArgs = {
-  provider: BackupProvider;
-};
-
-
-export type MutationUpdateBackupSettingsArgs = {
-  input: UpdateBackupSettingsInput;
-};
-
-
-export type MutationUpdateCronJobConfigArgs = {
-  config: Scalars['String']['input'];
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationUpdateCronJobScheduleArgs = {
-  cronExpression: Scalars['String']['input'];
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationUpdateEventArgs = {
-  id: Scalars['Int']['input'];
-  input: UpdateEventInput;
-};
-
-
-export type MutationUpdateInventoryItemArgs = {
-  input: UpdateInventoryItemInput;
-};
-
-
-export type MutationUpdateItemInCartArgs = {
-  cartItem: CartItemInput;
-};
-
-
-export type MutationUpdateLotArgs = {
-  input: UpdateLotInput;
-};
-
-
-export type MutationUpdateOrderStatusArgs = {
-  orderId: Scalars['Int']['input'];
-  status: OrderStatus;
-};
-
-
-export type MutationUpdateRecurrenceRuleArgs = {
-  frequency: RecurrenceFrequency;
-  recurrenceGroupId: Scalars['String']['input'];
-};
-
-
-export type MutationUpdateShopifyIntegrationArgs = {
-  input: UpdateShopifyIntegrationInput;
-};
-
-
-export type MutationUpdateStockArgs = {
-  input: UpdateStockInput;
-};
-
-
-export type MutationUpdateStoreLocationArgs = {
-  input: UpdateStoreLocationInput;
-};
-
-
-export type MutationUpdateStoreSettingsArgs = {
-  input: UpdateStoreSettingsInput;
-};
-
-
-export type MutationUpdateStripeIntegrationArgs = {
-  input: UpdateStripeIntegrationInput;
-};
-
-export type OpenOrder = {
-  __typename?: 'OpenOrder';
-  createdAt: Scalars['String']['output'];
-  customerName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  itemCount: Scalars['Int']['output'];
-  orderNumber: Scalars['String']['output'];
-  totalAmount: Scalars['Int']['output'];
-};
-
-export type Order = {
-  __typename?: 'Order';
-  createdAt: Scalars['String']['output'];
-  customerName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  items: Array<OrderItem>;
-  orderNumber: Scalars['String']['output'];
-  organizationId: Scalars['String']['output'];
-  paymentMethod?: Maybe<Scalars['String']['output']>;
-  status: OrderStatus;
-  taxAmount?: Maybe<Scalars['Int']['output']>;
-  totalAmount: Scalars['Int']['output'];
-  totalCostBasis?: Maybe<Scalars['Int']['output']>;
-  totalProfit?: Maybe<Scalars['Int']['output']>;
+  condition?: CardCondition | null | undefined;
+  costBasis: number;
+  costOverridden: boolean;
+  id?: number | null | undefined;
+  productId: number;
+  quantity: number;
 };
 
 export type OrderFilters = {
-  organizationId?: InputMaybe<Scalars['String']['input']>;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<OrderStatus>;
+  organizationId?: string | null | undefined;
+  searchTerm?: string | null | undefined;
+  status?: OrderStatus | null | undefined;
 };
 
-export type OrderItem = {
-  __typename?: 'OrderItem';
-  condition: CardCondition;
-  costBasis?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['Int']['output'];
-  lotId?: Maybe<Scalars['Int']['output']>;
-  productId: Scalars['Int']['output'];
-  productName: Scalars['String']['output'];
-  profit?: Maybe<Scalars['Int']['output']>;
-  quantity: Scalars['Int']['output'];
-  unitPrice: Scalars['Int']['output'];
-};
-
-export type OrderPage = {
-  __typename?: 'OrderPage';
-  items: Array<Order>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
-};
-
-export enum OrderStatus {
-  Cancelled = 'cancelled',
-  Completed = 'completed',
-  Open = 'open'
-}
-
-export type OrderStatusBreakdown = {
-  __typename?: 'OrderStatusBreakdown';
-  cancelled: Scalars['Int']['output'];
-  completed: Scalars['Int']['output'];
-  open: Scalars['Int']['output'];
-  total: Scalars['Int']['output'];
-};
+export type OrderStatus =
+  | 'cancelled'
+  | 'completed'
+  | 'open';
 
 export type PaginationInput = {
-  page?: InputMaybe<Scalars['Int']['input']>;
-  pageSize?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type PaymentIntentResult = {
-  __typename?: 'PaymentIntentResult';
-  clientSecret: Scalars['String']['output'];
-  paymentIntentId: Scalars['String']['output'];
-};
-
-export type PosConfig = {
-  __typename?: 'PosConfig';
-  stripeEnabled: Scalars['Boolean']['output'];
-  stripePublishableKey?: Maybe<Scalars['String']['output']>;
-  taxRate: Scalars['Float']['output'];
+  page?: number | null | undefined;
+  pageSize?: number | null | undefined;
 };
 
 export type PosLineItemInput = {
-  inventoryItemId: Scalars['Int']['input'];
-  quantity: Scalars['Int']['input'];
-};
-
-export type PriceHistoryEntry = {
-  __typename?: 'PriceHistoryEntry';
-  date: Scalars['String']['output'];
-  directLowPrice?: Maybe<Scalars['Int']['output']>;
-  highPrice?: Maybe<Scalars['Int']['output']>;
-  lowPrice?: Maybe<Scalars['Int']['output']>;
-  marketPrice?: Maybe<Scalars['Int']['output']>;
-  midPrice?: Maybe<Scalars['Int']['output']>;
-  subTypeName: Scalars['String']['output'];
-};
-
-export type ProductConditionPrice = {
-  __typename?: 'ProductConditionPrice';
-  condition: CardCondition;
-  inventoryItemId: Scalars['Int']['output'];
-  price: Scalars['Int']['output'];
-  quantity: Scalars['Int']['output'];
-};
-
-export type ProductDetail = {
-  __typename?: 'ProductDetail';
-  finishes: Array<Scalars['String']['output']>;
-  flavorText?: Maybe<Scalars['String']['output']>;
-  gameName: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  images?: Maybe<CardImages>;
-  inventoryRecords: Array<ProductInventoryRecord>;
-  isSealed: Scalars['Boolean']['output'];
-  isSingle: Scalars['Boolean']['output'];
-  name: Scalars['String']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-  text?: Maybe<Scalars['String']['output']>;
-  type?: Maybe<Scalars['String']['output']>;
-};
-
-export type ProductInventoryRecord = {
-  __typename?: 'ProductInventoryRecord';
-  condition: CardCondition;
-  inventoryItemId: Scalars['Int']['output'];
-  price: Scalars['Int']['output'];
-  quantity: Scalars['Int']['output'];
-};
-
-export type ProductListing = {
-  __typename?: 'ProductListing';
-  conditionPrices: Array<ProductConditionPrice>;
-  finishes: Array<Scalars['String']['output']>;
-  gameName: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  images?: Maybe<CardImages>;
-  lowestPrice?: Maybe<Scalars['Int']['output']>;
-  lowestPriceInventoryItemId?: Maybe<Scalars['Int']['output']>;
-  name: Scalars['String']['output'];
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-  totalQuantity: Scalars['Int']['output'];
+  inventoryItemId: number;
+  quantity: number;
 };
 
 export type ProductListingFilters = {
-  condition?: InputMaybe<CardCondition>;
-  gameName?: InputMaybe<Scalars['String']['input']>;
-  inStockOnly?: InputMaybe<Scalars['Boolean']['input']>;
-  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
-  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  setCode?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type ProductListingPage = {
-  __typename?: 'ProductListingPage';
-  items: Array<ProductListing>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
+  condition?: CardCondition | null | undefined;
+  gameName?: string | null | undefined;
+  inStockOnly?: boolean | null | undefined;
+  includeSealed?: boolean | null | undefined;
+  includeSingles?: boolean | null | undefined;
+  searchTerm?: string | null | undefined;
+  setCode?: string | null | undefined;
 };
 
 export type ProductListingPagination = {
-  page?: InputMaybe<Scalars['Int']['input']>;
-  pageSize?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type ProductPrice = {
-  __typename?: 'ProductPrice';
-  directLowPrice?: Maybe<Scalars['Int']['output']>;
-  highPrice?: Maybe<Scalars['Int']['output']>;
-  lowPrice?: Maybe<Scalars['Int']['output']>;
-  marketPrice?: Maybe<Scalars['Int']['output']>;
-  midPrice?: Maybe<Scalars['Int']['output']>;
-  subTypeName: Scalars['String']['output'];
-};
-
-export type ProductSearchResult = {
-  __typename?: 'ProductSearchResult';
-  gameName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  imageUrl?: Maybe<Scalars['String']['output']>;
-  isSealed: Scalars['Boolean']['output'];
-  isSingle: Scalars['Boolean']['output'];
-  name: Scalars['String']['output'];
-  prices: Array<ProductPrice>;
-  rarity?: Maybe<Scalars['String']['output']>;
-  setName: Scalars['String']['output'];
-};
-
-export type PublicBuyRates = {
-  __typename?: 'PublicBuyRates';
-  games: Array<BuyRateTable>;
+  page?: number | null | undefined;
+  pageSize?: number | null | undefined;
 };
 
 export type PublicEventRegistrationInput = {
-  registrantEmail?: InputMaybe<Scalars['String']['input']>;
-  registrantName: Scalars['String']['input'];
-  registrantPhone?: InputMaybe<Scalars['String']['input']>;
+  registrantEmail?: string | null | undefined;
+  registrantName: string;
+  registrantPhone?: string | null | undefined;
 };
 
-export type Query = {
-  __typename?: 'Query';
-  checkForDataUpdates: DataUpdateStatus;
-  getActiveStoreLocation?: Maybe<StoreLocation>;
-  /** Public list of all stores — no auth required. Used by anonymous users on product pages. */
-  getAllStoreLocations: Array<StoreLocation>;
-  /**
-   * Public query - returns all available game categories from the TCG data catalog.
-   * No authentication required (catalog data is not sensitive).
-   */
-  getAvailableGames: Array<SupportedGame>;
-  getBackupSettings: BackupSettings;
-  getBarcodesForInventoryItem: Array<Barcode>;
-  /** Admin query - returns buy rate entries for a specific game. */
-  getBuyRates: Array<BuyRateEntry>;
-  getCard: Card;
-  getCronJob?: Maybe<CronJob>;
-  getCronJobRuns: CronJobRunPage;
-  getCronJobs: Array<CronJob>;
-  getDashboardBestSellers: Array<BestSeller>;
-  getDashboardInventorySummary: InventorySummary;
-  getDashboardOpenOrders: Array<OpenOrder>;
-  getDashboardOrderStatus: OrderStatusBreakdown;
-  getDashboardSales: SalesBreakdown;
-  getDistinctRarities: Array<Scalars['String']['output']>;
-  /** Stores the current user is assigned to (for authenticated employees/managers/owners) */
-  getEmployeeStoreLocations: Array<StoreLocation>;
-  getEvent?: Maybe<Event>;
-  getEventRegistrations: Array<EventRegistration>;
-  getEvents: EventPage;
-  getIntegrationSettings: IntegrationSettings;
-  getInventory: InventoryPage;
-  getInventoryItem?: Maybe<InventoryItem>;
-  getInventoryItemDetails: InventoryStockPage;
-  getLot?: Maybe<Lot>;
-  getLotStats: LotStats;
-  getLots: LotPage;
-  getOrders: OrderPage;
-  getPosConfig: PosConfig;
-  getPriceHistory: Array<PriceHistoryEntry>;
-  getProduct: ProductDetail;
-  getProductListings: ProductListingPage;
-  /**
-   * Public query - returns buy rate tables for all supported games.
-   * No authentication required.
-   */
-  getPublicBuyRates: PublicBuyRates;
-  getPublicEvent?: Maybe<Event>;
-  getPublicEvents: Array<Event>;
-  getSets: Array<Set>;
-  getShoppingCart: ShoppingCart;
-  getSingleCardInventory: Array<Card>;
-  getStoreLocation?: Maybe<StoreLocation>;
-  getStoreSettings: StoreSettings;
-  /**
-   * Returns the games this store currently supports.
-   * No authentication required.
-   */
-  getSupportedGames: Array<SupportedGame>;
-  getTransactionLogs: TransactionLogPage;
-  isSetupPending: Scalars['Boolean']['output'];
-  lookupBarcode?: Maybe<BarcodeLookupResult>;
-  lookupSalesTax: SalesTaxLookupResult;
-  searchProducts: Array<ProductSearchResult>;
-  /**
-   * Returns all permission flags for the current user in a single round trip.
-   * Used by the SSR server to render nav visibility without multiple hasPermission calls.
-   */
-  userPermissions: UserPermissions;
-};
-
-
-export type QueryGetBarcodesForInventoryItemArgs = {
-  inventoryItemId: Scalars['Int']['input'];
-};
-
-
-export type QueryGetBuyRatesArgs = {
-  categoryId: Scalars['Int']['input'];
-};
-
-
-export type QueryGetCardArgs = {
-  cardId: Scalars['String']['input'];
-  game: Scalars['String']['input'];
-};
-
-
-export type QueryGetCronJobArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryGetCronJobRunsArgs = {
-  cronJobId: Scalars['Int']['input'];
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetDashboardBestSellersArgs = {
-  dateRange: DashboardDateRange;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  organizationId: Scalars['String']['input'];
-  sortBy: BestSellerSortBy;
-};
-
-
-export type QueryGetDashboardInventorySummaryArgs = {
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type QueryGetDashboardOpenOrdersArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type QueryGetDashboardOrderStatusArgs = {
-  dateRange: DashboardDateRange;
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type QueryGetDashboardSalesArgs = {
-  dateRange: DashboardDateRange;
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type QueryGetDistinctRaritiesArgs = {
-  categoryId: Scalars['Int']['input'];
-};
-
-
-export type QueryGetEventArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryGetEventRegistrationsArgs = {
-  eventId: Scalars['Int']['input'];
-};
-
-
-export type QueryGetEventsArgs = {
-  filters?: InputMaybe<EventFilters>;
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetInventoryArgs = {
-  filters?: InputMaybe<InventoryFilters>;
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetInventoryItemArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryGetInventoryItemDetailsArgs = {
-  inventoryItemId: Scalars['Int']['input'];
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetLotArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryGetLotsArgs = {
-  filters?: InputMaybe<LotFilters>;
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetOrdersArgs = {
-  filters?: InputMaybe<OrderFilters>;
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryGetPosConfigArgs = {
-  stateCode?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryGetPriceHistoryArgs = {
-  endDate?: InputMaybe<Scalars['String']['input']>;
-  productId: Scalars['String']['input'];
-  startDate?: InputMaybe<Scalars['String']['input']>;
-  subTypeName?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryGetProductArgs = {
-  organizationId?: InputMaybe<Scalars['String']['input']>;
-  productId: Scalars['String']['input'];
-};
-
-
-export type QueryGetProductListingsArgs = {
-  filters?: InputMaybe<ProductListingFilters>;
-  organizationId?: InputMaybe<Scalars['String']['input']>;
-  pagination?: InputMaybe<ProductListingPagination>;
-};
-
-
-export type QueryGetPublicEventArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryGetPublicEventsArgs = {
-  dateFrom: Scalars['String']['input'];
-  dateTo: Scalars['String']['input'];
-  organizationId: Scalars['String']['input'];
-};
-
-
-export type QueryGetSetsArgs = {
-  filters?: InputMaybe<SetFilters>;
-  game: Scalars['String']['input'];
-};
-
-
-export type QueryGetSingleCardInventoryArgs = {
-  filters?: InputMaybe<SingleCardFilters>;
-  game: Scalars['String']['input'];
-};
-
-
-export type QueryGetStoreLocationArgs = {
-  id: Scalars['String']['input'];
-};
-
-
-export type QueryGetTransactionLogsArgs = {
-  filters?: InputMaybe<TransactionLogFilters>;
-  pagination?: InputMaybe<PaginationInput>;
-};
-
-
-export type QueryLookupBarcodeArgs = {
-  code: Scalars['String']['input'];
-};
-
-
-export type QueryLookupSalesTaxArgs = {
-  countryCode: Scalars['String']['input'];
-  stateCode: Scalars['String']['input'];
-};
-
-
-export type QuerySearchProductsArgs = {
-  game?: InputMaybe<Scalars['String']['input']>;
-  isSealed?: InputMaybe<Scalars['Boolean']['input']>;
-  isSingle?: InputMaybe<Scalars['Boolean']['input']>;
-  searchTerm: Scalars['String']['input'];
-};
-
-export enum RecurrenceFrequency {
-  Biweekly = 'BIWEEKLY',
-  Monthly = 'MONTHLY',
-  Weekly = 'WEEKLY'
-}
-
-export type RecurrenceRule = {
-  __typename?: 'RecurrenceRule';
-  frequency: RecurrenceFrequency;
-};
+export type RecurrenceFrequency =
+  | 'BIWEEKLY'
+  | 'MONTHLY'
+  | 'WEEKLY';
 
 export type RecurrenceRuleInput = {
   frequency: RecurrenceFrequency;
 };
 
-export enum RegistrationStatus {
-  Cancelled = 'CANCELLED',
-  Registered = 'REGISTERED'
-}
+export type RegistrationStatus =
+  | 'CANCELLED'
+  | 'REGISTERED';
 
 export type RemoveBarcodeInput = {
-  id: Scalars['Int']['input'];
+  id: number;
 };
 
-export enum ResourceType {
-  Inventory = 'inventory',
-  Lot = 'lot',
-  Order = 'order'
-}
-
-export type RestoreResult = {
-  __typename?: 'RestoreResult';
-  message?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
-};
-
-export type SalesBreakdown = {
-  __typename?: 'SalesBreakdown';
-  dataPoints: Array<SalesDataPoint>;
-  granularity: Granularity;
-  summary: SalesSummary;
-};
-
-export type SalesDataPoint = {
-  __typename?: 'SalesDataPoint';
-  cost: Scalars['Int']['output'];
-  label: Scalars['String']['output'];
-  orderCount: Scalars['Int']['output'];
-  profit: Scalars['Int']['output'];
-  revenue: Scalars['Int']['output'];
-};
-
-export type SalesSummary = {
-  __typename?: 'SalesSummary';
-  orderCount: Scalars['Int']['output'];
-  profitMargin: Scalars['Float']['output'];
-  totalCost: Scalars['Int']['output'];
-  totalProfit: Scalars['Int']['output'];
-  totalRevenue: Scalars['Int']['output'];
-};
-
-export type SalesTaxLookupResult = {
-  __typename?: 'SalesTaxLookupResult';
-  currency?: Maybe<Scalars['String']['output']>;
-  rate: Scalars['Float']['output'];
-  type: Scalars['String']['output'];
-};
+export type ResourceType =
+  | 'inventory'
+  | 'lot'
+  | 'order';
 
 export type SaveBuyRatesInput = {
-  categoryId: Scalars['Int']['input'];
+  categoryId: number;
   entries: Array<BuyRateEntryInput>;
 };
 
-export type Set = {
-  __typename?: 'Set';
-  code: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-};
-
 export type SetFilters = {
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type ShopifyIntegration = {
-  __typename?: 'ShopifyIntegration';
-  enabled: Scalars['Boolean']['output'];
-  hasApiKey: Scalars['Boolean']['output'];
-  shopDomain?: Maybe<Scalars['String']['output']>;
-};
-
-export type ShoppingCart = {
-  __typename?: 'ShoppingCart';
-  items: Array<CartItemOutput>;
-  organizationId?: Maybe<Scalars['String']['output']>;
-};
-
-export type SingleCardFilters = {
-  includeSealed?: InputMaybe<Scalars['Boolean']['input']>;
-  includeSingles?: InputMaybe<Scalars['Boolean']['input']>;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  setCode?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type StoreHours = {
-  __typename?: 'StoreHours';
-  closeTime?: Maybe<Scalars['String']['output']>;
-  dayOfWeek: Scalars['Int']['output'];
-  openTime?: Maybe<Scalars['String']['output']>;
+  searchTerm?: string | null | undefined;
 };
 
 export type StoreHoursInput = {
-  closeTime?: InputMaybe<Scalars['String']['input']>;
-  dayOfWeek: Scalars['Int']['input'];
-  openTime?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type StoreLocation = {
-  __typename?: 'StoreLocation';
-  city: Scalars['String']['output'];
-  createdAt: Scalars['String']['output'];
-  hours: Array<StoreHours>;
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  phone?: Maybe<Scalars['String']['output']>;
-  slug: Scalars['String']['output'];
-  state: Scalars['String']['output'];
-  street1: Scalars['String']['output'];
-  street2?: Maybe<Scalars['String']['output']>;
-  zip: Scalars['String']['output'];
-};
-
-export type StoreSettings = {
-  __typename?: 'StoreSettings';
-  companyName?: Maybe<Scalars['String']['output']>;
-  ein?: Maybe<Scalars['String']['output']>;
-};
-
-export type StripeIntegration = {
-  __typename?: 'StripeIntegration';
-  enabled: Scalars['Boolean']['output'];
-  hasApiKey: Scalars['Boolean']['output'];
-  hasPublishableKey: Scalars['Boolean']['output'];
+  closeTime?: string | null | undefined;
+  dayOfWeek: number;
+  openTime?: string | null | undefined;
 };
 
 export type SubmitOrderInput = {
-  customerName: Scalars['String']['input'];
-  organizationId: Scalars['String']['input'];
+  customerName: string;
+  organizationId: string;
 };
 
 export type SubmitPosOrderInput = {
-  customerName: Scalars['String']['input'];
+  customerName: string;
   items: Array<PosLineItemInput>;
-  paymentMethod: Scalars['String']['input'];
-  stripePaymentIntentId?: InputMaybe<Scalars['String']['input']>;
-  taxAmount: Scalars['Int']['input'];
-};
-
-export type SupportedGame = {
-  __typename?: 'SupportedGame';
-  categoryId: Scalars['Int']['output'];
-  displayName: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-};
-
-export type TerminalConnectionToken = {
-  __typename?: 'TerminalConnectionToken';
-  secret: Scalars['String']['output'];
-};
-
-export type TransactionLogEntry = {
-  __typename?: 'TransactionLogEntry';
-  action: Scalars['String']['output'];
-  createdAt: Scalars['String']['output'];
-  details: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  resourceId?: Maybe<Scalars['String']['output']>;
-  resourceType: ResourceType;
-  userEmail: Scalars['String']['output'];
-  userName: Scalars['String']['output'];
+  paymentMethod: string;
+  stripePaymentIntentId?: string | null | undefined;
+  taxAmount: number;
 };
 
 export type TransactionLogFilters = {
-  action?: InputMaybe<Scalars['String']['input']>;
-  month?: InputMaybe<Scalars['Int']['input']>;
-  resourceType?: InputMaybe<ResourceType>;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  year?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type TransactionLogPage = {
-  __typename?: 'TransactionLogPage';
-  items: Array<TransactionLogEntry>;
-  page: Scalars['Int']['output'];
-  pageSize: Scalars['Int']['output'];
-  totalCount: Scalars['Int']['output'];
-  totalPages: Scalars['Int']['output'];
+  action?: string | null | undefined;
+  month?: number | null | undefined;
+  resourceType?: ResourceType | null | undefined;
+  searchTerm?: string | null | undefined;
+  year?: number | null | undefined;
 };
 
 export type UpdateBackupSettingsInput = {
-  dropboxClientId?: InputMaybe<Scalars['String']['input']>;
-  frequency?: InputMaybe<Scalars['String']['input']>;
-  googleDriveClientId?: InputMaybe<Scalars['String']['input']>;
-  onedriveClientId?: InputMaybe<Scalars['String']['input']>;
-  provider?: InputMaybe<BackupProvider>;
+  dropboxClientId?: string | null | undefined;
+  frequency?: string | null | undefined;
+  googleDriveClientId?: string | null | undefined;
+  onedriveClientId?: string | null | undefined;
+  provider?: BackupProvider | null | undefined;
 };
 
 export type UpdateEventInput = {
-  capacity?: InputMaybe<Scalars['Int']['input']>;
-  categoryId?: InputMaybe<Scalars['Int']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  endTime?: InputMaybe<Scalars['String']['input']>;
-  entryFeeInCents?: InputMaybe<Scalars['Int']['input']>;
-  eventType?: InputMaybe<EventType>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  startTime?: InputMaybe<Scalars['String']['input']>;
+  capacity?: number | null | undefined;
+  categoryId?: number | null | undefined;
+  description?: string | null | undefined;
+  endTime?: string | null | undefined;
+  entryFeeInCents?: number | null | undefined;
+  eventType?: EventType | null | undefined;
+  name?: string | null | undefined;
+  startTime?: string | null | undefined;
 };
 
 export type UpdateInventoryItemInput = {
-  condition?: InputMaybe<CardCondition>;
-  id: Scalars['Int']['input'];
-  price?: InputMaybe<Scalars['Int']['input']>;
+  condition?: CardCondition | null | undefined;
+  id: number;
+  price?: number | null | undefined;
 };
 
 export type UpdateLotInput = {
-  acquisitionDate: Scalars['String']['input'];
-  amountPaid: Scalars['Int']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
-  id: Scalars['Int']['input'];
+  acquisitionDate: string;
+  amountPaid: number;
+  description?: string | null | undefined;
+  id: number;
   items: Array<LotItemInput>;
-  name: Scalars['String']['input'];
+  name: string;
 };
 
 export type UpdateShopifyIntegrationInput = {
-  apiKey?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
-  shopDomain?: InputMaybe<Scalars['String']['input']>;
+  apiKey?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  shopDomain?: string | null | undefined;
 };
 
 export type UpdateStockInput = {
-  acquisitionDate?: InputMaybe<Scalars['String']['input']>;
-  costBasis?: InputMaybe<Scalars['Int']['input']>;
-  id: Scalars['Int']['input'];
-  notes?: InputMaybe<Scalars['String']['input']>;
-  quantity?: InputMaybe<Scalars['Int']['input']>;
+  acquisitionDate?: string | null | undefined;
+  costBasis?: number | null | undefined;
+  id: number;
+  notes?: string | null | undefined;
+  quantity?: number | null | undefined;
 };
 
 export type UpdateStoreLocationInput = {
-  city?: InputMaybe<Scalars['String']['input']>;
-  hours?: InputMaybe<Array<StoreHoursInput>>;
-  id: Scalars['String']['input'];
-  name?: InputMaybe<Scalars['String']['input']>;
-  phone?: InputMaybe<Scalars['String']['input']>;
-  state?: InputMaybe<Scalars['String']['input']>;
-  street1?: InputMaybe<Scalars['String']['input']>;
-  street2?: InputMaybe<Scalars['String']['input']>;
-  zip?: InputMaybe<Scalars['String']['input']>;
+  city?: string | null | undefined;
+  hours?: Array<StoreHoursInput> | null | undefined;
+  id: string;
+  name?: string | null | undefined;
+  phone?: string | null | undefined;
+  state?: string | null | undefined;
+  street1?: string | null | undefined;
+  street2?: string | null | undefined;
+  zip?: string | null | undefined;
 };
 
 export type UpdateStoreSettingsInput = {
-  companyName?: InputMaybe<Scalars['String']['input']>;
-  ein?: InputMaybe<Scalars['String']['input']>;
+  companyName?: string | null | undefined;
+  ein?: string | null | undefined;
 };
 
 export type UpdateStripeIntegrationInput = {
-  apiKey?: InputMaybe<Scalars['String']['input']>;
-  enabled?: InputMaybe<Scalars['Boolean']['input']>;
-  publishableKey?: InputMaybe<Scalars['String']['input']>;
+  apiKey?: string | null | undefined;
+  enabled?: boolean | null | undefined;
+  publishableKey?: string | null | undefined;
 };
 
 export type UserDetails = {
-  email: Scalars['String']['input'];
-  firstName: Scalars['String']['input'];
-  password: Scalars['String']['input'];
-};
-
-/**
- * The set of permissions the current user has in their active organization.
- * All flags are derived via better-auth's organization.hasPermission, so they
- * correctly reflect dynamic access control (DAC) overrides.
- */
-export type UserPermissions = {
-  __typename?: 'UserPermissions';
-  canAccessSettings: Scalars['Boolean']['output'];
-  canManageEvents: Scalars['Boolean']['output'];
-  canManageInventory: Scalars['Boolean']['output'];
-  canManageLots: Scalars['Boolean']['output'];
-  canManageStoreLocations: Scalars['Boolean']['output'];
-  canManageUsers: Scalars['Boolean']['output'];
-  canUsePOS: Scalars['Boolean']['output'];
-  canViewDashboard: Scalars['Boolean']['output'];
-  canViewTransactionLog: Scalars['Boolean']['output'];
+  email: string;
+  firstName: string;
+  password: string;
 };
 
 export type UpdateItemInCartMutationVariables = Exact<{
@@ -1646,734 +375,734 @@ export type UpdateItemInCartMutationVariables = Exact<{
 }>;
 
 
-export type UpdateItemInCartMutation = { __typename?: 'Mutation', updateItemInCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+export type UpdateItemInCartMutation = { updateItemInCart: { items: Array<{ inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
 
 export type RemoveFromCartMutationVariables = Exact<{
   cartItem: CartItemInput;
 }>;
 
 
-export type RemoveFromCartMutation = { __typename?: 'Mutation', removeFromCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+export type RemoveFromCartMutation = { removeFromCart: { items: Array<{ inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
 
 export type SubmitOrderMutationVariables = Exact<{
   input: SubmitOrderInput;
 }>;
 
 
-export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } };
+export type SubmitOrderMutation = { submitOrder: { id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string } };
 
 export type GetShoppingCartQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetShoppingCartQueryQuery = { __typename?: 'Query', getShoppingCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, quantity: number, productId: number, productName: string, condition: CardCondition, unitPrice: number, maxAvailable: number }> } };
+export type GetShoppingCartQueryQuery = { getShoppingCart: { items: Array<{ inventoryItemId: number, quantity: number, productId: number, productName: string, condition: CardCondition, unitPrice: number, maxAvailable: number }> } };
 
 export type GetAllStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAllStoreLocationsQuery = { __typename?: 'Query', getAllStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, city: string, state: string }> };
+export type GetAllStoreLocationsQuery = { getAllStoreLocations: Array<{ id: string, name: string, slug: string, city: string, state: string }> };
 
 export type GetEmployeeStoreLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetEmployeeStoreLocationsQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, slug: string, city: string, state: string }> };
+export type GetEmployeeStoreLocationsQuery = { getEmployeeStoreLocations: Array<{ id: string, name: string, slug: string, city: string, state: string }> };
 
 export type UserPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserPermissionsQuery = { __typename?: 'Query', userPermissions: { __typename?: 'UserPermissions', canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean, canUsePOS: boolean, canManageEvents: boolean } };
+export type UserPermissionsQuery = { userPermissions: { canManageInventory: boolean, canManageLots: boolean, canViewDashboard: boolean, canAccessSettings: boolean, canManageStoreLocations: boolean, canManageUsers: boolean, canViewTransactionLog: boolean, canUsePOS: boolean, canManageEvents: boolean } };
 
 export type GetSupportedGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetSupportedGamesQuery = { __typename?: 'Query', getSupportedGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+export type GetSupportedGamesQuery = { getSupportedGames: Array<{ categoryId: number, name: string, displayName: string }> };
 
 export type AddToCartMutationVariables = Exact<{
   cartItem: CartItemInput;
 }>;
 
 
-export type AddToCartMutation = { __typename?: 'Mutation', addToCart: { __typename?: 'ShoppingCart', items: Array<{ __typename?: 'CartItemOutput', inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
+export type AddToCartMutation = { addToCart: { items: Array<{ inventoryItemId: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, maxAvailable: number }> } };
 
 export type GetPublicBuyRatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetPublicBuyRatesQuery = { __typename?: 'Query', getPublicBuyRates: { __typename?: 'PublicBuyRates', games: Array<{ __typename?: 'BuyRateTable', categoryId: number, gameName: string, gameDisplayName: string, entries: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, sortOrder: number }> }> } };
+export type GetPublicBuyRatesQuery = { getPublicBuyRates: { games: Array<{ categoryId: number, gameName: string, gameDisplayName: string, entries: Array<{ id: number, description: string, fixedRateCents: number | null, percentageRate: number | null, type: BuyRateType, sortOrder: number }> }> } };
 
 export type GetPublicEventQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type GetPublicEventQuery = { __typename?: 'Query', getPublicEvent?: { __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, registrations?: Array<{ __typename?: 'EventRegistration', registrantName: string }> | null } | null };
+export type GetPublicEventQuery = { getPublicEvent: { id: number, name: string, description: string | null, eventType: EventType, gameName: string | null, gameDisplayName: string | null, startTime: string, endTime: string | null, capacity: number | null, entryFeeInCents: number | null, status: EventStatus, registrationCount: number, registrations: Array<{ registrantName: string }> | null } | null };
 
 export type RegisterForEventDetailMutationVariables = Exact<{
-  eventId: Scalars['Int']['input'];
+  eventId: number;
   input: PublicEventRegistrationInput;
 }>;
 
 
-export type RegisterForEventDetailMutation = { __typename?: 'Mutation', registerForEvent: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
+export type RegisterForEventDetailMutation = { registerForEvent: { id: number, registrantName: string, status: RegistrationStatus } };
 
 export type GetEventsQueryVariables = Exact<{
-  pagination?: InputMaybe<PaginationInput>;
-  filters?: InputMaybe<EventFilters>;
+  pagination?: PaginationInput | null | undefined;
+  filters?: EventFilters | null | undefined;
 }>;
 
 
-export type GetEventsQuery = { __typename?: 'Query', getEvents: { __typename?: 'EventPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Event', id: number, name: string, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean }> } };
+export type GetEventsQuery = { getEvents: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, name: string, eventType: EventType, gameName: string | null, gameDisplayName: string | null, startTime: string, endTime: string | null, capacity: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId: string | null, isRecurrenceTemplate: boolean }> } };
 
 export type GetEventQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type GetEventQuery = { __typename?: 'Query', getEvent?: { __typename?: 'Event', id: number, organizationId: string, name: string, description?: string | null, eventType: EventType, categoryId?: number | null, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId?: string | null, isRecurrenceTemplate: boolean, createdAt: string, updatedAt: string, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: RecurrenceFrequency } | null } | null };
+export type GetEventQuery = { getEvent: { id: number, organizationId: string, name: string, description: string | null, eventType: EventType, categoryId: number | null, gameName: string | null, gameDisplayName: string | null, startTime: string, endTime: string | null, capacity: number | null, entryFeeInCents: number | null, status: EventStatus, registrationCount: number, recurrenceGroupId: string | null, isRecurrenceTemplate: boolean, createdAt: string, updatedAt: string, recurrenceRule: { frequency: RecurrenceFrequency } | null } | null };
 
 export type GetEventRegistrationsQueryVariables = Exact<{
-  eventId: Scalars['Int']['input'];
+  eventId: number;
 }>;
 
 
-export type GetEventRegistrationsQuery = { __typename?: 'Query', getEventRegistrations: Array<{ __typename?: 'EventRegistration', id: number, registrantName: string, registrantEmail?: string | null, registrantPhone?: string | null, status: RegistrationStatus, checkedIn: boolean, checkedInAt?: string | null, createdAt: string }> };
+export type GetEventRegistrationsQuery = { getEventRegistrations: Array<{ id: number, registrantName: string, registrantEmail: string | null, registrantPhone: string | null, status: RegistrationStatus, checkedIn: boolean, checkedInAt: string | null, createdAt: string }> };
 
 export type CreateEventMutationVariables = Exact<{
   input: CreateEventInput;
 }>;
 
 
-export type CreateEventMutation = { __typename?: 'Mutation', createEvent: { __typename?: 'Event', id: number, name: string, status: EventStatus } };
+export type CreateEventMutation = { createEvent: { id: number, name: string, status: EventStatus } };
 
 export type UpdateEventMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
   input: UpdateEventInput;
 }>;
 
 
-export type UpdateEventMutation = { __typename?: 'Mutation', updateEvent: { __typename?: 'Event', id: number, name: string, status: EventStatus } };
+export type UpdateEventMutation = { updateEvent: { id: number, name: string, status: EventStatus } };
 
 export type CancelEventMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type CancelEventMutation = { __typename?: 'Mutation', cancelEvent: { __typename?: 'Event', id: number, status: EventStatus } };
+export type CancelEventMutation = { cancelEvent: { id: number, status: EventStatus } };
 
 export type CancelRecurringSeriesMutationVariables = Exact<{
-  recurrenceGroupId: Scalars['String']['input'];
+  recurrenceGroupId: string;
 }>;
 
 
-export type CancelRecurringSeriesMutation = { __typename?: 'Mutation', cancelRecurringSeries: number };
+export type CancelRecurringSeriesMutation = { cancelRecurringSeries: number };
 
 export type UpdateRecurrenceRuleMutationVariables = Exact<{
-  recurrenceGroupId: Scalars['String']['input'];
+  recurrenceGroupId: string;
   frequency: RecurrenceFrequency;
 }>;
 
 
-export type UpdateRecurrenceRuleMutation = { __typename?: 'Mutation', updateRecurrenceRule: { __typename?: 'Event', id: number, recurrenceRule?: { __typename?: 'RecurrenceRule', frequency: RecurrenceFrequency } | null } };
+export type UpdateRecurrenceRuleMutation = { updateRecurrenceRule: { id: number, recurrenceRule: { frequency: RecurrenceFrequency } | null } };
 
 export type AddEventRegistrationMutationVariables = Exact<{
-  eventId: Scalars['Int']['input'];
+  eventId: number;
   input: AdminEventRegistrationInput;
 }>;
 
 
-export type AddEventRegistrationMutation = { __typename?: 'Mutation', addEventRegistration: { __typename?: 'EventRegistration', id: number, registrantName: string, status: RegistrationStatus } };
+export type AddEventRegistrationMutation = { addEventRegistration: { id: number, registrantName: string, status: RegistrationStatus } };
 
 export type CancelEventRegistrationMutationVariables = Exact<{
-  registrationId: Scalars['Int']['input'];
+  registrationId: number;
 }>;
 
 
-export type CancelEventRegistrationMutation = { __typename?: 'Mutation', cancelEventRegistration: { __typename?: 'EventRegistration', id: number, status: RegistrationStatus } };
+export type CancelEventRegistrationMutation = { cancelEventRegistration: { id: number, status: RegistrationStatus } };
 
 export type CheckInEventRegistrationMutationVariables = Exact<{
-  registrationId: Scalars['Int']['input'];
+  registrationId: number;
 }>;
 
 
-export type CheckInEventRegistrationMutation = { __typename?: 'Mutation', checkInEventRegistration: { __typename?: 'EventRegistration', id: number, checkedIn: boolean, checkedInAt?: string | null } };
+export type CheckInEventRegistrationMutation = { checkInEventRegistration: { id: number, checkedIn: boolean, checkedInAt: string | null } };
 
 export type GetPublicEventsQueryVariables = Exact<{
-  organizationId: Scalars['String']['input'];
-  dateFrom: Scalars['String']['input'];
-  dateTo: Scalars['String']['input'];
+  organizationId: string;
+  dateFrom: string;
+  dateTo: string;
 }>;
 
 
-export type GetPublicEventsQuery = { __typename?: 'Query', getPublicEvents: Array<{ __typename?: 'Event', id: number, name: string, description?: string | null, eventType: EventType, gameName?: string | null, gameDisplayName?: string | null, startTime: string, endTime?: string | null, capacity?: number | null, entryFeeInCents?: number | null, status: EventStatus, registrationCount: number }> };
+export type GetPublicEventsQuery = { getPublicEvents: Array<{ id: number, name: string, description: string | null, eventType: EventType, gameName: string | null, gameDisplayName: string | null, startTime: string, endTime: string | null, capacity: number | null, entryFeeInCents: number | null, status: EventStatus, registrationCount: number }> };
 
 export type GetAvailableGamesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAvailableGamesQuery = { __typename?: 'Query', getAvailableGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+export type GetAvailableGamesQuery = { getAvailableGames: Array<{ categoryId: number, name: string, displayName: string }> };
 
 export type FirstTimeSetupMutationMutationVariables = Exact<{
   userDetails: UserDetails;
   company: CompanySettings;
   store: InitialStoreLocation;
-  supportedGameCategoryIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  supportedGameCategoryIds: Array<number> | number;
 }>;
 
 
-export type FirstTimeSetupMutationMutation = { __typename?: 'Mutation', firstTimeSetup: string };
+export type FirstTimeSetupMutationMutation = { firstTimeSetup: string };
 
 export type GetInventoryQueryVariables = Exact<{
-  filters?: InputMaybe<InventoryFilters>;
-  pagination?: InputMaybe<PaginationInput>;
+  filters?: InventoryFilters | null | undefined;
+  pagination?: PaginationInput | null | undefined;
 }>;
 
 
-export type GetInventoryQuery = { __typename?: 'Query', getInventory: { __typename?: 'InventoryPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number }> } };
+export type GetInventoryQuery = { getInventory: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, productId: number, productName: string, gameName: string, setName: string, rarity: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number }> } };
 
 export type GetInventoryItemQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type GetInventoryItemQuery = { __typename?: 'Query', getInventoryItem?: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } | null };
+export type GetInventoryItemQuery = { getInventoryItem: { id: number, productId: number, productName: string, gameName: string, setName: string, rarity: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } | null };
 
 export type GetInventoryItemDetailsQueryVariables = Exact<{
-  inventoryItemId: Scalars['Int']['input'];
-  pagination?: InputMaybe<PaginationInput>;
+  inventoryItemId: number;
+  pagination?: PaginationInput | null | undefined;
 }>;
 
 
-export type GetInventoryItemDetailsQuery = { __typename?: 'Query', getInventoryItemDetails: { __typename?: 'InventoryStockPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null, createdAt: string, updatedAt: string }> } };
+export type GetInventoryItemDetailsQuery = { getInventoryItemDetails: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes: string | null, createdAt: string, updatedAt: string }> } };
 
 export type SearchProductsQueryVariables = Exact<{
-  searchTerm: Scalars['String']['input'];
-  game?: InputMaybe<Scalars['String']['input']>;
+  searchTerm: string;
+  game?: string | null | undefined;
 }>;
 
 
-export type SearchProductsQuery = { __typename?: 'Query', searchProducts: Array<{ __typename?: 'ProductSearchResult', id: number, name: string, gameName: string, setName: string, rarity?: string | null, imageUrl?: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ __typename?: 'ProductPrice', subTypeName: string, lowPrice?: number | null, midPrice?: number | null, highPrice?: number | null, marketPrice?: number | null, directLowPrice?: number | null }> }> };
+export type SearchProductsQuery = { searchProducts: Array<{ id: number, name: string, gameName: string, setName: string, rarity: string | null, imageUrl: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ subTypeName: string, lowPrice: number | null, midPrice: number | null, highPrice: number | null, marketPrice: number | null, directLowPrice: number | null }> }> };
 
 export type AddInventoryItemMutationVariables = Exact<{
   input: AddInventoryItemInput;
 }>;
 
 
-export type AddInventoryItemMutation = { __typename?: 'Mutation', addInventoryItem: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
+export type AddInventoryItemMutation = { addInventoryItem: { id: number, productId: number, productName: string, gameName: string, setName: string, rarity: string | null, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
 
 export type UpdateInventoryItemMutationVariables = Exact<{
   input: UpdateInventoryItemInput;
 }>;
 
 
-export type UpdateInventoryItemMutation = { __typename?: 'Mutation', updateInventoryItem: { __typename?: 'InventoryItem', id: number, productId: number, productName: string, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
+export type UpdateInventoryItemMutation = { updateInventoryItem: { id: number, productId: number, productName: string, condition: CardCondition, price: number, totalQuantity: number, entryCount: number } };
 
 export type DeleteInventoryItemMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DeleteInventoryItemMutation = { __typename?: 'Mutation', deleteInventoryItem: boolean };
+export type DeleteInventoryItemMutation = { deleteInventoryItem: boolean };
 
 export type AddStockMutationVariables = Exact<{
   input: AddStockInput;
 }>;
 
 
-export type AddStockMutation = { __typename?: 'Mutation', addStock: { __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null } };
+export type AddStockMutation = { addStock: { id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes: string | null } };
 
 export type UpdateStockMutationVariables = Exact<{
   input: UpdateStockInput;
 }>;
 
 
-export type UpdateStockMutation = { __typename?: 'Mutation', updateStock: { __typename?: 'InventoryItemStock', id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes?: string | null } };
+export type UpdateStockMutation = { updateStock: { id: number, inventoryItemId: number, quantity: number, costBasis: number, acquisitionDate: string, notes: string | null } };
 
 export type DeleteStockMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DeleteStockMutation = { __typename?: 'Mutation', deleteStock: boolean };
+export type DeleteStockMutation = { deleteStock: boolean };
 
 export type BulkUpdateStockMutationVariables = Exact<{
   input: BulkUpdateStockInput;
 }>;
 
 
-export type BulkUpdateStockMutation = { __typename?: 'Mutation', bulkUpdateStock: Array<{ __typename?: 'InventoryItemStock', id: number }> };
+export type BulkUpdateStockMutation = { bulkUpdateStock: Array<{ id: number }> };
 
 export type BulkDeleteStockMutationVariables = Exact<{
   input: BulkDeleteStockInput;
 }>;
 
 
-export type BulkDeleteStockMutation = { __typename?: 'Mutation', bulkDeleteStock: boolean };
+export type BulkDeleteStockMutation = { bulkDeleteStock: boolean };
 
 export type GetBarcodesForInventoryItemQueryVariables = Exact<{
-  inventoryItemId: Scalars['Int']['input'];
+  inventoryItemId: number;
 }>;
 
 
-export type GetBarcodesForInventoryItemQuery = { __typename?: 'Query', getBarcodesForInventoryItem: Array<{ __typename?: 'Barcode', id: number, code: string, inventoryItemId: number, createdAt: string }> };
+export type GetBarcodesForInventoryItemQuery = { getBarcodesForInventoryItem: Array<{ id: number, code: string, inventoryItemId: number, createdAt: string }> };
 
 export type AddBarcodeMutationVariables = Exact<{
   input: AddBarcodeInput;
 }>;
 
 
-export type AddBarcodeMutation = { __typename?: 'Mutation', addBarcode: { __typename?: 'Barcode', id: number, code: string, inventoryItemId: number, createdAt: string } };
+export type AddBarcodeMutation = { addBarcode: { id: number, code: string, inventoryItemId: number, createdAt: string } };
 
 export type RemoveBarcodeMutationVariables = Exact<{
   input: RemoveBarcodeInput;
 }>;
 
 
-export type RemoveBarcodeMutation = { __typename?: 'Mutation', removeBarcode: boolean };
+export type RemoveBarcodeMutation = { removeBarcode: boolean };
 
 export type SearchProductsForLotQueryVariables = Exact<{
-  searchTerm: Scalars['String']['input'];
-  isSingle?: InputMaybe<Scalars['Boolean']['input']>;
-  isSealed?: InputMaybe<Scalars['Boolean']['input']>;
+  searchTerm: string;
+  isSingle?: boolean | null | undefined;
+  isSealed?: boolean | null | undefined;
 }>;
 
 
-export type SearchProductsForLotQuery = { __typename?: 'Query', searchProducts: Array<{ __typename?: 'ProductSearchResult', id: number, name: string, gameName: string, setName: string, rarity?: string | null, imageUrl?: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ __typename?: 'ProductPrice', subTypeName: string, marketPrice?: number | null, midPrice?: number | null }> }> };
+export type SearchProductsForLotQuery = { searchProducts: Array<{ id: number, name: string, gameName: string, setName: string, rarity: string | null, imageUrl: string | null, isSingle: boolean, isSealed: boolean, prices: Array<{ subTypeName: string, marketPrice: number | null, midPrice: number | null }> }> };
 
 export type GetLotQueryVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type GetLotQuery = { __typename?: 'Query', getLot?: { __typename?: 'Lot', id: number, name: string, description?: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, items: Array<{ __typename?: 'LotItem', id: number, productId: number, productName: string, gameName: string, setName: string, rarity?: string | null, isSingle: boolean, isSealed: boolean, condition?: CardCondition | null, quantity: number, costBasis: number, costOverridden: boolean, marketValue?: number | null }> } | null };
+export type GetLotQuery = { getLot: { id: number, name: string, description: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, items: Array<{ id: number, productId: number, productName: string, gameName: string, setName: string, rarity: string | null, isSingle: boolean, isSealed: boolean, condition: CardCondition | null, quantity: number, costBasis: number, costOverridden: boolean, marketValue: number | null }> } | null };
 
 export type CreateLotMutationVariables = Exact<{
   input: CreateLotInput;
 }>;
 
 
-export type CreateLotMutation = { __typename?: 'Mutation', createLot: { __typename?: 'Lot', id: number } };
+export type CreateLotMutation = { createLot: { id: number } };
 
 export type UpdateLotMutationVariables = Exact<{
   input: UpdateLotInput;
 }>;
 
 
-export type UpdateLotMutation = { __typename?: 'Mutation', updateLot: { __typename?: 'Lot', id: number } };
+export type UpdateLotMutation = { updateLot: { id: number } };
 
 export type GetLotsQueryVariables = Exact<{
-  filters?: InputMaybe<LotFilters>;
-  pagination?: InputMaybe<PaginationInput>;
+  filters?: LotFilters | null | undefined;
+  pagination?: PaginationInput | null | undefined;
 }>;
 
 
-export type GetLotsQuery = { __typename?: 'Query', getLots: { __typename?: 'LotPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Lot', id: number, name: string, description?: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, createdAt: string, items: Array<{ __typename?: 'LotItem', id: number }> }> } };
+export type GetLotsQuery = { getLots: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, name: string, description: string | null, amountPaid: number, acquisitionDate: string, totalMarketValue: number, totalCost: number, projectedProfitLoss: number, projectedProfitMargin: number, createdAt: string, items: Array<{ id: number }> }> } };
 
 export type DeleteLotMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DeleteLotMutation = { __typename?: 'Mutation', deleteLot: boolean };
+export type DeleteLotMutation = { deleteLot: boolean };
 
 export type GetLotStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetLotStatsQuery = { __typename?: 'Query', getLotStats: { __typename?: 'LotStats', totalLots: number, totalInvested: number, totalMarketValue: number, totalProfitLoss: number } };
+export type GetLotStatsQuery = { getLotStats: { totalLots: number, totalInvested: number, totalMarketValue: number, totalProfitLoss: number } };
 
 export type GetOrdersQueryVariables = Exact<{
-  pagination?: InputMaybe<PaginationInput>;
-  filters?: InputMaybe<OrderFilters>;
+  pagination?: PaginationInput | null | undefined;
+  filters?: OrderFilters | null | undefined;
 }>;
 
 
-export type GetOrdersQuery = { __typename?: 'Query', getOrders: { __typename?: 'OrderPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null, lotId?: number | null }> }> } };
+export type GetOrdersQuery = { getOrders: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis: number | null, totalProfit: number | null, createdAt: string, items: Array<{ id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis: number | null, profit: number | null, lotId: number | null }> }> } };
 
 export type CancelOrderMutationVariables = Exact<{
-  orderId: Scalars['Int']['input'];
+  orderId: number;
 }>;
 
 
-export type CancelOrderMutation = { __typename?: 'Mutation', cancelOrder: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } };
+export type CancelOrderMutation = { cancelOrder: { id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis: number | null, totalProfit: number | null, createdAt: string, items: Array<{ id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis: number | null, profit: number | null }> } };
 
 export type UpdateOrderStatusMutationVariables = Exact<{
-  orderId: Scalars['Int']['input'];
+  orderId: number;
   status: OrderStatus;
 }>;
 
 
-export type UpdateOrderStatusMutation = { __typename?: 'Mutation', updateOrderStatus: { __typename?: 'Order', id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis?: number | null, totalProfit?: number | null, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis?: number | null, profit?: number | null }> } };
+export type UpdateOrderStatusMutation = { updateOrderStatus: { id: number, orderNumber: string, customerName: string, status: OrderStatus, totalAmount: number, totalCostBasis: number | null, totalProfit: number | null, createdAt: string, items: Array<{ id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number, costBasis: number | null, profit: number | null }> } };
 
 export type LookupBarcodeQueryVariables = Exact<{
-  code: Scalars['String']['input'];
+  code: string;
 }>;
 
 
-export type LookupBarcodeQuery = { __typename?: 'Query', lookupBarcode?: { __typename?: 'BarcodeLookupResult', inventoryItemId: number, productName: string, gameName: string, setName: string, condition: CardCondition, price: number, availableQuantity: number, imageUrl?: string | null } | null };
+export type LookupBarcodeQuery = { lookupBarcode: { inventoryItemId: number, productName: string, gameName: string, setName: string, condition: CardCondition, price: number, availableQuantity: number, imageUrl: string | null } | null };
 
 export type PosGetInventoryQueryVariables = Exact<{
-  filters?: InputMaybe<InventoryFilters>;
-  pagination?: InputMaybe<PaginationInput>;
+  filters?: InventoryFilters | null | undefined;
+  pagination?: PaginationInput | null | undefined;
 }>;
 
 
-export type PosGetInventoryQuery = { __typename?: 'Query', getInventory: { __typename?: 'InventoryPage', items: Array<{ __typename?: 'InventoryItem', id: number, productId: number, productName: string, gameName: string, condition: CardCondition, price: number, totalQuantity: number }> } };
+export type PosGetInventoryQuery = { getInventory: { items: Array<{ id: number, productId: number, productName: string, gameName: string, condition: CardCondition, price: number, totalQuantity: number }> } };
 
 export type GetOpenOrdersQueryVariables = Exact<{
-  pagination?: InputMaybe<PaginationInput>;
-  filters?: InputMaybe<OrderFilters>;
+  pagination?: PaginationInput | null | undefined;
+  filters?: OrderFilters | null | undefined;
 }>;
 
 
-export type GetOpenOrdersQuery = { __typename?: 'Query', getOrders: { __typename?: 'OrderPage', items: Array<{ __typename?: 'Order', id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string, items: Array<{ __typename?: 'OrderItem', id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number }> }> } };
+export type GetOpenOrdersQuery = { getOrders: { items: Array<{ id: number, orderNumber: string, customerName: string, totalAmount: number, createdAt: string, items: Array<{ id: number, productId: number, productName: string, condition: CardCondition, quantity: number, unitPrice: number }> }> } };
 
 export type PosGetActiveStoreLocationQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PosGetActiveStoreLocationQuery = { __typename?: 'Query', getActiveStoreLocation?: { __typename?: 'StoreLocation', id: string, state: string } | null };
+export type PosGetActiveStoreLocationQuery = { getActiveStoreLocation: { id: string, state: string } | null };
 
 export type GetPosConfigQueryVariables = Exact<{
-  stateCode?: InputMaybe<Scalars['String']['input']>;
+  stateCode?: string | null | undefined;
 }>;
 
 
-export type GetPosConfigQuery = { __typename?: 'Query', getPosConfig: { __typename?: 'PosConfig', taxRate: number, stripeEnabled: boolean, stripePublishableKey?: string | null } };
+export type GetPosConfigQuery = { getPosConfig: { taxRate: number, stripeEnabled: boolean, stripePublishableKey: string | null } };
 
 export type SubmitPosOrderMutationVariables = Exact<{
   input: SubmitPosOrderInput;
 }>;
 
 
-export type SubmitPosOrderMutation = { __typename?: 'Mutation', submitPosOrder: { __typename?: 'Order', id: number, orderNumber: string, totalAmount: number, taxAmount?: number | null, paymentMethod?: string | null, status: OrderStatus } };
+export type SubmitPosOrderMutation = { submitPosOrder: { id: number, orderNumber: string, totalAmount: number, taxAmount: number | null, paymentMethod: string | null, status: OrderStatus } };
 
 export type CompletePosOrderMutationVariables = Exact<{
   input: CompletePosOrderInput;
 }>;
 
 
-export type CompletePosOrderMutation = { __typename?: 'Mutation', completePosOrder: { __typename?: 'Order', id: number, orderNumber: string, totalAmount: number, taxAmount?: number | null, paymentMethod?: string | null, status: OrderStatus } };
+export type CompletePosOrderMutation = { completePosOrder: { id: number, orderNumber: string, totalAmount: number, taxAmount: number | null, paymentMethod: string | null, status: OrderStatus } };
 
 export type CreatePosPaymentIntentMutationVariables = Exact<{
-  amount: Scalars['Int']['input'];
+  amount: number;
 }>;
 
 
-export type CreatePosPaymentIntentMutation = { __typename?: 'Mutation', createPosPaymentIntent: { __typename?: 'PaymentIntentResult', clientSecret: string, paymentIntentId: string } };
+export type CreatePosPaymentIntentMutation = { createPosPaymentIntent: { clientSecret: string, paymentIntentId: string } };
 
 export type GetProductQueryVariables = Exact<{
-  productId: Scalars['String']['input'];
+  productId: string;
 }>;
 
 
-export type GetProductQuery = { __typename?: 'Query', getProduct: { __typename?: 'ProductDetail', id: string, name: string, setName: string, gameName: string, rarity?: string | null, type?: string | null, text?: string | null, flavorText?: string | null, finishes: Array<string>, isSingle: boolean, isSealed: boolean, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, inventoryRecords: Array<{ __typename?: 'ProductInventoryRecord', inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> } };
+export type GetProductQuery = { getProduct: { id: string, name: string, setName: string, gameName: string, rarity: string | null, type: string | null, text: string | null, flavorText: string | null, finishes: Array<string>, isSingle: boolean, isSealed: boolean, images: { small: string | null, large: string | null } | null, inventoryRecords: Array<{ inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> } };
 
 export type GetSealedProductListingsQueryVariables = Exact<{
-  filters?: InputMaybe<ProductListingFilters>;
-  pagination?: InputMaybe<ProductListingPagination>;
+  filters?: ProductListingFilters | null | undefined;
+  pagination?: ProductListingPagination | null | undefined;
 }>;
 
 
-export type GetSealedProductListingsQuery = { __typename?: 'Query', getProductListings: { __typename?: 'ProductListingPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'ProductListing', id: string, name: string, setName: string, gameName: string, finishes: Array<string>, totalQuantity: number, lowestPrice?: number | null, lowestPriceInventoryItemId?: number | null, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null }> } };
+export type GetSealedProductListingsQuery = { getProductListings: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: string, name: string, setName: string, gameName: string, finishes: Array<string>, totalQuantity: number, lowestPrice: number | null, lowestPriceInventoryItemId: number | null, images: { small: string | null, large: string | null } | null }> } };
 
 export type GetSealedSetsQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  filters?: InputMaybe<SetFilters>;
+  game: string;
+  filters?: SetFilters | null | undefined;
 }>;
 
 
-export type GetSealedSetsQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
+export type GetSealedSetsQuery = { getSets: Array<{ code: string, name: string }> };
 
 export type GetSinglesProductListingsQueryVariables = Exact<{
-  filters?: InputMaybe<ProductListingFilters>;
-  pagination?: InputMaybe<ProductListingPagination>;
+  filters?: ProductListingFilters | null | undefined;
+  pagination?: ProductListingPagination | null | undefined;
 }>;
 
 
-export type GetSinglesProductListingsQuery = { __typename?: 'Query', getProductListings: { __typename?: 'ProductListingPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'ProductListing', id: string, name: string, setName: string, gameName: string, rarity?: string | null, finishes: Array<string>, totalQuantity: number, lowestPrice?: number | null, images?: { __typename?: 'CardImages', small?: string | null, large?: string | null } | null, conditionPrices: Array<{ __typename?: 'ProductConditionPrice', inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> }> } };
+export type GetSinglesProductListingsQuery = { getProductListings: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: string, name: string, setName: string, gameName: string, rarity: string | null, finishes: Array<string>, totalQuantity: number, lowestPrice: number | null, images: { small: string | null, large: string | null } | null, conditionPrices: Array<{ inventoryItemId: number, condition: CardCondition, quantity: number, price: number }> }> } };
 
 export type GetSinglesSetsQueryVariables = Exact<{
-  game: Scalars['String']['input'];
-  filters?: InputMaybe<SetFilters>;
+  game: string;
+  filters?: SetFilters | null | undefined;
 }>;
 
 
-export type GetSinglesSetsQuery = { __typename?: 'Query', getSets: Array<{ __typename?: 'Set', code: string, name: string }> };
+export type GetSinglesSetsQuery = { getSets: Array<{ code: string, name: string }> };
 
 export type GetBackupSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetBackupSettingsQuery = { __typename?: 'Query', getBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId?: string | null, dropboxClientId?: string | null, onedriveClientId?: string | null, googleDriveHasClientSecret: boolean } };
+export type GetBackupSettingsQuery = { getBackupSettings: { provider: BackupProvider | null, frequency: string | null, lastBackupAt: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId: string | null, dropboxClientId: string | null, onedriveClientId: string | null, googleDriveHasClientSecret: boolean } };
 
 export type GetBackupCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetBackupCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, displayName: string, description?: string | null, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null, config?: string | null }> };
+export type GetBackupCronJobsQuery = { getCronJobs: Array<{ id: number, name: string, displayName: string, description: string | null, cronExpression: string, enabled: boolean, lastRunAt: string | null, lastRunStatus: string | null, lastRunDurationMs: number | null, lastRunError: string | null, nextRunAt: string | null, config: string | null }> };
 
 export type TriggerBackupCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type TriggerBackupCronJobMutation = { __typename?: 'Mutation', triggerCronJob: { __typename?: 'CronJobRun', id: number, status: string, summary?: string | null, error?: string | null, durationMs?: number | null } };
+export type TriggerBackupCronJobMutation = { triggerCronJob: { id: number, status: string, summary: string | null, error: string | null, durationMs: number | null } };
 
 export type EnableBackupCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type EnableBackupCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type EnableBackupCronJobMutation = { enableCronJob: { id: number, enabled: boolean } };
 
 export type DisableBackupCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DisableBackupCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type DisableBackupCronJobMutation = { disableCronJob: { id: number, enabled: boolean } };
 
 export type UpdateBackupCronJobScheduleMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
-  cronExpression: Scalars['String']['input'];
+  id: number;
+  cronExpression: string;
 }>;
 
 
-export type UpdateBackupCronJobScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
+export type UpdateBackupCronJobScheduleMutation = { updateCronJobSchedule: { id: number, cronExpression: string, nextRunAt: string | null } };
 
 export type UpdateBackupSettingsMutationVariables = Exact<{
   input: UpdateBackupSettingsInput;
 }>;
 
 
-export type UpdateBackupSettingsMutation = { __typename?: 'Mutation', updateBackupSettings: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
+export type UpdateBackupSettingsMutation = { updateBackupSettings: { provider: BackupProvider | null, frequency: string | null, lastBackupAt: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean } };
 
 export type TriggerRestoreMutationVariables = Exact<{
   provider: BackupProvider;
 }>;
 
 
-export type TriggerRestoreMutation = { __typename?: 'Mutation', triggerRestore: { __typename?: 'RestoreResult', success: boolean, message?: string | null } };
+export type TriggerRestoreMutation = { triggerRestore: { success: boolean, message: string | null } };
 
 export type DisconnectBackupProviderMutationVariables = Exact<{
   provider: BackupProvider;
 }>;
 
 
-export type DisconnectBackupProviderMutation = { __typename?: 'Mutation', disconnectBackupProvider: { __typename?: 'BackupSettings', provider?: BackupProvider | null, frequency?: string | null, lastBackupAt?: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId?: string | null, dropboxClientId?: string | null, onedriveClientId?: string | null, googleDriveHasClientSecret: boolean } };
+export type DisconnectBackupProviderMutation = { disconnectBackupProvider: { provider: BackupProvider | null, frequency: string | null, lastBackupAt: string | null, googleDriveConnected: boolean, dropboxConnected: boolean, onedriveConnected: boolean, googleDriveClientId: string | null, dropboxClientId: string | null, onedriveClientId: string | null, googleDriveHasClientSecret: boolean } };
 
 export type GetBuyRatesQueryVariables = Exact<{
-  categoryId: Scalars['Int']['input'];
+  categoryId: number;
 }>;
 
 
-export type GetBuyRatesQuery = { __typename?: 'Query', getBuyRates: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, rarity?: string | null, hidden: boolean, sortOrder: number }> };
+export type GetBuyRatesQuery = { getBuyRates: Array<{ id: number, description: string, fixedRateCents: number | null, percentageRate: number | null, type: BuyRateType, rarity: string | null, hidden: boolean, sortOrder: number }> };
 
 export type GetDistinctRaritiesQueryVariables = Exact<{
-  categoryId: Scalars['Int']['input'];
+  categoryId: number;
 }>;
 
 
-export type GetDistinctRaritiesQuery = { __typename?: 'Query', getDistinctRarities: Array<string> };
+export type GetDistinctRaritiesQuery = { getDistinctRarities: Array<string> };
 
 export type SaveBuyRatesMutationVariables = Exact<{
   input: SaveBuyRatesInput;
 }>;
 
 
-export type SaveBuyRatesMutation = { __typename?: 'Mutation', saveBuyRates: Array<{ __typename?: 'BuyRateEntry', id: number, description: string, fixedRateCents?: number | null, percentageRate?: number | null, type: BuyRateType, rarity?: string | null, hidden: boolean, sortOrder: number }> };
+export type SaveBuyRatesMutation = { saveBuyRates: Array<{ id: number, description: string, fixedRateCents: number | null, percentageRate: number | null, type: BuyRateType, rarity: string | null, hidden: boolean, sortOrder: number }> };
 
 export type GetDashboardSalesQueryVariables = Exact<{
-  organizationId: Scalars['String']['input'];
+  organizationId: string;
   dateRange: DashboardDateRange;
 }>;
 
 
-export type GetDashboardSalesQuery = { __typename?: 'Query', getDashboardSales: { __typename?: 'SalesBreakdown', granularity: Granularity, summary: { __typename?: 'SalesSummary', totalRevenue: number, totalCost: number, totalProfit: number, profitMargin: number, orderCount: number }, dataPoints: Array<{ __typename?: 'SalesDataPoint', label: string, revenue: number, cost: number, profit: number, orderCount: number }> } };
+export type GetDashboardSalesQuery = { getDashboardSales: { granularity: Granularity, summary: { totalRevenue: number, totalCost: number, totalProfit: number, profitMargin: number, orderCount: number }, dataPoints: Array<{ label: string, revenue: number, cost: number, profit: number, orderCount: number }> } };
 
 export type GetDashboardBestSellersQueryVariables = Exact<{
-  organizationId: Scalars['String']['input'];
+  organizationId: string;
   dateRange: DashboardDateRange;
   sortBy: BestSellerSortBy;
-  limit?: InputMaybe<Scalars['Int']['input']>;
+  limit?: number | null | undefined;
 }>;
 
 
-export type GetDashboardBestSellersQuery = { __typename?: 'Query', getDashboardBestSellers: Array<{ __typename?: 'BestSeller', productId: number, productName: string, totalQuantity: number, totalRevenue: number }> };
+export type GetDashboardBestSellersQuery = { getDashboardBestSellers: Array<{ productId: number, productName: string, totalQuantity: number, totalRevenue: number }> };
 
 export type GetDashboardInventorySummaryQueryVariables = Exact<{
-  organizationId: Scalars['String']['input'];
+  organizationId: string;
 }>;
 
 
-export type GetDashboardInventorySummaryQuery = { __typename?: 'Query', getDashboardInventorySummary: { __typename?: 'InventorySummary', totalSkus: number, totalUnits: number, totalCostValue: number, totalRetailValue: number } };
+export type GetDashboardInventorySummaryQuery = { getDashboardInventorySummary: { totalSkus: number, totalUnits: number, totalCostValue: number, totalRetailValue: number } };
 
 export type GetDashboardOrderStatusQueryVariables = Exact<{
-  organizationId: Scalars['String']['input'];
+  organizationId: string;
   dateRange: DashboardDateRange;
 }>;
 
 
-export type GetDashboardOrderStatusQuery = { __typename?: 'Query', getDashboardOrderStatus: { __typename?: 'OrderStatusBreakdown', open: number, completed: number, cancelled: number, total: number } };
+export type GetDashboardOrderStatusQuery = { getDashboardOrderStatus: { open: number, completed: number, cancelled: number, total: number } };
 
 export type CheckForDataUpdatesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CheckForDataUpdatesQuery = { __typename?: 'Query', checkForDataUpdates: { __typename?: 'DataUpdateStatus', currentVersion?: string | null, latestVersion?: string | null, updateAvailable: boolean, isUpdating: boolean } };
+export type CheckForDataUpdatesQuery = { checkForDataUpdates: { currentVersion: string | null, latestVersion: string | null, updateAvailable: boolean, isUpdating: boolean } };
 
 export type TriggerDataUpdateMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TriggerDataUpdateMutation = { __typename?: 'Mutation', triggerDataUpdate: { __typename?: 'DataUpdateResult', success: boolean, message?: string | null, newVersion?: string | null } };
+export type TriggerDataUpdateMutation = { triggerDataUpdate: { success: boolean, message: string | null, newVersion: string | null } };
 
 export type GetDataUpdateCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetDataUpdateCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null }> };
+export type GetDataUpdateCronJobsQuery = { getCronJobs: Array<{ id: number, name: string, cronExpression: string, enabled: boolean, lastRunAt: string | null, lastRunStatus: string | null, lastRunDurationMs: number | null, lastRunError: string | null, nextRunAt: string | null }> };
 
 export type EnableDataUpdateCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type EnableDataUpdateCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type EnableDataUpdateCronJobMutation = { enableCronJob: { id: number, enabled: boolean } };
 
 export type DisableDataUpdateCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DisableDataUpdateCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type DisableDataUpdateCronJobMutation = { disableCronJob: { id: number, enabled: boolean } };
 
 export type UpdateDataUpdateScheduleMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
-  cronExpression: Scalars['String']['input'];
+  id: number;
+  cronExpression: string;
 }>;
 
 
-export type UpdateDataUpdateScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
+export type UpdateDataUpdateScheduleMutation = { updateCronJobSchedule: { id: number, cronExpression: string, nextRunAt: string | null } };
 
 export type GetStoreSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetStoreSettingsQuery = { __typename?: 'Query', getStoreSettings: { __typename?: 'StoreSettings', companyName?: string | null, ein?: string | null } };
+export type GetStoreSettingsQuery = { getStoreSettings: { companyName: string | null, ein: string | null } };
 
 export type UpdateStoreSettingsMutationVariables = Exact<{
   input: UpdateStoreSettingsInput;
 }>;
 
 
-export type UpdateStoreSettingsMutation = { __typename?: 'Mutation', updateStoreSettings: { __typename?: 'StoreSettings', companyName?: string | null, ein?: string | null } };
+export type UpdateStoreSettingsMutation = { updateStoreSettings: { companyName: string | null, ein: string | null } };
 
 export type GetAvailableGamesForSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAvailableGamesForSettingsQuery = { __typename?: 'Query', getAvailableGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+export type GetAvailableGamesForSettingsQuery = { getAvailableGames: Array<{ categoryId: number, name: string, displayName: string }> };
 
 export type SetSupportedGamesMutationVariables = Exact<{
-  categoryIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  categoryIds: Array<number> | number;
 }>;
 
 
-export type SetSupportedGamesMutation = { __typename?: 'Mutation', setSupportedGames: Array<{ __typename?: 'SupportedGame', categoryId: number, name: string, displayName: string }> };
+export type SetSupportedGamesMutation = { setSupportedGames: Array<{ categoryId: number, name: string, displayName: string }> };
 
 export type GetIntegrationSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetIntegrationSettingsQuery = { __typename?: 'Query', getIntegrationSettings: { __typename?: 'IntegrationSettings', stripe: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean }, shopify: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } } };
+export type GetIntegrationSettingsQuery = { getIntegrationSettings: { stripe: { enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean }, shopify: { enabled: boolean, hasApiKey: boolean, shopDomain: string | null } } };
 
 export type UpdateStripeIntegrationMutationVariables = Exact<{
   input: UpdateStripeIntegrationInput;
 }>;
 
 
-export type UpdateStripeIntegrationMutation = { __typename?: 'Mutation', updateStripeIntegration: { __typename?: 'StripeIntegration', enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean } };
+export type UpdateStripeIntegrationMutation = { updateStripeIntegration: { enabled: boolean, hasApiKey: boolean, hasPublishableKey: boolean } };
 
 export type UpdateShopifyIntegrationMutationVariables = Exact<{
   input: UpdateShopifyIntegrationInput;
 }>;
 
 
-export type UpdateShopifyIntegrationMutation = { __typename?: 'Mutation', updateShopifyIntegration: { __typename?: 'ShopifyIntegration', enabled: boolean, hasApiKey: boolean, shopDomain?: string | null } };
+export type UpdateShopifyIntegrationMutation = { updateShopifyIntegration: { enabled: boolean, hasApiKey: boolean, shopDomain: string | null } };
 
 export type GetAllStoreLocationsAdminQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAllStoreLocationsAdminQuery = { __typename?: 'Query', getEmployeeStoreLocations: Array<{ __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> }> };
+export type GetAllStoreLocationsAdminQuery = { getEmployeeStoreLocations: Array<{ id: string, name: string, street1: string, street2: string | null, city: string, state: string, zip: string, phone: string | null, createdAt: string, hours: Array<{ dayOfWeek: number, openTime: string | null, closeTime: string | null }> }> };
 
 export type AddStoreLocationMutationVariables = Exact<{
   input: AddStoreLocationInput;
 }>;
 
 
-export type AddStoreLocationMutation = { __typename?: 'Mutation', addStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+export type AddStoreLocationMutation = { addStoreLocation: { id: string, name: string, street1: string, street2: string | null, city: string, state: string, zip: string, phone: string | null, createdAt: string, hours: Array<{ dayOfWeek: number, openTime: string | null, closeTime: string | null }> } };
 
 export type UpdateStoreLocationMutationVariables = Exact<{
   input: UpdateStoreLocationInput;
 }>;
 
 
-export type UpdateStoreLocationMutation = { __typename?: 'Mutation', updateStoreLocation: { __typename?: 'StoreLocation', id: string, name: string, street1: string, street2?: string | null, city: string, state: string, zip: string, phone?: string | null, createdAt: string, hours: Array<{ __typename?: 'StoreHours', dayOfWeek: number, openTime?: string | null, closeTime?: string | null }> } };
+export type UpdateStoreLocationMutation = { updateStoreLocation: { id: string, name: string, street1: string, street2: string | null, city: string, state: string, zip: string, phone: string | null, createdAt: string, hours: Array<{ dayOfWeek: number, openTime: string | null, closeTime: string | null }> } };
 
 export type RemoveStoreLocationMutationVariables = Exact<{
-  id: Scalars['String']['input'];
+  id: string;
 }>;
 
 
-export type RemoveStoreLocationMutation = { __typename?: 'Mutation', removeStoreLocation: boolean };
+export type RemoveStoreLocationMutation = { removeStoreLocation: boolean };
 
 export type GetCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetCronJobsQuery = { __typename?: 'Query', getCronJobs: Array<{ __typename?: 'CronJob', id: number, name: string, displayName: string, description?: string | null, cronExpression: string, enabled: boolean, lastRunAt?: string | null, lastRunStatus?: string | null, lastRunDurationMs?: number | null, lastRunError?: string | null, nextRunAt?: string | null, config?: string | null }> };
+export type GetCronJobsQuery = { getCronJobs: Array<{ id: number, name: string, displayName: string, description: string | null, cronExpression: string, enabled: boolean, lastRunAt: string | null, lastRunStatus: string | null, lastRunDurationMs: number | null, lastRunError: string | null, nextRunAt: string | null, config: string | null }> };
 
 export type GetCronJobRunsQueryVariables = Exact<{
-  cronJobId: Scalars['Int']['input'];
-  pagination?: InputMaybe<PaginationInput>;
+  cronJobId: number;
+  pagination?: PaginationInput | null | undefined;
 }>;
 
 
-export type GetCronJobRunsQuery = { __typename?: 'Query', getCronJobRuns: { __typename?: 'CronJobRunPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'CronJobRun', id: number, startedAt: string, completedAt?: string | null, durationMs?: number | null, status: string, error?: string | null, summary?: string | null }> } };
+export type GetCronJobRunsQuery = { getCronJobRuns: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, startedAt: string, completedAt: string | null, durationMs: number | null, status: string, error: string | null, summary: string | null }> } };
 
 export type TriggerCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type TriggerCronJobMutation = { __typename?: 'Mutation', triggerCronJob: { __typename?: 'CronJobRun', id: number, status: string, summary?: string | null, error?: string | null, durationMs?: number | null } };
+export type TriggerCronJobMutation = { triggerCronJob: { id: number, status: string, summary: string | null, error: string | null, durationMs: number | null } };
 
 export type EnableCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type EnableCronJobMutation = { __typename?: 'Mutation', enableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type EnableCronJobMutation = { enableCronJob: { id: number, enabled: boolean } };
 
 export type DisableCronJobMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
+  id: number;
 }>;
 
 
-export type DisableCronJobMutation = { __typename?: 'Mutation', disableCronJob: { __typename?: 'CronJob', id: number, enabled: boolean } };
+export type DisableCronJobMutation = { disableCronJob: { id: number, enabled: boolean } };
 
 export type UpdateCronJobScheduleMutationVariables = Exact<{
-  id: Scalars['Int']['input'];
-  cronExpression: Scalars['String']['input'];
+  id: number;
+  cronExpression: string;
 }>;
 
 
-export type UpdateCronJobScheduleMutation = { __typename?: 'Mutation', updateCronJobSchedule: { __typename?: 'CronJob', id: number, cronExpression: string, nextRunAt?: string | null } };
+export type UpdateCronJobScheduleMutation = { updateCronJobSchedule: { id: number, cronExpression: string, nextRunAt: string | null } };
 
 export type GetTransactionLogsQueryVariables = Exact<{
-  pagination?: InputMaybe<PaginationInput>;
-  filters?: InputMaybe<TransactionLogFilters>;
+  pagination?: PaginationInput | null | undefined;
+  filters?: TransactionLogFilters | null | undefined;
 }>;
 
 
-export type GetTransactionLogsQuery = { __typename?: 'Query', getTransactionLogs: { __typename?: 'TransactionLogPage', totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ __typename?: 'TransactionLogEntry', id: number, action: string, resourceType: ResourceType, resourceId?: string | null, details: string, userName: string, userEmail: string, createdAt: string }> } };
+export type GetTransactionLogsQuery = { getTransactionLogs: { totalCount: number, page: number, pageSize: number, totalPages: number, items: Array<{ id: number, action: string, resourceType: ResourceType, resourceId: string | null, details: string, userName: string, userEmail: string, createdAt: string }> } };
 
 export type IsSetupPendingQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type IsSetupPendingQuery = { __typename?: 'Query', isSetupPending: boolean };
+export type IsSetupPendingQuery = { isSetupPending: boolean };
 
 export type GetDefaultStoreIdQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetDefaultStoreIdQuery = { __typename?: 'Query', getAllStoreLocations: Array<{ __typename?: 'StoreLocation', id: string }> };
+export type GetDefaultStoreIdQuery = { getAllStoreLocations: Array<{ id: string }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
