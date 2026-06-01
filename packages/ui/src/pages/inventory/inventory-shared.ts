@@ -1,12 +1,19 @@
 import { css, html, nothing, unsafeCSS } from 'lit';
 import { BP_MOBILE } from '../../lib/breakpoints';
-import {
-  type InventoryItem,
-  type InventoryItemStock,
-  type ProductSearchResult,
-  type ProductPrice,
+import type {
+  GetInventoryQuery as GetInventoryQueryResult,
+  GetInventoryItemDetailsQuery as GetInventoryItemDetailsResult,
+  SearchProductsQuery as SearchProductsResult,
 } from '../../graphql/graphql.ts';
 import { graphql } from '../../graphql/index.ts';
+
+// The GraphQL client preset only generates types for the fields selected in
+// operations, so these shapes are derived from the operation result types
+// rather than imported as standalone schema object types.
+type InventoryItem = GetInventoryQueryResult['getInventory']['items'][number];
+type InventoryItemStock = GetInventoryItemDetailsResult['getInventoryItemDetails']['items'][number];
+type ProductSearchResult = SearchProductsResult['searchProducts'][number];
+type ProductPrice = ProductSearchResult['prices'][number];
 import { formatCurrency } from '../../lib/currency.ts';
 export { formatCurrency };
 export { debounce } from '../../lib/debounce';

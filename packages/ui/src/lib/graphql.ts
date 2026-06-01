@@ -1,5 +1,8 @@
 import type { TypedDocumentString } from '../graphql/graphql';
-import { Exact } from '../graphql/graphql';
+
+// The GraphQL client preset no longer exports the `Exact` helper, so we declare
+// it locally. It is used below to detect operations that take no variables.
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 
 interface ExecutionResult<T> {
   data: T;
