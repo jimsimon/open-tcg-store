@@ -175,7 +175,7 @@ function getSession(ctx: Context) {
   return authClient.getSession({
     fetchOptions: {
       headers: authHeaders(ctx),
-      onSuccess: (successCtx) => {
+      onSuccess: (successCtx: { response: Response }) => {
         // Forward any Set-Cookie headers (e.g. session token refresh) to the
         // browser so the client stays in sync with the server-side session.
         forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
@@ -293,7 +293,7 @@ async function ensureAnonymousSession(ctx: Context, next: Next) {
   const signInResult = await authClient.signIn.anonymous({
     fetchOptions: {
       headers: authHeaders(ctx, { Origin: origin }),
-      onSuccess: (successCtx) => {
+      onSuccess: (successCtx: { response: Response }) => {
         forwardAndMergeCookies(ctx, successCtx.response.headers.getSetCookie());
       },
     },
@@ -336,7 +336,7 @@ async function syncStoreContext(ctx: Context, next: Next) {
             headers: authHeaders(ctx, {
               Origin: (ctx.headers.origin as string) ?? (process.env.APP_URL || 'http://localhost'),
             }),
-            onSuccess: (successCtx) => {
+            onSuccess: (successCtx: { response: Response }) => {
               // Forward new cookies to the browser AND merge them into the
               // current request so that the subsequent getSession() call
               // within this same request sees the updated session token.
