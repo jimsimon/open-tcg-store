@@ -6,7 +6,7 @@
 FROM node:24-alpine AS deps
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ FROM node:24-alpine AS app
 RUN apk add --no-cache nginx supervisor xdelta3 p7zip shadow
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 # Create a non-root user to run all processes.
 # The entrypoint will adjust UID/GID at runtime via PUID/PGID env vars.
