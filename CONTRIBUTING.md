@@ -14,14 +14,14 @@ Thank you for your interest in contributing to OpenTCGS! This guide covers every
 | Testing           | [Vitest](https://vitest.dev/) 4 (Node.js + browser via Playwright)                                                                                                    |
 | Linting           | [oxlint](https://oxc.rs/docs/guide/usage/linter) + [oxfmt](https://oxc.rs/docs/guide/usage/formatter)                                                                 |
 | Dev Orchestration | [Tilt](https://tilt.dev/)                                                                                                                                             |
-| Package Manager   | [pnpm](https://pnpm.io/) 10 with workspaces                                                                                                                           |
+| Package Manager   | [pnpm](https://pnpm.io/) 11.5.2 with workspaces                                                                                                                       |
 
 ## Getting Started
 
 ### Prerequisites
 
 - **Node.js** ^20.19.0 or >=22.12.0
-- **pnpm** >= 10 (the project uses pnpm 10.33.0 via `packageManager` in `package.json`)
+- **pnpm** >= 10 (the project uses pnpm@11.5.2 via `packageManager` in `package.json`)
 - **Tilt** (optional, for multi-service dev orchestration)
 
 ### Setup
