@@ -2,7 +2,7 @@ packages:
   - packages/*
 
 overrides:
-  better-call: 2.0.3
+  better-call: 2.0.6
 
 publicHoistPattern:
   - '@lit-labs/*'
